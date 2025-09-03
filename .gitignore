@@ -1,0 +1,95 @@
+# Environment variables
+.env
+.env.local
+.env.production
+.env*.local
+
+# Personal/sensitive data
+CRM-Buyer-preferences.xlsx
+CRM Buyer preferences.xlsx
+~$*.xlsx
+MLS scrape_*.xlsx
+MLS_Image_scrape_*/
+
+# Build outputs
+.next/
+out/
+dist/
+build/
+
+# Dependencies
+node_modules/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# Database
+*.sql
+database-schema.sql
+*.db
+*.sqlite
+
+# API keys/credentials
+**/api-keys/
+**/credentials/
+**/secrets/
+
+# User uploads/data
+uploads/
+data/
+backups/
+
+# Temporary files
+tmp/
+temp/
+cache/
+
+# Claude Code session data
+.claude/data/sessions/
+
+# Package manager lockfiles (optional - remove if you want to track them)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# Testing
+coverage/
+.nyc_output
+
+# Misc
+.eslintcache
+.parcel-cache
