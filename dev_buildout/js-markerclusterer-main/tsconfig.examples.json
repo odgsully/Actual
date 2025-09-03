@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "declaration": false,
+    "noEmit": true,
+    "outDir": null,
+    "declarationDir": null,
+    "noImplicitAny": false,
+    "resolveJsonModule": true,
+  },
+  "include": ["src/**/*", "examples/**/*"]
+}

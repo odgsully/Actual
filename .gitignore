@@ -1,0 +1,61 @@
+# Environment variables
+.env
+.env.local
+.env.production
+.env*.local
+
+# Personal/sensitive data
+CRM-Buyer-preferences.xlsx
+CRM Buyer preferences.xlsx
+~$*.xlsx
+MLS scrape_*.xlsx
+MLS_Image_scrape_*/
+
+# Build outputs
+.next/
+out/
+dist/
+build/
+
+# Dependencies
+node_modules/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Database
+*.sql
+database-schema.sql
+*.db
+
+# API keys/credentials
+**/api-keys/
+**/credentials/
+**/secrets/
+
+# User uploads/data
+uploads/
+data/
+backups/
+
+# Temporary files
+tmp/
+temp/
+cache/
+
+# Claude Code session data
+.claude/data/sessions/

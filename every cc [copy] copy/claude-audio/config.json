@@ -1,0 +1,56 @@
+{
+  "audio": {
+    "enabled": true,
+    "audioPath": "./agent-audio",
+    "events": {
+      "taskBegun": {
+        "enabled": true,
+        "file": "begun.mp3"
+      },
+      "taskCompleted": {
+        "enabled": true,
+        "file": "task-completed.mp3"
+      },
+      "needsInput": {
+        "enabled": true,
+        "file": "needs-input.mp3"
+      },
+      "waitingInput": {
+        "enabled": true,
+        "file": "waiting-input.mp3",
+        "delays": [120000, 300000]
+      }
+    }
+  },
+  "patterns": {
+    "taskBegun": [
+      "I'll help",
+      "Let me",
+      "I'll start",
+      "Working on",
+      "I'm going to",
+      "Starting",
+      "I'll create",
+      "I'll implement"
+    ],
+    "taskCompleted": [
+      "completed successfully",
+      "done",
+      "finished",
+      "successfully created",
+      "successfully implemented",
+      "task.*completed",
+      "completed the"
+    ],
+    "needsInput": [
+      "\\?$",
+      "would you like",
+      "please provide",
+      "please specify",
+      "what would you",
+      "should I",
+      "do you want",
+      "would you prefer"
+    ]
+  }
+}
