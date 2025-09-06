@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## ⚠️ Critical Context (September 5, 2024)
+
+**IMPORTANT**: This is the restored working version from the `main` branch. The `clean-deployment` branch was corrupted (missing 34,199 files including authentication) and should NOT be used. See `Fix_explain_09.05.md` and `DEPLOYMENT_FIX_CONTEXT.md` for restoration details.
+
 ## Common Development Commands
 
 ### Development & Build
@@ -46,21 +50,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Project Structure
 ```
 /app                    # Next.js App Router pages and API routes
-  /api                  # API endpoints
+  /api                  # API endpoints (health, email, preferences, setup)
   /form                 # Multi-step preferences questionnaire
   /rank-feed           # 4-tile property ranking interface
   /list-view           # Property list/grid view
   /settings            # User settings and preferences
   /signup              # User registration flow
+  /setup/[token]       # Token-based setup flow
 /components            # Reusable UI components
+  /auth               # Authentication components (SignInModal)
+  /form               # Form components (ResponseSummary)
 /contexts              # React context providers
+  AuthContext.tsx     # Authentication state management
 /lib                   # Core utilities
-  /database            # Database access functions
+  /database            # Database access functions (users, properties, rankings, preferences)
   /supabase            # Supabase client configuration
 /deployment            # Production deployment scripts and configs
 /scripts               # Database seeding and utility scripts
 /scrape_3rd           # MLS data scraping utilities
-/dev_buildout          # Development and testing resources
 /hooks                 # Custom React hooks
 /public                # Static assets
 ```
@@ -72,6 +79,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `/rank-feed` - Main property evaluation interface (4-tile layout)
 - `/list-view` - Property browsing with filters
 - `/settings` - User preferences and account management
+- `/setup/[token]` - Magic link setup flow
 
 ### API Endpoints
 - `/api/health` - Health check endpoint
@@ -112,31 +120,52 @@ The platform processes:
 
 ### Current Implementation Status
 ✅ Complete:
-- User authentication UI
+- User authentication system (sign up, sign in, sign out)
+- Email verification with magic links
 - 7-page preferences form
 - Property ranking interface (4-tile layout)
 - List view with filtering
 - Settings management
 - Responsive design
-- Demo account system
+- Demo account system (support@wabbit-rank.ai)
+- Token-based account setup flow
 
-⏳ In Progress:
-- Supabase backend integration
+⏳ Pending:
+- Supabase backend integration (partial)
 - Real MLS data import
 - Google Maps integration
 - OpenAI location intelligence
 - Multi-user collaboration features
+- Third-party platform connections
 
-### Development Notes
-- This codebase is a stable working version (Actual-clean)
-- Uses ecosystem.config.js for PM2 configuration
-- Middleware configured for authentication routes
-- Database migrations tracked in database-migration-temp-preferences.sql
-- Contains working demo setup with token-based verification
+### Critical Deployment Notes
+- **Production Server**: Hetzner CPX11 (5.78.100.116)
+- **Domain**: wabbit-rank.ai with Cloudflare DNS
+- **SSL**: Let's Encrypt via Certbot
+- **Process Manager**: PM2 with ecosystem.config.js
+- **Monitoring**: Hetzner metrics + PM2 monitoring
+- **Backups**: Weekly Hetzner snapshots
 
-### Key Differences from Other Versions
-- This is the clean, stable version of the codebase
-- Focus on core functionality without experimental features
-- Well-structured with clear separation of concerns
-- Includes comprehensive setup documentation
-- Ready for production deployment with PM2 and Nginx configs
+### Known Issues & Fixes
+- **September 5, 2024**: Restored from `clean-deployment` branch corruption
+  - Lost 34,199 files including authentication
+  - Recovered from `main` branch (Actual-clean directory)
+  - See `Fix_explain_09.05.md` for details
+- **DNS Issue**: Nameserver mismatch between Namecheap and Cloudflare
+  - Required: lana.ns.cloudflare.com and leif.ns.cloudflare.com
+  - See `DEPLOYMENT_FIX_CONTEXT.md` for resolution steps
+
+### Testing Checklist
+Before deployment, verify:
+- [ ] User can sign up with email/password
+- [ ] User can sign in and sign out
+- [ ] Demo account auto-signs in correctly
+- [ ] Preferences form saves data
+- [ ] Email verification sends (check console in dev)
+- [ ] Token-based setup flow works
+- [ ] All routes load without errors
+
+### Branch Guidelines
+- **USE**: `main` branch (verified working)
+- **DO NOT USE**: `clean-deployment` (corrupted, missing files)
+- **ALTERNATIVE**: `deployment-config` (has deployment files)
