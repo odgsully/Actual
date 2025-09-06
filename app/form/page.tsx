@@ -7,7 +7,26 @@ import DemoBanner from '@/components/DemoBanner'
 import ResponseSummary from '@/components/form/ResponseSummary'
 import AuthLoadingScreen from '@/components/AuthLoadingScreen'
 
-const formPages = [
+interface FormField {
+  name: string
+  label: string
+  type: string
+  placeholder?: string
+  options?: string[]
+  min?: string
+  max?: string
+  required?: boolean
+  isCurrency?: boolean
+}
+
+interface FormPage {
+  title: string
+  description: string
+  fields: FormField[]
+  showSummary?: boolean
+}
+
+const formPages: FormPage[] = [
   {
     title: "Search Your Profile",
     description: "Let's see if we already have your information",
@@ -27,9 +46,9 @@ const formPages = [
     description: "Let's talk about size and price requirements",
     fields: [
       { name: "minSquareFootage", label: "Minimum square footage", type: "select", options: ["1,000 sqft", "1,500 sqft", "2,000 sqft", "2,500 sqft", "3,000+ sqft"] },
-      { name: "minLotSize", label: "Minimum lot square footage", type: "text", placeholder: "e.g., 5,000 sqft" },
-      { name: "priceMin", label: "Minimum price", type: "text", placeholder: "$500,000" },
-      { name: "priceMax", label: "Maximum price", type: "text", placeholder: "$1,800,000" }
+      { name: "minLotSize", label: "Minimum lot square footage", type: "select", options: ["5,000 sqft", "10,000 sqft", "15,000 sqft", "20,000 sqft", "25,000 sqft", "30,000 sqft", "35,000 sqft", "40,000 sqft", "45,000 sqft", "50,000 sqft", "55,000 sqft", "60,000+ sqft"] },
+      { name: "priceMin", label: "Minimum price", type: "text", placeholder: "$500,000", isCurrency: true },
+      { name: "priceMax", label: "Maximum price", type: "text", placeholder: "$1,800,000", isCurrency: true }
     ]
   },
   {
@@ -46,8 +65,8 @@ const formPages = [
     title: "Room Requirements",
     description: "How many rooms do you need?",
     fields: [
-      { name: "bedrooms", label: "Bedrooms needed", type: "number", placeholder: "3" },
-      { name: "bathrooms", label: "Bathrooms needed", type: "number", placeholder: "2" }
+      { name: "bedrooms", label: "Bedrooms BR Count Minimum", type: "number", placeholder: "2" },
+      { name: "bathrooms", label: "Bathrooms BA Count Minimum", type: "number", placeholder: "1" }
     ]
   },
   {
@@ -63,9 +82,9 @@ const formPages = [
     description: "What features are important to you?",
     fields: [
       { name: "homeStyle", label: "Home style preference", type: "select", options: ["Single-story", "Multi-level", "No preference"] },
-      { name: "pool", label: "Do you want a pool?", type: "select", options: ["Yes", "No", "Neutral"] },
+      { name: "pool", label: "Pool", type: "select", options: ["Yes", "No", "Neutral"] },
       { name: "garageSpaces", label: "Minimum garage spaces", type: "number", placeholder: "2" },
-      { name: "hoa", label: "Thoughts on HOAs?", type: "select", options: ["Need", "Want", "Neutral", "Don't Need", "Don't Want"] },
+      { name: "hoa", label: "HOA", type: "select", options: ["No HOA", "HOA only", "No preference"] },
       { name: "renovations", label: "Openness to renovations (1-5)", type: "range", min: "1", max: "5" }
     ]
   },
@@ -165,7 +184,7 @@ export default function FormPage() {
               homeStyle: prefs.home_style === 'single-story' ? 'Single-story' : prefs.home_style === 'multi-level' ? 'Multi-level' : prefs.home_style || '',
               pool: prefs.pool_preference === 'yes' ? 'Yes' : prefs.pool_preference === 'no' ? 'No' : prefs.pool_preference === 'neutral' ? 'Neutral' : '',
               garageSpaces: prefs.min_garage_spaces?.toString() || '',
-              hoa: prefs.hoa_preference === 'need' ? 'Need' : prefs.hoa_preference === 'want' ? 'Want' : prefs.hoa_preference === 'neutral' ? 'Neutral' : prefs.hoa_preference === 'dont_need' ? "Don't Need" : prefs.hoa_preference === 'dont_want' ? "Don't Want" : '',
+              hoa: prefs.hoa_preference === 'no_hoa' ? 'No HOA' : prefs.hoa_preference === 'hoa_only' ? 'HOA only' : prefs.hoa_preference === 'no_preference' ? 'No preference' : '',
               renovations: prefs.renovation_openness?.toString() || '',
               currentAddress: prefs.current_residence_address || '',
               worksWell: prefs.current_residence_works_well || '',
@@ -180,8 +199,27 @@ export default function FormPage() {
     }
   }, [authVerified, user])
 
-  const handleInputChange = (name: string, value: string) => {
-    setFormData(prev => ({ ...prev, [name]: value }))
+  const formatCurrency = (value: string) => {
+    // Remove all non-numeric characters
+    const numericValue = value.replace(/[^0-9]/g, '')
+    
+    // Convert to number and format with commas
+    if (numericValue === '') return ''
+    
+    const number = parseInt(numericValue, 10)
+    const formatted = number.toLocaleString('en-US')
+    
+    return `$${formatted}`
+  }
+
+  const handleInputChange = (name: string, value: string, isCurrency?: boolean) => {
+    if (isCurrency) {
+      // Format currency inputs
+      const formattedValue = formatCurrency(value)
+      setFormData(prev => ({ ...prev, [name]: formattedValue }))
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }))
+    }
   }
 
   const handleCityToggle = (city: string) => {
@@ -405,7 +443,7 @@ export default function FormPage() {
                           }`}
                           placeholder={field.placeholder}
                           value={formData[field.name] || ''}
-                          onChange={(e) => handleInputChange(field.name, e.target.value)}
+                          onChange={(e) => handleInputChange(field.name, e.target.value, field.isCurrency)}
                           readOnly={currentPage === 8 && isAuthenticated && ['email', 'firstName', 'lastName'].includes(field.name)}
                         />
                         {/* Show note for pre-filled fields */}

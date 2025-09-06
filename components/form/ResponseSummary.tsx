@@ -45,8 +45,8 @@ export default function ResponseSummary({ formData, selectedCities }: ResponseSu
         <div className="border-b border-gray-200 dark:border-gray-700 pb-3">
           <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-2">Room Requirements</h4>
           <div className="grid grid-cols-2 gap-2 text-gray-600 dark:text-gray-400">
-            <div>Bedrooms: <span className="font-medium">{formatValue(formData.bedrooms)}</span></div>
-            <div>Bathrooms: <span className="font-medium">{formatValue(formData.bathrooms)}</span></div>
+            <div>Bedrooms BR Count Minimum: <span className="font-medium">{formatValue(formData.bedrooms)}</span></div>
+            <div>Bathrooms BA Count Minimum: <span className="font-medium">{formatValue(formData.bathrooms)}</span></div>
           </div>
         </div>
 
@@ -80,7 +80,7 @@ export default function ResponseSummary({ formData, selectedCities }: ResponseSu
           <div className="grid grid-cols-2 gap-2 text-gray-600 dark:text-gray-400">
             <div>Pool: <span className="font-medium">{formatValue(formData.pool)}</span></div>
             <div>Garage Spaces: <span className="font-medium">{formatValue(formData.garageSpaces)}</span></div>
-            <div>HOA Preference: <span className="font-medium">{formatValue(formData.hoa)}</span></div>
+            <div>HOA: <span className="font-medium">{formatValue(formData.hoa)}</span></div>
             <div>Renovation Openness: <span className="font-medium">{formatValue(formData.renovations)}/5</span></div>
           </div>
         </div>
