@@ -16,7 +16,8 @@
     "db:seed": "tsx scripts/seed-database.ts",
     "db:seed-demo": "tsx scripts/seed-demo-account.ts",
     "db:update-demo": "tsx scripts/update-demo-password.ts",
-    "db:seed-data": "tsx scripts/seed-sample-data.ts"
+    "db:seed-data": "tsx scripts/seed-sample-data.ts",
+    "db:setup-spatial": "tsx scripts/setup-spatial.ts"
   },
   "dependencies": {
     "@googlemaps/js-api-loader": "^1.16.2",

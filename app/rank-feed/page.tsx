@@ -1,14 +1,21 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRequireAuth } from '@/hooks/useRequireAuth'
+import InteractiveLocationMap from '@/components/map/InteractiveLocationMap'
+import SchoolsTable from '@/components/map/SchoolsTable'
+import EntertainmentTable from '@/components/map/EntertainmentTable'
+import GroceriesTable from '@/components/map/GroceriesTable'
+import { getSchoolsNearProperty, getEntertainmentDistricts, getGroceryStores } from '@/lib/map/location-data-service'
 import SignInModal from '@/components/auth/SignInModal'
 import DemoBanner from '@/components/DemoBanner'
 
 const sampleProperty = {
+  id: '1',
   address: "7525 E Gainey Ranch Rd #145",
   listPrice: "$850,000",
+  list_price: 850000,
   city: "Scottsdale",
   zip: "85258",
   schools: "Cochise Elementary, Cocopah Middle, Chaparral High",
@@ -16,8 +23,11 @@ const sampleProperty = {
   renoYear: "2019",
   buildYear: "1998",
   jurisdiction: "Scottsdale",
-  isFavorite: false
+  isFavorite: false,
+  latitude: 33.5698,
+  longitude: -111.9192
 }
+
 
 export default function RankFeedPage() {
   const { user, loading, showSignIn, setShowSignIn } = useRequireAuth()
@@ -34,6 +44,27 @@ export default function RankFeedPage() {
     turnkey: ''
   })
   const [isFavorite, setIsFavorite] = useState(sampleProperty.isFavorite)
+  const [showLocationTables, setShowLocationTables] = useState(false)
+  
+  // Fetch location data
+  const [locationData, setLocationData] = useState({
+    schools: [],
+    entertainment: [],
+    groceries: []
+  })
+  
+  useEffect(() => {
+    // Load location data based on property
+    const schools = getSchoolsNearProperty(sampleProperty.latitude, sampleProperty.longitude)
+    const entertainment = getEntertainmentDistricts(sampleProperty.latitude, sampleProperty.longitude)
+    const groceries = getGroceryStores(sampleProperty.latitude, sampleProperty.longitude)
+    
+    setLocationData({ schools, entertainment, groceries })
+  }, [sampleProperty])
+  
+  // Get commute addresses from form data (in real app, would come from user preferences)
+  const commuteAddress1 = { address: 'Downtown Phoenix', maxMinutes: 30 }
+  const commuteAddress2 = { address: 'Scottsdale Airpark', maxMinutes: 20 }
   
   if (loading) {
     return (
@@ -223,17 +254,29 @@ export default function RankFeedPage() {
 
           {/* Google Interactive Map Tile */}
           <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-lg shadow-lg p-6">
-            <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Location Map</h2>
-            <div className="bg-gray-100 rounded-lg h-64 flex items-center justify-center">
-              <div className="text-center">
-                <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Interactive Location Map</h2>
+              <button
+                onClick={() => setShowLocationTables(!showLocationTables)}
+                className="text-sm text-blue-600 hover:text-blue-800 flex items-center"
+              >
+                {showLocationTables ? 'Hide' : 'Show'} Details
+                <svg className={`w-4 h-4 ml-1 transform transition-transform ${showLocationTables ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
-                <p className="text-gray-500 dark:text-gray-400">Google Maps Integration</p>
-                <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">Configure API key to enable</p>
-              </div>
+              </button>
             </div>
+            
+            <InteractiveLocationMap
+              property={sampleProperty}
+              commuteAddress1={commuteAddress1}
+              commuteAddress2={commuteAddress2}
+              schools={locationData.schools}
+              entertainment={locationData.entertainment}
+              groceries={locationData.groceries}
+              height="300px"
+            />
+            
             <div className="mt-4 space-y-2">
               <div className="flex items-center text-sm">
                 <span className="w-3 h-3 bg-red-500 rounded-full mr-2"></span>
@@ -244,8 +287,16 @@ export default function RankFeedPage() {
                 <span className="text-gray-700 dark:text-gray-300">Commute Destinations</span>
               </div>
               <div className="flex items-center text-sm">
+                <span className="w-3 h-3 bg-yellow-500 rounded-full mr-2"></span>
+                <span className="text-gray-700 dark:text-gray-300">Schools</span>
+              </div>
+              <div className="flex items-center text-sm">
+                <span className="w-3 h-3 bg-purple-500 rounded-full mr-2"></span>
+                <span className="text-gray-700 dark:text-gray-300">Entertainment</span>
+              </div>
+              <div className="flex items-center text-sm">
                 <span className="w-3 h-3 bg-green-500 rounded-full mr-2"></span>
-                <span className="text-gray-700 dark:text-gray-300">Schools & Amenities</span>
+                <span className="text-gray-700 dark:text-gray-300">Groceries</span>
               </div>
             </div>
           </div>
@@ -277,6 +328,15 @@ export default function RankFeedPage() {
           </div>
         </div>
 
+        {/* Location Intelligence Tables (Collapsible) */}
+        {showLocationTables && (
+          <div className="mt-6 space-y-6">
+            <SchoolsTable schools={locationData.schools} />
+            <EntertainmentTable districts={locationData.entertainment} />
+            <GroceriesTable stores={locationData.groceries} />
+          </div>
+        )}
+        
         {/* Action Buttons */}
         <div className="mt-8 flex justify-center space-x-4">
           <button className="px-6 py-3 bg-red-100 text-red-700 rounded-lg hover:bg-red-200">

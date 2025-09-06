@@ -3,12 +3,14 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRequireAuth } from '@/hooks/useRequireAuth'
+import { MapProvider, useMapContext } from '@/contexts/MapContext'
+import PropertyMap from '@/components/map/PropertyMap'
 import SignInModal from '@/components/auth/SignInModal'
 import DemoBanner from '@/components/DemoBanner'
 
 const sampleProperties = [
   {
-    id: 1,
+    id: '1',
     address: "7525 E Gainey Ranch Rd #145",
     price: "$850,000",
     beds: 3,
@@ -17,10 +19,13 @@ const sampleProperties = [
     image: "/api/placeholder/400/300",
     avgRanking: 7.5,
     voted: 2,
-    favorite: true
+    favorite: true,
+    latitude: 33.5698,
+    longitude: -111.9192,
+    list_price: 850000
   },
   {
-    id: 2,
+    id: '2',
     address: "3120 N 38th St",
     price: "$1,200,000",
     beds: 4,
@@ -30,10 +35,13 @@ const sampleProperties = [
     avgRanking: 8.2,
     voted: 1,
     favorite: false,
-    imported: "Zillow"
+    imported: "Zillow",
+    latitude: 33.4895,
+    longitude: -112.0010,
+    list_price: 1200000
   },
   {
-    id: 3,
+    id: '3',
     address: "5420 E Lincoln Dr",
     price: "$2,500,000",
     beds: 5,
@@ -42,10 +50,13 @@ const sampleProperties = [
     image: "/api/placeholder/400/300",
     avgRanking: 6.8,
     voted: 2,
-    favorite: false
+    favorite: false,
+    latitude: 33.5322,
+    longitude: -111.9684,
+    list_price: 2500000
   },
   {
-    id: 4,
+    id: '4',
     address: "9820 N Central Ave",
     price: "$650,000",
     beds: 2,
@@ -54,16 +65,104 @@ const sampleProperties = [
     image: "/api/placeholder/400/300",
     avgRanking: 7.0,
     voted: 1,
-    favorite: true
+    favorite: true,
+    latitude: 33.5807,
+    longitude: -112.0738,
+    list_price: 650000
+  },
+  {
+    id: '5',
+    address: "4502 E Camelback Rd",
+    price: "$975,000",
+    beds: 3,
+    baths: 2,
+    sqft: 2100,
+    image: "/api/placeholder/400/300",
+    avgRanking: 7.3,
+    voted: 0,
+    favorite: false,
+    latitude: 33.5097,
+    longitude: -111.9867,
+    list_price: 975000
+  },
+  {
+    id: '6',
+    address: "2211 E Highland Ave",
+    price: "$1,100,000",
+    beds: 4,
+    baths: 3,
+    sqft: 2800,
+    image: "/api/placeholder/400/300",
+    avgRanking: 8.0,
+    voted: 1,
+    favorite: true,
+    latitude: 33.5062,
+    longitude: -112.0346,
+    list_price: 1100000
+  },
+  {
+    id: '7',
+    address: "6900 E Princess Dr",
+    price: "$3,200,000",
+    beds: 6,
+    baths: 5,
+    sqft: 5200,
+    image: "/api/placeholder/400/300",
+    avgRanking: 6.5,
+    voted: 0,
+    favorite: false,
+    latitude: 33.5859,
+    longitude: -111.9374,
+    list_price: 3200000
+  },
+  {
+    id: '8',
+    address: "1515 N 7th St",
+    price: "$550,000",
+    beds: 2,
+    baths: 1.5,
+    sqft: 1600,
+    image: "/api/placeholder/400/300",
+    avgRanking: 7.8,
+    voted: 2,
+    favorite: false,
+    latitude: 33.4649,
+    longitude: -112.0633,
+    list_price: 550000
   }
 ]
 
-export default function ListViewPage() {
+function ListViewContent() {
   const { user, loading, showSignIn, setShowSignIn } = useRequireAuth()
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [sortBy, setSortBy] = useState('ranking')
   const [filterFavorites, setFilterFavorites] = useState(false)
   const [properties, setProperties] = useState(sampleProperties)
+  const [showMap, setShowMap] = useState(false)
+  
+  const {
+    searchAreas,
+    filteredProperties,
+    isLoading: mapLoading,
+    clearAllAreas,
+    deleteSearchArea,
+    toggleAreaActive
+  } = useMapContext()
+
+  // Apply map filtering to properties if any areas are drawn
+  const [displayProperties, setDisplayProperties] = useState(sampleProperties)
+  
+  useEffect(() => {
+    if (searchAreas.length > 0 && filteredProperties.length > 0) {
+      // Filter properties based on map areas
+      const mapFiltered = properties.filter(prop =>
+        filteredProperties.some(fp => fp.property_id === prop.id)
+      )
+      setDisplayProperties(mapFiltered)
+    } else {
+      setDisplayProperties(properties)
+    }
+  }, [filteredProperties, searchAreas, properties])
 
   if (loading) {
     return (
@@ -73,7 +172,7 @@ export default function ListViewPage() {
     )
   }
 
-  const toggleFavorite = (id: number) => {
+  const toggleFavorite = (id: string) => {
     setProperties(prev => 
       prev.map(property => 
         property.id === id 
@@ -83,9 +182,14 @@ export default function ListViewPage() {
     )
   }
 
-  const filteredProperties = filterFavorites 
-    ? properties.filter(p => p.favorite)
-    : properties
+  const finalFilteredProperties = filterFavorites 
+    ? displayProperties.filter(p => p.favorite)
+    : displayProperties
+  
+  const handleAreaDrawn = (area: any) => {
+    console.log('New area drawn in list view:', area)
+    setShowMap(true) // Keep map open after drawing
+  }
 
   return (
     <div className="flex-1 bg-gray-50 dark:bg-gray-900 relative transition-colors">
@@ -148,6 +252,24 @@ export default function ListViewPage() {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center space-x-4">
               <button
+                onClick={() => setShowMap(!showMap)}
+                className={`px-4 py-2 rounded-lg flex items-center space-x-2 ${
+                  showMap 
+                    ? 'bg-blue-100 text-blue-700' 
+                    : 'bg-gray-100 text-gray-700'
+                }`}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                </svg>
+                <span>Map Filter</span>
+                {searchAreas.length > 0 && (
+                  <span className="bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full">
+                    {searchAreas.filter(a => a.is_active).length}
+                  </span>
+                )}
+              </button>
+              <button
                 onClick={() => setFilterFavorites(!filterFavorites)}
                 className={`px-4 py-2 rounded-lg ${
                   filterFavorites 
@@ -167,6 +289,18 @@ export default function ListViewPage() {
                 <option value="price-high">Price: High to Low</option>
                 <option value="newest">Newest First</option>
               </select>
+              {searchAreas.length > 0 && (
+                <button
+                  onClick={() => {
+                    if (confirm('Clear all map filters?')) {
+                      clearAllAreas()
+                    }
+                  }}
+                  className="text-sm text-red-600 hover:text-red-800"
+                >
+                  Clear Map Filters
+                </button>
+              )}
             </div>
             <div className="flex items-center space-x-2">
               <button
@@ -190,11 +324,74 @@ export default function ListViewPage() {
         </div>
       </div>
 
+      {/* Map Section (Collapsible) */}
+      {showMap && (
+        <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border-b dark:border-gray-700 relative z-10">
+          <div className="container mx-auto px-4 py-4">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+              <div className="lg:col-span-3">
+                <PropertyMap
+                  properties={sampleProperties}
+                  onAreaDrawn={handleAreaDrawn}
+                  height="400px"
+                />
+              </div>
+              <div className="lg:col-span-1">
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                  <h3 className="font-semibold mb-3 text-gray-900 dark:text-white">Active Filters</h3>
+                  {searchAreas.length === 0 ? (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      No areas drawn. Use the drawing tools on the map.
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {searchAreas.map(area => (
+                        <div
+                          key={area.id}
+                          className="p-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className={`font-medium ${area.is_active ? 'text-gray-900 dark:text-white' : 'text-gray-400'}`}>
+                              {area.area_name}
+                            </span>
+                            <button
+                              onClick={() => deleteSearchArea(area.id)}
+                              className="text-red-500 hover:text-red-700 text-xs"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                          <div className="flex items-center justify-between mt-1">
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {area.is_inclusion ? 'Include' : 'Exclude'}
+                            </span>
+                            <button
+                              onClick={() => toggleAreaActive(area.id)}
+                              className={`text-xs px-2 py-0.5 rounded ${
+                                area.is_active
+                                  ? 'bg-green-100 text-green-700'
+                                  : 'bg-gray-100 text-gray-700'
+                              }`}
+                            >
+                              {area.is_active ? 'Active' : 'Inactive'}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Property List */}
       <div className="container mx-auto px-4 py-8 relative z-10">
         {viewMode === 'grid' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredProperties.map(property => (
+            {finalFilteredProperties.map(property => (
               <div key={property.id} className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-lg shadow-lg overflow-hidden hover:shadow-2xl hover:scale-105 transition-all duration-300 transform">
                 <div className="relative">
                   <div className="bg-gray-200 h-48 flex items-center justify-center">
@@ -249,7 +446,7 @@ export default function ListViewPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {filteredProperties.map(property => (
+            {finalFilteredProperties.map(property => (
               <div key={property.id} className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-lg shadow-lg p-6 hover:shadow-2xl hover:scale-102 transition-all duration-300 transform">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-6">
@@ -317,5 +514,13 @@ export default function ListViewPage() {
         onSuccess={() => setShowSignIn(false)}
       />
     </div>
+  )
+}
+
+export default function ListViewPage() {
+  return (
+    <MapProvider>
+      <ListViewContent />
+    </MapProvider>
   )
 }
