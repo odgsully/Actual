@@ -101,6 +101,12 @@ export default function SignInModal({ isOpen, onClose, onSuccess }: SignInModalP
           </button>
         </form>
 
+        <div className="mt-4 text-center">
+          <a href="/auth/forgot-password" className="text-sm text-blue-600 hover:text-blue-800">
+            Forgot your password?
+          </a>
+        </div>
+
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600 dark:text-gray-400">
             Don't have an account?{' '}

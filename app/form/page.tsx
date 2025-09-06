@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
 import DemoBanner from '@/components/DemoBanner'
 import ResponseSummary from '@/components/form/ResponseSummary'
+import AuthLoadingScreen from '@/components/AuthLoadingScreen'
 
 const formPages = [
   {
@@ -97,15 +98,87 @@ export default function FormPage() {
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [email, setEmail] = useState('')
   const [isEditMode, setIsEditMode] = useState(false)
+  const [authVerified, setAuthVerified] = useState(false)
+  const [verificationComplete, setVerificationComplete] = useState(false)
+  
+  // Always show all 9 pages
+  const pagesToShow = formPages
+  
+  // Log auth state for debugging
+  console.log('[FormPage] Render - User:', user?.email || 'null', 'Loading:', loading, 'AuthVerified:', authVerified)
+
+  // Auth verification effect - ensures auth state is fully loaded
+  useEffect(() => {
+    console.log('[FormPage] Auth verification effect - loading:', loading, 'user:', user?.email)
+    if (!loading) {
+      // Auth loading is complete, but let's ensure state has propagated
+      // This 2-second delay matches our loading animation
+      console.log('[FormPage] Starting 2-second verification timer...')
+      const verificationTimer = setTimeout(() => {
+        console.log('[FormPage] Verification complete - user:', user?.email || 'still null')
+        
+        // If user just signed up, pre-populate their data on page 9
+        if (user) {
+          console.log('[FormPage] User authenticated, pre-populating form data')
+          setFormData(prev => ({
+            ...prev,
+            email: user.email || prev.email || '',
+            firstName: user.user_metadata?.firstName || prev.firstName || '',
+            lastName: user.user_metadata?.lastName || prev.lastName || ''
+          }))
+        }
+        
+        setAuthVerified(true)
+        setVerificationComplete(true)
+      }, 2000)
+      
+      return () => clearTimeout(verificationTimer)
+    }
+  }, [loading, user])
 
   // Check if user is editing existing preferences
   useEffect(() => {
-    if (user) {
+    // Wait for auth verification to complete
+    if (authVerified && user) {
       setIsEditMode(true)
+      
       // Load existing preferences if user is logged in
-      // This would fetch from database
+      fetch('/api/preferences/load')
+        .then(res => res.json())
+        .then(data => {
+          if (data.preferences) {
+            const prefs = data.preferences
+            setFormData(prev => ({
+              ...prev,
+              propertyType: prefs.property_type || '',
+              minSquareFootage: prefs.min_square_footage ? `${prefs.min_square_footage.toLocaleString()} sqft` : '',
+              minLotSize: prefs.min_lot_square_footage ? `${prefs.min_lot_square_footage.toLocaleString()} sqft` : '',
+              priceMin: prefs.price_range_min ? `$${prefs.price_range_min.toLocaleString()}` : '',
+              priceMax: prefs.price_range_max ? `$${prefs.price_range_max.toLocaleString()}` : '',
+              commuteAddress1: prefs.commute_address_1 || '',
+              commuteMinutes1: prefs.commute_max_minutes_1?.toString() || '',
+              commuteAddress2: prefs.commute_address_2 || '',
+              commuteMinutes2: prefs.commute_max_minutes_2?.toString() || '',
+              bedrooms: prefs.bedrooms_needed?.toString() || '',
+              bathrooms: prefs.bathrooms_needed?.toString() || '',
+              zipCodes: prefs.preferred_zip_codes?.join(', ') || '',
+              homeStyle: prefs.home_style === 'single-story' ? 'Single-story' : prefs.home_style === 'multi-level' ? 'Multi-level' : prefs.home_style || '',
+              pool: prefs.pool_preference === 'yes' ? 'Yes' : prefs.pool_preference === 'no' ? 'No' : prefs.pool_preference === 'neutral' ? 'Neutral' : '',
+              garageSpaces: prefs.min_garage_spaces?.toString() || '',
+              hoa: prefs.hoa_preference === 'need' ? 'Need' : prefs.hoa_preference === 'want' ? 'Want' : prefs.hoa_preference === 'neutral' ? 'Neutral' : prefs.hoa_preference === 'dont_need' ? "Don't Need" : prefs.hoa_preference === 'dont_want' ? "Don't Want" : '',
+              renovations: prefs.renovation_openness?.toString() || '',
+              currentAddress: prefs.current_residence_address || '',
+              worksWell: prefs.current_residence_works_well || '',
+              doesntWork: prefs.current_residence_doesnt_work || ''
+            }))
+            if (prefs.city_preferences) {
+              setSelectedCities(prefs.city_preferences)
+            }
+          }
+        })
+        .catch(err => console.error('Error loading preferences:', err))
     }
-  }, [user])
+  }, [authVerified, user])
 
   const handleInputChange = (name: string, value: string) => {
     setFormData(prev => ({ ...prev, [name]: value }))
@@ -120,7 +193,7 @@ export default function FormPage() {
   }
 
   const nextPage = () => {
-    if (currentPage < formPages.length - 1) {
+    if (currentPage < pagesToShow.length - 1) {
       setCurrentPage(currentPage + 1)
     }
   }
@@ -132,11 +205,32 @@ export default function FormPage() {
   }
 
   const handleSubmit = async () => {
-    if (isEditMode && user) {
+    // Always use /api/preferences/save for authenticated users
+    if (user && isAuthenticated) {
       // If user is logged in, save directly to their profile
-      // TODO: Implement save to user profile
-      setShowSuccessModal(true)
-    } else {
+      try {
+        const response = await fetch('/api/preferences/save', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            ...formData,
+            cities: selectedCities,
+          }),
+        })
+
+        if (response.ok) {
+          setShowSuccessModal(true)
+        } else {
+          const error = await response.json()
+          alert(error.error || 'Failed to save preferences')
+        }
+      } catch (error) {
+        console.error('Error saving preferences:', error)
+        alert('An error occurred. Please try again.')
+      }
+    } else if (!user && !loading) {
       // New user - submit to API for email verification
       try {
         const response = await fetch('/api/preferences/submit', {
@@ -168,8 +262,15 @@ export default function FormPage() {
     }
   }
 
-  const currentFormPage = formPages[currentPage]
-  const progress = ((currentPage + 1) / formPages.length) * 100
+  // Show enhanced loading screen while verifying auth state
+  if (loading || !verificationComplete) {
+    return <AuthLoadingScreen />
+  }
+  
+  const currentFormPage = pagesToShow[currentPage]
+  const progress = ((currentPage + 1) / pagesToShow.length) * 100
+  const isLastPage = currentPage === pagesToShow.length - 1
+  const isAuthenticated = !!user
 
   return (
     <div className="flex-1 bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 relative transition-colors">
@@ -207,7 +308,7 @@ export default function FormPage() {
             {/* Progress Bar */}
             <div className="mb-8">
               <div className="flex justify-between text-sm text-gray-600 mb-2">
-                <span>Step {currentPage + 1} of {formPages.length}</span>
+                <span>Step {currentPage + 1} of {pagesToShow.length}</span>
                 <span>{Math.round(progress)}% Complete</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
@@ -220,8 +321,14 @@ export default function FormPage() {
 
             {/* Form Content */}
             <div className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{currentFormPage.title}</h2>
-              <p className="text-gray-600 dark:text-gray-300 mb-6">{currentFormPage.description}</p>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                {isAuthenticated && currentPage === 0 ? 'Edit Your Preferences' : 
+                 (currentPage === 8 && isAuthenticated ? 'Confirm Your Information' : currentFormPage.title)}
+              </h2>
+              <p className="text-gray-600 dark:text-gray-300 mb-6">
+                {isAuthenticated && currentPage === 0 ? "Update your home search preferences" : 
+                 (currentPage === 8 && isAuthenticated ? 'Your account information has been automatically filled in. Please review before submitting.' : currentFormPage.description)}
+              </p>
 
               <div className="space-y-4">
                 {currentFormPage.fields.map((field) => (
@@ -233,6 +340,7 @@ export default function FormPage() {
                     {field.type === 'select' && (
                       <select 
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        value={formData[field.name] || ''}
                         onChange={(e) => handleInputChange(field.name, e.target.value)}
                       >
                         <option value="">Select...</option>
@@ -263,6 +371,7 @@ export default function FormPage() {
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         rows={4}
                         placeholder={field.placeholder}
+                        value={formData[field.name] || ''}
                         onChange={(e) => handleInputChange(field.name, e.target.value)}
                       />
                     )}
@@ -274,6 +383,7 @@ export default function FormPage() {
                           min={field.min}
                           max={field.max}
                           className="w-full"
+                          value={formData[field.name] || '3'}
                           onChange={(e) => handleInputChange(field.name, e.target.value)}
                         />
                         <div className="flex justify-between text-xs text-gray-500">
@@ -284,12 +394,25 @@ export default function FormPage() {
                     )}
 
                     {(field.type === 'text' || field.type === 'number' || field.type === 'email') && (
-                      <input
-                        type={field.type}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder={field.placeholder}
-                        onChange={(e) => handleInputChange(field.name, e.target.value)}
-                      />
+                      <>
+                        <input
+                          type={field.type}
+                          className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                            // Make email/name fields read-only on page 9 for authenticated users
+                            (currentPage === 8 && isAuthenticated && ['email', 'firstName', 'lastName'].includes(field.name))
+                              ? 'bg-gray-50 cursor-not-allowed'
+                              : ''
+                          }`}
+                          placeholder={field.placeholder}
+                          value={formData[field.name] || ''}
+                          onChange={(e) => handleInputChange(field.name, e.target.value)}
+                          readOnly={currentPage === 8 && isAuthenticated && ['email', 'firstName', 'lastName'].includes(field.name)}
+                        />
+                        {/* Show note for pre-filled fields */}
+                        {currentPage === 8 && isAuthenticated && ['email', 'firstName', 'lastName'].includes(field.name) && formData[field.name] && (
+                          <p className="text-xs text-gray-500 mt-1">✓ Auto-filled from your account</p>
+                        )}
+                      </>
                     )}
                   </div>
                 ))}
@@ -318,13 +441,13 @@ export default function FormPage() {
                 Previous
               </button>
 
-              {currentPage === formPages.length - 1 ? (
+              {isLastPage ? (
                 <button
                   onClick={handleSubmit}
                   className="px-6 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700"
-                  disabled={!formData.email || !formData.firstName || !formData.lastName}
+                  disabled={!isAuthenticated && (!formData.email || !formData.firstName || !formData.lastName)}
                 >
-                  {isEditMode ? 'Save Changes' : 'Submit & Create Account'}
+                  {isAuthenticated ? 'Submit My Preferences' : 'Submit & Create Account'}
                 </button>
               ) : (
                 <button
@@ -343,7 +466,9 @@ export default function FormPage() {
       {showSuccessModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg max-w-lg w-full p-6">
-            <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white text-center">Form Submit Successful</h2>
+            <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white text-center">
+              {isAuthenticated ? 'Preferences Updated!' : 'Form Submit Successful'}
+            </h2>
             <p className="text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">
               Please allow 3-4 hours for processing of on-market & coming soon properties based on your criteria. 
               Strongly consider signing into your preferred real estate search tool to migrate your Favorited 

@@ -4,10 +4,12 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
+import { createClient } from '@/lib/supabase/client'
 
 export default function SignUpPage() {
   const router = useRouter()
   const { signUp } = useAuth()
+  const supabase = createClient()
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -19,6 +21,7 @@ export default function SignUpPage() {
   })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target
@@ -49,7 +52,7 @@ export default function SignUpPage() {
     
     setLoading(true)
     
-    const { error } = await signUp(formData.email, formData.password, {
+    const { error, user } = await signUp(formData.email, formData.password, {
       firstName: formData.firstName,
       lastName: formData.lastName,
       marketingOptIn: formData.marketingOptIn,
@@ -59,8 +62,20 @@ export default function SignUpPage() {
     if (error) {
       setError(error.message)
       setLoading(false)
-    } else {
-      router.push('/form')
+    } else if (user) {
+      console.log('[SignUpPage] Signup successful - user:', user.email)
+      // Show success message
+      setSuccessMessage('Account created successfully! Redirecting to preferences...')
+      // Check session before redirect
+      console.log('[SignUpPage] Waiting before redirect...')
+      setTimeout(async () => {
+        // Verify session is established before redirecting
+        const { data: { session } } = await supabase.auth.getSession()
+        console.log('[SignUpPage] Session before redirect:', session ? `Valid - ${session.user.email}` : 'No session')
+        console.log('[SignUpPage] Using hard redirect to /form...')
+        // Use window.location for a hard redirect to ensure session persistence
+        window.location.href = '/form'
+      }, 1000)
     }
   }
 
@@ -221,6 +236,12 @@ export default function SignUpPage() {
               </div>
             )}
 
+            {successMessage && (
+              <div className="p-3 bg-green-100 border border-green-300 text-green-700 rounded-lg text-sm">
+                {successMessage}
+              </div>
+            )}
+
             <button
               type="submit"
               disabled={loading}
@@ -233,9 +254,9 @@ export default function SignUpPage() {
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               Already have an account?{' '}
-              <a href="#" className="text-blue-600 hover:text-blue-800 font-medium">
+              <Link href="/signin" className="text-blue-600 hover:text-blue-800 font-medium">
                 Sign In
-              </a>
+              </Link>
             </p>
           </div>
         </div>

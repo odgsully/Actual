@@ -25,8 +25,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const supabase = createClient()
 
   useEffect(() => {
+    console.log('[AuthContext] Initializing auth state...')
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser()
+      console.log('[AuthContext] Initial user check:', user ? `User: ${user.email}` : 'No user')
       setUser(user)
       setIsDemo(user?.email === 'support@wabbit-rank.ai')
       setLoading(false)
@@ -34,7 +36,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     getUser()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('[AuthContext] Auth state changed:', event, session?.user ? `User: ${session.user.email}` : 'No user')
       setUser(session?.user ?? null)
       setIsDemo(session?.user?.email === 'support@wabbit-rank.ai')
       setLoading(false)
@@ -76,25 +79,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (error) throw error
 
-      // Create user profile
+      // Create user profile using API route with service role
       if (data.user) {
-        const { error: profileError } = await supabase
-          .from('user_profiles')
-          .insert({
-            id: data.user.id,
+        const response = await fetch('/api/auth/signup', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: data.user.id,
             email: email,
-            first_name: metadata?.firstName || '',
-            last_name: metadata?.lastName || '',
-            privacy_accepted: metadata?.privacyAccepted || false,
-            marketing_opt_in: metadata?.marketingOptIn || false,
-          })
+            firstName: metadata?.firstName || '',
+            lastName: metadata?.lastName || '',
+            privacyAccepted: metadata?.privacyAccepted || false,
+            marketingOptIn: metadata?.marketingOptIn || false,
+          }),
+        })
+
+        const result = await response.json()
         
-        if (profileError) throw profileError
+        if (!response.ok) {
+          throw new Error(result.error || 'Failed to create profile')
+        }
+        
+        // Force refresh the session to ensure auth state is up to date
+        console.log('[AuthContext] Refreshing session after signup...')
+        const refreshResult = await supabase.auth.refreshSession()
+        console.log('[AuthContext] Session refresh result:', refreshResult.data.session ? 'Session active' : 'No session')
+        
+        // Get the current session to confirm it's established
+        const { data: sessionData } = await supabase.auth.getSession()
+        console.log('[AuthContext] Current session after signup:', sessionData.session ? `Valid - ${sessionData.session.user.email}` : 'Invalid')
       }
       
-      return { error: null }
+      return { error: null, user: data.user }
     } catch (error) {
-      return { error: error as Error }
+      return { error: error as Error, user: null }
     }
   }
 

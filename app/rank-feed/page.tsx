@@ -21,14 +21,6 @@ const sampleProperty = {
 
 export default function RankFeedPage() {
   const { user, loading, showSignIn, setShowSignIn } = useRequireAuth()
-  
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    )
-  }
   const [rankings, setRankings] = useState({
     priceValue: '',
     location: '',
@@ -42,6 +34,14 @@ export default function RankFeedPage() {
     turnkey: ''
   })
   const [isFavorite, setIsFavorite] = useState(sampleProperty.isFavorite)
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
 
   const rankingOrder = ['priceValue', 'location', 'layout', 'turnkey']
 
