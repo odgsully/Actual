@@ -545,13 +545,51 @@ function FormContent() {
 }
 
 function LocationMapSection() {
-  const { searchAreas, deleteSearchArea, toggleAreaActive } = useMapContext()
+  const { searchAreas, deleteSearchArea, toggleAreaActive, loadSearchAreas, isLoading } = useMapContext()
   const [showMapInstructions, setShowMapInstructions] = useState(true)
+  const [hasLoadedInitially, setHasLoadedInitially] = useState(false)
+  const [manualRefreshKey, setManualRefreshKey] = useState(0)
+  
+  // Load search areas when component mounts
+  useEffect(() => {
+    if (!hasLoadedInitially) {
+      console.log('LocationMapSection: Loading search areas...')
+      loadSearchAreas().then(() => {
+        console.log('LocationMapSection: Search areas loaded, count:', searchAreas.length)
+        setHasLoadedInitially(true)
+      })
+    }
+  }, [hasLoadedInitially, loadSearchAreas])
+
+  const handleRefreshMap = () => {
+    console.log('LocationMapSection: Manual refresh triggered')
+    setManualRefreshKey(prev => prev + 1)
+    loadSearchAreas()
+  }
   
   return (
     <div className="mt-8 border-t pt-6">
-      <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
-        Define Your Search Areas (Optional)
+      <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white flex items-center justify-between">
+        <span>
+          Define Your Search Areas (Optional)
+          {isLoading && (
+            <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
+              Loading saved areas...
+            </span>
+          )}
+          {!isLoading && searchAreas.length > 0 && (
+            <span className="ml-2 text-sm text-green-600 dark:text-green-400">
+              ({searchAreas.length} area{searchAreas.length !== 1 ? 's' : ''} loaded)
+            </span>
+          )}
+        </span>
+        <button
+          onClick={handleRefreshMap}
+          className="text-sm px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+          title="Refresh map areas"
+        >
+          🔄 Refresh Map
+        </button>
       </h3>
       
       {showMapInstructions && (
@@ -581,6 +619,7 @@ function LocationMapSection() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         <div className="lg:col-span-3">
           <PropertyMap
+            key={manualRefreshKey}
             properties={[]}
             height="400px"
             showPropertyMarkers={false}
