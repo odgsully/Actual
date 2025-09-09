@@ -11,6 +11,7 @@ export interface SearchArea {
   area_type: 'rectangle' | 'polygon' | 'circle'
   is_active: boolean
   is_inclusion: boolean
+  preference: 'prefer' | 'dislike' | 'curious' // New field for preference
   bounds: {
     north: number
     south: number
@@ -44,12 +45,14 @@ interface MapContextType {
   filteredProperties: PropertyWithArea[]
   isLoading: boolean
   isDrawing: boolean
+  isSaving: boolean // New state for saving indicator
   
   // Actions
   loadSearchAreas: () => Promise<void>
   saveSearchArea: (area: Omit<SearchArea, 'id' | 'created_at' | 'updated_at'>) => Promise<SearchArea | null>
   deleteSearchArea: (areaId: string) => Promise<boolean>
   toggleAreaActive: (areaId: string) => Promise<void>
+  updateAreaPreference: (areaId: string, preference: 'prefer' | 'dislike' | 'curious') => Promise<void>
   setActiveAreaIds: (ids: string[]) => void
   filterPropertiesByAreas: (areaIds?: string[]) => Promise<void>
   countPropertiesInGeometry: (geojson: any) => Promise<{ total: number; included: number; excluded: number }>
@@ -66,6 +69,7 @@ export function MapProvider({ children }: { children: React.ReactNode }) {
   const [filteredProperties, setFilteredProperties] = useState<PropertyWithArea[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isDrawing, setIsDrawing] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
   
   const supabase = createClient()
 
@@ -147,6 +151,7 @@ export function MapProvider({ children }: { children: React.ReactNode }) {
       // Create a new area with a unique ID
       const newArea: SearchArea = {
         ...area,
+        preference: area.preference || 'curious', // Default to 'curious' if not set
         id: `area-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -310,6 +315,51 @@ export function MapProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user, supabase, searchAreas])
 
+  // Update area preference
+  const updateAreaPreference = useCallback(async (
+    areaId: string, 
+    preference: 'prefer' | 'dislike' | 'curious'
+  ) => {
+    console.log('MapContext: Updating area preference:', areaId, preference)
+    setIsSaving(true)
+    
+    try {
+      // Update local state immediately for responsive UI
+      setSearchAreas(prev => prev.map(area => 
+        area.id === areaId 
+          ? { ...area, preference, updated_at: new Date().toISOString() }
+          : area
+      ))
+
+      // If user is logged in and it's a database area, try to update in Supabase
+      if (user && !areaId.startsWith('area-')) {
+        try {
+          const { error } = await supabase
+            .from('user_search_areas')
+            .update({ 
+              preference,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', areaId)
+            .eq('user_id', user.id)
+
+          if (error) {
+            console.error('Error updating preference in database:', error)
+            // Continue with local update even if database fails
+          }
+        } catch (dbError) {
+          console.log('Updating preference locally only')
+        }
+      }
+
+      // Simulate save delay for visual feedback
+      setTimeout(() => setIsSaving(false), 500)
+    } catch (error) {
+      console.error('Error updating area preference:', error)
+      setIsSaving(false)
+    }
+  }, [user, supabase])
+
   // Filter properties by active areas
   const filterPropertiesByAreas = useCallback(async (areaIds?: string[]) => {
     if (!user) {
@@ -424,10 +474,12 @@ export function MapProvider({ children }: { children: React.ReactNode }) {
       filteredProperties,
       isLoading,
       isDrawing,
+      isSaving,
       loadSearchAreas,
       saveSearchArea,
       deleteSearchArea,
       toggleAreaActive,
+      updateAreaPreference,
       setActiveAreaIds,
       filterPropertiesByAreas,
       countPropertiesInGeometry,

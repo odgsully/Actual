@@ -3,7 +3,10 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRequireAuth } from '@/hooks/useRequireAuth'
+import { MapProvider, useMapContext } from '@/contexts/MapContext'
 import InteractiveLocationMap from '@/components/map/InteractiveLocationMap'
+import PropertyMap from '@/components/map/PropertyMap'
+import MapFilterDropdown from '@/components/map/MapFilterDropdown'
 import SchoolsTable from '@/components/map/SchoolsTable'
 import EntertainmentTable from '@/components/map/EntertainmentTable'
 import GroceriesTable from '@/components/map/GroceriesTable'
@@ -29,8 +32,9 @@ const sampleProperty = {
 }
 
 
-export default function RankFeedPage() {
+function RankFeedContent() {
   const { user, loading, showSignIn, setShowSignIn } = useRequireAuth()
+  const [showMapFilter, setShowMapFilter] = useState(false)
   const [rankings, setRankings] = useState({
     priceValue: '',
     location: '',
@@ -160,6 +164,29 @@ export default function RankFeedPage() {
           </div>
         </div>
       </div>
+
+      {/* Map Filter Bar */}
+      <div className="bg-white/90 backdrop-blur-sm shadow-sm border-b relative z-10">
+        <div className="container mx-auto px-4 py-3">
+          <MapFilterDropdown 
+            showMap={showMapFilter}
+            onToggleMap={() => setShowMapFilter(!showMapFilter)}
+          />
+        </div>
+      </div>
+
+      {/* Map Filter Section (Collapsible) */}
+      {showMapFilter && (
+        <div className="bg-white/90 backdrop-blur-sm border-b shadow-md relative z-10">
+          <div className="container mx-auto px-4 py-4">
+            <PropertyMap
+              properties={[sampleProperty]}
+              onAreaDrawn={(area) => console.log('Area drawn:', area)}
+              height="400px"
+            />
+          </div>
+        </div>
+      )}
 
       {/* Main Content - 4 Tile Layout */}
       <div className="container mx-auto px-4 py-8 relative z-10">
@@ -358,5 +385,13 @@ export default function RankFeedPage() {
         onSuccess={() => setShowSignIn(false)}
       />
     </div>
+  )
+}
+
+export default function RankFeedPage() {
+  return (
+    <MapProvider>
+      <RankFeedContent />
+    </MapProvider>
   )
 }

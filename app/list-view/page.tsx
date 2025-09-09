@@ -5,8 +5,10 @@ import Link from 'next/link'
 import { useRequireAuth } from '@/hooks/useRequireAuth'
 import { MapProvider, useMapContext } from '@/contexts/MapContext'
 import PropertyMap from '@/components/map/PropertyMap'
+import MapFilterDropdown from '@/components/map/MapFilterDropdown'
 import SignInModal from '@/components/auth/SignInModal'
 import DemoBanner from '@/components/DemoBanner'
+import { createClient } from '@/lib/supabase/client'
 
 const sampleProperties = [
   {
@@ -137,8 +139,9 @@ function ListViewContent() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [sortBy, setSortBy] = useState('ranking')
   const [filterFavorites, setFilterFavorites] = useState(false)
-  const [properties, setProperties] = useState(sampleProperties)
+  const [properties, setProperties] = useState<any[]>([])
   const [showMap, setShowMap] = useState(false)
+  const [loadingProperties, setLoadingProperties] = useState(true)
   
   const {
     searchAreas,
@@ -150,8 +153,61 @@ function ListViewContent() {
   } = useMapContext()
 
   // Apply map filtering to properties if any areas are drawn
-  const [displayProperties, setDisplayProperties] = useState(sampleProperties)
+  const [displayProperties, setDisplayProperties] = useState<any[]>([])
   
+  // Fetch properties from database
+  useEffect(() => {
+    async function fetchProperties() {
+      setLoadingProperties(true)
+      const supabase = createClient()
+      
+      const { data, error } = await supabase
+        .from('properties')
+        .select('*')
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(20)
+      
+      if (!error && data && data.length > 0) {
+        // Transform database properties to match component format
+        const transformedProperties = data.map(prop => ({
+          id: prop.id,
+          address: prop.address,
+          price: `$${prop.list_price?.toLocaleString() || '0'}`,
+          beds: prop.bedrooms || 0,
+          baths: prop.bathrooms || 0,
+          sqft: prop.square_footage || 0,
+          image: '/api/placeholder/400/300',
+          avgRanking: Math.round((Math.random() * 3 + 6) * 10) / 10, // Random 6.0-9.0 for demo
+          voted: 0,
+          favorite: false,
+          latitude: prop.latitude || 33.5,
+          longitude: prop.longitude || -111.9,
+          list_price: prop.list_price || 0,
+          city: prop.city,
+          state: prop.state,
+          zip_code: prop.zip_code,
+          property_type: prop.property_type,
+          year_built: prop.year_built,
+          has_pool: prop.has_pool,
+          garage_spaces: prop.garage_spaces
+        }))
+        
+        setProperties(transformedProperties)
+        setDisplayProperties(transformedProperties)
+      } else {
+        // Fallback to sample properties if no data or error
+        console.log('No properties found or error, using samples:', error)
+        setProperties(sampleProperties)
+        setDisplayProperties(sampleProperties)
+      }
+      
+      setLoadingProperties(false)
+    }
+    
+    fetchProperties()
+  }, [])
+
   useEffect(() => {
     if (searchAreas.length > 0 && filteredProperties.length > 0) {
       // Filter properties based on map areas
@@ -164,7 +220,7 @@ function ListViewContent() {
     }
   }, [filteredProperties, searchAreas, properties])
 
-  if (loading) {
+  if (loading || loadingProperties) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -249,76 +305,53 @@ function ListViewContent() {
       {/* Filters and Controls */}
       <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border-b dark:border-gray-700 relative z-10">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => setShowMap(!showMap)}
-                className={`px-4 py-2 rounded-lg flex items-center space-x-2 ${
-                  showMap 
-                    ? 'bg-blue-100 text-blue-700' 
-                    : 'bg-gray-100 text-gray-700'
-                }`}
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                </svg>
-                <span>Map Filter</span>
-                {searchAreas.length > 0 && (
-                  <span className="bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full">
-                    {searchAreas.filter(a => a.is_active).length}
-                  </span>
-                )}
-              </button>
-              <button
-                onClick={() => setFilterFavorites(!filterFavorites)}
-                className={`px-4 py-2 rounded-lg ${
-                  filterFavorites 
-                    ? 'bg-yellow-100 text-yellow-700' 
-                    : 'bg-gray-100 text-gray-700'
-                }`}
-              >
-                ⭐ Favorites Only
-              </button>
-              <select 
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="px-4 py-2 border rounded-lg"
-              >
-                <option value="ranking">Sort by Ranking</option>
-                <option value="price-low">Price: Low to High</option>
-                <option value="price-high">Price: High to Low</option>
-                <option value="newest">Newest First</option>
-              </select>
-              {searchAreas.length > 0 && (
+          <div className="flex flex-col gap-4">
+            {/* Main Controls Row */}
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center space-x-4">
+                <MapFilterDropdown 
+                  showMap={showMap}
+                  onToggleMap={() => setShowMap(!showMap)}
+                />
                 <button
-                  onClick={() => {
-                    if (confirm('Clear all map filters?')) {
-                      clearAllAreas()
-                    }
-                  }}
-                  className="text-sm text-red-600 hover:text-red-800"
+                  onClick={() => setFilterFavorites(!filterFavorites)}
+                  className={`px-4 py-2 rounded-lg ${
+                    filterFavorites 
+                      ? 'bg-yellow-100 text-yellow-700' 
+                      : 'bg-gray-100 text-gray-700'
+                  }`}
                 >
-                  Clear Map Filters
+                  ⭐ Favorites Only
                 </button>
-              )}
-            </div>
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p-2 rounded ${viewMode === 'grid' ? 'bg-blue-100 text-blue-600' : 'text-gray-400'}`}
-              >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM13 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2h-2z" />
-                </svg>
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-2 rounded ${viewMode === 'list' ? 'bg-blue-100 text-blue-600' : 'text-gray-400'}`}
-              >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-                </svg>
-              </button>
+                <select 
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="px-4 py-2 border rounded-lg"
+                >
+                  <option value="ranking">Sort by Ranking</option>
+                  <option value="price-low">Price: Low to High</option>
+                  <option value="price-high">Price: High to Low</option>
+                  <option value="newest">Newest First</option>
+                </select>
+              </div>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`p-2 rounded ${viewMode === 'grid' ? 'bg-blue-100 text-blue-600' : 'text-gray-400'}`}
+                >
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM13 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2h-2z" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-2 rounded ${viewMode === 'list' ? 'bg-blue-100 text-blue-600' : 'text-gray-400'}`}
+                >
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -328,61 +361,11 @@ function ListViewContent() {
       {showMap && (
         <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border-b dark:border-gray-700 relative z-10">
           <div className="container mx-auto px-4 py-4">
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-              <div className="lg:col-span-3">
-                <PropertyMap
-                  properties={sampleProperties}
-                  onAreaDrawn={handleAreaDrawn}
-                  height="400px"
-                />
-              </div>
-              <div className="lg:col-span-1">
-                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                  <h3 className="font-semibold mb-3 text-gray-900 dark:text-white">Active Filters</h3>
-                  {searchAreas.length === 0 ? (
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      No areas drawn. Use the drawing tools on the map.
-                    </p>
-                  ) : (
-                    <div className="space-y-2">
-                      {searchAreas.map(area => (
-                        <div
-                          key={area.id}
-                          className="p-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm"
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className={`font-medium ${area.is_active ? 'text-gray-900 dark:text-white' : 'text-gray-400'}`}>
-                              {area.area_name}
-                            </span>
-                            <button
-                              onClick={() => deleteSearchArea(area.id)}
-                              className="text-red-500 hover:text-red-700 text-xs"
-                            >
-                              Remove
-                            </button>
-                          </div>
-                          <div className="flex items-center justify-between mt-1">
-                            <span className="text-xs text-gray-500 dark:text-gray-400">
-                              {area.is_inclusion ? 'Include' : 'Exclude'}
-                            </span>
-                            <button
-                              onClick={() => toggleAreaActive(area.id)}
-                              className={`text-xs px-2 py-0.5 rounded ${
-                                area.is_active
-                                  ? 'bg-green-100 text-green-700'
-                                  : 'bg-gray-100 text-gray-700'
-                              }`}
-                            >
-                              {area.is_active ? 'Active' : 'Inactive'}
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+            <PropertyMap
+              properties={properties}
+              onAreaDrawn={handleAreaDrawn}
+              height="400px"
+            />
           </div>
         </div>
       )}

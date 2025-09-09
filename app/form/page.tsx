@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
 import { MapProvider, useMapContext } from '@/contexts/MapContext'
 import PropertyMap from '@/components/map/PropertyMap'
+import MapFilterDropdown from '@/components/map/MapFilterDropdown'
 import DemoBanner from '@/components/DemoBanner'
 import ResponseSummary from '@/components/form/ResponseSummary'
 import AuthLoadingScreen from '@/components/AuthLoadingScreen'
@@ -546,7 +547,7 @@ function FormContent() {
 }
 
 function LocationMapSection() {
-  const { searchAreas, deleteSearchArea, toggleAreaActive, loadSearchAreas, isLoading } = useMapContext()
+  const { searchAreas, deleteSearchArea, toggleAreaActive, updateAreaPreference, loadSearchAreas, isLoading } = useMapContext()
   const [showMapInstructions, setShowMapInstructions] = useState(true)
   const [hasLoadedInitially, setHasLoadedInitially] = useState(false)
   const [manualRefreshKey, setManualRefreshKey] = useState(0)
@@ -570,28 +571,26 @@ function LocationMapSection() {
   
   return (
     <div className="mt-8 border-t pt-6">
-      <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white flex items-center justify-between">
-        <span>
-          Define Your Search Areas (Optional)
-          {isLoading && (
-            <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
-              Loading saved areas...
-            </span>
-          )}
-          {!isLoading && searchAreas.length > 0 && (
-            <span className="ml-2 text-sm text-green-600 dark:text-green-400">
-              ({searchAreas.length} area{searchAreas.length !== 1 ? 's' : ''} loaded)
-            </span>
-          )}
-        </span>
-        <button
-          onClick={handleRefreshMap}
-          className="text-sm px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
-          title="Refresh map areas"
-        >
-          🔄 Refresh Map
-        </button>
+      <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
+        Define Your Search Areas (Optional)
+        {isLoading && (
+          <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
+            Loading saved areas...
+          </span>
+        )}
+        {!isLoading && searchAreas.length > 0 && (
+          <span className="ml-2 text-sm text-green-600 dark:text-green-400">
+            ({searchAreas.length} area{searchAreas.length !== 1 ? 's' : ''} loaded)
+          </span>
+        )}
       </h3>
+      
+      {/* Map Filter Dropdown for drawn areas */}
+      {searchAreas.length > 0 && (
+        <div className="mb-4">
+          <MapFilterDropdown />
+        </div>
+      )}
       
       {showMapInstructions && (
         <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
