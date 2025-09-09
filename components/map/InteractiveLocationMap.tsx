@@ -76,7 +76,7 @@ const InteractiveLocationMap: React.FC<InteractiveLocationMapProps> = ({
         if (!isMounted || !mapRef.current) return
 
         // Create map centered on property
-        const mapInstance = new google.Map(mapRef.current, {
+        const mapInstance = new google.maps.Map(mapRef.current, {
           center: { lat: property.latitude, lng: property.longitude },
           zoom: 13,
           mapTypeId: 'roadmap',
@@ -95,19 +95,19 @@ const InteractiveLocationMap: React.FC<InteractiveLocationMapProps> = ({
         setMap(mapInstance)
 
         // Create info window
-        const infoWindowInstance = new google.InfoWindow()
+        const infoWindowInstance = new google.maps.InfoWindow()
         setInfoWindow(infoWindowInstance)
 
         const newMarkers: google.maps.Marker[] = []
 
         // Add property marker (red)
-        const propertyMarker = new google.Marker({
+        const propertyMarker = new google.maps.Marker({
           position: { lat: property.latitude, lng: property.longitude },
           map: mapInstance,
           title: property.address,
           icon: {
             url: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
-            scaledSize: new google.Size(40, 40)
+            scaledSize: new google.maps.Size(40, 40)
           },
           zIndex: 100
         })
@@ -127,13 +127,13 @@ const InteractiveLocationMap: React.FC<InteractiveLocationMapProps> = ({
         // Add commute address markers (blue)
         if (commuteAddress1?.address) {
           // For demo, use a sample location near Phoenix
-          const commute1Marker = new google.Marker({
+          const commute1Marker = new google.maps.Marker({
             position: { lat: 33.4484, lng: -112.0740 }, // Downtown Phoenix
             map: mapInstance,
             title: `Commute 1: ${commuteAddress1.address}`,
             icon: {
               url: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
-              scaledSize: new google.Size(32, 32)
+              scaledSize: new google.maps.Size(32, 32)
             },
             zIndex: 90
           })
@@ -155,13 +155,13 @@ const InteractiveLocationMap: React.FC<InteractiveLocationMapProps> = ({
 
         if (commuteAddress2?.address) {
           // For demo, use another sample location
-          const commute2Marker = new google.Marker({
+          const commute2Marker = new google.maps.Marker({
             position: { lat: 33.5093, lng: -111.8903 }, // Scottsdale
             map: mapInstance,
             title: `Commute 2: ${commuteAddress2.address}`,
             icon: {
               url: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
-              scaledSize: new google.Size(32, 32)
+              scaledSize: new google.maps.Size(32, 32)
             },
             zIndex: 89
           })
@@ -184,13 +184,13 @@ const InteractiveLocationMap: React.FC<InteractiveLocationMapProps> = ({
         // Add school markers (yellow)
         schools.forEach((school, index) => {
           if (school.latitude && school.longitude) {
-            const schoolMarker = new google.Marker({
+            const schoolMarker = new google.maps.Marker({
               position: { lat: school.latitude, lng: school.longitude },
               map: mapInstance,
               title: school.name,
               icon: {
                 url: 'http://maps.google.com/mapfiles/ms/icons/yellow-dot.png',
-                scaledSize: new google.Size(24, 24)
+                scaledSize: new google.maps.Size(24, 24)
               },
               zIndex: 70
             })
@@ -215,13 +215,13 @@ const InteractiveLocationMap: React.FC<InteractiveLocationMapProps> = ({
         // Add entertainment district markers (purple)
         entertainment.forEach((district) => {
           if (district.latitude && district.longitude) {
-            const entertainmentMarker = new google.Marker({
+            const entertainmentMarker = new google.maps.Marker({
               position: { lat: district.latitude, lng: district.longitude },
               map: mapInstance,
               title: district.name,
               icon: {
                 url: 'http://maps.google.com/mapfiles/ms/icons/purple-dot.png',
-                scaledSize: new google.Size(24, 24)
+                scaledSize: new google.maps.Size(24, 24)
               },
               zIndex: 60
             })
@@ -244,13 +244,13 @@ const InteractiveLocationMap: React.FC<InteractiveLocationMapProps> = ({
         // Add grocery store markers (green)
         groceries.forEach((store) => {
           if (store.latitude && store.longitude) {
-            const groceryMarker = new google.Marker({
+            const groceryMarker = new google.maps.Marker({
               position: { lat: store.latitude, lng: store.longitude },
               map: mapInstance,
               title: store.name,
               icon: {
                 url: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png',
-                scaledSize: new google.Size(24, 24)
+                scaledSize: new google.maps.Size(24, 24)
               },
               zIndex: 50
             })
@@ -274,7 +274,7 @@ const InteractiveLocationMap: React.FC<InteractiveLocationMapProps> = ({
 
         // Adjust bounds to show all markers
         if (newMarkers.length > 1) {
-          const bounds = new google.LatLngBounds()
+          const bounds = new google.maps.LatLngBounds()
           newMarkers.forEach(marker => {
             const position = marker.getPosition()
             if (position) bounds.extend(position)
@@ -282,7 +282,7 @@ const InteractiveLocationMap: React.FC<InteractiveLocationMapProps> = ({
           mapInstance.fitBounds(bounds)
           
           // Ensure we don't zoom in too much
-          const listener = google.event.addListenerOnce(mapInstance, 'idle', () => {
+          const listener = google.maps.event.addListenerOnce(mapInstance, 'idle', () => {
             const currentZoom = mapInstance.getZoom()
             if (currentZoom && currentZoom > 14) {
               mapInstance.setZoom(14)

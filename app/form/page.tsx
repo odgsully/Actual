@@ -26,6 +26,7 @@ interface FormPage {
   description: string
   fields: FormField[]
   showSummary?: boolean
+  showMap?: boolean
 }
 
 const formPages: FormPage[] = [
@@ -142,7 +143,7 @@ function FormContent() {
         // If user just signed up, pre-populate their data on page 9
         if (user) {
           console.log('[FormPage] User authenticated, pre-populating form data')
-          setFormData(prev => ({
+          setFormData((prev: any) => ({
             ...prev,
             email: user.email || prev.email || '',
             firstName: user.user_metadata?.firstName || prev.firstName || '',
@@ -170,7 +171,7 @@ function FormContent() {
         .then(data => {
           if (data.preferences) {
             const prefs = data.preferences
-            setFormData(prev => ({
+            setFormData((prev: any) => ({
               ...prev,
               propertyType: prefs.property_type || '',
               minSquareFootage: prefs.min_square_footage ? `${prefs.min_square_footage.toLocaleString()} sqft` : '',
@@ -219,9 +220,9 @@ function FormContent() {
     if (isCurrency) {
       // Format currency inputs
       const formattedValue = formatCurrency(value)
-      setFormData(prev => ({ ...prev, [name]: formattedValue }))
+      setFormData((prev: any) => ({ ...prev, [name]: formattedValue }))
     } else {
-      setFormData(prev => ({ ...prev, [name]: value }))
+      setFormData((prev: any) => ({ ...prev, [name]: value }))
     }
   }
 

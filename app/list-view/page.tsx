@@ -407,18 +407,6 @@ function ListViewContent() {
                       ⭐
                     </span>
                   </button>
-                  <div className="absolute top-2 left-2 space-y-1">
-                    {property.voted === 2 && (
-                      <span className="block bg-green-500 text-white px-2 py-1 rounded text-xs">
-                        2 Voted
-                      </span>
-                    )}
-                    {(property as any).imported && (
-                      <span className="block bg-blue-600 text-white px-2 py-1 rounded text-xs">
-                        {(property as any).imported} Imported
-                      </span>
-                    )}
-                  </div>
                 </div>
                 <div className="p-4">
                   <h3 className="font-semibold text-lg mb-2">{property.address}</h3>
@@ -474,18 +462,6 @@ function ListViewContent() {
                         ⭐
                       </span>
                     </button>
-                    <div className="flex flex-col space-y-2">
-                      {property.voted === 2 && (
-                        <span className="bg-green-500 text-white px-3 py-1 rounded text-sm">
-                          2 Voted
-                        </span>
-                      )}
-                      {(property as any).imported && (
-                        <span className="bg-blue-600 text-white px-3 py-1 rounded text-sm">
-                          {(property as any).imported} Imported
-                        </span>
-                      )}
-                    </div>
                     <div className="text-center">
                       <p className="text-sm text-gray-500 dark:text-gray-400">Avg Score</p>
                       <p className="text-2xl font-bold text-blue-600">{property.avgRanking}</p>

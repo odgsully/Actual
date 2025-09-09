@@ -4,20 +4,24 @@ import { NextResponse } from 'next/server'
 // SECURITY WARNING: This endpoint should be protected in production!
 // Add authentication, rate limiting, and logging
 
-// Create admin client with service role key (bypasses RLS)
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
+function getSupabaseAdmin() {
+  // Create admin client with service role key (bypasses RLS)
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
     }
-  }
-)
+  )
+}
 
 export async function DELETE(request: Request) {
   try {
+    const supabaseAdmin = getSupabaseAdmin()
+    
     // IMPORTANT: Add your own authentication here!
     // For now, we'll check for a simple admin key in headers
     const adminKey = request.headers.get('X-Admin-Key')
@@ -158,6 +162,8 @@ export async function DELETE(request: Request) {
 // GET method to check if user exists
 export async function GET(request: Request) {
   try {
+    const supabaseAdmin = getSupabaseAdmin()
+    
     const { searchParams } = new URL(request.url)
     const email = searchParams.get('email')
     

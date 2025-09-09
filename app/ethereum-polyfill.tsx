@@ -2,6 +2,12 @@
 
 import { useEffect } from 'react'
 
+declare global {
+  interface Window {
+    ethereum?: any;
+  }
+}
+
 export default function EthereumPolyfill() {
   useEffect(() => {
     // Create a safe mock for window.ethereum on mobile devices

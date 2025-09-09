@@ -164,8 +164,94 @@ Before deployment, verify:
 - [ ] Email verification sends (check console in dev)
 - [ ] Token-based setup flow works
 - [ ] All routes load without errors
+- [ ] Property scrapers work (`/api/scrape/test`)
+- [ ] Vercel cron jobs are configured
+- [ ] Health monitoring is active
 
 ### Branch Guidelines
 - **USE**: `main` branch (verified working)
 - **DO NOT USE**: `clean-deployment` (corrupted, missing files)
 - **ALTERNATIVE**: `deployment-config` (has deployment files)
+
+## Vercel Deployment Status (January 9, 2025)
+
+### Current Status
+- **Project**: wabbit-property-scraping (linked to Vercel)
+- **Account**: odgsullys-projects (Pro Plan Active)
+- **Branch**: populate-property-scraped
+- **Environment Variables**: All configured in Vercel Dashboard
+- **Google Maps API**: Secured with domain restrictions
+- **Ready for**: `vercel --prod --force` deployment
+
+### Known Limitations
+- Google Maps doesn't work on Vercel preview deployments (wildcard pattern not supported)
+- Pro plan required for hourly cron jobs
+
+## Property Scraping System (January 9, 2025)
+
+### Overview
+Complete property scraping and filtering system for Maricopa County, Arizona with automated hourly updates via Vercel Cron.
+
+### Scraping Capabilities
+- **Sources**: Zillow, Redfin, Homes.com
+- **Rate Limits**: 100-150 requests/hour per source
+- **Processing**: 300-450 properties/hour total
+- **Coverage**: 50+ Maricopa County cities, 100+ ZIP codes
+- **Filtering**: Automatic Maricopa County validation
+
+### Key Components
+- **Scrapers**: `/lib/scraping/scrapers/` (Playwright-based)
+- **Queue Manager**: `/lib/scraping/queue-manager.ts`
+- **Data Normalizer**: `/lib/pipeline/data-normalizer.ts`
+- **Property Manager**: `/lib/database/property-manager.ts`
+- **Image Optimizer**: `/lib/storage/image-optimizer.ts`
+- **Notifier**: `/lib/notifications/property-notifier.ts`
+
+### Vercel Cron Jobs
+Configured in `vercel.json`:
+- **Hourly Scrape**: `0 * * * *` - Updates properties
+- **Daily Cleanup**: `0 3 * * *` - Database maintenance
+- **Health Check**: `*/15 * * * *` - System monitoring
+
+### API Endpoints
+- `/api/cron/hourly-scrape` - Automated property updates
+- `/api/cron/daily-cleanup` - Data cleanup
+- `/api/cron/check-health` - Health monitoring
+- `/api/scrape/on-demand` - User-triggered scraping
+- `/api/scrape/test` - Development testing
+- `/api/admin/monitoring` - Admin dashboard
+
+### User Features
+- On-demand scraping with quota (10/hour free tier)
+- Instant notifications for matches >70% score
+- Price drop alerts for favorited properties
+- Preference-based automatic matching
+
+### Database Tables (New)
+Run `migrations/002_add_scraping_tables.sql` for:
+- `property_notifications` - User alerts
+- `notification_queue` - Email digest queue
+- `user_notification_preferences` - Settings
+- `user_scraping_quota` - Usage limits
+- `scraping_metrics` - Performance tracking
+- `property_price_history` - Price tracking
+
+### Testing Scrapers
+```bash
+# Test Zillow scraper
+curl -X POST http://localhost:3000/api/scrape/test \
+  -H "Content-Type: application/json" \
+  -d '{"source": "zillow", "searchCriteria": {"city": "Scottsdale"}}'
+
+# Check system health
+curl http://localhost:3000/api/cron/check-health
+```
+
+### Required Environment Variables (Additional)
+- `CRON_SECRET` - Vercel cron authentication
+- `ALERT_WEBHOOK_URL` - Optional monitoring webhook
+
+### Deployment Note
+After deploying to Vercel, verify cron jobs are active in Vercel Dashboard → Functions → Cron.
+
+For detailed implementation status, see `SCRAPING_SYSTEM_STATUS.md`.

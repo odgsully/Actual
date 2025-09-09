@@ -12,8 +12,9 @@ This is the **verified working version** restored from the `main` branch. The pr
 - Node.js 18.17.0 or higher
 - npm or yarn
 - Supabase account (for database)
-- Google Maps API key (for mapping features)
+- Google Maps API key (for mapping features - see limitations below)
 - OpenAI API key (for location intelligence)
+- Vercel Pro account (required for hourly cron jobs)
 
 ### Installation
 
@@ -35,6 +36,21 @@ npm run dev
 
 4. **Open your browser:**
 Navigate to [http://localhost:3000](http://localhost:3000)
+
+## 🚨 Known Limitations
+
+### Google Maps API on Vercel Preview Deployments
+- **Issue**: Google Cloud Console doesn't support wildcard subdomain patterns (e.g., `https://wabbit-property-scraping-*.vercel.app/*`)
+- **Impact**: Google Maps won't work on Vercel preview/branch deployments
+- **Workaround**: Test map features locally or in production only
+- **Allowed Domains**:
+  - Production: `https://wabbit-property-scraping.vercel.app/*`
+  - Local Development: `http://localhost:3000/*` and `http://localhost:3001/*`
+
+### Vercel Deployment Requirements
+- **Hobby Plan**: Limited to daily cron jobs only
+- **Pro Plan**: Required for hourly property scraping (cron jobs that run more than once per day)
+- **Function Timeout**: 300 seconds max on Pro plan
 
 ## Available Scripts
 

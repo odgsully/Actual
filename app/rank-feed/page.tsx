@@ -47,7 +47,7 @@ export default function RankFeedPage() {
   const [showLocationTables, setShowLocationTables] = useState(false)
   
   // Fetch location data
-  const [locationData, setLocationData] = useState({
+  const [locationData, setLocationData] = useState<any>({
     schools: [],
     entertainment: [],
     groceries: []

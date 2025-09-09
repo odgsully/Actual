@@ -52,12 +52,15 @@ export default function SignUpPage() {
     
     setLoading(true)
     
-    const { error, user } = await signUp(formData.email, formData.password, {
+    const result = await signUp(formData.email, formData.password, {
       firstName: formData.firstName,
       lastName: formData.lastName,
       marketingOptIn: formData.marketingOptIn,
       privacyAccepted: formData.privacyAccepted
     })
+    
+    const error = result.error
+    const user = (result as any).user
     
     if (error) {
       setError(error.message)

@@ -63,3 +63,4 @@ __tests__/spatial/api-endpoints.test.ts
 __tests__/spatial/geometry-utils.test.ts
 __tests__/spatial/map-context.test.tsx
 __tests__/spatial/property-map.test.tsx
+.vercel

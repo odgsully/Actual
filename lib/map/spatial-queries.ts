@@ -279,9 +279,9 @@ export async function getAreaStatistics(areaId: string): Promise<{
   }
   
   // Calculate statistics
-  const properties = data.map(d => d.properties).filter(p => p)
-  const prices = properties.map(p => p.list_price).filter(p => p > 0)
-  const squareFootages = properties.map(p => p.square_footage).filter(s => s > 0)
+  const properties = data.map(d => d.properties).flat().filter(p => p)
+  const prices = properties.map((p: any) => p.list_price).filter(p => p > 0)
+  const squareFootages = properties.map((p: any) => p.square_footage).filter(s => s > 0)
   
   const avgPrice = prices.length > 0 
     ? prices.reduce((a, b) => a + b, 0) / prices.length 

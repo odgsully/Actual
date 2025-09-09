@@ -28,7 +28,7 @@ export async function POST(request: Request) {
       bedrooms_needed: parseInt(body.bedrooms) || 0,
       bathrooms_needed: parseFloat(body.bathrooms) || 0,
       city_preferences: body.cities || [],
-      preferred_zip_codes: body.zipCodes?.split(',').map(z => z.trim()).filter(z => z) || [],
+      preferred_zip_codes: body.zipCodes?.split(',').map((z: string) => z.trim()).filter((z: string) => z) || [],
       home_style: body.homeStyle,
       pool_preference: body.pool,
       min_garage_spaces: parseInt(body.garageSpaces) || 0,
