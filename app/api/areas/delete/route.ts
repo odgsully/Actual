@@ -1,9 +1,9 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/client'
 import { NextResponse } from 'next/server'
 
 export async function DELETE(request: Request) {
   try {
-    const supabase = await createClient()
+    const supabase = createClient()
     
     // Get the current user
     const { data: { user }, error: userError } = await supabase.auth.getUser()

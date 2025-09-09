@@ -616,79 +616,14 @@ function LocationMapSection() {
         </div>
       )}
       
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-        <div className="lg:col-span-3">
-          <PropertyMap
-            key={manualRefreshKey}
-            properties={[]}
-            height="400px"
-            showPropertyMarkers={false}
-            onAreaDrawn={(area) => console.log('Area drawn in form:', area)}
-          />
-        </div>
-        
-        <div className="lg:col-span-1">
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-            <h4 className="font-medium mb-3 text-gray-900 dark:text-white">Your Search Areas</h4>
-            {searchAreas.length === 0 ? (
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                No areas drawn yet. Use the drawing tools on the map to define your preferred neighborhoods.
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {searchAreas.map(area => (
-                  <div
-                    key={area.id}
-                    className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h5 className="font-medium text-sm text-gray-900 dark:text-white">
-                          {area.area_name}
-                        </h5>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          {area.area_type} • {area.is_inclusion ? 'Include' : 'Exclude'}
-                        </p>
-                        {area.property_count !== undefined && (
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {area.property_count} properties
-                          </p>
-                        )}
-                      </div>
-                      <div
-                        className="w-4 h-4 rounded-full border-2 border-gray-300"
-                        style={{ backgroundColor: area.color }}
-                      />
-                    </div>
-                    
-                    <div className="flex items-center space-x-2 mt-2">
-                      <button
-                        onClick={() => toggleAreaActive(area.id)}
-                        className={`text-xs px-2 py-1 rounded ${
-                          area.is_active
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-gray-100 text-gray-700'
-                        }`}
-                      >
-                        {area.is_active ? 'Active' : 'Inactive'}
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (confirm(`Delete "${area.area_name}"?`)) {
-                            deleteSearchArea(area.id)
-                          }
-                        }}
-                        className="text-xs px-2 py-1 rounded bg-red-100 text-red-700 hover:bg-red-200"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+      <div className="w-full">
+        <PropertyMap
+          key={manualRefreshKey}
+          properties={[]}
+          height="400px"
+          showPropertyMarkers={false}
+          onAreaDrawn={(area) => console.log('Area drawn in form:', area)}
+        />
       </div>
     </div>
   )

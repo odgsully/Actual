@@ -470,6 +470,7 @@ export default function PropertyMap({
       area_type: type,
       is_active: true,
       is_inclusion: isInclusion,
+      preference: 'curious', // Default preference
       bounds,
       center_point: centerPoint,
       coordinates: geojson,
