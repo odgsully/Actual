@@ -107,7 +107,12 @@ async function seedLiveDemoProperties() {
       console.log(`  Sqft: ${property.squareFeet?.toLocaleString()}`);
 
       // Normalize the data
-      const normalized = await normalizer.normalizeProperty(property, 'zillow');
+      const normalized = normalizer.normalize(property);
+      
+      if (!normalized) {
+        console.error(`  ❌ Failed to normalize property`);
+        continue;
+      }
 
       // Add demo flag and ensure it's marked as Single Family
       const demoProperty = {
