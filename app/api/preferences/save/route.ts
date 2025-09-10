@@ -1,9 +1,9 @@
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     const body = await request.json()
     
     // Get the current user
@@ -11,6 +11,27 @@ export async function POST(request: Request) {
     
     if (userError || !user) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+    }
+
+    // Map form values to database values for consistent storage
+    const mapHomeStyle = (style: string) => {
+      if (style === 'Single-story') return 'single-story'
+      if (style === 'Multi-level') return 'multi-level'
+      return style?.toLowerCase() || null
+    }
+
+    const mapPoolPreference = (pref: string) => {
+      if (pref === 'Yes') return 'yes'
+      if (pref === 'No') return 'no'
+      if (pref === 'Neutral') return 'neutral'
+      return pref?.toLowerCase() || 'neutral'
+    }
+
+    const mapHoaPreference = (pref: string) => {
+      if (pref === 'No HOA') return 'no_hoa'
+      if (pref === 'HOA only') return 'hoa_only'
+      if (pref === 'No preference') return 'no_preference'
+      return 'no_preference'
     }
 
     // Prepare preferences data with correct column names
@@ -29,10 +50,10 @@ export async function POST(request: Request) {
       bathrooms_needed: parseFloat(body.bathrooms) || 0,
       city_preferences: body.cities || [],
       preferred_zip_codes: body.zipCodes?.split(',').map((z: string) => z.trim()).filter((z: string) => z) || [],
-      home_style: body.homeStyle,
-      pool_preference: body.pool,
+      home_style: mapHomeStyle(body.homeStyle),
+      pool_preference: mapPoolPreference(body.pool),
       min_garage_spaces: parseInt(body.garageSpaces) || 0,
-      hoa_preference: body.hoa,
+      hoa_preference: mapHoaPreference(body.hoa),
       renovation_openness: parseInt(body.renovations) || 3,
       current_residence_address: body.currentAddress,
       current_residence_works_well: body.worksWell,

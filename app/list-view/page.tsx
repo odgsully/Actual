@@ -3,136 +3,12 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRequireAuth } from '@/hooks/useRequireAuth'
-import { MapProvider, useMapContext } from '@/contexts/MapContext'
-import PropertyMap from '@/components/map/PropertyMap'
-import MapFilterDropdown from '@/components/map/MapFilterDropdown'
 import SignInModal from '@/components/auth/SignInModal'
 import DemoBanner from '@/components/DemoBanner'
+import PropertyDetailModal from '@/components/PropertyDetailModal'
 import { createClient } from '@/lib/supabase/client'
 
-const sampleProperties = [
-  {
-    id: '1',
-    address: "7525 E Gainey Ranch Rd #145",
-    price: "$850,000",
-    beds: 3,
-    baths: 2.5,
-    sqft: 2450,
-    image: "/api/placeholder/400/300",
-    avgRanking: 7.5,
-    voted: 2,
-    favorite: true,
-    latitude: 33.5698,
-    longitude: -111.9192,
-    list_price: 850000
-  },
-  {
-    id: '2',
-    address: "3120 N 38th St",
-    price: "$1,200,000",
-    beds: 4,
-    baths: 3,
-    sqft: 3200,
-    image: "/api/placeholder/400/300",
-    avgRanking: 8.2,
-    voted: 1,
-    favorite: false,
-    imported: "Zillow",
-    latitude: 33.4895,
-    longitude: -112.0010,
-    list_price: 1200000
-  },
-  {
-    id: '3',
-    address: "5420 E Lincoln Dr",
-    price: "$2,500,000",
-    beds: 5,
-    baths: 4.5,
-    sqft: 4500,
-    image: "/api/placeholder/400/300",
-    avgRanking: 6.8,
-    voted: 2,
-    favorite: false,
-    latitude: 33.5322,
-    longitude: -111.9684,
-    list_price: 2500000
-  },
-  {
-    id: '4',
-    address: "9820 N Central Ave",
-    price: "$650,000",
-    beds: 2,
-    baths: 2,
-    sqft: 1800,
-    image: "/api/placeholder/400/300",
-    avgRanking: 7.0,
-    voted: 1,
-    favorite: true,
-    latitude: 33.5807,
-    longitude: -112.0738,
-    list_price: 650000
-  },
-  {
-    id: '5',
-    address: "4502 E Camelback Rd",
-    price: "$975,000",
-    beds: 3,
-    baths: 2,
-    sqft: 2100,
-    image: "/api/placeholder/400/300",
-    avgRanking: 7.3,
-    voted: 0,
-    favorite: false,
-    latitude: 33.5097,
-    longitude: -111.9867,
-    list_price: 975000
-  },
-  {
-    id: '6',
-    address: "2211 E Highland Ave",
-    price: "$1,100,000",
-    beds: 4,
-    baths: 3,
-    sqft: 2800,
-    image: "/api/placeholder/400/300",
-    avgRanking: 8.0,
-    voted: 1,
-    favorite: true,
-    latitude: 33.5062,
-    longitude: -112.0346,
-    list_price: 1100000
-  },
-  {
-    id: '7',
-    address: "6900 E Princess Dr",
-    price: "$3,200,000",
-    beds: 6,
-    baths: 5,
-    sqft: 5200,
-    image: "/api/placeholder/400/300",
-    avgRanking: 6.5,
-    voted: 0,
-    favorite: false,
-    latitude: 33.5859,
-    longitude: -111.9374,
-    list_price: 3200000
-  },
-  {
-    id: '8',
-    address: "1515 N 7th St",
-    price: "$550,000",
-    beds: 2,
-    baths: 1.5,
-    sqft: 1600,
-    image: "/api/placeholder/400/300",
-    avgRanking: 7.8,
-    voted: 2,
-    favorite: false,
-    latitude: 33.4649,
-    longitude: -112.0633,
-    list_price: 550000
-  }
-]
+// Removed hardcoded sample properties - now fetching from database
 
 function ListViewContent() {
   const { user, loading, showSignIn, setShowSignIn } = useRequireAuth()
@@ -140,17 +16,9 @@ function ListViewContent() {
   const [sortBy, setSortBy] = useState('ranking')
   const [filterFavorites, setFilterFavorites] = useState(false)
   const [properties, setProperties] = useState<any[]>([])
-  const [showMap, setShowMap] = useState(false)
   const [loadingProperties, setLoadingProperties] = useState(true)
-  
-  const {
-    searchAreas,
-    filteredProperties,
-    isLoading: mapLoading,
-    clearAllAreas,
-    deleteSearchArea,
-    toggleAreaActive
-  } = useMapContext()
+  const [selectedProperty, setSelectedProperty] = useState<any>(null)
+  const [showPropertyModal, setShowPropertyModal] = useState(false)
 
   // Apply map filtering to properties if any areas are drawn
   const [displayProperties, setDisplayProperties] = useState<any[]>([])
@@ -161,26 +29,67 @@ function ListViewContent() {
       setLoadingProperties(true)
       const supabase = createClient()
       
-      const { data, error } = await supabase
+      // Check if demo user to fetch demo properties
+      const isDemoUser = user?.email === 'support@wabbit-rank.ai'
+      
+      // First get properties
+      let query = supabase
         .from('properties')
         .select('*')
         .eq('status', 'active')
-        .order('created_at', { ascending: false })
+      
+      // For demo user, get properties linked to them
+      if (isDemoUser && user) {
+        // Get properties linked to demo user
+        const { data: userProps } = await supabase
+          .from('user_properties')
+          .select('property_id')
+          .eq('user_id', user.id)
+        
+        if (userProps && userProps.length > 0) {
+          const linkedIds = userProps.map(up => up.property_id)
+          query = query.in('id', linkedIds)
+        }
+      }
+      
+      const { data, error } = await query
+        .order('list_price', { ascending: false })
         .limit(20)
       
+      let transformedProperties = []
+      
       if (!error && data && data.length > 0) {
+        // Fetch images for all properties
+        const propertyIds = data.map(p => p.id)
+        const { data: images } = await supabase
+          .from('property_images')
+          .select('property_id, image_url')
+          .in('property_id', propertyIds)
+          .eq('image_type', 'primary')
+          .order('display_order', { ascending: true })
+        
+        // Create a map of property ID to image URL
+        const imageMap: Record<string, string> = {}
+        if (images) {
+          images.forEach(img => {
+            if (!imageMap[img.property_id]) {
+              imageMap[img.property_id] = img.image_url
+            }
+          })
+        }
+        
         // Transform database properties to match component format
-        const transformedProperties = data.map(prop => ({
+        transformedProperties = data.map(prop => ({
           id: prop.id,
           address: prop.address,
           price: `$${prop.list_price?.toLocaleString() || '0'}`,
           beds: prop.bedrooms || 0,
           baths: prop.bathrooms || 0,
           sqft: prop.square_footage || 0,
-          image: '/api/placeholder/400/300',
+          image: imageMap[prop.id] || prop.primary_image_url || '/api/placeholder/400/300',
           avgRanking: Math.round((Math.random() * 3 + 6) * 10) / 10, // Random 6.0-9.0 for demo
           voted: 0,
-          favorite: false,
+          favorite: false, // Will be updated below
           latitude: prop.latitude || 33.5,
           longitude: prop.longitude || -111.9,
           list_price: prop.list_price || 0,
@@ -192,33 +101,42 @@ function ListViewContent() {
           has_pool: prop.has_pool,
           garage_spaces: prop.garage_spaces
         }))
-        
-        setProperties(transformedProperties)
-        setDisplayProperties(transformedProperties)
       } else {
-        // Fallback to sample properties if no data or error
-        console.log('No properties found or error, using samples:', error)
-        setProperties(sampleProperties)
-        setDisplayProperties(sampleProperties)
+        // No fallback - show empty state or loading
+        console.log('No properties found:', error)
+        transformedProperties = []
       }
       
+      // Load user favorites if authenticated
+      if (user) {
+        const propertyIds = transformedProperties.map(p => p.id)
+        const { data: favorites } = await supabase
+          .from('user_properties')
+          .select('property_id')
+          .eq('user_id', user.id)
+          .eq('is_favorite', true)
+          .in('property_id', propertyIds)
+        
+        if (favorites) {
+          const favoriteIds = new Set(favorites.map(f => f.property_id))
+          transformedProperties = transformedProperties.map(prop => ({
+            ...prop,
+            favorite: favoriteIds.has(prop.id)
+          }))
+        }
+      }
+      
+      setProperties(transformedProperties)
+      setDisplayProperties(transformedProperties)
       setLoadingProperties(false)
     }
     
     fetchProperties()
-  }, [])
+  }, [user])
 
   useEffect(() => {
-    if (searchAreas.length > 0 && filteredProperties.length > 0) {
-      // Filter properties based on map areas
-      const mapFiltered = properties.filter(prop =>
-        filteredProperties.some(fp => fp.property_id === prop.id)
-      )
-      setDisplayProperties(mapFiltered)
-    } else {
-      setDisplayProperties(properties)
-    }
-  }, [filteredProperties, searchAreas, properties])
+    setDisplayProperties(properties)
+  }, [properties])
 
   if (loading || loadingProperties) {
     return (
@@ -228,24 +146,86 @@ function ListViewContent() {
     )
   }
 
-  const toggleFavorite = (id: string) => {
+  const toggleFavorite = async (id: string) => {
+    // Find the property to get its current favorite status
+    const property = properties.find(p => p.id === id)
+    if (!property) return
+    
+    const newFavoriteStatus = !property.favorite
+    
+    // Optimistically update UI
     setProperties(prev => 
-      prev.map(property => 
-        property.id === id 
-          ? { ...property, favorite: !property.favorite }
-          : property
+      prev.map(prop => 
+        prop.id === id 
+          ? { ...prop, favorite: newFavoriteStatus }
+          : prop
       )
     )
+    
+    // Persist to Supabase if user is authenticated
+    if (user) {
+      const supabase = createClient()
+      
+      try {
+        // Check if user_property relation exists
+        const { data: existing } = await supabase
+          .from('user_properties')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('property_id', id)
+          .single()
+        
+        if (existing) {
+          // Update existing record
+          const { error } = await supabase
+            .from('user_properties')
+            .update({ is_favorite: newFavoriteStatus })
+            .eq('user_id', user.id)
+            .eq('property_id', id)
+          
+          if (error) {
+            console.error('Error updating favorite:', error)
+            // Revert on error
+            setProperties(prev => 
+              prev.map(prop => 
+                prop.id === id 
+                  ? { ...prop, favorite: !newFavoriteStatus }
+                  : prop
+              )
+            )
+          }
+        } else {
+          // Create new record
+          const { error } = await supabase
+            .from('user_properties')
+            .insert({
+              user_id: user.id,
+              property_id: id,
+              is_favorite: newFavoriteStatus,
+              source: 'manual'
+            })
+          
+          if (error) {
+            console.error('Error creating favorite:', error)
+            // Revert on error
+            setProperties(prev => 
+              prev.map(prop => 
+                prop.id === id 
+                  ? { ...prop, favorite: !newFavoriteStatus }
+                  : prop
+              )
+            )
+          }
+        }
+      } catch (err) {
+        console.error('Error toggling favorite:', err)
+      }
+    }
   }
 
   const finalFilteredProperties = filterFavorites 
     ? displayProperties.filter(p => p.favorite)
     : displayProperties
-  
-  const handleAreaDrawn = (area: any) => {
-    console.log('New area drawn in list view:', area)
-    setShowMap(true) // Keep map open after drawing
-  }
 
   return (
     <div className="flex-1 bg-gray-50 dark:bg-gray-900 relative transition-colors">
@@ -309,19 +289,16 @@ function ListViewContent() {
             {/* Main Controls Row */}
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center space-x-4">
-                <MapFilterDropdown 
-                  showMap={showMap}
-                  onToggleMap={() => setShowMap(!showMap)}
-                />
                 <button
                   onClick={() => setFilterFavorites(!filterFavorites)}
-                  className={`px-4 py-2 rounded-lg ${
+                  className={`px-4 py-2 rounded-lg flex items-center space-x-2 ${
                     filterFavorites 
                       ? 'bg-yellow-100 text-yellow-700' 
                       : 'bg-gray-100 text-gray-700'
                   }`}
                 >
-                  ⭐ Favorites Only
+                  <span className="text-lg">{filterFavorites ? '⭐' : '☆'}</span>
+                  <span>Favorites Only</span>
                 </button>
                 <select 
                   value={sortBy}
@@ -357,38 +334,49 @@ function ListViewContent() {
         </div>
       </div>
 
-      {/* Map Section (Collapsible) */}
-      {showMap && (
-        <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border-b dark:border-gray-700 relative z-10">
-          <div className="container mx-auto px-4 py-4">
-            <PropertyMap
-              properties={properties}
-              onAreaDrawn={handleAreaDrawn}
-              height="400px"
-            />
-          </div>
-        </div>
-      )}
-
       {/* Property List */}
       <div className="container mx-auto px-4 py-8 relative z-10">
         {viewMode === 'grid' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {finalFilteredProperties.map(property => (
-              <div key={property.id} className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-lg shadow-lg overflow-hidden hover:shadow-2xl hover:scale-105 transition-all duration-300 transform">
+              <div 
+                key={property.id} 
+                className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-lg shadow-lg overflow-hidden hover:shadow-2xl hover:scale-105 transition-all duration-300 transform cursor-pointer"
+                onClick={() => {
+                  setSelectedProperty(property)
+                  setShowPropertyModal(true)
+                }}
+              >
                 <div className="relative">
-                  <div className="bg-gray-200 h-48 flex items-center justify-center">
-                    <svg className="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                    </svg>
-                  </div>
+                  {property.image && property.image !== '/api/placeholder/400/300' ? (
+                    <img 
+                      src={property.image} 
+                      alt={property.address}
+                      className="w-full h-48 object-cover"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = '/api/placeholder/400/300';
+                      }}
+                    />
+                  ) : (
+                    <div className="bg-gray-200 h-48 flex items-center justify-center">
+                      <svg className="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                      </svg>
+                    </div>
+                  )}
                   <button
-                    onClick={() => toggleFavorite(property.id)}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      toggleFavorite(property.id)
+                    }}
                     className="absolute top-2 right-2 text-2xl hover:scale-110 transition-transform"
                   >
-                    <span className={property.favorite ? 'text-yellow-500' : 'text-gray-300'}>
-                      ⭐
-                    </span>
+                    {property.favorite ? (
+                      <span className="text-yellow-500">⭐</span>
+                    ) : (
+                      <span className="text-gray-400">☆</span>
+                    )}
                   </button>
                 </div>
                 <div className="p-4">
@@ -404,12 +392,16 @@ function ListViewContent() {
                       <span className="text-sm text-gray-500 dark:text-gray-400 mr-2">Avg:</span>
                       <span className="text-lg font-bold text-blue-600">{property.avgRanking}</span>
                     </div>
-                    <Link 
-                      href="/rank-feed"
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setSelectedProperty(property)
+                        setShowPropertyModal(true)
+                      }}
                       className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                     >
                       View Details →
-                    </Link>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -421,11 +413,23 @@ function ListViewContent() {
               <div key={property.id} className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-lg shadow-lg p-6 hover:shadow-2xl hover:scale-102 transition-all duration-300 transform">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-6">
-                    <div className="bg-gray-200 w-32 h-24 rounded-lg flex items-center justify-center">
-                      <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                      </svg>
-                    </div>
+                    {property.image && property.image !== '/api/placeholder/400/300' ? (
+                      <img 
+                        src={property.image} 
+                        alt={property.address}
+                        className="w-32 h-24 rounded-lg object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.src = '/api/placeholder/400/300';
+                        }}
+                      />
+                    ) : (
+                      <div className="bg-gray-200 w-32 h-24 rounded-lg flex items-center justify-center">
+                        <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                        </svg>
+                      </div>
+                    )}
                     <div>
                       <h3 className="font-semibold text-xl mb-1">{property.address}</h3>
                       <p className="text-2xl font-bold text-green-600 mb-2">{property.price}</p>
@@ -441,20 +445,25 @@ function ListViewContent() {
                       onClick={() => toggleFavorite(property.id)}
                       className="text-2xl hover:scale-110 transition-transform"
                     >
-                      <span className={property.favorite ? 'text-yellow-500' : 'text-gray-300'}>
-                        ⭐
-                      </span>
+                      {property.favorite ? (
+                        <span className="text-yellow-500">⭐</span>
+                      ) : (
+                        <span className="text-gray-400">☆</span>
+                      )}
                     </button>
                     <div className="text-center">
                       <p className="text-sm text-gray-500 dark:text-gray-400">Avg Score</p>
                       <p className="text-2xl font-bold text-blue-600">{property.avgRanking}</p>
                     </div>
-                    <Link 
-                      href="/rank-feed"
+                    <button
+                      onClick={() => {
+                        setSelectedProperty(property)
+                        setShowPropertyModal(true)
+                      }}
                       className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                     >
                       View Details
-                    </Link>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -472,14 +481,20 @@ function ListViewContent() {
         onClose={() => setShowSignIn(false)}
         onSuccess={() => setShowSignIn(false)}
       />
+      
+      {/* Property Detail Modal */}
+      <PropertyDetailModal
+        isOpen={showPropertyModal}
+        onClose={() => {
+          setShowPropertyModal(false)
+          setSelectedProperty(null)
+        }}
+        property={selectedProperty}
+      />
     </div>
   )
 }
 
 export default function ListViewPage() {
-  return (
-    <MapProvider>
-      <ListViewContent />
-    </MapProvider>
-  )
+  return <ListViewContent />
 }

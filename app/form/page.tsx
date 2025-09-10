@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
 import { MapProvider, useMapContext } from '@/contexts/MapContext'
 import PropertyMap from '@/components/map/PropertyMap'
-import MapFilterDropdown from '@/components/map/MapFilterDropdown'
 import DemoBanner from '@/components/DemoBanner'
 import ResponseSummary from '@/components/form/ResponseSummary'
 import AuthLoadingScreen from '@/components/AuthLoadingScreen'
@@ -166,14 +165,36 @@ function FormContent() {
     if (authVerified && user) {
       setIsEditMode(true)
       
+      console.log('[FormPage] Loading preferences for user:', user.email)
+      console.log('[FormPage] User ID:', user.id)
+      console.log('[FormPage] User metadata:', user.user_metadata)
+      
       // Load existing preferences if user is logged in
       fetch('/api/preferences/load')
-        .then(res => res.json())
+        .then(res => {
+          console.log('[FormPage] Load API response status:', res.status)
+          return res.json()
+        })
         .then(data => {
-          if (data.preferences) {
+          console.log('[FormPage] Full API response:', JSON.stringify(data, null, 2))
+          
+          if (data.error) {
+            console.error('[FormPage] API returned error:', data.error)
+            return
+          }
+          
+          if (data.preferences && Object.keys(data.preferences).length > 0) {
             const prefs = data.preferences
-            setFormData((prev: any) => ({
-              ...prev,
+            console.log('[FormPage] Preferences object keys:', Object.keys(prefs))
+            console.log('[FormPage] Sample preference values:', {
+              property_type: prefs.property_type,
+              min_square_footage: prefs.min_square_footage,
+              price_range_min: prefs.price_range_min,
+              city_preferences: prefs.city_preferences
+            })
+            
+            // Update form data with all loaded preferences
+            const newFormData = {
               propertyType: prefs.property_type || '',
               minSquareFootage: prefs.min_square_footage ? `${prefs.min_square_footage.toLocaleString()} sqft` : '',
               minLotSize: prefs.min_lot_square_footage ? `${prefs.min_lot_square_footage.toLocaleString()} sqft` : '',
@@ -193,14 +214,32 @@ function FormContent() {
               renovations: prefs.renovation_openness?.toString() || '',
               currentAddress: prefs.current_residence_address || '',
               worksWell: prefs.current_residence_works_well || '',
-              doesntWork: prefs.current_residence_doesnt_work || ''
+              doesntWork: prefs.current_residence_doesnt_work || '',
+              // Also ensure email/name fields are populated
+              email: user.email || '',
+              firstName: user.user_metadata?.firstName || '',
+              lastName: user.user_metadata?.lastName || ''
+            }
+            
+            console.log('[FormPage] Setting form data:', newFormData)
+            setFormData((prev: any) => ({
+              ...prev,
+              ...newFormData
             }))
-            if (prefs.city_preferences) {
+            
+            // Set selected cities
+            if (prefs.city_preferences && prefs.city_preferences.length > 0) {
+              console.log('[FormPage] Setting selected cities:', prefs.city_preferences)
               setSelectedCities(prefs.city_preferences)
             }
+          } else {
+            console.log('[FormPage] No preferences found or empty preferences object')
           }
         })
-        .catch(err => console.error('Error loading preferences:', err))
+        .catch(err => {
+          console.error('[FormPage] Error loading preferences:', err)
+          console.error('[FormPage] Error details:', err.message, err.stack)
+        })
     }
   }, [authVerified, user])
 
@@ -249,7 +288,7 @@ function FormContent() {
 
   const handleSubmit = async () => {
     // Always use /api/preferences/save for authenticated users
-    if (user && isAuthenticated) {
+    if (user) {
       // If user is logged in, save directly to their profile
       try {
         const response = await fetch('/api/preferences/save', {
@@ -584,13 +623,6 @@ function LocationMapSection() {
           </span>
         )}
       </h3>
-      
-      {/* Map Filter Dropdown for drawn areas */}
-      {searchAreas.length > 0 && (
-        <div className="mb-4">
-          <MapFilterDropdown />
-        </div>
-      )}
       
       {showMapInstructions && (
         <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
