@@ -3,14 +3,19 @@ import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
   try {
+    console.log('[API/save] Starting preferences save...')
     const supabase = await createClient()
     const body = await request.json()
+    console.log('[API/save] Request body received, checking authentication...')
     
     // Get the current user
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     
+    console.log('[API/save] User:', user?.email, 'Error:', userError?.message)
+    
     if (userError || !user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+      console.error('[API/save] Authentication failed:', userError)
+      return NextResponse.json({ error: 'Not authenticated. Please sign in and try again.' }, { status: 401 })
     }
 
     // Map form values to database values for consistent storage

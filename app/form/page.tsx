@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
 import { MapProvider, useMapContext } from '@/contexts/MapContext'
@@ -291,6 +291,10 @@ function FormContent() {
     if (user) {
       // If user is logged in, save directly to their profile
       try {
+        console.log('[FormPage] Submitting preferences for user:', user.email)
+        console.log('[FormPage] Form data:', formData)
+        console.log('[FormPage] Selected cities:', selectedCities)
+        
         const response = await fetch('/api/preferences/save', {
           method: 'POST',
           headers: {
@@ -302,15 +306,20 @@ function FormContent() {
           }),
         })
 
+        console.log('[FormPage] Save response status:', response.status)
+        const responseData = await response.json()
+        console.log('[FormPage] Save response data:', responseData)
+
         if (response.ok) {
+          console.log('[FormPage] Preferences saved successfully')
           setShowSuccessModal(true)
         } else {
-          const error = await response.json()
-          alert(error.error || 'Failed to save preferences')
+          console.error('[FormPage] Save failed:', responseData.error)
+          alert(responseData.error || 'Failed to save preferences')
         }
       } catch (error) {
-        console.error('Error saving preferences:', error)
-        alert('An error occurred. Please try again.')
+        console.error('[FormPage] Error saving preferences:', error)
+        alert('An error occurred while saving. Please check the console for details.')
       }
     } else if (!user && !loading) {
       // New user - submit to API for email verification
@@ -509,8 +518,10 @@ function FormContent() {
               )}
               
               {/* Show drawable map for Location Preferences page */}
-              {(currentFormPage as any).showMap && (
-                <LocationMapSection />
+              {currentFormPage.showMap && (
+                <div key="location-map-section">
+                  <LocationMapSection />
+                </div>
               )}
             </div>
 
@@ -585,7 +596,7 @@ function FormContent() {
   )
 }
 
-function LocationMapSection() {
+const LocationMapSection = memo(function LocationMapSection() {
   const { searchAreas, deleteSearchArea, toggleAreaActive, updateAreaPreference, loadSearchAreas, isLoading } = useMapContext()
   const [showMapInstructions, setShowMapInstructions] = useState(true)
   const [hasLoadedInitially, setHasLoadedInitially] = useState(false)
@@ -650,7 +661,6 @@ function LocationMapSection() {
       
       <div className="w-full">
         <PropertyMap
-          key={manualRefreshKey}
           properties={[]}
           height="400px"
           showPropertyMarkers={false}
@@ -659,7 +669,7 @@ function LocationMapSection() {
       </div>
     </div>
   )
-}
+})
 
 export default function FormPage() {
   return (

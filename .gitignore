@@ -64,3 +64,8 @@ __tests__/spatial/geometry-utils.test.ts
 __tests__/spatial/map-context.test.tsx
 __tests__/spatial/property-map.test.tsx
 .vercel
+gbs_properties.csv
+gbs_properties.pdf
+.gitignore
+test_data_support.csv
+.gitignore
