@@ -56,7 +56,7 @@ function ListViewContent() {
         .order('list_price', { ascending: false })
         .limit(20)
       
-      let transformedProperties = []
+      let transformedProperties: any[] = []
       
       if (!error && data && data.length > 0) {
         // Fetch images for all properties

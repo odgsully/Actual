@@ -38,7 +38,7 @@ async function cleanAllProperties() {
       .from('property_images')
       .delete()
       .neq('id', '00000000-0000-0000-0000-000000000000') // Delete all (using impossible ID)
-      .select('*', { count: 'exact' });
+      .select('*');
 
     if (imageError) {
       console.error('   ⚠️ Error deleting images:', imageError.message);
@@ -52,7 +52,7 @@ async function cleanAllProperties() {
       .from('user_properties')
       .delete()
       .neq('property_id', '00000000-0000-0000-0000-000000000000') // Delete all
-      .select('*', { count: 'exact' });
+      .select('*');
 
     if (linkError) {
       console.error('   ⚠️ Error deleting links:', linkError.message);
@@ -66,7 +66,7 @@ async function cleanAllProperties() {
       .from('property_rankings')
       .delete()
       .neq('id', '00000000-0000-0000-0000-000000000000') // Delete all
-      .select('*', { count: 'exact' });
+      .select('*');
 
     if (rankError) {
       // Table might not exist, that's okay
