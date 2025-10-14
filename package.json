@@ -1,0 +1,44 @@
+{
+  "name": "gs-site",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Personal app suite monorepo with Wabbit RE, Wabbit, CRM, and Dashboard",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:wabbit-re": "turbo run dev --filter=wabbit-re",
+    "dev:wabbit": "turbo run dev --filter=wabbit",
+    "dev:crm": "turbo run dev --filter=crm",
+    "dev:dashboard": "turbo run dev --filter=gs-site-dashboard",
+    "build": "turbo run build",
+    "build:wabbit-re": "turbo run build --filter=wabbit-re",
+    "build:wabbit": "turbo run build --filter=wabbit",
+    "build:crm": "turbo run build --filter=crm",
+    "build:dashboard": "turbo run build --filter=gs-site-dashboard",
+    "start": "turbo run start",
+    "start:wabbit-re": "npm --prefix apps/wabbit-re run start",
+    "start:wabbit": "npm --prefix apps/wabbit run start",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:wabbit-re": "turbo run test --filter=wabbit-re",
+    "test:wabbit": "turbo run test --filter=wabbit",
+    "clean": "turbo run clean",
+    "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,md}\"",
+    "db:migrate": "npm --prefix apps/wabbit-re run db:migrate",
+    "db:seed": "npm --prefix apps/wabbit-re run db:seed",
+    "db:seed-demo": "npm --prefix apps/wabbit-re run db:seed-demo"
+  },
+  "devDependencies": {
+    "prettier": "^3.0.3",
+    "turbo": "^2.5.6"
+  },
+  "engines": {
+    "node": ">=18.17.0",
+    "npm": ">=9.0.0"
+  },
+  "packageManager": "npm@9.8.1"
+}

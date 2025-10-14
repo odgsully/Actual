@@ -1,0 +1,10 @@
+{
+  "name": "@gs-site/utils",
+  "version": "1.0.0",
+  "description": "Shared utility functions and helpers",
+  "main": "index.ts",
+  "private": true,
+  "dependencies": {
+    "zod": "^3.22.4"
+  }
+}

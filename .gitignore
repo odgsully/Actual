@@ -51,6 +51,8 @@ database-schema.sql
 uploads/
 data/
 backups/
+supabase-backups-*/
+*.tar.gz
 
 # Temporary files
 tmp/
