@@ -12,6 +12,10 @@
     {
       "source": "/crm/:path*",
       "destination": "/apps/crm/:path*"
+    },
+    {
+      "source": "/gsrealty/:path*",
+      "destination": "/apps/gsrealty-client/:path*"
     }
   ],
   "crons": [
