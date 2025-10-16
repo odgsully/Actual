@@ -1,8 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  basePath: '/gsrealty',
-  assetPrefix: '/gsrealty',
+  // basePath: '/gsrealty',  // Commented out for root path deployment
+  // assetPrefix: '/gsrealty',  // Commented out for root path deployment
   images: {
     domains: ['localhost', 'your-supabase-url.supabase.co'],
     remotePatterns: [

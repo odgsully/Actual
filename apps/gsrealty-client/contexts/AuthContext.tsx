@@ -4,42 +4,68 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import { User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import {
+  signInWithEmail,
+  signOut as authSignOut,
+  getCurrentUser,
+  getUserRole,
+  updateLastLogin,
+  recordLoginActivity,
+  type GSRealtyUser,
+} from '@/lib/supabase/auth'
+
+type UserRole = 'admin' | 'client'
 
 type AuthContextType = {
-  user: User | null
+  user: GSRealtyUser | null
+  role: UserRole | null
   loading: boolean
+  isAdmin: boolean
+  isClient: boolean
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>
-  signUp: (email: string, password: string, metadata?: any) => Promise<{ error: Error | null }>
+  signUp: (email: string, password: string, metadata?: any) => Promise<{ error: Error | null; user: any }>
   signOut: () => Promise<void>
-  isDemo: boolean
-  setIsDemo: (value: boolean) => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<GSRealtyUser | null>(null)
+  const [role, setRole] = useState<UserRole | null>(null)
   const [loading, setLoading] = useState(true)
-  const [isDemo, setIsDemo] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
+  // Initialize auth state
   useEffect(() => {
-    console.log('[AuthContext] Initializing auth state...')
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      console.log('[AuthContext] Initial user check:', user ? `User: ${user.email}` : 'No user')
-      setUser(user)
-      setIsDemo(user?.email === 'support@wabbit-rank.ai')
+    console.log('[GSRealty Auth] Initializing...')
+
+    const initializeAuth = async () => {
+      const currentUser = await getCurrentUser()
+      console.log('[GSRealty Auth] User:', currentUser?.email || 'None', '| Role:', currentUser?.role || 'None')
+      setUser(currentUser)
+      setRole(currentUser?.role || null)
       setLoading(false)
     }
 
-    getUser()
+    initializeAuth()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('[AuthContext] Auth state changed:', event, session?.user ? `User: ${session.user.email}` : 'No user')
-      setUser(session?.user ?? null)
-      setIsDemo(session?.user?.email === 'support@wabbit-rank.ai')
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('[GSRealty Auth] State changed:', event)
+
+      if (session?.user) {
+        const userRole = await getUserRole(session.user)
+        const gsUser: GSRealtyUser = { ...session.user, role: userRole }
+        setUser(gsUser)
+        setRole(userRole)
+        console.log('[GSRealty Auth] User:', gsUser.email, '| Role:', userRole)
+      } else {
+        setUser(null)
+        setRole(null)
+        console.log('[GSRealty Auth] User signed out')
+      }
+
       setLoading(false)
     })
 
@@ -48,92 +74,73 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-      
-      if (error) throw error
-      
-      // Check if this is the demo account and handle navigation
-      if (email === 'support@wabbit-rank.ai') {
-        setIsDemo(true)
-        // Navigation will be handled by the calling component for demo mode
+      console.log('[GSRealty Auth] Sign in attempt:', email)
+
+      const { user: signedInUser, error } = await signInWithEmail(email, password)
+
+      if (error) {
+        console.error('[GSRealty Auth] Sign in failed:', error.message)
+        throw error
       }
-      
+
+      if (!signedInUser) {
+        throw new Error('Sign in failed')
+      }
+
+      console.log('[GSRealty Auth] Sign in successful:', signedInUser.email, '| Role:', signedInUser.role)
+
+      // Update last login timestamp
+      await updateLastLogin(signedInUser.id)
+
+      // Record login activity
+      await recordLoginActivity(signedInUser.id)
+
+      // Update state
+      setUser(signedInUser)
+      setRole(signedInUser.role || 'client')
+
+      // Navigate based on role
+      const redirectPath = signedInUser.role === 'admin' ? '/admin' : '/client'
+      console.log('[GSRealty Auth] Redirecting to:', redirectPath)
+      router.push(redirectPath)
+
       return { error: null }
     } catch (error) {
+      console.error('[GSRealty Auth] Error:', error)
       return { error: error as Error }
     }
   }
 
   const signUp = async (email: string, password: string, metadata?: any) => {
-    try {
-      const { error, data } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: metadata,
-        },
-      })
-      
-      if (error) throw error
-
-      // Create user profile using API route with service role
-      if (data.user) {
-        const response = await fetch('/api/auth/signup', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            userId: data.user.id,
-            email: email,
-            firstName: metadata?.firstName || '',
-            lastName: metadata?.lastName || '',
-            privacyAccepted: metadata?.privacyAccepted || false,
-            marketingOptIn: metadata?.marketingOptIn || false,
-          }),
-        })
-
-        const result = await response.json()
-        
-        if (!response.ok) {
-          throw new Error(result.error || 'Failed to create profile')
-        }
-        
-        // Force refresh the session to ensure auth state is up to date
-        console.log('[AuthContext] Refreshing session after signup...')
-        const refreshResult = await supabase.auth.refreshSession()
-        console.log('[AuthContext] Session refresh result:', refreshResult.data.session ? 'Session active' : 'No session')
-        
-        // Get the current session to confirm it's established
-        const { data: sessionData } = await supabase.auth.getSession()
-        console.log('[AuthContext] Current session after signup:', sessionData.session ? `Valid - ${sessionData.session.user.email}` : 'Invalid')
-      }
-      
-      return { error: null, user: data.user }
-    } catch (error) {
-      return { error: error as Error, user: null }
+    // GSRealty doesn't allow public signups - only admin can invite clients
+    console.warn('[GSRealty Auth] Public signup attempt blocked')
+    return {
+      error: new Error('Public signups are disabled. Contact admin for an invitation.'),
+      user: null
     }
   }
 
   const signOut = async () => {
-    await supabase.auth.signOut()
-    setIsDemo(false)
+    console.log('[GSRealty Auth] Signing out...')
+    await authSignOut()
+    setUser(null)
+    setRole(null)
     router.push('/')
   }
 
+  const value: AuthContextType = {
+    user,
+    role,
+    loading,
+    isAdmin: role === 'admin',
+    isClient: role === 'client',
+    signIn,
+    signUp,
+    signOut,
+  }
+
   return (
-    <AuthContext.Provider value={{
-      user,
-      loading,
-      signIn,
-      signUp,
-      signOut,
-      isDemo,
-      setIsDemo,
-    }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   )

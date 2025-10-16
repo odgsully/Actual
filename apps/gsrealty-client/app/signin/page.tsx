@@ -1,12 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
+import { BRAND } from '@/lib/constants/branding'
+import { User, Lock, AlertCircle, LogIn } from 'lucide-react'
+import Link from 'next/link'
 
 export default function SignInPage() {
-  const router = useRouter()
   const { signIn } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -18,115 +18,159 @@ export default function SignInPage() {
     setError('')
     setLoading(true)
 
-    const { error } = await signIn(email, password)
-    
-    if (error) {
-      setError(error.message)
+    try {
+      const { error: signInError } = await signIn(email, password)
+
+      if (signInError) {
+        setError(signInError.message || 'Invalid email or password')
+        setLoading(false)
+      }
+      // Success - AuthContext will handle redirect based on role
+    } catch (err) {
+      setError('An unexpected error occurred')
       setLoading(false)
-    } else {
-      // Redirect to rank feed or form based on user state
-      router.push('/rank-feed')
     }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 flex items-center justify-center px-4 relative transition-colors">
-      {/* Background Assets */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <div 
-          className="absolute inset-0 opacity-10"
-          style={{
-            backgroundImage: `url(/assets/noise.png)`,
-            backgroundSize: 'cover',
-            backgroundAttachment: 'fixed'
-          }}
+    <div className="min-h-screen bg-white flex">
+      {/* Left Side - Branding */}
+      <div className="hidden lg:flex lg:w-1/2 bg-brand-black flex-col justify-center items-center p-12">
+        <img
+          src={BRAND.logo}
+          alt={BRAND.logoAlt}
+          className="h-32 w-auto mb-8"
         />
-        <div 
-          className="absolute inset-0 opacity-30"
-          style={{
-            backgroundImage: `url(/assets/gradient.svg)`,
-            backgroundSize: 'contain',
-            backgroundRepeat: 'no-repeat',
-            backgroundPosition: 'center'
-          }}
-        />
+        <h1 className="text-4xl font-bold text-white mb-4">
+          {BRAND.name}
+        </h1>
+        <p className="text-xl text-gray-300 text-center">
+          {BRAND.tagline}
+        </p>
+        <p className="text-lg text-gray-400 mt-2">
+          {BRAND.location}
+        </p>
       </div>
-      
-      <div className="max-w-md w-full relative z-10">
-        <div className="flex items-center mb-8">
-          <img src="/assets/logo.png" alt="Wabbit Logo" className="h-8 w-auto mr-4" />
-          <Link href="/" className="text-blue-600 hover:text-blue-800">
-            ← Back to Home
-          </Link>
-        </div>
-        
-        <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-lg shadow-xl p-8">
-          <div className="text-center mb-8">
-            <div className="flex justify-center items-center mb-2">
-              <img src="/assets/logo.png" alt="Wabbit Logo" className="h-12 w-auto mr-3" />
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Welcome Back</h1>
-            </div>
-            <p className="text-gray-600 dark:text-gray-300">Sign in to your Wabbit account</p>
+
+      {/* Right Side - Sign In Form */}
+      <div className="flex-1 flex flex-col justify-center px-6 py-12 lg:px-20">
+        <div className="max-w-md w-full mx-auto">
+          {/* Mobile Logo */}
+          <div className="lg:hidden flex justify-center mb-8">
+            <img
+              src={BRAND.logo}
+              alt={BRAND.logoAlt}
+              className="h-20 w-auto"
+            />
           </div>
 
+          <div className="mb-8">
+            <h2 className="text-3xl font-bold text-brand-black mb-2">
+              Welcome Back
+            </h2>
+            <p className="text-brand-gray-medium">
+              Sign in to access your dashboard
+            </p>
+          </div>
+
+          {/* Error Message */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border-2 border-red-200 rounded-lg flex items-start space-x-3">
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-red-800">
+                  {error}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Sign In Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Email Field */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-brand-black mb-2"
+              >
                 Email Address
               </label>
-              <input
-                type="email"
-                id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="your@email.com"
-              />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <User className="h-5 w-5 text-brand-gray-medium" />
+                </div>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  disabled={loading}
+                  className="w-full pl-12 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand-red focus:outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  placeholder="you@example.com"
+                />
+              </div>
             </div>
 
+            {/* Password Field */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-brand-black mb-2"
+              >
                 Password
               </label>
-              <input
-                type="password"
-                id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter your password"
-              />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <Lock className="h-5 h-5 text-brand-gray-medium" />
+                </div>
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={loading}
+                  className="w-full pl-12 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:border-brand-red focus:outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  placeholder="••••••••"
+                />
+              </div>
             </div>
 
-            {error && (
-              <div className="p-3 bg-red-100 border border-red-300 text-red-700 rounded-lg text-sm">
-                {error}
-              </div>
-            )}
-
+            {/* Submit Button */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 px-4 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3 px-6 bg-brand-red text-white font-semibold rounded-lg hover:bg-brand-red-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
             >
-              {loading ? 'Signing in...' : 'Sign In'}
+              {loading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>Signing in...</span>
+                </>
+              ) : (
+                <>
+                  <LogIn className="w-5 h-5" />
+                  <span>Sign In</span>
+                </>
+              )}
             </button>
           </form>
 
-          <div className="mt-4 text-center">
-            <Link href="/auth/forgot-password" className="text-sm text-blue-600 hover:text-blue-800">
-              Forgot your password?
+          {/* Back to Home */}
+          <div className="mt-8 text-center">
+            <Link
+              href="/"
+              className="text-brand-gray-medium hover:text-brand-black transition-colors text-sm"
+            >
+              ← Back to Home
             </Link>
           </div>
 
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              Don't have an account?{' '}
-              <Link href="/signup" className="text-blue-600 hover:text-blue-800 font-medium">
-                Sign Up
-              </Link>
+          {/* Admin Note */}
+          <div className="mt-8 p-4 bg-brand-gray-light rounded-lg">
+            <p className="text-sm text-brand-gray-medium text-center">
+              <span className="font-medium text-brand-black">Admin Access:</span> Use your admin credentials to access the dashboard
             </p>
           </div>
         </div>

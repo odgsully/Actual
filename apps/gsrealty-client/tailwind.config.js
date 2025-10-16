@@ -17,6 +17,18 @@ module.exports = {
     },
     extend: {
       colors: {
+        // GSRealty Brand Colors - Black/White/Red Theme
+        brand: {
+          black: '#000000',
+          white: '#FFFFFF',
+          red: '#DC2626',         // Primary accent
+          'red-hover': '#B91C1C', // Darker red for hovers
+          'gray-light': '#F9FAFB',
+          'gray-medium': '#6B7280',
+          'gray-dark': '#111827',
+        },
+
+        // Existing shadcn/ui colors (keep for compatibility)
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

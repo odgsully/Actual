@@ -28,5 +28,5 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "dev_buildout", "every cc [copy] copy", "scripts"]
+  "exclude": ["node_modules", "dev_buildout", "every cc [copy] copy", "scripts", "_scripts_WABBIT_RE_DO_NOT_USE", "_migrations_WABBIT_RE_DO_NOT_USE"]
 }

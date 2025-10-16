@@ -9,8 +9,8 @@ import EthereumPolyfill from './ethereum-polyfill'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Wabbit - Smart Real Estate Discovery',
-  description: 'Find your perfect home with intelligent property matching and collaborative ranking',
+  title: 'GS Realty Client Management',
+  description: 'Professional client and property management for Maricopa County real estate',
 }
 
 export default function RootLayout({
