@@ -21,6 +21,8 @@ import {
   COMPS_COLUMNS,
   MCAOData,
 } from '@/lib/types/mls-data';
+import type { MCAOApiResponse } from '@/lib/types/mcao-data';
+import { toMaricopaSheetData } from '@/lib/types/mcao-data';
 
 // ============================================================================
 // Constants
@@ -51,14 +53,14 @@ const HALF_MILE_THRESHOLD = 0.5;
  * @param templatePath - Path to template.xlsx file
  * @param compsData - Array of comparable sales from MLS
  * @param subjectProperty - Subject property data
- * @param mcaoData - MCAO API data (optional)
+ * @param mcaoData - MCAO API data (optional) - supports both MCAOData and MCAOApiResponse
  * @returns Promise with populated workbook and statistics
  */
 export async function populateTemplate(
   templatePath: string,
   compsData: MLSRow[],
   subjectProperty: PropertyData,
-  mcaoData?: MCAOData
+  mcaoData?: MCAOData | MCAOApiResponse
 ): Promise<PopulateTemplateResult> {
   const startTime = Date.now();
   const stats: TemplatePopulationStats = {
@@ -439,11 +441,68 @@ async function populateHalfMileSheet(
 // ============================================================================
 
 /**
+ * Convert MCAOApiResponse to MCAOData (for backward compatibility)
+ */
+function convertMCAOApiResponseToMCAOData(apiResponse: MCAOApiResponse): MCAOData {
+  return {
+    apn: apiResponse.apn,
+    parcelId: apiResponse.parcelNumber,
+    ownerName: apiResponse.ownerName,
+    ownerAddress: apiResponse.ownerAddress
+      ? `${apiResponse.ownerAddress.street}, ${apiResponse.ownerAddress.city}, ${apiResponse.ownerAddress.state} ${apiResponse.ownerAddress.zip}`
+      : '',
+    legalDescription: apiResponse.legalDescription,
+    propertyAddress: apiResponse.propertyAddress.fullAddress,
+    propertyCity: apiResponse.propertyAddress.city,
+    propertyZip: apiResponse.propertyAddress.zip,
+    propertyClass: apiResponse.propertyType,
+    landUseCode: apiResponse.landUse,
+    legalClass: apiResponse.propertyType,
+    subdivision: apiResponse.subdivision || null,
+    lotNumber: apiResponse.lot || null,
+    blockNumber: apiResponse.block || null,
+    section: null,
+    township: null,
+    range: null,
+    assessedLandValue: apiResponse.assessedValue.land,
+    assessedImprovementValue: apiResponse.assessedValue.improvement,
+    totalAssessedValue: apiResponse.assessedValue.total,
+    fullCashValueLand: apiResponse.assessedValue.land,
+    fullCashValueImprovement: apiResponse.assessedValue.improvement,
+    fullCashValueTotal: apiResponse.assessedValue.total,
+    taxAmount: apiResponse.taxInfo.taxAmount,
+    taxYear: apiResponse.taxInfo.taxYear,
+    sqftLiving: apiResponse.improvementSize || 0,
+    sqftLot: apiResponse.lotSize,
+    yearBuilt: apiResponse.yearBuilt || 0,
+    bedrooms: apiResponse.bedrooms || 0,
+    bathrooms: apiResponse.bathrooms || 0,
+    hasPool: apiResponse.features?.pool || false,
+    garageType: null,
+    garageSpaces: apiResponse.features?.garageSpaces || 0,
+    stories: apiResponse.stories || 1,
+    constructionType: apiResponse.constructionType || null,
+    roofType: apiResponse.roofType || null,
+    exteriorWalls: null,
+    lastSaleDate: apiResponse.salesHistory?.[0]?.saleDate
+      ? new Date(apiResponse.salesHistory[0].saleDate)
+      : null,
+    lastSalePrice: apiResponse.salesHistory?.[0]?.salePrice || null,
+    saleDocumentNumber: apiResponse.salesHistory?.[0]?.recordingNumber || null,
+    zoning: apiResponse.zoning || null,
+    apiCallTimestamp: new Date(apiResponse.lastUpdated),
+    apiResponseStatus: 'Success',
+    taxHistory: undefined,
+  };
+}
+
+/**
  * Populate Full_API_call sheet with MCAO data
+ * Now supports both MCAOData and MCAOApiResponse types
  */
 async function populateFullAPICallSheet(
   workbook: ExcelJS.Workbook,
-  mcaoData: MCAOData,
+  mcaoData: MCAOData | MCAOApiResponse,
   stats: TemplatePopulationStats
 ): Promise<void> {
   console.log(`${LOG_PREFIX} Populating Full_API_call sheet`);
@@ -453,6 +512,12 @@ async function populateFullAPICallSheet(
     stats.warnings.push({ message: 'Full_API_call sheet not found, skipping' });
     return;
   }
+
+  // Convert MCAOApiResponse to MCAOData if needed
+  const data: MCAOData =
+    'apiVersion' in mcaoData
+      ? convertMCAOApiResponseToMCAOData(mcaoData as MCAOApiResponse)
+      : (mcaoData as MCAOData);
 
   // Ensure header row
   const headerRow = sheet.getRow(1);
@@ -467,49 +532,49 @@ async function populateFullAPICallSheet(
   dataRow.getCell('A').value = '';
 
   // Column B onwards: MCAO fields
-  dataRow.getCell('B').value = mcaoData.apn;
-  dataRow.getCell('C').value = mcaoData.parcelId;
-  dataRow.getCell('D').value = mcaoData.ownerName;
-  dataRow.getCell('E').value = mcaoData.ownerAddress;
-  dataRow.getCell('F').value = mcaoData.legalDescription;
-  dataRow.getCell('G').value = mcaoData.propertyAddress;
-  dataRow.getCell('H').value = mcaoData.propertyCity;
-  dataRow.getCell('I').value = mcaoData.propertyZip;
-  dataRow.getCell('J').value = mcaoData.propertyClass;
-  dataRow.getCell('K').value = mcaoData.landUseCode;
-  dataRow.getCell('L').value = mcaoData.legalClass;
-  dataRow.getCell('M').value = mcaoData.subdivision;
-  dataRow.getCell('N').value = mcaoData.lotNumber;
-  dataRow.getCell('O').value = mcaoData.blockNumber;
-  dataRow.getCell('P').value = mcaoData.section;
-  dataRow.getCell('Q').value = mcaoData.township;
-  dataRow.getCell('R').value = mcaoData.range;
-  dataRow.getCell('S').value = mcaoData.assessedLandValue;
-  dataRow.getCell('T').value = mcaoData.assessedImprovementValue;
-  dataRow.getCell('U').value = mcaoData.totalAssessedValue;
-  dataRow.getCell('V').value = mcaoData.fullCashValueLand;
-  dataRow.getCell('W').value = mcaoData.fullCashValueImprovement;
-  dataRow.getCell('X').value = mcaoData.fullCashValueTotal;
-  dataRow.getCell('Y').value = mcaoData.taxAmount;
-  dataRow.getCell('Z').value = mcaoData.taxYear;
-  dataRow.getCell('AA').value = mcaoData.sqftLiving;
-  dataRow.getCell('AB').value = mcaoData.sqftLot;
-  dataRow.getCell('AC').value = mcaoData.yearBuilt;
-  dataRow.getCell('AD').value = mcaoData.bedrooms;
-  dataRow.getCell('AE').value = mcaoData.bathrooms;
-  dataRow.getCell('AF').value = mcaoData.hasPool ? 'Y' : 'N';
-  dataRow.getCell('AG').value = mcaoData.garageType;
-  dataRow.getCell('AH').value = mcaoData.garageSpaces;
-  dataRow.getCell('AI').value = mcaoData.stories;
-  dataRow.getCell('AJ').value = mcaoData.constructionType;
-  dataRow.getCell('AK').value = mcaoData.roofType;
-  dataRow.getCell('AL').value = mcaoData.exteriorWalls;
-  dataRow.getCell('AM').value = mcaoData.lastSaleDate;
-  dataRow.getCell('AN').value = mcaoData.lastSalePrice;
-  dataRow.getCell('AO').value = mcaoData.saleDocumentNumber;
-  dataRow.getCell('AP').value = mcaoData.zoning;
-  dataRow.getCell('AQ').value = mcaoData.apiCallTimestamp;
-  dataRow.getCell('AR').value = mcaoData.apiResponseStatus;
+  dataRow.getCell('B').value = data.apn;
+  dataRow.getCell('C').value = data.parcelId;
+  dataRow.getCell('D').value = data.ownerName;
+  dataRow.getCell('E').value = data.ownerAddress;
+  dataRow.getCell('F').value = data.legalDescription;
+  dataRow.getCell('G').value = data.propertyAddress;
+  dataRow.getCell('H').value = data.propertyCity;
+  dataRow.getCell('I').value = data.propertyZip;
+  dataRow.getCell('J').value = data.propertyClass;
+  dataRow.getCell('K').value = data.landUseCode;
+  dataRow.getCell('L').value = data.legalClass;
+  dataRow.getCell('M').value = data.subdivision;
+  dataRow.getCell('N').value = data.lotNumber;
+  dataRow.getCell('O').value = data.blockNumber;
+  dataRow.getCell('P').value = data.section;
+  dataRow.getCell('Q').value = data.township;
+  dataRow.getCell('R').value = data.range;
+  dataRow.getCell('S').value = data.assessedLandValue;
+  dataRow.getCell('T').value = data.assessedImprovementValue;
+  dataRow.getCell('U').value = data.totalAssessedValue;
+  dataRow.getCell('V').value = data.fullCashValueLand;
+  dataRow.getCell('W').value = data.fullCashValueImprovement;
+  dataRow.getCell('X').value = data.fullCashValueTotal;
+  dataRow.getCell('Y').value = data.taxAmount;
+  dataRow.getCell('Z').value = data.taxYear;
+  dataRow.getCell('AA').value = data.sqftLiving;
+  dataRow.getCell('AB').value = data.sqftLot;
+  dataRow.getCell('AC').value = data.yearBuilt;
+  dataRow.getCell('AD').value = data.bedrooms;
+  dataRow.getCell('AE').value = data.bathrooms;
+  dataRow.getCell('AF').value = data.hasPool ? 'Y' : 'N';
+  dataRow.getCell('AG').value = data.garageType;
+  dataRow.getCell('AH').value = data.garageSpaces;
+  dataRow.getCell('AI').value = data.stories;
+  dataRow.getCell('AJ').value = data.constructionType;
+  dataRow.getCell('AK').value = data.roofType;
+  dataRow.getCell('AL').value = data.exteriorWalls;
+  dataRow.getCell('AM').value = data.lastSaleDate;
+  dataRow.getCell('AN').value = data.lastSalePrice;
+  dataRow.getCell('AO').value = data.saleDocumentNumber;
+  dataRow.getCell('AP').value = data.zoning;
+  dataRow.getCell('AQ').value = data.apiCallTimestamp;
+  dataRow.getCell('AR').value = data.apiResponseStatus;
 
   // Format currency and date cells
   ['S', 'T', 'U', 'V', 'W', 'X', 'Y', 'AN'].forEach((col) => {
@@ -530,10 +595,12 @@ async function populateFullAPICallSheet(
 
 /**
  * Populate Maricopa sheet with two-column format (rows 2-24)
+ * Now supports both MCAOData and MCAOApiResponse types
+ * Uses toMaricopaSheetData() helper for MCAOApiResponse
  */
 async function populateMaricopaSheet(
   workbook: ExcelJS.Workbook,
-  mcaoData: MCAOData,
+  mcaoData: MCAOData | MCAOApiResponse,
   stats: TemplatePopulationStats
 ): Promise<void> {
   console.log(`${LOG_PREFIX} Populating Maricopa sheet`);
@@ -544,85 +611,138 @@ async function populateMaricopaSheet(
     return;
   }
 
-  // Rows 2-24: Two-column format (B=label, C=value)
-  // Column A is BLANK (reserved)
-  const dataMapping: Record<number, { label: string; value: any }> = {
-    2: { label: 'APN', value: mcaoData.apn },
-    3: { label: 'Owner Name', value: mcaoData.ownerName },
-    4: { label: 'Legal Description', value: mcaoData.legalDescription },
-    5: { label: 'Property Address', value: mcaoData.propertyAddress },
-    6: { label: 'Subdivision', value: mcaoData.subdivision },
-    7: { label: 'Lot Number', value: mcaoData.lotNumber },
-    8: {
-      label: 'Section/Township/Range',
-      value: `${mcaoData.section || ''}/${mcaoData.township || ''}/${mcaoData.range || ''}`,
-    },
-    9: { label: 'Assessed Value (Land)', value: mcaoData.assessedLandValue },
-    10: { label: 'Assessed Value (Improvements)', value: mcaoData.assessedImprovementValue },
-    11: { label: 'Total Assessed Value', value: mcaoData.totalAssessedValue },
-    12: { label: 'Full Cash Value (Land)', value: mcaoData.fullCashValueLand },
-    13: { label: 'Full Cash Value (Improvements)', value: mcaoData.fullCashValueImprovement },
-    14: { label: 'Full Cash Value (Total)', value: mcaoData.fullCashValueTotal },
-    15: { label: 'Tax Amount', value: mcaoData.taxAmount },
-    16: { label: 'Tax Year', value: mcaoData.taxYear },
-    17: { label: 'Year Built', value: mcaoData.yearBuilt },
-    18: { label: 'Living Area (SqFt)', value: mcaoData.sqftLiving },
-    19: { label: 'Lot Size (SqFt)', value: mcaoData.sqftLot },
-    20: { label: 'Bedrooms', value: mcaoData.bedrooms },
-    21: { label: 'Bathrooms', value: mcaoData.bathrooms },
-    22: { label: 'Pool', value: mcaoData.hasPool ? 'Yes' : 'No' },
-    23: { label: 'Zoning', value: mcaoData.zoning },
-    24: { label: 'Last Sale Date', value: mcaoData.lastSaleDate },
-  };
+  // Convert MCAOApiResponse to formatted sheet data if needed
+  if ('apiVersion' in mcaoData) {
+    const sheetData = toMaricopaSheetData(mcaoData as MCAOApiResponse);
 
-  // Populate rows 2-24
-  for (const [rowNum, data] of Object.entries(dataMapping)) {
-    const row = sheet.getRow(parseInt(rowNum));
-    row.getCell('A').value = ''; // Reserved
-    row.getCell('B').value = data.label;
-    row.getCell('B').font = { bold: true };
-    row.getCell('C').value = data.value;
+    // Populate using the helper's formatted data (rows 2-24)
+    const dataMapping: Record<number, { label: string; value: string }> = {
+      2: { label: 'APN', value: sheetData.apn },
+      3: { label: 'Owner Name', value: sheetData.ownerName },
+      4: { label: 'Property Address', value: sheetData.propertyAddress },
+      5: { label: 'Legal Description', value: sheetData.legalDescription },
+      6: { label: 'Lot Size', value: sheetData.lotSize },
+      7: { label: 'Year Built', value: sheetData.yearBuilt },
+      8: { label: 'Property Type', value: sheetData.propertyType },
+      9: { label: 'Land Use', value: sheetData.landUse },
+      10: { label: 'Zoning', value: sheetData.zoning },
+      11: { label: 'Assessed Value (Total)', value: sheetData.assessedValueTotal },
+      12: { label: 'Assessed Value (Land)', value: sheetData.assessedValueLand },
+      13: { label: 'Assessed Value (Improvement)', value: sheetData.assessedValueImprovement },
+      14: { label: 'Tax Year', value: sheetData.taxYear },
+      15: { label: 'Tax Amount', value: sheetData.taxAmount },
+      16: { label: 'Tax Rate', value: sheetData.taxRate },
+      17: { label: 'Subdivision', value: sheetData.subdivision },
+      18: { label: 'Lot', value: sheetData.lot },
+      19: { label: 'Block', value: sheetData.block },
+      20: { label: 'Bedrooms', value: sheetData.bedrooms },
+      21: { label: 'Bathrooms', value: sheetData.bathrooms },
+      22: { label: 'Improvement Size', value: sheetData.improvementSize },
+      23: { label: 'Construction Type', value: sheetData.constructionType },
+      24: { label: 'Features', value: sheetData.features },
+    };
 
-    // Format currency
-    if (data.label.includes('Value') || data.label.includes('Tax Amount')) {
-      row.getCell('C').numFmt = '$#,##0.00';
+    // Populate rows 2-24
+    for (const [rowNum, data] of Object.entries(dataMapping)) {
+      const row = sheet.getRow(parseInt(rowNum));
+      row.getCell('A').value = ''; // Reserved
+      row.getCell('B').value = data.label;
+      row.getCell('B').font = { bold: true };
+      row.getCell('C').value = data.value;
     }
 
-    // Format date
-    if (data.label.includes('Date')) {
-      row.getCell('C').numFmt = 'mm/dd/yyyy';
+    // Matrix data if provided
+    if (sheetData.matrixData && sheetData.matrixData.length > 0) {
+      sheetData.matrixData.forEach((matrixRow) => {
+        const row = sheet.getRow(matrixRow.row);
+        row.getCell('C').value = matrixRow.columnC;
+        row.getCell('D').value = matrixRow.columnD;
+      });
     }
-  }
+  } else {
+    // Legacy MCAOData format
+    const data = mcaoData as MCAOData;
 
-  // Rows 26+: Matrix format (tax history)
-  if (mcaoData.taxHistory && mcaoData.taxHistory.length > 0) {
-    const matrixStartRow = 26;
+    // Rows 2-24: Two-column format (B=label, C=value)
+    // Column A is BLANK (reserved)
+    const dataMapping: Record<number, { label: string; value: any }> = {
+      2: { label: 'APN', value: data.apn },
+      3: { label: 'Owner Name', value: data.ownerName },
+      4: { label: 'Legal Description', value: data.legalDescription },
+      5: { label: 'Property Address', value: data.propertyAddress },
+      6: { label: 'Subdivision', value: data.subdivision },
+      7: { label: 'Lot Number', value: data.lotNumber },
+      8: {
+        label: 'Section/Township/Range',
+        value: `${data.section || ''}/${data.township || ''}/${data.range || ''}`,
+      },
+      9: { label: 'Assessed Value (Land)', value: data.assessedLandValue },
+      10: { label: 'Assessed Value (Improvements)', value: data.assessedImprovementValue },
+      11: { label: 'Total Assessed Value', value: data.totalAssessedValue },
+      12: { label: 'Full Cash Value (Land)', value: data.fullCashValueLand },
+      13: { label: 'Full Cash Value (Improvements)', value: data.fullCashValueImprovement },
+      14: { label: 'Full Cash Value (Total)', value: data.fullCashValueTotal },
+      15: { label: 'Tax Amount', value: data.taxAmount },
+      16: { label: 'Tax Year', value: data.taxYear },
+      17: { label: 'Year Built', value: data.yearBuilt },
+      18: { label: 'Living Area (SqFt)', value: data.sqftLiving },
+      19: { label: 'Lot Size (SqFt)', value: data.sqftLot },
+      20: { label: 'Bedrooms', value: data.bedrooms },
+      21: { label: 'Bathrooms', value: data.bathrooms },
+      22: { label: 'Pool', value: data.hasPool ? 'Yes' : 'No' },
+      23: { label: 'Zoning', value: data.zoning },
+      24: { label: 'Last Sale Date', value: data.lastSaleDate },
+    };
 
-    // Headers
-    const headerRow = sheet.getRow(matrixStartRow);
-    headerRow.getCell('B').value = 'Tax Year';
-    headerRow.getCell('C').value = 'Assessed Value';
-    headerRow.getCell('D').value = 'Tax Amount';
-    headerRow.getCell('E').value = 'Tax Rate';
+    // Populate rows 2-24
+    for (const [rowNum, rowData] of Object.entries(dataMapping)) {
+      const row = sheet.getRow(parseInt(rowNum));
+      row.getCell('A').value = ''; // Reserved
+      row.getCell('B').value = rowData.label;
+      row.getCell('B').font = { bold: true };
+      row.getCell('C').value = rowData.value;
 
-    // Make headers bold
-    ['B', 'C', 'D', 'E'].forEach((col) => {
-      headerRow.getCell(col).font = { bold: true };
-    });
+      // Format currency
+      if (rowData.label.includes('Value') || rowData.label.includes('Tax Amount')) {
+        row.getCell('C').numFmt = '$#,##0.00';
+      }
 
-    // Data rows
-    mcaoData.taxHistory.forEach((record, index) => {
-      const row = sheet.getRow(matrixStartRow + 1 + index);
-      row.getCell('B').value = record.taxYear;
-      row.getCell('C').value = record.assessedValue;
-      row.getCell('D').value = record.taxAmount;
-      row.getCell('E').value = record.taxRate;
+      // Format date
+      if (rowData.label.includes('Date')) {
+        row.getCell('C').numFmt = 'mm/dd/yyyy';
+      }
+    }
 
-      // Format
-      row.getCell('C').numFmt = '$#,##0.00';
-      row.getCell('D').numFmt = '$#,##0.00';
-      row.getCell('E').numFmt = '0.00%';
-    });
+    // Rows 26+: Matrix format (tax history)
+    if (data.taxHistory && data.taxHistory.length > 0) {
+      const matrixStartRow = 26;
+
+      // Headers
+      const headerRow = sheet.getRow(matrixStartRow);
+      headerRow.getCell('B').value = 'Tax Year';
+      headerRow.getCell('C').value = 'Assessed Value';
+      headerRow.getCell('D').value = 'Tax Amount';
+      headerRow.getCell('E').value = 'Tax Rate';
+
+      // Make headers bold
+      ['B', 'C', 'D', 'E'].forEach((col) => {
+        headerRow.getCell(col).font = { bold: true };
+      });
+
+      // Data rows
+      data.taxHistory.forEach((record, index) => {
+        const row = sheet.getRow(matrixStartRow + 1 + index);
+        row.getCell('B').value = record.taxYear;
+        row.getCell('C').value = record.assessedValue;
+        row.getCell('D').value = record.taxAmount;
+        row.getCell('E').value = record.taxRate;
+
+        // Format
+        row.getCell('C').numFmt = '$#,##0.00';
+        row.getCell('D').numFmt = '$#,##0.00';
+        row.getCell('E').numFmt = '0.00%';
+      });
+    }
   }
 
   console.log(`${LOG_PREFIX} Maricopa sheet populated`);
@@ -634,10 +754,11 @@ async function populateMaricopaSheet(
 
 /**
  * Populate Lot sheet with light grey background
+ * Now supports both MCAOData and MCAOApiResponse types
  */
 async function populateLotSheet(
   workbook: ExcelJS.Workbook,
-  mcaoData: MCAOData,
+  mcaoData: MCAOData | MCAOApiResponse,
   stats: TemplatePopulationStats
 ): Promise<void> {
   console.log(`${LOG_PREFIX} Populating Lot sheet`);
@@ -648,6 +769,12 @@ async function populateLotSheet(
     return;
   }
 
+  // Convert MCAOApiResponse to MCAOData if needed
+  const data: MCAOData =
+    'apiVersion' in mcaoData
+      ? convertMCAOApiResponseToMCAOData(mcaoData as MCAOApiResponse)
+      : (mcaoData as MCAOData);
+
   // Light grey background for all cells
   const greyFill: ExcelJS.FillPattern = {
     type: 'pattern',
@@ -657,11 +784,11 @@ async function populateLotSheet(
 
   // Lot dimensions section (rows 2-15)
   const lotData: Record<number, { label: string; value: any }> = {
-    2: { label: 'Lot Size (SqFt)', value: mcaoData.sqftLot },
-    3: { label: 'Lot Size (Acres)', value: mcaoData.sqftLot / 43560 },
-    17: { label: 'Zoning Classification', value: mcaoData.zoning },
-    18: { label: 'Land Use Code', value: mcaoData.landUseCode },
-    19: { label: 'Legal Class', value: mcaoData.legalClass },
+    2: { label: 'Lot Size (SqFt)', value: data.sqftLot },
+    3: { label: 'Lot Size (Acres)', value: data.sqftLot / 43560 },
+    17: { label: 'Zoning Classification', value: data.zoning },
+    18: { label: 'Land Use Code', value: data.landUseCode },
+    19: { label: 'Legal Class', value: data.legalClass },
   };
 
   for (const [rowNum, data] of Object.entries(lotData)) {
