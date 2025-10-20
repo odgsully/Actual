@@ -1,6 +1,8 @@
 'use client'
 
+import { useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
+import { CreateEventModal } from '@/components/admin/CreateEventModal'
 import {
   Home,
   Upload,
@@ -9,11 +11,13 @@ import {
   Users,
   TrendingUp,
   FileText,
-  CheckCircle
+  CheckCircle,
+  Plus
 } from 'lucide-react'
 
 export default function AdminDashboard() {
   const { user } = useAuth()
+  const [isEventModalOpen, setIsEventModalOpen] = useState(false)
 
   const stats = [
     {
@@ -21,28 +25,28 @@ export default function AdminDashboard() {
       value: '0',
       icon: Users,
       color: 'bg-blue-500',
-      change: 'Coming in Week 2'
+      change: 'No clients yet'
     },
     {
       name: 'Properties Tracked',
       value: '0',
       icon: Home,
       color: 'bg-green-500',
-      change: 'Coming in Week 2'
+      change: 'Add your first client'
     },
     {
       name: 'Files Uploaded',
       value: '0',
       icon: FileText,
       color: 'bg-purple-500',
-      change: 'Coming in Week 3'
+      change: 'Upload MLS data'
     },
     {
       name: 'MCAO Lookups',
       value: '0',
       icon: Search,
       color: 'bg-orange-500',
-      change: 'Coming in Week 5'
+      change: 'Search properties'
     },
   ]
 
@@ -52,53 +56,59 @@ export default function AdminDashboard() {
       description: 'Create a new client profile',
       icon: Users,
       href: '/admin/clients/new',
-      color: 'bg-brand-black',
-      badge: 'Week 2'
+      color: 'bg-brand-black'
     },
     {
       title: 'Upload MLS Data',
       description: 'Process MLS comps and generate reports',
       icon: Upload,
       href: '/admin/upload',
-      color: 'bg-brand-red',
-      badge: 'Week 3'
+      color: 'bg-brand-red'
     },
     {
       title: 'MCAO Property Search',
       description: 'Look up Maricopa County property data',
       icon: Search,
       href: '/admin/mcao',
-      color: 'bg-brand-black',
-      badge: 'Week 5'
+      color: 'bg-brand-black'
     },
     {
       title: 'System Settings',
       description: 'Configure app preferences',
       icon: Settings,
       href: '/admin/settings',
-      color: 'bg-gray-700',
-      badge: 'Later'
+      color: 'bg-gray-700'
     },
   ]
 
-  const developmentProgress = [
-    { phase: 'Week 1: Foundation & Auth', status: 'completed', progress: 100 },
-    { phase: 'Week 2: Client Management', status: 'next', progress: 0 },
-    { phase: 'Week 3: File Upload System', status: 'upcoming', progress: 0 },
-    { phase: 'Week 4: Integration & Testing', status: 'upcoming', progress: 0 },
-    { phase: 'Week 5: MCAO Integration', status: 'upcoming', progress: 0 },
+  const features = [
+    { name: 'Client Management', description: 'Add, edit, and manage client profiles', icon: Users },
+    { name: 'MLS Data Processing', description: 'Upload and process MLS comp data', icon: Upload },
+    { name: 'MCAO Integration', description: 'Search Maricopa County property records', icon: Search },
+    { name: 'File Management', description: 'Store and organize client documents', icon: FileText },
   ]
 
   return (
     <div className="space-y-6">
       {/* Welcome Section */}
       <div className="bg-white rounded-lg border-2 border-brand-black p-6">
-        <h1 className="text-3xl font-bold text-brand-black mb-2">
-          Welcome back, {user?.email?.split('@')[0] || 'Admin'}!
-        </h1>
-        <p className="text-gray-600">
-          Manage your clients, properties, and MLS data all in one place.
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-brand-black mb-2">
+              Welcome back, {user?.email?.split('@')[0] || 'Admin'}!
+            </h1>
+            <p className="text-gray-600">
+              Manage your clients, properties, and MLS data all in one place.
+            </p>
+          </div>
+          <button
+            onClick={() => setIsEventModalOpen(true)}
+            className="px-6 py-3 bg-brand-red text-white rounded-lg hover:bg-red-700 font-medium flex items-center space-x-2 transition-colors"
+          >
+            <Plus className="w-5 h-5" />
+            <span>New Event</span>
+          </button>
+        </div>
       </div>
 
       {/* Stats Grid */}
@@ -136,101 +146,84 @@ export default function AdminDashboard() {
           {quickActions.map((action) => {
             const Icon = action.icon
             return (
-              <div
+              <a
                 key={action.title}
-                className="bg-white rounded-lg border-2 border-gray-200 p-6 hover:border-brand-black transition-colors cursor-not-allowed opacity-75"
+                href={action.href}
+                className="bg-white rounded-lg border-2 border-gray-200 p-6 hover:border-brand-red transition-colors group"
               >
                 <div className="flex items-start justify-between mb-4">
-                  <div className={`${action.color} rounded-lg p-3`}>
+                  <div className={`${action.color} rounded-lg p-3 group-hover:scale-110 transition-transform`}>
                     <Icon className="w-6 h-6 text-white" />
                   </div>
-                  <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded font-medium">
-                    {action.badge}
-                  </span>
                 </div>
-                <h3 className="text-lg font-bold text-brand-black mb-2">
+                <h3 className="text-lg font-bold text-brand-black mb-2 group-hover:text-brand-red transition-colors">
                   {action.title}
                 </h3>
                 <p className="text-sm text-gray-600">
                   {action.description}
                 </p>
-              </div>
+              </a>
             )
           })}
         </div>
       </div>
 
-      {/* Development Roadmap */}
+      {/* Features Overview */}
       <div className="bg-white rounded-lg border-2 border-brand-black p-6">
         <div className="flex items-center space-x-3 mb-6">
           <div className="bg-brand-red rounded-lg p-2">
-            <TrendingUp className="w-5 h-5 text-white" />
+            <CheckCircle className="w-5 h-5 text-white" />
           </div>
           <div>
             <h2 className="text-xl font-bold text-brand-black">
-              Development Progress
+              Available Features
             </h2>
             <p className="text-sm text-gray-600">
-              Conservative 10-week timeline
+              Everything you need to manage your real estate clients
             </p>
           </div>
         </div>
 
-        <div className="space-y-4">
-          {developmentProgress.map((item, index) => (
-            <div key={index} className="flex items-center space-x-4">
-              <div className="flex-shrink-0">
-                {item.status === 'completed' ? (
-                  <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                    <CheckCircle className="w-5 h-5 text-white" />
-                  </div>
-                ) : item.status === 'next' ? (
-                  <div className="w-8 h-8 bg-brand-red rounded-full flex items-center justify-center text-white font-bold text-sm">
-                    {index + 1}
-                  </div>
-                ) : (
-                  <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-400 font-bold text-sm">
-                    {index + 1}
-                  </div>
-                )}
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-1">
-                  <span className={`text-sm font-medium ${
-                    item.status === 'completed' ? 'text-green-600' :
-                    item.status === 'next' ? 'text-brand-red' :
-                    'text-gray-600'
-                  }`}>
-                    {item.phase}
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    {item.progress}%
-                  </span>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {features.map((feature) => {
+            const Icon = feature.icon
+            return (
+              <div
+                key={feature.name}
+                className="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg"
+              >
+                <div className="bg-brand-red rounded-lg p-2 flex-shrink-0">
+                  <Icon className="w-5 h-5 text-white" />
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className={`h-2 rounded-full ${
-                      item.status === 'completed' ? 'bg-green-500' :
-                      item.status === 'next' ? 'bg-brand-red' :
-                      'bg-gray-300'
-                    }`}
-                    style={{ width: `${item.progress}%` }}
-                  />
+                <div>
+                  <h3 className="font-semibold text-brand-black mb-1">
+                    {feature.name}
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    {feature.description}
+                  </p>
                 </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
 
-        <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-          <p className="text-sm text-green-800">
-            <span className="font-semibold">✓ Week 1 Complete:</span> Authentication system, role-based protection, and admin dashboard are live!
-          </p>
-          <p className="text-xs text-green-600 mt-1">
-            Next up: Client Management (Week 2) - CRUD operations, client list, and profile management
+        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-sm text-blue-800">
+            <span className="font-semibold">💡 Getting Started:</span> Begin by adding your first client, then upload their MLS data to start generating reports.
           </p>
         </div>
       </div>
+
+      {/* Event Creation Modal */}
+      <CreateEventModal
+        isOpen={isEventModalOpen}
+        onClose={() => setIsEventModalOpen(false)}
+        onEventCreated={() => {
+          // Optionally refresh data or show success message
+          console.log('Event created successfully')
+        }}
+      />
     </div>
   )
 }

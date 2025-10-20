@@ -70,9 +70,22 @@ export async function POST(req: NextRequest) {
 
       if (dbData && !dbError) {
         console.log('[MCAO Lookup API] Found in database cache')
+        // Process cached data through client to get categorized fields
+        const mcaoClient = getMCAOClient()
+        const processedData = dbData.api_response
+
+        // Manually process to add flattened/categorized data
+        const { flattenJSON, categorizeMCAOData } = await import('@/lib/types/mcao-data')
+        const flattenedData = processedData.rawResponse ? flattenJSON(processedData.rawResponse) : {}
+        const categorizedData = categorizeMCAOData(flattenedData)
+        const fieldCount = Object.keys(flattenedData).length
+
         return NextResponse.json({
           success: true,
           data: dbData.api_response,
+          flattenedData,
+          categorizedData,
+          fieldCount,
           cached: true,
           source: 'database',
           cachedAt: dbData.fetched_at,
@@ -114,10 +127,13 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Return API response
+    // Return complete API response with categorized data
     return NextResponse.json({
       success: true,
       data: result.data,
+      flattenedData: result.flattenedData,
+      categorizedData: result.categorizedData,
+      fieldCount: result.fieldCount,
       cached: result.cached || false,
       source: result.cached ? 'client_cache' : 'api',
       cachedAt: result.cachedAt,

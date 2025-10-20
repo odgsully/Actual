@@ -517,7 +517,7 @@ describe('Invitation Workflow Integration', () => {
       expect(data).toBeDefined();
       expect(data?.expires_at).toBeDefined();
 
-      const expiresAt = new Date(data.expires_at);
+      const expiresAt = new Date(data!.expires_at);
       const now = new Date();
       expect(expiresAt.getTime()).toBeGreaterThan(now.getTime());
     });
@@ -534,8 +534,8 @@ describe('Invitation Workflow Integration', () => {
         .eq('id', testInvitationId)
         .single();
 
-      const createdAt = new Date(data.created_at);
-      const expiresAt = new Date(data.expires_at);
+      const createdAt = new Date(data!.created_at);
+      const expiresAt = new Date(data!.expires_at);
       const diffDays = (expiresAt.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
 
       expect(diffDays).toBeCloseTo(7, 0);

@@ -27,10 +27,10 @@ export default function AdminLayout({
 
   const navigation = [
     { name: 'Dashboard', href: '/admin', icon: Home },
-    { name: 'Clients', href: '/admin/clients', icon: User },
-    { name: 'Upload Files', href: '/admin/upload', icon: Upload },
-    { name: 'MCAO Lookup', href: '/admin/mcao', icon: Search },
-    { name: 'Settings', href: '/admin/settings', icon: Settings },
+    { name: 'Clients', href: '/admin/clients', icon: User, badge: 'Week 2' },
+    { name: 'Upload Files', href: '/admin/upload', icon: Upload, badge: 'Week 3' },
+    { name: 'MCAO Lookup', href: '/admin/mcao', icon: Search, badge: 'Week 5' },
+    { name: 'Settings', href: '/admin/settings', icon: Settings, badge: 'Later' },
   ]
 
   const isActive = (href: string) => {
@@ -104,6 +104,11 @@ export default function AdminLayout({
                   <Icon className="w-5 h-5" />
                   <span className="font-medium">{item.name}</span>
                 </div>
+                {item.badge && (
+                  <span className="text-xs px-2 py-1 bg-gray-700 rounded text-gray-300">
+                    {item.badge}
+                  </span>
+                )}
               </Link>
             )
           })}

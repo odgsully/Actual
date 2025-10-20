@@ -34,7 +34,7 @@ describe('database/files', () => {
     id: '550e8400-e29b-41d4-a716-446655440000',
     client_id: '660e8400-e29b-41d4-a716-446655440001',
     file_name: 'mls-data.csv',
-    file_type: 'text/csv',
+    file_type: 'csv',
     storage_path: '/uploads/mls-data.csv',
     local_path: null,
     file_size: 102400,
@@ -60,7 +60,7 @@ describe('database/files', () => {
       const input: RecordFileUploadInput = {
         clientId: '660e8400-e29b-41d4-a716-446655440001',
         fileName: 'mls-data.csv',
-        fileType: 'text/csv',
+        fileType: 'csv',
         storagePath: '/uploads/mls-data.csv',
         fileSize: 102400,
         uploadedBy: 'user-123',
@@ -113,7 +113,7 @@ describe('database/files', () => {
       const input: RecordFileUploadInput = {
         clientId: '660e8400-e29b-41d4-a716-446655440001',
         fileName: 'test.csv',
-        fileType: 'text/csv',
+        fileType: 'csv',
         storagePath: '/uploads/test.csv',
         fileSize: 1024,
         uploadedBy: 'user-123',

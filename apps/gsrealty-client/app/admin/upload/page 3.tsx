@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { Upload, Download, Search, AlertCircle, CheckCircle, FileSpreadsheet } from 'lucide-react'
-import { MCAOCategorizedData } from '../../../components/admin/MCAOCategorizedData'
 
 interface UploadedData {
   fileName: string
@@ -54,7 +53,7 @@ export default function UploadPage() {
       const result = await response.json()
 
       if (result.success) {
-        setSubjectData(result) // Store full MCAOLookupResult (includes categorizedData, fieldCount, etc.)
+        setSubjectData(result.data)
       } else {
         setSubjectError(result.error || 'Failed to fetch property data')
       }
@@ -108,7 +107,10 @@ export default function UploadPage() {
 
   // Generate final Excel report
   const handleGenerateReport = async () => {
-    // Only require the uploaded comp files, MCAO data is optional
+    if (!subjectData) {
+      alert('Please fetch subject property data first')
+      return
+    }
     if (!halfMileComps) {
       alert('Please upload 0.5 Mile Comps file')
       return
@@ -125,11 +127,11 @@ export default function UploadPage() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          subjectProperty: subjectData || null,
+          subjectProperty: subjectData,
           compsData: directComps.data,
           halfMileComps: halfMileComps.data,
           allScopesComps: allScopesComps?.data || [],
-          mcaoData: subjectData || null,
+          mcaoData: subjectData,
         }),
       })
 
@@ -158,8 +160,7 @@ export default function UploadPage() {
     }
   }
 
-  // Only require comp files to be uploaded - MCAO data is optional
-  const allDataReady = halfMileComps && directComps
+  const allDataReady = subjectData && halfMileComps && directComps
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
@@ -205,10 +206,7 @@ export default function UploadPage() {
       {/* Subject Property */}
       <div className="bg-white rounded-lg border-2 border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-xl font-bold text-gray-900">2. Subject Property (APN) <span className="text-sm text-gray-500 font-normal">(Optional)</span></h2>
-            <p className="text-sm text-gray-600 mt-1">Fetch property data from MCAO or skip if unavailable</p>
-          </div>
+          <h2 className="text-xl font-bold text-gray-900">2. Subject Property (APN)</h2>
           {subjectData && (
             <CheckCircle className="w-6 h-6 text-green-600" />
           )}
@@ -240,23 +238,13 @@ export default function UploadPage() {
         )}
 
         {subjectData && (
-          <div className="bg-white border border-green-200 rounded-lg p-4">
-            {/* Display categorized data if available */}
-            {subjectData.categorizedData ? (
-              <MCAOCategorizedData
-                categorizedData={subjectData.categorizedData}
-                fieldCount={subjectData.fieldCount}
-                apn={subjectData.data?.apn || subjectAPN}
-              />
-            ) : (
-              /* Fallback to basic display if categorized data not available */
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div><strong>APN:</strong> {subjectData.data?.apn || subjectAPN}</div>
-                <div><strong>Address:</strong> {subjectData.data?.propertyAddress?.fullAddress}</div>
-                <div><strong>Owner:</strong> {subjectData.data?.ownerName}</div>
-                <div><strong>Value:</strong> ${subjectData.data?.assessedValue?.total?.toLocaleString()}</div>
-              </div>
-            )}
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div><strong>APN:</strong> {subjectData.apn}</div>
+              <div><strong>Address:</strong> {subjectData.propertyAddress?.fullAddress}</div>
+              <div><strong>Owner:</strong> {subjectData.ownerName}</div>
+              <div><strong>Value:</strong> ${subjectData.assessedValue?.total?.toLocaleString()}</div>
+            </div>
           </div>
         )}
       </div>
@@ -411,8 +399,8 @@ export default function UploadPage() {
             <h2 className="text-xl font-bold text-gray-900 mb-1">6. Generate Excel Template</h2>
             <p className="text-sm text-gray-600">
               {allDataReady
-                ? 'Required data ready! Click to generate populated Excel file'
-                : 'Upload both Half Mile and Direct Comps to enable report generation'}
+                ? 'All data ready! Click to generate populated Excel file'
+                : 'Complete all steps above to enable report generation'}
             </p>
           </div>
           <button
@@ -443,13 +431,12 @@ export default function UploadPage() {
         <h3 className="text-lg font-bold text-gray-900 mb-4">Instructions</h3>
         <div className="space-y-2 text-sm text-gray-600">
           <p><strong>Step 1:</strong> Enter client information (optional, used for file naming)</p>
-          <p><strong>Step 2:</strong> Enter subject property APN to fetch MCAO data (optional - skip if API unavailable)</p>
-          <p><strong>Step 3:</strong> Upload CSV/Excel file containing properties within 0.5 mile radius (required)</p>
-          <p><strong>Step 4:</strong> Upload CSV/Excel file containing direct comparable properties (required)</p>
+          <p><strong>Step 2:</strong> Enter the subject property APN and click Fetch to get property data</p>
+          <p><strong>Step 3:</strong> Upload CSV/Excel file containing properties within 0.5 mile radius</p>
+          <p><strong>Step 4:</strong> Upload CSV/Excel file containing direct comparable properties</p>
           <p><strong>Step 5:</strong> Upload CSV/Excel file for all scopes (optional)</p>
           <p><strong>Step 6:</strong> Click Generate to download the populated Excel template</p>
           <p className="mt-4"><strong>File naming:</strong> Downloads will be named: <code className="bg-gray-100 px-2 py-1 rounded">[client-name]-[timestamp].xlsx</code></p>
-          <p className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded"><strong>Note:</strong> MCAO data is optional. You can generate reports with just the comp files if the MCAO API is unavailable.</p>
         </div>
       </div>
     </div>

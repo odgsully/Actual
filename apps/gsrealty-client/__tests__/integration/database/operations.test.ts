@@ -155,8 +155,9 @@ describe('Database Operations Integration', () => {
         .eq('email', uniqueEmail);
 
       expect(error).toBeNull();
-      expect(data.length).toBeGreaterThan(0);
-      expect(data[0].email).toBe(uniqueEmail);
+      expect(data).toBeDefined();
+      expect(data!.length).toBeGreaterThan(0);
+      expect(data![0].email).toBe(uniqueEmail);
     });
 
     it('should search clients with ilike', async () => {
@@ -181,7 +182,8 @@ describe('Database Operations Integration', () => {
         .ilike('first_name', '%searchable%');
 
       expect(error).toBeNull();
-      expect(data.length).toBeGreaterThan(0);
+      expect(data).toBeDefined();
+      expect(data!.length).toBeGreaterThan(0);
     });
 
     it('should order clients by created_at', async () => {
@@ -192,7 +194,8 @@ describe('Database Operations Integration', () => {
         .limit(10);
 
       expect(error).toBeNull();
-      if (data.length > 1) {
+      expect(data).toBeDefined();
+      if (data && data.length > 1) {
         const first = new Date(data[0].created_at);
         const second = new Date(data[1].created_at);
         expect(first.getTime()).toBeGreaterThanOrEqual(second.getTime());
@@ -262,8 +265,8 @@ describe('Database Operations Integration', () => {
         .select()
         .single();
 
-      testInvitationClientId = data.id;
-      testClientIds.push(data.id);
+      testInvitationClientId = data!.id;
+      testClientIds.push(data!.id);
     });
 
     it('should insert invitation', async () => {
@@ -305,7 +308,8 @@ describe('Database Operations Integration', () => {
         .single();
 
       expect(error).toBeNull();
-      expect(data.token).toBe(token);
+      expect(data).toBeDefined();
+      expect(data!.token).toBe(token);
     });
 
     it('should filter non-expired invitations', async () => {
@@ -347,7 +351,7 @@ describe('Database Operations Integration', () => {
         fetched_at: new Date().toISOString(),
       };
 
-      const { data, error } = await supabaseAdmin
+      const { data, error} = await supabaseAdmin
         .from('mcao_property_cache')
         .insert(cacheEntry)
         .select()
@@ -355,7 +359,7 @@ describe('Database Operations Integration', () => {
 
       expect(error).toBeNull();
       expect(data).toBeDefined();
-      expect(data.apn).toBe(testAPN);
+      expect(data!.apn).toBe(testAPN);
     });
 
     it('should select MCAO cache by APN', async () => {
@@ -367,7 +371,7 @@ describe('Database Operations Integration', () => {
 
       expect(error).toBeNull();
       expect(data).toBeDefined();
-      expect(data.apn).toBe(testAPN);
+      expect(data!.apn).toBe(testAPN);
     });
 
     it('should upsert MCAO cache (update on conflict)', async () => {
@@ -387,7 +391,8 @@ describe('Database Operations Integration', () => {
         .single();
 
       expect(error).toBeNull();
-      expect(data.api_response.ownerName).toBe('Updated Owner');
+      expect(data).toBeDefined();
+      expect(data!.api_response.ownerName).toBe('Updated Owner');
     });
   });
 
@@ -428,10 +433,11 @@ describe('Database Operations Integration', () => {
         .single();
 
       expect(error).toBeNull();
-      expect(data.id).toBeDefined();
-      expect(data.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+      expect(data).toBeDefined();
+      expect(data!.id).toBeDefined();
+      expect(data!.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
 
-      testClientIds.push(data.id);
+      testClientIds.push(data!.id);
     });
 
     it('should auto-set created_at timestamp', async () => {
@@ -500,10 +506,10 @@ describe('Database Operations Integration', () => {
 
       expect(error).toBeNull();
       expect(data).toBeDefined();
-      expect(data.length).toBe(3);
+      expect(data!.length).toBe(3);
 
       // Collect IDs for cleanup
-      data.forEach(client => testClientIds.push(client.id));
+      data!.forEach(client => testClientIds.push(client.id));
     });
 
     it('should update multiple records with filter', async () => {
@@ -519,7 +525,7 @@ describe('Database Operations Integration', () => {
         .insert(clients)
         .select();
 
-      insertData.forEach(c => testClientIds.push(c.id));
+      insertData!.forEach(c => testClientIds.push(c.id));
 
       // Update all with that tag
       const { data, error } = await supabaseAdmin
@@ -529,8 +535,9 @@ describe('Database Operations Integration', () => {
         .select();
 
       expect(error).toBeNull();
-      expect(data.length).toBe(2);
-      expect(data.every(c => c.phone === '555-BATCH')).toBe(true);
+      expect(data).toBeDefined();
+      expect(data!.length).toBe(2);
+      expect(data!.every(c => c.phone === '555-BATCH')).toBe(true);
     });
 
     it('should delete multiple records with filter', async () => {
@@ -546,7 +553,7 @@ describe('Database Operations Integration', () => {
         .insert(clients)
         .select();
 
-      const ids = insertData.map(c => c.id);
+      const ids = insertData!.map(c => c.id);
 
       // Delete all with that tag
       const { error } = await supabaseAdmin
@@ -562,7 +569,8 @@ describe('Database Operations Integration', () => {
         .select()
         .in('id', ids);
 
-      expect(selectData.length).toBe(0);
+      expect(selectData).toBeDefined();
+      expect(selectData!.length).toBe(0);
     });
   });
 
@@ -590,7 +598,8 @@ describe('Database Operations Integration', () => {
 
       expect(error).toBeNull();
       expect(Array.isArray(data)).toBe(true);
-      expect(data.length).toBeLessThanOrEqual(10);
+      expect(data).toBeDefined();
+      expect(data!.length).toBeLessThanOrEqual(10);
     });
   });
 });

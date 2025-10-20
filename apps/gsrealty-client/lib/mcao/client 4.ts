@@ -16,13 +16,13 @@ import type {
   MCAOCacheEntry,
   MCAOApiStatus
 } from '../types/mcao-data'
-import { isValidAPN, formatAPN, MCAOErrorCode, flattenJSON, categorizeMCAOData } from '../types/mcao-data'
+import { isValidAPN, formatAPN, MCAOErrorCode } from '../types/mcao-data'
 
 /**
  * Default API Configuration
  */
 const DEFAULT_CONFIG: MCAOApiConfig = {
-  baseUrl: process.env.MCAO_API_URL || 'https://api.mcassessor.maricopa.gov',
+  baseUrl: process.env.MCAO_API_URL || 'https://mcassessor.maricopa.gov/api',
   apiKey: process.env.MCAO_API_KEY,
   timeout: 30000, // 30 seconds
   retryAttempts: 3,
@@ -137,11 +137,9 @@ export class MCAOClient {
     if (this.config.cacheEnabled && !refresh) {
       const cachedData = this.cache.get(apn)
       if (cachedData) {
-        const processed = this.processMCAOData(cachedData)
         return {
           success: true,
           data: cachedData,
-          ...processed,
           cached: true,
           cachedAt: cachedData.lastUpdated,
           timestamp: new Date().toISOString()
@@ -158,13 +156,9 @@ export class MCAOClient {
         this.cache.set(apn, data, this.config.cacheDuration)
       }
 
-      // Process data to include flattened and categorized fields
-      const processed = this.processMCAOData(data)
-
       return {
         success: true,
         data,
-        ...processed,
         cached: false,
         timestamp: new Date().toISOString()
       }
@@ -174,28 +168,11 @@ export class MCAOClient {
   }
 
   /**
-   * Process MCAO API response to include flattened and categorized data
-   * @private
-   */
-  private processMCAOData(data: MCAOApiResponse) {
-    // Flatten the raw response if available
-    const flattenedData = data.rawResponse ? flattenJSON(data.rawResponse) : {}
-    const categorizedData = categorizeMCAOData(flattenedData)
-    const fieldCount = Object.keys(flattenedData).length
-
-    return {
-      flattenedData,
-      categorizedData,
-      fieldCount
-    }
-  }
-
-  /**
    * Fetch property data from MCAO API
    * @private
    */
   private async fetchFromAPI(apn: APN, request: MCAOLookupRequest): Promise<MCAOApiResponse> {
-    const url = `${this.config.baseUrl}/parcel/${apn}`
+    const url = `${this.config.baseUrl}/property/${apn}`
 
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
@@ -203,7 +180,7 @@ export class MCAOClient {
     }
 
     if (this.config.apiKey) {
-      headers['Authorization'] = this.config.apiKey
+      headers['X-API-Key'] = this.config.apiKey
     }
 
     const controller = new AbortController()

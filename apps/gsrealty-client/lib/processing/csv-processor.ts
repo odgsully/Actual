@@ -159,9 +159,13 @@ export async function parseMLSCSV(
 /**
  * Parse CSV file using PapaParse
  */
-function parseCSVFile(file: File): Promise<Papa.ParseResult<any>> {
+async function parseCSVFile(file: File): Promise<Papa.ParseResult<any>> {
+  // In Next.js API routes, we need to read the file content first
+  // because PapaParse's File handling uses browser APIs not available in Node.js
+  const fileContent = await file.text()
+
   return new Promise((resolve, reject) => {
-    Papa.parse(file, {
+    Papa.parse(fileContent, {
       header: true,
       skipEmptyLines: true,
       dynamicTyping: false, // Keep all as strings for manual parsing

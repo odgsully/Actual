@@ -232,6 +232,9 @@ export interface MCAOLookupResult {
   success: boolean
   data?: MCAOApiResponse
   summary?: MCAOPropertySummary
+  flattenedData?: FlattenedMCAOData  // All 559+ fields flattened
+  categorizedData?: CategorizedMCAOData  // Organized by category for UI display
+  fieldCount?: number  // Total number of fields retrieved
   error?: {
     code: string
     message: string
@@ -409,4 +412,130 @@ export function toMaricopaSheetData(response: MCAOApiResponse): MCAOMaricopaShee
     constructionType: response.constructionType || 'N/A',
     features: features.join(', ') || 'None listed'
   }
+}
+
+/**
+ * Flattened MCAO Data
+ * All nested fields flattened into a single level for comprehensive display
+ */
+export type FlattenedMCAOData = Record<string, any>
+
+/**
+ * Categorized MCAO Fields
+ * Fields organized into logical categories for UI display
+ */
+export interface CategorizedMCAOData {
+  'Owner Information': Record<string, any>
+  'Property Details': Record<string, any>
+  'Valuations & Tax': Record<string, any>
+  'Residential Data': Record<string, any>
+  'Location/GIS': Record<string, any>
+  'Maps & Documents': Record<string, any>
+  'Legal & Administrative': Record<string, any>
+}
+
+/**
+ * Flatten nested JSON structure into a single level dictionary
+ * Based on PV Splittable MCAO-UI implementation
+ * @param data - Nested object to flatten
+ * @returns Flattened key-value pairs
+ */
+export function flattenJSON(data: Record<string, any>): FlattenedMCAOData {
+  const out: Record<string, any> = {}
+
+  function flatten(x: any, name = ''): void {
+    if (typeof x === 'object' && x !== null && !Array.isArray(x)) {
+      // Handle objects
+      for (const key in x) {
+        flatten(x[key], `${name}${key}_`)
+      }
+    } else if (Array.isArray(x)) {
+      // Handle arrays
+      x.forEach((item, i) => {
+        flatten(item, `${name}${i}_`)
+      })
+    } else {
+      // Handle primitive values
+      out[name.slice(0, -1)] = x
+    }
+  }
+
+  flatten(data)
+  return out
+}
+
+/**
+ * Categorize flattened MCAO data into logical sections
+ * Based on PV Splittable MCAO-UI categorization logic
+ * @param flatData - Flattened key-value pairs
+ * @returns Data organized by category
+ */
+export function categorizeMCAOData(flatData: FlattenedMCAOData): CategorizedMCAOData {
+  const categories: CategorizedMCAOData = {
+    'Owner Information': {},
+    'Property Details': {},
+    'Valuations & Tax': {},
+    'Residential Data': {},
+    'Location/GIS': {},
+    'Maps & Documents': {},
+    'Legal & Administrative': {}
+  }
+
+  for (const [key, value] of Object.entries(flatData)) {
+    // Owner Information
+    if (key.startsWith('Owner_') || key.includes('owner')) {
+      categories['Owner Information'][key] = value
+    }
+    // Valuations
+    else if (
+      key.includes('Valuation') ||
+      key.includes('Value') ||
+      key.includes('Tax') ||
+      key.includes('tax')
+    ) {
+      categories['Valuations & Tax'][key] = value
+    }
+    // Residential Data
+    else if (key.startsWith('ResidentialPropertyData_') || key.includes('Residential')) {
+      categories['Residential Data'][key] = value
+    }
+    // Location/GIS
+    else if (
+      key.startsWith('Geo_') ||
+      key.includes('Coordinate') ||
+      key.includes('Latitude') ||
+      key.includes('Longitude') ||
+      key.includes('latitude') ||
+      key.includes('longitude')
+    ) {
+      categories['Location/GIS'][key] = value
+    }
+    // Maps & Documents
+    else if (key.includes('Map') || key.includes('Url') || key.includes('FileName')) {
+      categories['Maps & Documents'][key] = value
+    }
+    // Legal & Administrative
+    else if (
+      key.includes('Legal') ||
+      key.includes('MCR') ||
+      key.includes('APL') ||
+      key.includes('Deed')
+    ) {
+      categories['Legal & Administrative'][key] = value
+    }
+    // Property Details (default)
+    else {
+      categories['Property Details'][key] = value
+    }
+  }
+
+  // Remove empty categories
+  const filtered: Partial<CategorizedMCAOData> = {}
+  for (const [category, fields] of Object.entries(categories)) {
+    if (Object.keys(fields).length > 0) {
+      filtered[category as keyof CategorizedMCAOData] = fields
+    }
+  }
+
+  return filtered as CategorizedMCAOData
 }

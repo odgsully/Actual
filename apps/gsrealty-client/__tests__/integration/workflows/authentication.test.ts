@@ -489,7 +489,7 @@ describe('Authentication Flow Integration', () => {
 
       expect(signUpError).toBeNull();
       expect(signUpData.user).toBeDefined();
-      testUserIds.push(signUpData.user.id);
+      testUserIds.push(signUpData.user!.id);
 
       // Step 2: Sign in
       const { data: signInData, error: signInError } = await supabaseAnon.auth.signInWithPassword({
