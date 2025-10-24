@@ -209,12 +209,26 @@ export class MCAOClient {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), this.config.timeout)
 
+    // Configure fetch to handle SSL (for Node.js environment)
+    const fetchOptions: RequestInit = {
+      method: 'GET',
+      headers,
+      signal: controller.signal
+    }
+
+    // In development, allow self-signed certificates
+    if (typeof process !== 'undefined' && process.env.NODE_ENV === 'development') {
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+    }
+
+    console.log(`[MCAO Client] Fetching from URL: ${url}`)
+    console.log(`[MCAO Client] API Key: ${this.config.apiKey ? 'Present' : 'Missing'}`)
+
     try {
-      const response = await fetch(url, {
-        method: 'GET',
-        headers,
-        signal: controller.signal
-      })
+      const response = await fetch(url, fetchOptions)
+
+      console.log(`[MCAO Client] Response status: ${response.status}`)
+      console.log(`[MCAO Client] Response headers:`, Object.fromEntries(response.headers.entries()))
 
       clearTimeout(timeoutId)
 
@@ -249,12 +263,15 @@ export class MCAOClient {
 
     } catch (error) {
       clearTimeout(timeoutId)
+      console.error(`[MCAO Client] Fetch error:`, error)
 
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
           throw new Error(`TIMEOUT: Request timed out after ${this.config.timeout}ms`)
         }
-        throw error
+        // Provide more detailed error information
+        console.error(`[MCAO Client] Error name: ${error.name}, message: ${error.message}`)
+        throw new Error(`NETWORK_ERROR: ${error.message} (${error.name})`)
       }
 
       throw new Error(`NETWORK_ERROR: ${String(error)}`)

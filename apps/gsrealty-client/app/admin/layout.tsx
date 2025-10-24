@@ -10,7 +10,8 @@ import {
   LogOut,
   Menu,
   X,
-  User
+  User,
+  FileText
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -28,7 +29,8 @@ export default function AdminLayout({
   const navigation = [
     { name: 'Dashboard', href: '/admin', icon: Home },
     { name: 'Clients', href: '/admin/clients', icon: User },
-    { name: 'Upload Files', href: '/admin/upload', icon: Upload },
+    { name: 'Upload MLS', href: '/admin/upload', icon: Upload },
+    { name: 'ReportIt', href: '/admin/reportit', icon: FileText },
     { name: 'MCAO Lookup', href: '/admin/mcao', icon: Search },
     { name: 'Settings', href: '/admin/settings', icon: Settings },
   ]

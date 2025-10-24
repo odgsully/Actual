@@ -266,7 +266,11 @@ export class MCAOClient {
       landUse: num3 % 2 === 0 ? 'Single Family' : 'Condominium',
       zoning: 'R-1-6',
       lotSize,
-      lotDimensions: `${Math.floor(lotSize / 100)} x 100`,
+      lotDimensions: {
+        frontage: Math.floor(lotSize / 100),
+        depth: 100,
+        irregular: false
+      },
       improvementSize: sqft,
       yearBuilt,
       bedrooms: 2 + (num3 % 4),
@@ -292,12 +296,14 @@ export class MCAOClient {
           saleType: 'Market Sale'
         }
       ],
-      features: [
-        'Central Air',
-        'Covered Parking',
-        num3 % 2 === 0 ? 'Pool' : 'Fireplace',
-        'Two Car Garage'
-      ],
+      features: {
+        pool: num3 % 2 === 0,
+        garage: true,
+        garageSpaces: 2,
+        fireplace: num3 % 2 !== 0,
+        ac: true,
+        heating: 'Central'
+      },
       lastUpdated: new Date().toISOString(),
       dataSource: 'MCAO Mock Data (Real API unavailable)',
       apiVersion: '1.0',

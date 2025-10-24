@@ -172,7 +172,7 @@ async function parseCSVFile(file: File): Promise<Papa.ParseResult<any>> {
       complete: (results) => {
         resolve(results);
       },
-      error: (error) => {
+      error: (error: any) => {
         reject(new Error(`CSV parse error: ${error.message}`));
       },
     });

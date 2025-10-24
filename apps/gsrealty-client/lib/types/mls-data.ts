@@ -572,3 +572,68 @@ export type ErrorInfo = {
   code?: string;
   details?: any;
 };
+
+// ============================================================================
+// ReportIt Upload Types (New)
+// ============================================================================
+
+/**
+ * Source type for uploaded MLS data
+ */
+export type MLSSourceType =
+  | 'residential15Mile'
+  | 'residentialLease15Mile'
+  | 'residential3YrDirect'
+  | 'residentialLease3YrDirect'
+  | 'subject'
+
+/**
+ * Item label for Column A tracking
+ */
+export type ItemLabel =
+  | 'Subject Property'
+  | 'Residential 1.5 Mile Comps'
+  | 'Residential Lease 1.5 Mile Comps'
+  | 'Residential 3 yr Direct Subdivision Comps'
+  | 'Residential Lease 3yr Direct Subdivision Comps'
+
+/**
+ * Property master list entry
+ * Combines MLS and MCAO data with source tracking
+ */
+export interface PropertyMasterListEntry {
+  address: string
+  apn?: string
+  itemLabel: ItemLabel
+  source: MLSSourceType
+  mlsData?: any
+  mcaoData?: any
+  hasApn: boolean
+  hasMCAOData: boolean
+  needsLookup: boolean
+  lookupAttempted?: boolean
+  lookupError?: string
+}
+
+/**
+ * Upload metadata for the complete Excel generation
+ */
+export interface UploadGenerationMetadata {
+  clientName: string
+  timestamp: Date
+  propertyCounts: {
+    residential15Mile: number
+    residentialLease15Mile: number
+    residential3YrDirect: number
+    residentialLease3YrDirect: number
+    total: number
+  }
+  apnLookupStats: {
+    total: number
+    existing: number
+    lookedUp: number
+    successful: number
+    failed: number
+  }
+  generationTime?: number
+}
