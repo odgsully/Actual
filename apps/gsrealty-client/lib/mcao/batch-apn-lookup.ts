@@ -121,6 +121,7 @@ export async function batchLookupAPNs(
 
 /**
  * Lookup single address with retry logic
+ * Uses new ArcGIS-based lookup service (public Maricopa County endpoints)
  */
 async function lookupSingleAddress(address: AddressLookup): Promise<LookupResult> {
   let lastError: string | undefined
@@ -129,33 +130,38 @@ async function lookupSingleAddress(address: AddressLookup): Promise<LookupResult
     try {
       console.log(`${LOG_PREFIX} Looking up: ${address.address} (attempt ${attempt}/${MAX_RETRIES})`)
 
-      const response = await fetch('/api/admin/mcao/lookup', {
+      // Use new ArcGIS lookup endpoint (public, no auth required)
+      const response = await fetch('/api/admin/mcao/arcgis-lookup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          address: address.address,
-          city: address.city,
-          zip: address.zip,
+          address: address.address
         }),
       })
 
       const result = await response.json()
 
       if (result.success && result.data) {
-        console.log(`${LOG_PREFIX} ✓ Found APN for ${address.address}: ${result.data.apn}`)
+        console.log(`${LOG_PREFIX} ✓ Found APN for ${address.address}: ${result.data.apn} (method: ${result.data.method}, confidence: ${result.data.confidence})`)
         return {
           address: address.address,
           success: true,
           apn: result.data.apn,
-          mcaoData: result.data,
+          mcaoData: {
+            apn: result.data.apn,
+            method: result.data.method,
+            confidence: result.data.confidence,
+            notes: result.data.notes
+          } as any, // Minimal MCAO data for now
         }
       } else {
         lastError = result.error || result.details || 'Unknown error'
-        console.warn(`${LOG_PREFIX} ✗ Failed to find APN for ${address.address}: ${lastError}`)
+        console.warn(`${LOG_PREFIX} ✗ Failed to find APN for ${address.address}: ${lastError} (method: ${result.method})`)
 
         // Don't retry if it's a "not found" error
         if (lastError.toLowerCase().includes('not found') ||
-            lastError.toLowerCase().includes('no results')) {
+            lastError.toLowerCase().includes('no results') ||
+            result.method === 'skipped') {
           break
         }
       }

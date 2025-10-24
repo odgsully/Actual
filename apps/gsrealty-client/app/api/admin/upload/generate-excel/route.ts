@@ -1,18 +1,22 @@
 /**
- * Generate Excel API Route - UPDATED
+ * Generate Excel API Route - TEMPLATE-BASED VERSION
  *
  * PUT /api/admin/upload/generate-excel
  * Generates populated Excel file from uploaded MLS data with:
- * - Separate MLS-Resi-Comps and MLS-Lease-Comps sheets
- * - Column A origin labels for all properties
+ * - Uses ACTUAL template file as base (preserves ALL columns)
+ * - Separate MLS-Resi-Comps (100 cols) and MLS-Lease-Comps (98 cols) sheets
+ * - Column A (Item) origin labels for all properties
  * - Batch APN lookups for missing APNs
- * - Full-MCAO-API sheet with ALL properties
+ * - Full-MCAO-API sheet (287 cols) with ALL properties
  * - Complete 40-column Analysis sheet
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import ExcelJS from 'exceljs'
+import * as fs from 'fs'
+import * as path from 'path'
 import { batchLookupAPNs, extractAddressesFromMLSData } from '@/lib/mcao/batch-apn-lookup'
+import { batchFetchMCAOProperties } from '@/lib/mcao/fetch-property-data'
 import { generateAnalysisSheet } from '@/lib/processing/analysis-sheet-generator'
 import type {
   PropertyMasterListEntry,
@@ -22,6 +26,9 @@ import type {
 } from '@/lib/types/mls-data'
 
 const LOG_PREFIX = '[Generate Excel]'
+
+// CORRECT template path
+const TEMPLATE_PATH = '/Users/garrettsullivan/Desktop/‼️/RE/RealtyONE/MY LISTINGS/gsrealty-client-template.xlsx'
 
 export async function PUT(req: NextRequest) {
   const startTime = Date.now()
@@ -58,21 +65,50 @@ export async function PUT(req: NextRequest) {
 
     console.log(`${LOG_PREFIX} Master list created with ${masterList.length} properties`)
 
-    // Step 2: Batch lookup missing APNs
+    // Step 2: Extract APNs from MLS data (Assessor Number column)
+    console.log(`${LOG_PREFIX} Extracting APNs from MLS data...`)
+    masterList.forEach(p => {
+      if (p.mlsData && !p.hasApn) {
+        const rawData = (p.mlsData as any).rawData || p.mlsData
+        // MLS CSV has "Assessor Number" column with APN in format "173-24-323"
+        const apnFromMLS = rawData['Assessor Number'] || rawData['Assessor\'s Parcel #']
+        if (apnFromMLS && apnFromMLS.toString().trim()) {
+          p.apn = apnFromMLS.toString().trim()
+          p.hasApn = true
+          console.log(`${LOG_PREFIX} Found APN in MLS data for ${p.address}: ${p.apn}`)
+        }
+      }
+    })
+
+    const propertiesWithApn = masterList.filter(p => p.hasApn).length
+    console.log(`${LOG_PREFIX} ${propertiesWithApn}/${masterList.length} properties have APNs from MLS data`)
+
+    // Step 3: Batch lookup missing APNs via ArcGIS (optional)
+    // Use FULL_ADDRESS built from MLS data for accurate lookups
     const addressesForLookup = masterList
       .filter(p => !p.hasApn && p.source !== 'subject')
-      .map(p => ({
-        address: p.address,
-        city: p.mlsData?.city,
-        zip: p.mlsData?.zip,
-        existingApn: p.apn,
-      }))
+      .map(p => {
+        const mls = p.mlsData || {}
+        const rawData = (mls as any).rawData || mls
+        const fullAddress = buildFullAddress(rawData, p.address)
 
-    console.log(`${LOG_PREFIX} ${addressesForLookup.length} addresses need APN lookup`)
+        return {
+          address: fullAddress, // Use full formatted address
+          city: rawData['City/Town Code'] || p.mlsData?.city,
+          zip: rawData['Zip Code'] || p.mlsData?.zip,
+          existingApn: p.apn,
+        }
+      })
+
+    console.log(`${LOG_PREFIX} ${addressesForLookup.length} addresses still need APN lookup via ArcGIS`)
+    if (addressesForLookup.length > 0) {
+      console.log(`${LOG_PREFIX} Sample lookup address: ${addressesForLookup[0].address}`)
+    }
 
     let lookupResults: any[] = []
     if (addressesForLookup.length > 0) {
       try {
+        console.log(`${LOG_PREFIX} Starting ArcGIS batch lookup...`)
         lookupResults = await batchLookupAPNs(addressesForLookup, (progress) => {
           console.log(`${LOG_PREFIX} Lookup progress: ${progress.percentage}% (${progress.successful}/${progress.total})`)
         })
@@ -86,21 +122,55 @@ export async function PUT(req: NextRequest) {
       }
     }
 
-    // Step 3: Create workbook
+    // Step 4: Fetch full MCAO property data for all APNs
+    const apnsToFetch = masterList
+      .filter(p => p.hasApn && p.apn && !p.mcaoData)
+      .map(p => p.apn!)
+
+    console.log(`${LOG_PREFIX} Fetching full MCAO property data for ${apnsToFetch.length} APNs...`)
+
+    if (apnsToFetch.length > 0) {
+      try {
+        const mcaoDataMap = await batchFetchMCAOProperties(apnsToFetch, (completed, total) => {
+          const percentage = Math.round((completed / total) * 100)
+          console.log(`${LOG_PREFIX} MCAO fetch progress: ${percentage}% (${completed}/${total})`)
+        })
+
+        // Enrich master list with MCAO data
+        masterList.forEach(p => {
+          if (p.apn && mcaoDataMap.has(p.apn)) {
+            p.mcaoData = mcaoDataMap.get(p.apn) as any
+            p.hasMCAOData = true
+          }
+        })
+
+        console.log(`${LOG_PREFIX} MCAO data fetch complete: ${mcaoDataMap.size} properties enriched`)
+      } catch (error) {
+        console.error(`${LOG_PREFIX} MCAO data fetch failed, continuing without:`, error)
+      }
+    }
+
+    // Step 6: Load template workbook (preserves ALL columns)
+    console.log(`${LOG_PREFIX} Loading template from: ${TEMPLATE_PATH}`)
     const workbook = new ExcelJS.Workbook()
-    workbook.creator = 'GSRealty Upload System'
-    workbook.created = new Date()
 
-    // Step 4: Create MLS-Resi-Comps sheet
-    await createMLSResiCompsSheet(workbook, masterList)
+    if (!fs.existsSync(TEMPLATE_PATH)) {
+      throw new Error(`Template file not found at: ${TEMPLATE_PATH}`)
+    }
 
-    // Step 5: Create MLS-Lease-Comps sheet
-    await createMLSLeaseCompsSheet(workbook, masterList)
+    await workbook.xlsx.readFile(TEMPLATE_PATH)
+    console.log(`${LOG_PREFIX} Template loaded with sheets: ${workbook.worksheets.map(w => w.name).join(', ')}`)
 
-    // Step 6: Create Full-MCAO-API sheet with ALL properties
-    await createFullMCAOAPISheet(workbook, masterList)
+    // Step 7: Populate MLS-Resi-Comps sheet (preserves 100 columns)
+    await populateMLSResiCompsSheet(workbook, masterList)
 
-    // Step 7: Create Analysis sheet (40 columns)
+    // Step 8: Populate MLS-Lease-Comps sheet (preserves 98 columns)
+    await populateMLSLeaseCompsSheet(workbook, masterList)
+
+    // Step 9: Populate Full-MCAO-API sheet (preserves 288 columns with new Column B APN)
+    await populateFullMCAOAPISheet(workbook, masterList)
+
+    // Step 10: Populate Analysis sheet (40 columns)
     const propertiesForAnalysis = masterList.map(p => ({
       itemLabel: p.itemLabel,
       mlsData: p.mlsData,
@@ -233,15 +303,19 @@ function enrichMasterListWithLookupResults(
 }
 
 /**
- * Create MLS-Resi-Comps sheet with Column A origin labels
+ * Populate MLS-Resi-Comps sheet (preserves template's 100 columns)
  */
-async function createMLSResiCompsSheet(
+async function populateMLSResiCompsSheet(
   workbook: ExcelJS.Workbook,
   masterList: PropertyMasterListEntry[]
 ) {
-  console.log(`${LOG_PREFIX} Creating MLS-Resi-Comps sheet`)
+  console.log(`${LOG_PREFIX} Populating MLS-Resi-Comps sheet`)
 
-  const sheet = workbook.addWorksheet('MLS-Resi-Comps')
+  const sheet = workbook.getWorksheet('MLS-Resi-Comps')
+  if (!sheet) {
+    console.error(`${LOG_PREFIX} MLS-Resi-Comps sheet not found in template!`)
+    return
+  }
 
   // Filter residential comps only
   const resiComps = masterList.filter(p =>
@@ -251,31 +325,38 @@ async function createMLSResiCompsSheet(
 
   console.log(`${LOG_PREFIX} MLS-Resi-Comps: ${resiComps.length} properties`)
 
-  // Add headers
-  addMLSSheetHeaders(sheet)
+  // Read template headers from row 1
+  const headerRow = sheet.getRow(1)
+  const templateHeaders: string[] = []
+  headerRow.eachCell((cell, colNumber) => {
+    templateHeaders[colNumber - 1] = cell.value?.toString() || ''
+  })
 
-  // Add data rows
+  console.log(`${LOG_PREFIX} Template has ${templateHeaders.length} columns. First 10:`, templateHeaders.slice(0, 10))
+
+  // Populate data rows (starting at row 2)
   resiComps.forEach((prop, index) => {
-    const row = sheet.getRow(index + 2) // Row 1 is headers
-    populateMLSRow(row, prop)
+    const row = sheet.getRow(index + 2)
+    populateMLSRowFromTemplate(row, prop, templateHeaders)
   })
 
-  // Auto-fit columns
-  sheet.columns.forEach(column => {
-    column.width = 15
-  })
+  console.log(`${LOG_PREFIX} Populated ${resiComps.length} rows in MLS-Resi-Comps`)
 }
 
 /**
- * Create MLS-Lease-Comps sheet with Column A origin labels
+ * Populate MLS-Lease-Comps sheet (preserves template's 98 columns)
  */
-async function createMLSLeaseCompsSheet(
+async function populateMLSLeaseCompsSheet(
   workbook: ExcelJS.Workbook,
   masterList: PropertyMasterListEntry[]
 ) {
-  console.log(`${LOG_PREFIX} Creating MLS-Lease-Comps sheet`)
+  console.log(`${LOG_PREFIX} Populating MLS-Lease-Comps sheet`)
 
-  const sheet = workbook.addWorksheet('MLS-Lease-Comps')
+  const sheet = workbook.getWorksheet('MLS-Lease-Comps')
+  if (!sheet) {
+    console.error(`${LOG_PREFIX} MLS-Lease-Comps sheet not found in template!`)
+    return
+  }
 
   // Filter lease comps only
   const leaseComps = masterList.filter(p =>
@@ -285,176 +366,254 @@ async function createMLSLeaseCompsSheet(
 
   console.log(`${LOG_PREFIX} MLS-Lease-Comps: ${leaseComps.length} properties`)
 
-  // Add headers
-  addMLSSheetHeaders(sheet)
+  // Read template headers from row 1
+  const headerRow = sheet.getRow(1)
+  const templateHeaders: string[] = []
+  headerRow.eachCell((cell, colNumber) => {
+    templateHeaders[colNumber - 1] = cell.value?.toString() || ''
+  })
 
-  // Add data rows
+  console.log(`${LOG_PREFIX} Template has ${templateHeaders.length} columns. First 10:`, templateHeaders.slice(0, 10))
+
+  // Populate data rows (starting at row 2)
   leaseComps.forEach((prop, index) => {
     const row = sheet.getRow(index + 2)
-    populateMLSRow(row, prop)
+    populateMLSRowFromTemplate(row, prop, templateHeaders)
   })
 
-  // Auto-fit columns
-  sheet.columns.forEach(column => {
-    column.width = 15
-  })
+  console.log(`${LOG_PREFIX} Populated ${leaseComps.length} rows in MLS-Lease-Comps`)
 }
 
 /**
- * Add headers to MLS sheets
+ * Populate a single MLS row using template column headers (1:1 mapping)
+ * Maps CSV column names to template column names exactly
+ * Uses rawData from CSV to preserve ALL original columns (99 columns from MLS)
  */
-function addMLSSheetHeaders(sheet: ExcelJS.Worksheet) {
-  const headers = [
-    'Item',                  // Column A
-    'Address',
-    'City',
-    'State',
-    'ZIP',
-    'Price',
-    'Bedrooms',
-    'Bathrooms',
-    'Square Feet',
-    'Lot Size',
-    'Year Built',
-    'Status',
-    'List Date',
-    'Sold Date',
-    'DOM',
-    'Price Per SF',
-    'APN',                   // Important: APN is here
-    'Source'
-  ]
+function populateMLSRowFromTemplate(
+  row: ExcelJS.Row,
+  property: PropertyMasterListEntry,
+  templateHeaders: string[]
+) {
+  const mls = property.mlsData || {}
+  // Use rawData which contains ALL original CSV columns
+  const rawData = (mls as any).rawData || mls
 
-  const headerRow = sheet.getRow(1)
-  headers.forEach((header, index) => {
-    const cell = headerRow.getCell(index + 1)
-    cell.value = header
-    cell.font = { bold: true }
-    cell.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFD3D3D3' }
+  // Iterate through each template column and populate if we have matching data
+  templateHeaders.forEach((header, index) => {
+    const colNumber = index + 1
+    const headerLower = header.toLowerCase().trim()
+
+    // Column 1: "Item" - Always set to source label
+    if (headerLower === 'item') {
+      row.getCell(colNumber).value = property.itemLabel
+      return
+    }
+
+    // Try exact match first (CSV column name matches template column name)
+    let value = rawData[header]
+
+    // If no exact match, try case-insensitive match
+    if (value === undefined || value === null || value === '') {
+      const matchingKey = Object.keys(rawData).find(key =>
+        key.toLowerCase().trim() === headerLower
+      )
+      if (matchingKey) {
+        value = rawData[matchingKey]
+      }
+    }
+
+    // Set the value if we found it
+    if (value !== undefined && value !== null && value !== '') {
+      row.getCell(colNumber).value = value
     }
   })
 }
 
 /**
- * Populate a single MLS row with Column A = origin label
+ * Populate Full-MCAO-API sheet (preserves template's 288 columns including new Column B APN)
+ * Populates ALL properties that have APNs (from MLS or ArcGIS lookup)
  */
-function populateMLSRow(row: ExcelJS.Row, property: PropertyMasterListEntry) {
-  const mls = property.mlsData || {}
-
-  // Column A: Item (origin label) - CRITICAL!
-  row.getCell(1).value = property.itemLabel
-
-  // Column B+: MLS data
-  row.getCell(2).value = property.address || mls.address || ''
-  row.getCell(3).value = mls.city || ''
-  row.getCell(4).value = mls.state || 'AZ'
-  row.getCell(5).value = mls.zip || ''
-  row.getCell(6).value = mls.price || mls.salePrice || mls.listPrice || ''
-  row.getCell(7).value = mls.bedrooms || ''
-  row.getCell(8).value = mls.bathrooms || ''
-  row.getCell(9).value = mls.squareFeet || mls.sqft || ''
-  row.getCell(10).value = mls.lotSize || ''
-  row.getCell(11).value = mls.yearBuilt || ''
-  row.getCell(12).value = mls.status || ''
-  row.getCell(13).value = mls.listDate || ''
-  row.getCell(14).value = mls.soldDate || mls.saleDate || ''
-  row.getCell(15).value = mls.dom || mls.daysOnMarket || ''
-  row.getCell(16).value = mls.pricePerSF || ''
-  row.getCell(17).value = property.apn || mls.apn || '' // APN from lookup or MLS
-  row.getCell(18).value = property.itemLabel // Redundant source for clarity
-}
-
-/**
- * Create Full-MCAO-API sheet with ALL properties that have MCAO data
- */
-async function createFullMCAOAPISheet(
+async function populateFullMCAOAPISheet(
   workbook: ExcelJS.Workbook,
   masterList: PropertyMasterListEntry[]
 ) {
-  console.log(`${LOG_PREFIX} Creating Full-MCAO-API sheet`)
+  console.log(`${LOG_PREFIX} Populating Full-MCAO-API sheet`)
 
-  const sheet = workbook.addWorksheet('Full-MCAO-API')
+  const sheet = workbook.getWorksheet('Full-MCAO-API')
+  if (!sheet) {
+    console.error(`${LOG_PREFIX} Full-MCAO-API sheet not found in template!`)
+    return
+  }
 
-  // Filter properties with MCAO data
-  const propertiesWithMCAO = masterList.filter(p => p.hasMCAOData && p.mcaoData)
+  // Filter properties with APNs (either from MLS or ArcGIS lookup)
+  const propertiesWithAPN = masterList.filter(p => p.hasApn && p.apn)
 
-  console.log(`${LOG_PREFIX} Full-MCAO-API: ${propertiesWithMCAO.length} properties with MCAO data`)
+  console.log(`${LOG_PREFIX} Full-MCAO-API: ${propertiesWithAPN.length} properties with APNs`)
 
-  // Add headers
-  addMCAOSheetHeaders(sheet)
+  // Read template headers from row 1
+  const headerRow = sheet.getRow(1)
+  const templateHeaders: string[] = []
+  headerRow.eachCell((cell, colNumber) => {
+    templateHeaders[colNumber - 1] = cell.value?.toString() || ''
+  })
 
-  // Add data rows
-  propertiesWithMCAO.forEach((prop, index) => {
+  console.log(`${LOG_PREFIX} Template has ${templateHeaders.length} columns. First 5:`, templateHeaders.slice(0, 5))
+
+  // Populate data rows (starting at row 2)
+  propertiesWithAPN.forEach((prop, index) => {
     const row = sheet.getRow(index + 2)
-    populateMCAORow(row, prop)
+    populateMCAORowFromTemplate(row, prop, templateHeaders)
   })
 
-  // Auto-fit columns
-  sheet.columns.forEach(column => {
-    column.width = 20
-  })
+  console.log(`${LOG_PREFIX} Populated ${propertiesWithAPN.length} rows in Full-MCAO-API`)
 }
 
 /**
- * Add headers to Full-MCAO-API sheet
+ * Populate a single MCAO row using template column headers (1:1 mapping)
+ * Template now has 289 columns:
+ *   Column A (1): FULL_ADDRESS - Full property address
+ *   Column B (2): Item - Source label
+ *   Column C (3): APN - APN from MLS or ArcGIS lookup
+ *   Columns D+ (4+): MCAO API data (if available)
  */
-function addMCAOSheetHeaders(sheet: ExcelJS.Worksheet) {
-  const headers = [
-    'Item',                    // Column A - origin label
-    'APN',
-    'Address',
-    'Owner',
-    'Assessed Value',
-    'Property Type',
-    'Land Use',
-    'Lot Size',
-    'Year Built',
-    'Bedrooms',
-    'Bathrooms',
-    'Living Area',
-    'Last Sale Price',
-    'Last Sale Date',
-  ]
+function populateMCAORowFromTemplate(
+  row: ExcelJS.Row,
+  property: PropertyMasterListEntry,
+  templateHeaders: string[]
+) {
+  const mcao = property.mcaoData || {}
 
-  const headerRow = sheet.getRow(1)
-  headers.forEach((header, index) => {
-    const cell = headerRow.getCell(index + 1)
-    cell.value = header
-    cell.font = { bold: true }
-    cell.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFD3D3D3' }
+  // Build full address - prefer MCAO for Subject Property, MLS for others
+  let fullAddress: string
+  if (property.itemLabel === 'Subject Property' && mcao?.propertyAddress?.fullAddress) {
+    fullAddress = mcao.propertyAddress.fullAddress
+  } else {
+    const mls = property.mlsData || {}
+    const rawData = (mls as any).rawData || mls
+    fullAddress = buildFullAddress(rawData, property.address)
+  }
+
+  // Flatten the MCAO data object (for nested fields like Valuations_0_TaxYear)
+  const flattenedMCAO = flattenObject(mcao)
+
+  // Log first property to debug
+  if (row.number === 2) {
+    console.log(`${LOG_PREFIX} [DEBUG] First property MCAO data:`)
+    console.log(`  Address: ${fullAddress}`)
+    console.log(`  APN: ${property.apn}`)
+    console.log(`  Has MCAO data: ${property.hasMCAOData}`)
+    console.log(`  MCAO fields: ${Object.keys(flattenedMCAO).length}`)
+    console.log(`  First 10 MCAO fields:`, Object.keys(flattenedMCAO).slice(0, 10))
+  }
+
+  // Iterate through each template column and populate if we have matching data
+  templateHeaders.forEach((header, index) => {
+    const colNumber = index + 1
+    const headerLower = header.toLowerCase().trim()
+
+    // Column A (1): FULL_ADDRESS
+    if (colNumber === 1 || headerLower === 'full_address' || headerLower.includes('full address')) {
+      row.getCell(colNumber).value = fullAddress
+      return
+    }
+
+    // Column B (2): Item - Source label
+    if (colNumber === 2 || headerLower.includes('item')) {
+      row.getCell(colNumber).value = property.itemLabel
+      return
+    }
+
+    // Column C (3): APN
+    if (colNumber === 3 || headerLower === 'apn') {
+      row.getCell(colNumber).value = property.apn || ''
+      return
+    }
+
+    // Columns D+ (4+): Try to match MCAO API data
+    let value = flattenedMCAO[header]
+
+    // If no exact match, try case-insensitive match
+    if (value === undefined || value === null || value === '') {
+      const matchingKey = Object.keys(flattenedMCAO).find(key =>
+        key.toLowerCase().replace(/[^a-z0-9]/g, '') === headerLower.replace(/[^a-z0-9]/g, '')
+      )
+      if (matchingKey) {
+        value = flattenedMCAO[matchingKey]
+      }
+    }
+
+    // Set the value if we found it
+    if (value !== undefined && value !== null && value !== '') {
+      row.getCell(colNumber).value = value
+
+      // Log first few successful matches for debugging
+      if (row.number === 2 && colNumber <= 15) {
+        console.log(`${LOG_PREFIX} [DEBUG] Column ${colNumber} (${header}): ${value}`)
+      }
     }
   })
 }
 
 /**
- * Populate a single MCAO row with Column A = origin label
+ * Build full address from MLS raw data
+ * Used for both APN lookups and Full-MCAO-API display
  */
-function populateMCAORow(row: ExcelJS.Row, property: PropertyMasterListEntry) {
-  const mcao = property.mcaoData || {}
+function buildFullAddress(rawData: any, fallback: string): string {
+  if (!rawData) return fallback
 
-  // Column A: Item (origin label) - CRITICAL!
-  row.getCell(1).value = property.itemLabel
+  // Try to build from MLS components (matches Analysis sheet FULL_ADDRESS format)
+  const parts: string[] = []
 
-  // Column B+: MCAO data (API response fields start here)
-  row.getCell(2).value = mcao.apn || ''
-  row.getCell(3).value = mcao.propertyAddress?.fullAddress || property.address || ''
-  row.getCell(4).value = mcao.ownerName || ''
-  row.getCell(5).value = mcao.assessedValue?.total || ''
-  row.getCell(6).value = mcao.propertyType || ''
-  row.getCell(7).value = mcao.landUse || ''
-  row.getCell(8).value = mcao.lotSize || ''
-  row.getCell(9).value = mcao.yearBuilt || ''
-  row.getCell(10).value = mcao.bedrooms || ''
-  row.getCell(11).value = mcao.bathrooms || ''
-  row.getCell(12).value = mcao.improvementSize || ''
-  row.getCell(13).value = mcao.salesHistory?.[0]?.salePrice || ''
-  row.getCell(14).value = mcao.salesHistory?.[0]?.saleDate || ''
+  if (rawData['House Number']) parts.push(rawData['House Number'])
+  if (rawData['Building Number']) parts.push(rawData['Building Number'])
+  if (rawData['Compass']) parts.push(rawData['Compass'])
+  if (rawData['Street Name']) parts.push(rawData['Street Name'])
+  if (rawData['Unit #']) parts.push(rawData['Unit #'])
+  if (rawData['St Dir Sfx']) parts.push(rawData['St Dir Sfx'])
+  if (rawData['St Suffix']) parts.push(rawData['St Suffix'])
+
+  const street = parts.filter(Boolean).join(' ').trim()
+
+  if (street) {
+    const city = rawData['City/Town Code'] || ''
+    const state = rawData['State/Province'] || 'AZ'
+    const zip = rawData['Zip Code'] || ''
+
+    // Format: "4620 N 68TH ST 155, Scottsdale, AZ 85251"
+    return `${street}, ${city}, ${state} ${zip}`.trim()
+  }
+
+  return fallback
+}
+
+/**
+ * Flatten nested object to match MCAO template columns
+ * Example: { assessedValue: { total: 100000 } } => { 'assessedValue_total': 100000 }
+ */
+function flattenObject(obj: any, prefix = '', result: any = {}): any {
+  for (const key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      const value = obj[key]
+      const newKey = prefix ? `${prefix}_${key}` : key
+
+      if (value !== null && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
+        // Recursively flatten nested objects
+        flattenObject(value, newKey, result)
+      } else if (Array.isArray(value)) {
+        // Flatten array elements (e.g., Valuations_0_, Valuations_1_)
+        value.forEach((item, index) => {
+          if (item !== null && typeof item === 'object') {
+            flattenObject(item, `${newKey}_${index}`, result)
+          } else {
+            result[`${newKey}_${index}`] = item
+          }
+        })
+      } else {
+        result[newKey] = value
+      }
+    }
+  }
+  return result
 }
 
 /**

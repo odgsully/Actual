@@ -5,7 +5,7 @@ import { Search, Upload, Download, AlertCircle } from 'lucide-react'
 import { MCAOCategorizedData } from '../../../components/admin/MCAOCategorizedData'
 
 export default function MCAOLookupPage() {
-  const [apn, setApn] = useState('')
+  const [searchInput, setSearchInput] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState<any>(null)
@@ -13,8 +13,8 @@ export default function MCAOLookupPage() {
   const [bulkStatus, setBulkStatus] = useState<any>(null)
 
   const handleSingleSearch = async () => {
-    if (!apn.trim()) {
-      alert('Please enter an APN')
+    if (!searchInput.trim()) {
+      alert('Please enter an address or APN')
       return
     }
 
@@ -24,10 +24,19 @@ export default function MCAOLookupPage() {
     setBulkStatus(null)
 
     try {
+      const input = searchInput.trim()
+
+      // Determine if input is an APN (format XXX-XX-XXX) or an address
+      const isAPN = /^\d{3}-\d{2}-\d{3}/.test(input)
+
+      const requestBody = isAPN
+        ? { apn: input }
+        : { address: input }
+
       const response = await fetch('/api/admin/mcao/lookup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ apn: apn.trim() }),
+        body: JSON.stringify(requestBody),
       })
 
       const data = await response.json()
@@ -84,13 +93,13 @@ export default function MCAOLookupPage() {
   }
 
   const handleDownloadSingle = async () => {
-    if (!apn.trim()) return
+    if (!results?.apn) return
 
     try {
       const response = await fetch('/api/admin/mcao/download', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ apn: apn.trim() }),
+        body: JSON.stringify({ apn: results.apn }),
       })
 
       if (response.ok) {
@@ -98,7 +107,7 @@ export default function MCAOLookupPage() {
         const url = window.URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
-        a.download = `MCAO-${apn}-${new Date().toISOString().slice(0, 10)}.xlsx`
+        a.download = `MCAO-${results.apn}-${new Date().toISOString().slice(0, 10)}.xlsx`
         document.body.appendChild(a)
         a.click()
         window.URL.revokeObjectURL(url)
@@ -121,28 +130,34 @@ export default function MCAOLookupPage() {
         <p className="text-gray-600 mt-2">Property Data API Interface</p>
       </div>
 
-      {/* Single APN Lookup */}
+      {/* Single Property Lookup */}
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-xl font-semibold text-brand-black mb-4">
-          Single APN Lookup
+          Single Property Lookup
         </h2>
-        <div className="flex gap-3">
-          <input
-            type="text"
-            value={apn}
-            onChange={(e) => setApn(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSingleSearch()}
-            placeholder="Enter APN (e.g., 123-45-678)"
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-red focus:border-transparent"
-          />
-          <button
-            onClick={handleSingleSearch}
-            disabled={loading}
-            className="px-6 py-2 bg-brand-red text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-          >
-            <Search className="w-5 h-5" />
-            <span>GO</span>
-          </button>
+        <div className="space-y-3">
+          <div className="flex gap-3">
+            <input
+              type="text"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSingleSearch()}
+              placeholder="Enter address (e.g., 1234 N Main St, Phoenix, AZ) or APN (123-45-678)"
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-red focus:border-transparent"
+            />
+            <button
+              onClick={handleSingleSearch}
+              disabled={loading}
+              className="px-6 py-2 bg-brand-red text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+            >
+              <Search className="w-5 h-5" />
+              <span>GO</span>
+            </button>
+          </div>
+          <p className="text-sm text-gray-600">
+            💡 <strong>Note:</strong> You can now search by full address only - no APN needed!
+            The system will automatically look up the APN using the same logic as the MLS Upload page.
+          </p>
         </div>
         {results && (
           <button
@@ -207,19 +222,29 @@ export default function MCAOLookupPage() {
             Property Details
           </h2>
 
+          {/* Show APN lookup info if address was used */}
+          {results.lookupMethod && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800">
+                ✓ Found APN: <strong>{results.apn}</strong> via {results.lookupMethod}
+                (confidence: {Math.round((results.lookupConfidence || 0) * 100)}%)
+              </p>
+            </div>
+          )}
+
           {/* Display categorized data if available */}
           {results.categorizedData ? (
             <MCAOCategorizedData
               categorizedData={results.categorizedData}
               fieldCount={results.fieldCount}
-              apn={results.data?.apn || apn}
+              apn={results.data?.apn || results.apn}
             />
           ) : (
             /* Fallback to basic display if categorized data not available */
             <div className="space-y-4">
               <div className="border-b pb-3">
                 <h3 className="text-lg font-medium text-gray-900">
-                  APN: {results.data?.apn || apn}
+                  APN: {results.data?.apn || results.apn}
                 </h3>
                 <p className="text-sm text-gray-500">
                   {results.data ? Object.keys(results.data).length : 0} fields retrieved
