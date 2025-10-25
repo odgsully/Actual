@@ -229,16 +229,62 @@ function buildMasterPropertyList(
 
   // Add subject property if exists
   if (subjectProperty && mcaoData) {
+    console.log(`${LOG_PREFIX} ========== SUBJECT PROPERTY DEBUG ==========`)
+    console.log(`${LOG_PREFIX} mcaoData structure:`, {
+      hasData: !!mcaoData.data,
+      hasSuccess: !!mcaoData.success,
+      topLevelKeys: Object.keys(mcaoData || {})
+    })
+
+    // CRITICAL FIX: MCAO data is nested in rawResponse!
+    // The API returns a wrapper with summary fields at top level,
+    // but the full 285 fields are in data.rawResponse
+    let actualMCAOData = mcaoData.data
+
+    if (mcaoData.data?.rawResponse) {
+      console.log(`${LOG_PREFIX} ✓ Found rawResponse with detailed data!`)
+      // Use rawResponse for detailed property data
+      actualMCAOData = mcaoData.data.rawResponse
+      console.log(`${LOG_PREFIX} rawResponse has ${Object.keys(actualMCAOData).length} fields`)
+    } else if (mcaoData.data) {
+      const dataKeys = Object.keys(mcaoData.data)
+      console.log(`${LOG_PREFIX} mcaoData.data has ${dataKeys.length} top-level keys (no rawResponse found)`)
+      console.log(`${LOG_PREFIX} First 15 keys:`, dataKeys.slice(0, 15))
+    } else {
+      console.error(`${LOG_PREFIX} ⚠️  WARNING: mcaoData.data is ${mcaoData.data}!`)
+    }
+
+    // Log critical fields from actual data
+    if (actualMCAOData) {
+      console.log(`${LOG_PREFIX} Critical fields check:`)
+      console.log(`  - apn: ${actualMCAOData.apn || mcaoData.data?.apn || 'MISSING'}`)
+      console.log(`  - propertyAddress.fullAddress: ${actualMCAOData.propertyAddress?.fullAddress || mcaoData.data?.propertyAddress?.fullAddress || 'MISSING'}`)
+      console.log(`  - bedrooms: ${actualMCAOData.bedrooms ?? 'MISSING'}`)
+      console.log(`  - bathrooms: ${actualMCAOData.bathrooms ?? 'MISSING'}`)
+      console.log(`  - improvementSize: ${actualMCAOData.improvementSize ?? 'MISSING'}`)
+      console.log(`  - lotSize: ${actualMCAOData.lotSize ?? mcaoData.data?.lotSize ?? 'MISSING'}`)
+      console.log(`  - yearBuilt: ${actualMCAOData.yearBuilt ?? 'MISSING'}`)
+      console.log(`  - propertyType: ${actualMCAOData.propertyType || mcaoData.data?.propertyType || 'MISSING'}`)
+    }
+
     masterList.push({
-      address: mcaoData.data?.propertyAddress?.fullAddress || subjectProperty.address || 'Subject Property',
-      apn: mcaoData.data?.apn,
+      address: actualMCAOData?.propertyAddress?.fullAddress || mcaoData.data?.propertyAddress?.fullAddress || subjectProperty.address || 'Subject Property',
+      apn: actualMCAOData?.apn || mcaoData.data?.apn,
       itemLabel: 'Subject Property',
       source: 'subject',
       mlsData: null,
-      mcaoData: mcaoData.data,
-      hasApn: !!mcaoData.data?.apn,
+      mcaoData: actualMCAOData,  // ← USE ACTUAL DATA (rawResponse if exists)
+      hasApn: !!(actualMCAOData?.apn || mcaoData.data?.apn),
       hasMCAOData: true,
       needsLookup: false,
+    })
+
+    console.log(`${LOG_PREFIX} ✓ Subject Property added to master list`)
+    console.log(`${LOG_PREFIX} ========================================`)
+  } else {
+    console.error(`${LOG_PREFIX} ⚠️  Subject Property NOT added:`, {
+      hasSubjectProperty: !!subjectProperty,
+      hasMcaoData: !!mcaoData
     })
   }
 
@@ -446,9 +492,12 @@ async function populateFullMCAOAPISheet(
   }
 
   // Filter properties with APNs (either from MLS or ArcGIS lookup)
-  const propertiesWithAPN = masterList.filter(p => p.hasApn && p.apn)
+  // ALWAYS include subject property even if APN is missing
+  const propertiesWithAPN = masterList.filter(p =>
+    p.itemLabel === 'Subject Property' || (p.hasApn && p.apn)
+  )
 
-  console.log(`${LOG_PREFIX} Full-MCAO-API: ${propertiesWithAPN.length} properties with APNs`)
+  console.log(`${LOG_PREFIX} Full-MCAO-API: ${propertiesWithAPN.length} properties (including subject) with APNs`)
 
   // Read template headers from row 1
   const headerRow = sheet.getRow(1)
@@ -486,7 +535,22 @@ function populateMCAORowFromTemplate(
   // Build full address - prefer MCAO for Subject Property, MLS for others
   let fullAddress: string
   if (property.itemLabel === 'Subject Property' && mcao?.propertyAddress?.fullAddress) {
-    fullAddress = mcao.propertyAddress.fullAddress
+    // CRITICAL: Ensure fullAddress is a string, not an object (prevents Excel corruption)
+    const rawFullAddress = mcao.propertyAddress.fullAddress
+    if (typeof rawFullAddress === 'string') {
+      fullAddress = rawFullAddress
+    } else if (typeof rawFullAddress === 'object' && rawFullAddress !== null) {
+      // If it's an object, build from components
+      const addr = mcao.propertyAddress || {}
+      fullAddress = [
+        addr.number,
+        addr.street,
+        addr.unit
+      ].filter(Boolean).join(' ') + ', ' +
+      [addr.city, addr.state, addr.zip].filter(Boolean).join(' ')
+    } else {
+      fullAddress = property.address || 'Subject Property'
+    }
   } else {
     const mls = property.mlsData || {}
     const rawData = (mls as any).rawData || mls
@@ -496,14 +560,58 @@ function populateMCAORowFromTemplate(
   // Flatten the MCAO data object (for nested fields like Valuations_0_TaxYear)
   const flattenedMCAO = flattenObject(mcao)
 
-  // Log first property to debug
+  // Log first property (Subject Property) to debug
   if (row.number === 2) {
-    console.log(`${LOG_PREFIX} [DEBUG] First property MCAO data:`)
-    console.log(`  Address: ${fullAddress}`)
-    console.log(`  APN: ${property.apn}`)
-    console.log(`  Has MCAO data: ${property.hasMCAOData}`)
-    console.log(`  MCAO fields: ${Object.keys(flattenedMCAO).length}`)
-    console.log(`  First 10 MCAO fields:`, Object.keys(flattenedMCAO).slice(0, 10))
+    console.log(`${LOG_PREFIX} ========== ROW 2 (SUBJECT PROPERTY) DEBUG ==========`)
+    console.log(`${LOG_PREFIX} Item Label: ${property.itemLabel}`)
+    console.log(`${LOG_PREFIX} Address: ${fullAddress}`)
+    console.log(`${LOG_PREFIX} Address type: ${typeof fullAddress}`)
+    console.log(`${LOG_PREFIX} APN: ${property.apn}`)
+    console.log(`${LOG_PREFIX} Has MCAO data: ${property.hasMCAOData}`)
+
+    // Log raw MCAO data structure BEFORE flattening
+    if (mcao) {
+      const mcaoKeys = Object.keys(mcao)
+      console.log(`${LOG_PREFIX} Raw MCAO data has ${mcaoKeys.length} top-level keys`)
+      console.log(`${LOG_PREFIX} Raw MCAO keys (first 20):`, mcaoKeys.slice(0, 20))
+
+      // Count non-null values in raw MCAO data
+      const nonNullCount = mcaoKeys.filter(key => {
+        const value = mcao[key]
+        return value !== null && value !== undefined && value !== ''
+      }).length
+      console.log(`${LOG_PREFIX} Raw MCAO has ${nonNullCount} non-null/non-empty values`)
+    } else {
+      console.error(`${LOG_PREFIX} ⚠️  WARNING: mcao is ${mcao}!`)
+    }
+
+    // Log flattened data
+    console.log(`${LOG_PREFIX} Flattened MCAO fields: ${Object.keys(flattenedMCAO).length}`)
+    console.log(`${LOG_PREFIX} First 30 flattened keys:`, Object.keys(flattenedMCAO).slice(0, 30))
+
+    // Check specific important fields
+    const importantFields = [
+      'apn', 'propertyAddress_fullAddress', 'bedrooms', 'bathrooms',
+      'improvementSize', 'lotSize', 'yearBuilt', 'propertyType',
+      'Owner_SalePrice', 'Owner_SaleDate'
+    ]
+    console.log(`${LOG_PREFIX} Important fields status:`)
+    importantFields.forEach(field => {
+      const value = flattenedMCAO[field]
+      const status = value !== undefined && value !== null && value !== '' ? '✓' : '✗'
+      console.log(`  ${status} ${field}: ${value === undefined ? 'undefined' : value === null ? 'null' : value === '' ? 'empty' : value}`)
+    })
+
+    // Log raw propertyAddress to see if it's an object
+    if (mcao?.propertyAddress) {
+      console.log(`${LOG_PREFIX} propertyAddress type: ${typeof mcao.propertyAddress}`)
+      console.log(`${LOG_PREFIX} propertyAddress.fullAddress type: ${typeof mcao.propertyAddress.fullAddress}`)
+      if (typeof mcao.propertyAddress.fullAddress === 'object') {
+        console.error(`${LOG_PREFIX} ⚠️  WARNING: propertyAddress.fullAddress is an OBJECT:`, mcao.propertyAddress.fullAddress)
+      }
+    }
+
+    console.log(`${LOG_PREFIX} ====================================================`)
   }
 
   // Iterate through each template column and populate if we have matching data
@@ -544,11 +652,27 @@ function populateMCAORowFromTemplate(
 
     // Set the value if we found it
     if (value !== undefined && value !== null && value !== '') {
-      row.getCell(colNumber).value = value
+      // CRITICAL: Sanitize value to prevent Excel corruption
+      // Only write primitive types (string, number, boolean, Date)
+      let sanitizedValue: string | number | boolean | Date
+
+      if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+        sanitizedValue = value
+      } else if (value instanceof Date) {
+        sanitizedValue = value
+      } else if (typeof value === 'object' && value !== null) {
+        // Convert objects to JSON string to prevent corruption
+        sanitizedValue = JSON.stringify(value)
+      } else {
+        // Convert anything else to string
+        sanitizedValue = String(value)
+      }
+
+      row.getCell(colNumber).value = sanitizedValue
 
       // Log first few successful matches for debugging
       if (row.number === 2 && colNumber <= 15) {
-        console.log(`${LOG_PREFIX} [DEBUG] Column ${colNumber} (${header}): ${value}`)
+        console.log(`${LOG_PREFIX} [DEBUG] Column ${colNumber} (${header}): ${sanitizedValue}`)
       }
     }
   })
@@ -589,27 +713,56 @@ function buildFullAddress(rawData: any, fallback: string): string {
 /**
  * Flatten nested object to match MCAO template columns
  * Example: { assessedValue: { total: 100000 } } => { 'assessedValue_total': 100000 }
+ * CRITICAL: Only store primitive values to prevent Excel corruption
  */
 function flattenObject(obj: any, prefix = '', result: any = {}): any {
+  // Prevent circular references and excessive depth
+  if (prefix.split('_').length > 10) {
+    console.warn(`${LOG_PREFIX} Skipping deeply nested key: ${prefix}`)
+    return result
+  }
+
   for (const key in obj) {
     if (obj.hasOwnProperty(key)) {
       const value = obj[key]
       const newKey = prefix ? `${prefix}_${key}` : key
 
-      if (value !== null && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
-        // Recursively flatten nested objects
-        flattenObject(value, newKey, result)
+      // Skip if value is undefined, null, or empty string
+      if (value === undefined || value === null || value === '') {
+        continue
+      }
+
+      // Handle different value types
+      if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+        // Primitive - safe to store
+        result[newKey] = value
+      } else if (value instanceof Date) {
+        // Date - safe to store
+        result[newKey] = value
       } else if (Array.isArray(value)) {
         // Flatten array elements (e.g., Valuations_0_, Valuations_1_)
         value.forEach((item, index) => {
-          if (item !== null && typeof item === 'object') {
+          if (item !== null && typeof item === 'object' && !(item instanceof Date)) {
             flattenObject(item, `${newKey}_${index}`, result)
-          } else {
+          } else if (item !== undefined && item !== null && item !== '') {
+            // Only store primitive array items
             result[`${newKey}_${index}`] = item
           }
         })
-      } else {
-        result[newKey] = value
+      } else if (typeof value === 'object') {
+        // Try to convert to string first to check if it's serializable
+        try {
+          const jsonStr = JSON.stringify(value)
+          // If it's a simple object, flatten it
+          if (jsonStr.length < 1000) {
+            flattenObject(value, newKey, result)
+          } else {
+            console.warn(`${LOG_PREFIX} Skipping large object at key: ${newKey}`)
+          }
+        } catch (err) {
+          // Circular reference or non-serializable object
+          console.warn(`${LOG_PREFIX} Skipping non-serializable object at key: ${newKey}`)
+        }
       }
     }
   }

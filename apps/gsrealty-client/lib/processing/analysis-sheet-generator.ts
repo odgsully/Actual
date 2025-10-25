@@ -303,12 +303,19 @@ function addPropertyRow(
   // Column H: SALE_PRICE (MLS CSV field "Sold Price")
   row.getCell(ANALYSIS_COLUMNS.SALE_PRICE).value = rawData['Sold Price'] || ''
 
-  // Column I: SELLER_BASIS (MCAO - last sale price)
+  // Column I: SELLER_BASIS (MCAO - Owner_SalePrice from Full-MCAO-API)
+  // This comes from the flattened MCAO data column AG 'Owner_SalePrice'
+  const mcaoFlattened = mcao ? flattenObject(mcao) : {}
   row.getCell(ANALYSIS_COLUMNS.SELLER_BASIS).value =
+    (mcaoFlattened as any)['Owner_SalePrice'] ||
+    (mcaoFlattened as any)['owner_saleprice'] ||
     mcao?.salesHistory?.[0]?.salePrice || ''
 
-  // Column J: SELLER_BASIS_DATE (MCAO - last sale date)
+  // Column J: SELLER_BASIS_DATE (MCAO - Owner_SaleDate from Full-MCAO-API)
+  // This comes from the flattened MCAO data column AH 'Owner_SaleDate'
   row.getCell(ANALYSIS_COLUMNS.SELLER_BASIS_DATE).value =
+    (mcaoFlattened as any)['Owner_SaleDate'] ||
+    (mcaoFlattened as any)['owner_saledate'] ||
     mcao?.salesHistory?.[0]?.saleDate || ''
 
   // Column K: BR (MLS CSV field "# Bedrooms")
@@ -348,19 +355,29 @@ function addPropertyRow(
   // Column U: IN_MCAO? (CALCULATED)
   row.getCell(ANALYSIS_COLUMNS.IN_MCAO).value = mcao ? 'Y' : 'N'
 
-  // Column V: CANCEL_DATE (MLS CSV field "Cancel Date")
-  row.getCell(ANALYSIS_COLUMNS.CANCEL_DATE).value = rawData['Cancel Date'] || ''
+  // Column V: CANCEL_DATE (MLS CSV field "Cancel Date" - column U in MLS sheets)
+  row.getCell(ANALYSIS_COLUMNS.CANCEL_DATE).value =
+    rawData['Cancel Date'] ||
+    rawData['Cancellation Date'] ||
+    rawData['Cancelled Date'] || ''
 
-  // Column W: UC_DATE (MLS CSV field "Under Contract Date")
-  row.getCell(ANALYSIS_COLUMNS.UC_DATE).value = rawData['Under Contract Date'] || ''
+  // Column W: UC_DATE (MLS CSV field "Under Contract Date" - column P in MLS sheets)
+  row.getCell(ANALYSIS_COLUMNS.UC_DATE).value =
+    rawData['Under Contract Date'] ||
+    rawData['UC Date'] ||
+    rawData['Contract Date'] || ''
 
-  // Column X: LAT (MLS CSV field "Geo Lat", fallback to MCAO)
+  // Column X: LAT (MLS CSV field "Geo Lat", fallback to MCAO flattened data)
   row.getCell(ANALYSIS_COLUMNS.LAT).value =
-    rawData['Geo Lat'] || mcao?.propertyAddress?.latitude || 'N/A'
+    rawData['Geo Lat'] ||
+    (mcaoFlattened as any)['latitude'] ||
+    (mcaoFlattened as any)['Latitude'] || 'N/A'
 
-  // Column Y: LON (MLS CSV field "Geo Lon", fallback to MCAO)
+  // Column Y: LON (MLS CSV field "Geo Lon", fallback to MCAO flattened data)
   row.getCell(ANALYSIS_COLUMNS.LON).value =
-    rawData['Geo Lon'] || mcao?.propertyAddress?.longitude || 'N/A'
+    rawData['Geo Lon'] ||
+    (mcaoFlattened as any)['longitude'] ||
+    (mcaoFlattened as any)['Longitude'] || 'N/A'
 
   // Column Z: YEAR_BUILT (MLS CSV field "Year Built", fallback to MCAO)
   row.getCell(ANALYSIS_COLUMNS.YEAR_BUILT).value = rawData['Year Built'] || mcao?.yearBuilt || 'N/A'
@@ -391,6 +408,36 @@ function calculateDiscrepancy(mlsSqft: number | undefined, mcaoSqft: number | un
   }
 
   return ''
+}
+
+/**
+ * Flatten nested object to match MCAO template columns
+ * Example: { assessedValue: { total: 100000 } } => { 'assessedValue_total': 100000 }
+ */
+function flattenObject(obj: any, prefix = '', result: any = {}): any {
+  for (const key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      const value = obj[key]
+      const newKey = prefix ? `${prefix}_${key}` : key
+
+      if (value !== null && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
+        // Recursively flatten nested objects
+        flattenObject(value, newKey, result)
+      } else if (Array.isArray(value)) {
+        // Flatten array elements (e.g., Valuations_0_, Valuations_1_)
+        value.forEach((item, index) => {
+          if (item !== null && typeof item === 'object') {
+            flattenObject(item, `${newKey}_${index}`, result)
+          } else {
+            result[`${newKey}_${index}`] = item
+          }
+        })
+      } else {
+        result[newKey] = value
+      }
+    }
+  }
+  return result
 }
 
 /**
