@@ -21,6 +21,15 @@ export default function UploadPage() {
   const [subjectAPN, setSubjectAPN] = useState('')
   const [subjectData, setSubjectData] = useState<any>(null)
 
+  // Subject Property Manual Inputs (for Analysis sheet Row 2)
+  const [subjectBedrooms, setSubjectBedrooms] = useState('')
+  const [subjectBathrooms, setSubjectBathrooms] = useState('')
+  const [subjectLatitude, setSubjectLatitude] = useState('')
+  const [subjectLongitude, setSubjectLongitude] = useState('')
+  const [subjectFullAddress, setSubjectFullAddress] = useState('')
+  const [subjectDwellingType, setSubjectDwellingType] = useState('')
+  const [subjectYearBuilt, setSubjectYearBuilt] = useState('')
+
   // Track each upload type - 4 MLS upload types
   const [residential15Mile, setResidential15Mile] = useState<UploadedData | null>(null)
   const [residentialLease15Mile, setResidentialLease15Mile] = useState<UploadedData | null>(null)
@@ -191,6 +200,16 @@ export default function UploadPage() {
           residentialLease3YrDirect: residentialLease3YrDirect.data,
           mcaoData: subjectData || null,
           clientName: clientName || 'Client',
+          // Subject Property Manual Inputs for Analysis Row 2
+          subjectManualInputs: {
+            bedrooms: subjectBedrooms ? parseFloat(subjectBedrooms) : undefined,
+            bathrooms: subjectBathrooms ? parseFloat(subjectBathrooms) : undefined,
+            latitude: subjectLatitude ? parseFloat(subjectLatitude) : undefined,
+            longitude: subjectLongitude ? parseFloat(subjectLongitude) : undefined,
+            fullAddress: subjectFullAddress || undefined,
+            dwellingType: subjectDwellingType || undefined,
+            yearBuilt: subjectYearBuilt ? parseInt(subjectYearBuilt) : undefined,
+          },
         }),
       })
 
@@ -338,7 +357,7 @@ export default function UploadPage() {
         )}
 
         {subjectData && (
-          <div className="bg-white border border-green-200 rounded-lg p-4">
+          <div className="bg-white border border-green-200 rounded-lg p-4 mb-4">
             {subjectData.categorizedData ? (
               <MCAOCategorizedData
                 categorizedData={subjectData.categorizedData}
@@ -353,6 +372,122 @@ export default function UploadPage() {
                 <div><strong>Value:</strong> ${subjectData.data?.assessedValue?.total?.toLocaleString()}</div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Manual Inputs for Subject Property (Analysis Row 2) */}
+        {subjectData && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">
+              Subject Property Details (for Analysis Sheet Row 2)
+            </h3>
+            <p className="text-xs text-gray-600 mb-3">
+              These values will override MCAO data for the subject property in the Analysis sheet.
+              Leave blank to use MCAO data when available.
+            </p>
+
+            {/* Row 1: Full Address */}
+            <div className="mb-3">
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Full Address (replaces "Subject Property" placeholder)
+              </label>
+              <input
+                type="text"
+                value={subjectFullAddress}
+                onChange={(e) => setSubjectFullAddress(e.target.value)}
+                placeholder="e.g., 1234 N Main St, Phoenix, AZ 85001"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-red focus:border-transparent"
+              />
+            </div>
+
+            {/* Row 2: Numbers */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Bedrooms
+                </label>
+                <input
+                  type="number"
+                  step="0.5"
+                  value={subjectBedrooms}
+                  onChange={(e) => setSubjectBedrooms(e.target.value)}
+                  placeholder="e.g., 3"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-red focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Bathrooms
+                </label>
+                <input
+                  type="number"
+                  step="0.5"
+                  value={subjectBathrooms}
+                  onChange={(e) => setSubjectBathrooms(e.target.value)}
+                  placeholder="e.g., 2.5"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-red focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Year Built
+                </label>
+                <input
+                  type="number"
+                  step="1"
+                  value={subjectYearBuilt}
+                  onChange={(e) => setSubjectYearBuilt(e.target.value)}
+                  placeholder="e.g., 1995"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-red focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Dwelling Type
+                </label>
+                <select
+                  value={subjectDwellingType}
+                  onChange={(e) => setSubjectDwellingType(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-red focus:border-transparent"
+                >
+                  <option value="">Select type...</option>
+                  <option value="Apartment">Apartment</option>
+                  <option value="Townhouse">Townhouse</option>
+                  <option value="Single Family Residence">Single Family Residence</option>
+                  <option value="Loft Style">Loft Style</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Row 3: Coordinates */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Latitude
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  value={subjectLatitude}
+                  onChange={(e) => setSubjectLatitude(e.target.value)}
+                  placeholder="e.g., 33.4942"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-red focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Longitude
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  value={subjectLongitude}
+                  onChange={(e) => setSubjectLongitude(e.target.value)}
+                  placeholder="e.g., -111.9261"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-red focus:border-transparent"
+                />
+              </div>
+            </div>
           </div>
         )}
       </div>

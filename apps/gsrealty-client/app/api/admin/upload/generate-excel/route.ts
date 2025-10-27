@@ -42,7 +42,8 @@ export async function PUT(req: NextRequest) {
       residential3YrDirect,
       residentialLease3YrDirect,
       mcaoData,
-      clientName
+      clientName,
+      subjectManualInputs
     } = body
 
     console.log(`${LOG_PREFIX} Starting Excel generation for client: ${clientName}`)
@@ -177,7 +178,7 @@ export async function PUT(req: NextRequest) {
       mcaoData: p.mcaoData,
       address: p.address,
     }))
-    await generateAnalysisSheet(workbook, propertiesForAnalysis)
+    await generateAnalysisSheet(workbook, propertiesForAnalysis, subjectManualInputs)
 
     // Step 8: Generate buffer
     const buffer = await workbook.xlsx.writeBuffer()
@@ -386,6 +387,9 @@ async function populateMLSResiCompsSheet(
     populateMLSRowFromTemplate(row, prop, templateHeaders)
   })
 
+  // Apply consistent formatting
+  formatMLSSheet(sheet, 'Resi')
+
   console.log(`${LOG_PREFIX} Populated ${resiComps.length} rows in MLS-Resi-Comps`)
 }
 
@@ -426,6 +430,9 @@ async function populateMLSLeaseCompsSheet(
     const row = sheet.getRow(index + 2)
     populateMLSRowFromTemplate(row, prop, templateHeaders)
   })
+
+  // Apply consistent formatting
+  formatMLSSheet(sheet, 'Lease')
 
   console.log(`${LOG_PREFIX} Populated ${leaseComps.length} rows in MLS-Lease-Comps`)
 }
@@ -767,6 +774,83 @@ function flattenObject(obj: any, prefix = '', result: any = {}): any {
     }
   }
   return result
+}
+
+/**
+ * Apply consistent formatting to MLS sheets
+ * Ensures dates, prices, and numbers are formatted uniformly
+ */
+function formatMLSSheet(sheet: ExcelJS.Worksheet, type: 'Resi' | 'Lease'): void {
+  console.log(`${LOG_PREFIX} Applying consistent formatting to MLS-${type}-Comps sheet`)
+
+  // Get header row to identify columns
+  const headerRow = sheet.getRow(1)
+  const headers: { [colLetter: string]: string } = {}
+
+  headerRow.eachCell((cell, colNumber) => {
+    const colLetter = sheet.getColumn(colNumber).letter
+    headers[colLetter] = cell.value?.toString().toLowerCase() || ''
+  })
+
+  // Apply formatting to all data rows
+  sheet.eachRow((row, rowNumber) => {
+    if (rowNumber === 1) return // Skip header row
+
+    row.eachCell((cell, colNumber) => {
+      const colLetter = sheet.getColumn(colNumber).letter
+      const header = headers[colLetter]
+
+      if (!header || !cell.value) return
+
+      // DATE COLUMNS - Format as m/d/yy (e.g., 4/29/25)
+      if (
+        header.includes('date') ||
+        header.includes('list date') ||
+        header.includes('close of escrow') ||
+        header.includes('cancel') ||
+        header.includes('under contract')
+      ) {
+        cell.numFmt = 'm/d/yy'
+      }
+
+      // PRICE/CURRENCY COLUMNS - Format as currency with no decimals
+      else if (
+        header.includes('price') ||
+        header.includes('sold') ||
+        header.includes('list price') ||
+        header.includes('original list')
+      ) {
+        if (typeof cell.value === 'number') {
+          cell.numFmt = '$#,##0'
+        }
+      }
+
+      // NUMBER COLUMNS - Format as whole numbers with commas
+      else if (
+        header.includes('sqft') ||
+        header.includes('square') ||
+        header.includes('lot') ||
+        header.includes('acreage') ||
+        header.includes('bedroom') ||
+        header.includes('bathroom') ||
+        header.includes('bath') ||
+        header.includes('year built')
+      ) {
+        if (typeof cell.value === 'number') {
+          // Bathrooms can have .5, others should be whole
+          if (header.includes('bathroom') || header.includes('bath')) {
+            cell.numFmt = '0.#' // Shows 2.5 or 2 (not 2.0)
+          } else {
+            // Round to whole number and format with commas
+            cell.value = Math.round(cell.value as number)
+            cell.numFmt = '#,##0' // Whole numbers with commas
+          }
+        }
+      }
+    })
+  })
+
+  console.log(`${LOG_PREFIX} Formatting complete for MLS-${type}-Comps sheet`)
 }
 
 /**
