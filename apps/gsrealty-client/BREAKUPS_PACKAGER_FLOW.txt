@@ -1,0 +1,196 @@
+================================================================================
+BREAKUPS PACKAGER - PROCESSING FLOW DIAGRAM
+================================================================================
+
+INPUT PHASE
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         packageBreakupsReport()                         │
+│                                                                         │
+│  Inputs:                                                                │
+│  ├── fileId: "abc123"                                                   │
+│  ├── clientName: "Smith Family"                                         │
+│  ├── enhancedExcel: Buffer (500KB - 2MB)                                │
+│  ├── analysisResults: BreakupsAnalysisResult (22 analyses)              │
+│  ├── chartPaths: string[] (22 PNG files)                                │
+│  ├── pdfPaths: string[] (5 PDF files)                                   │
+│  ├── properties: any[] (property data array)                            │
+│  └── outputDir: "/tmp/output"                                           │
+└─────────────────────────────────────────────────────────────────────────┘
+                                   │
+                                   ▼
+VALIDATION PHASE
+┌─────────────────────────────────────────────────────────────────────────┐
+│  Step 1: Validate Inputs                                                │
+│  ├── Check: enhancedExcel buffer not empty                              │
+│  ├── Check: analysisResults has all 22 analyses                         │
+│  └── Check: outputDir exists                                            │
+│                                                                         │
+│  Step 2: Validate Chart Files (22)                                      │
+│  ├── For each chartPath:                                                │
+│  │   ├── Check: File exists                                             │
+│  │   ├── If exists: Add to validCharts[]                                │
+│  │   └── If missing: Warn and add to missingCharts[]                    │
+│  └── Result: validCharts[] (0-22 files)                                 │
+│                                                                         │
+│  Step 3: Validate PDF Files (5)                                         │
+│  ├── For each pdfPath:                                                  │
+│  │   ├── Check: File exists                                             │
+│  │   ├── If exists: Add to validPDFs[]                                  │
+│  │   └── If missing: Warn and add to missingPDFs[]                      │
+│  └── Result: validPDFs[] (0-5 files)                                    │
+└─────────────────────────────────────────────────────────────────────────┘
+                                   │
+                                   ▼
+STAGING PHASE
+┌─────────────────────────────────────────────────────────────────────────┐
+│  Step 4: Create Working Directory                                       │
+│  ├── Create: /tmp/output/temp_packaging_1698607200000/                  │
+│  ├── Create: /tmp/output/temp_packaging_1698607200000/charts/           │
+│  ├── Create: /tmp/output/temp_packaging_1698607200000/reports/          │
+│  └── Create: /tmp/output/temp_packaging_1698607200000/data/             │
+│                                                                         │
+│  Step 5: Write Excel File                                               │
+│  └── Write: temp_packaging_*/Breakups_Analysis_Complete.xlsx            │
+│                                                                         │
+│  Step 6: Copy Chart Files                                               │
+│  ├── For each chart in validCharts[]:                                   │
+│  │   ├── Source: /original/path/analysis_01_br_distribution.png         │
+│  │   └── Dest: temp_packaging_*/charts/analysis_01_br_distribution.png  │
+│  └── Result: 0-22 chart files copied                                    │
+│                                                                         │
+│  Step 7: Copy PDF Files                                                 │
+│  ├── For each pdf in validPDFs[]:                                       │
+│  │   ├── Source: /original/path/Executive_Summary.pdf                   │
+│  │   └── Dest: temp_packaging_*/reports/Executive_Summary.pdf           │
+│  └── Result: 0-5 PDF files copied                                       │
+└─────────────────────────────────────────────────────────────────────────┘
+                                   │
+                                   ▼
+DATA EXPORT PHASE
+┌─────────────────────────────────────────────────────────────────────────┐
+│  Step 8: Generate README.txt                                            │
+│  ├── Generate: User instructions, contents list, quick start            │
+│  ├── Include: Client name, property count, analysis date                │
+│  └── Write: temp_packaging_*/README.txt (10-15 KB)                      │
+│                                                                         │
+│  Step 9: Export Analysis to JSON                                        │
+│  ├── Format: Pretty-printed JSON (2-space indent)                       │
+│  ├── Organize: By analysis category (5 categories)                      │
+│  ├── Include: All 22 analyses + metadata                                │
+│  └── Write: temp_packaging_*/data/analysis_results.json (50-200 KB)     │
+│                                                                         │
+│  Step 10: Export Properties to CSV                                      │
+│  ├── Format: CSV with header row                                        │
+│  ├── Include: All property fields (dynamic columns)                     │
+│  ├── Escape: Quotes and special characters                              │
+│  └── Write: temp_packaging_*/data/property_data.csv (100-500 KB)        │
+│                                                                         │
+│  Step 11: Create Summary Statistics                                     │
+│  ├── Extract: Key metrics from each analysis                            │
+│  ├── Format: Structured JSON object                                     │
+│  └── Write: temp_packaging_*/data/summary_statistics.json (5-20 KB)     │
+└─────────────────────────────────────────────────────────────────────────┘
+                                   │
+                                   ▼
+COMPRESSION PHASE
+┌─────────────────────────────────────────────────────────────────────────┐
+│  Step 12: Create ZIP Archive                                            │
+│  ├── Library: archiver (level 9 compression)                            │
+│  ├── Source: temp_packaging_*/ (entire directory)                       │
+│  ├── Filename: Breakups_Report_Smith_Family_2024-10-29.zip              │
+│  ├── Dest: /tmp/output/Breakups_Report_Smith_Family_2024-10-29.zip      │
+│  ├── Process:                                                           │
+│  │   ├── Stream files to ZIP                                            │
+│  │   ├── Compress with maximum compression                              │
+│  │   ├── Preserve directory structure                                   │
+│  │   └── Calculate final size                                           │
+│  └── Result: ZIP file (5-15 MB compressed)                              │
+└─────────────────────────────────────────────────────────────────────────┘
+                                   │
+                                   ▼
+CLEANUP PHASE
+┌─────────────────────────────────────────────────────────────────────────┐
+│  Step 13: Cleanup Working Directory                                     │
+│  ├── Remove: temp_packaging_*/ (recursive)                              │
+│  ├── Clean: All temporary files                                         │
+│  └── Result: Only ZIP file remains                                      │
+└─────────────────────────────────────────────────────────────────────────┘
+                                   │
+                                   ▼
+RESULT PHASE
+┌─────────────────────────────────────────────────────────────────────────┐
+│  Step 14: Return PackageResult                                          │
+│  {                                                                      │
+│    success: true,                                                       │
+│    zipPath: "/tmp/output/Breakups_Report_Smith_Family_2024-10-29.zip", │
+│    zipSize: 8388608,  // 8 MB                                           │
+│    fileName: "Breakups_Report_Smith_Family_2024-10-29.zip",             │
+│    contents: {                                                          │
+│      excel: true,                                                       │
+│      charts: 22,                                                        │
+│      pdfs: 5,                                                           │
+│      dataFiles: 3                                                       │
+│    }                                                                    │
+│  }                                                                      │
+└─────────────────────────────────────────────────────────────────────────┘
+                                   │
+                                   ▼
+FINAL ZIP STRUCTURE
+┌─────────────────────────────────────────────────────────────────────────┐
+│  Breakups_Report_Smith_Family_2024-10-29.zip                            │
+│  ├── README.txt (10-15 KB)                                              │
+│  ├── Breakups_Analysis_Complete.xlsx (500KB - 2MB)                      │
+│  ├── charts/ (2-5 MB total)                                             │
+│  │   ├── analysis_01_br_distribution.png                                │
+│  │   ├── analysis_02_hoa_comparison.png                                 │
+│  │   ├── ... (18 more charts)                                           │
+│  │   └── analysis_22_improved_noi.png                                   │
+│  ├── reports/ (1-3 MB total)                                            │
+│  │   ├── Executive_Summary.pdf                                          │
+│  │   ├── Property_Characteristics.pdf                                   │
+│  │   ├── Market_Analysis.pdf                                            │
+│  │   ├── Financial_Analysis.pdf                                         │
+│  │   └── Market_Activity.pdf                                            │
+│  └── data/ (100-500 KB total)                                           │
+│      ├── analysis_results.json                                          │
+│      ├── property_data.csv                                              │
+│      └── summary_statistics.json                                        │
+│                                                                         │
+│  Total Uncompressed: 10-20 MB                                           │
+│  Total Compressed: 5-15 MB (40-50% compression ratio)                   │
+└─────────────────────────────────────────────────────────────────────────┘
+
+ERROR HANDLING FLOW
+┌─────────────────────────────────────────────────────────────────────────┐
+│  If error occurs at any step:                                           │
+│  ├── 1. Log error with detailed message                                 │
+│  ├── 2. Cleanup working directory (if exists)                           │
+│  ├── 3. Return PackageResult with success: false                        │
+│  │   {                                                                  │
+│  │     success: false,                                                  │
+│  │     zipPath: "",                                                     │
+│  │     zipSize: 0,                                                      │
+│  │     fileName: "",                                                    │
+│  │     contents: { excel: false, charts: 0, pdfs: 0, dataFiles: 0 },   │
+│  │     error: "Detailed error message"                                  │
+│  │   }                                                                  │
+│  └── 4. Never throw - always return result                              │
+└─────────────────────────────────────────────────────────────────────────┘
+
+PERFORMANCE METRICS
+┌─────────────────────────────────────────────────────────────────────────┐
+│  Typical Processing Time: 1-3 seconds                                   │
+│  ├── Validation: <50ms                                                  │
+│  ├── Directory creation: <50ms                                          │
+│  ├── File copying: 100-500ms                                            │
+│  ├── Data export: 100-200ms                                             │
+│  ├── ZIP compression: 500-2000ms (depends on size)                      │
+│  └── Cleanup: <100ms                                                    │
+│                                                                         │
+│  Memory Usage:                                                          │
+│  ├── Peak: ~100-200 MB (during compression)                             │
+│  ├── Streaming: Yes (archiver uses streams)                             │
+│  └── Cleanup: Automatic garbage collection                              │
+└─────────────────────────────────────────────────────────────────────────┘
+
+================================================================================

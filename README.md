@@ -1,24 +1,48 @@
-# Wabbit Real Estate Platform
+# GS Personal App Suite - Monorepo
 
-A sophisticated real estate discovery platform with intelligent property matching and collaborative ranking features.
+A monorepo containing multiple applications under one unified workspace.
 
-## 🚨 Important Notice (September 5, 2024)
+## 🚨 Monorepo Migration Status
 
-This is the **verified working version** restored from the `main` branch. The previous `clean-deployment` branch was missing critical authentication features and has been replaced. See `Fix_explain_09.05.md` for details about the restoration process.
+**Branch:** `10.14monorepo-migration`
+**Status:** Phase 2 Complete (75%) - Ready for Phase 3
+**Main Development Plan:** See `IMPLEMENTATION_CHECKLIST copy.md` for detailed roadmap
+
+### Quick Migration Summary
+- ✅ Phase 0-1: Foundation & Structure Complete
+- ✅ Phase 2: 4 Apps Created (95% complete)
+- ⏳ Phase 2: Shared Package Integration (in progress)
+- 📝 Phase 3-4: Routing, Database, Deployment (pending)
+
+## 📁 Monorepo Structure
+
+```
+Actual/
+├── apps/
+│   ├── gsrealty-client/    # Real estate CRM (port 3004)
+│   ├── wabbit-re/          # Property ranking platform (port 3000)
+│   ├── wabbit/             # General ranking platform (port 3002)
+│   └── gs-site/            # Personal dashboard hub (port 3003)
+├── packages/
+│   ├── supabase/           # Shared Supabase utilities
+│   ├── ui/                 # Shared UI components
+│   └── utils/              # Common utilities
+├── package.json            # Root workspace config
+├── turbo.json              # Turborepo build pipeline
+└── IMPLEMENTATION_CHECKLIST copy.md  # Main development roadmap
+```
 
 ## Quick Start
 
 ### Prerequisites
 - Node.js 18.17.0 or higher
-- npm or yarn
+- npm 9+ (uses npm workspaces)
 - Supabase account (for database)
-- Google Maps API key (for mapping features - see limitations below)
-- OpenAI API key (for location intelligence)
-- Vercel Pro account (required for hourly cron jobs)
+- Environment variables (see `.env.local`)
 
 ### Installation
 
-1. **Clone and install dependencies:**
+1. **Install all workspace dependencies:**
 ```bash
 npm install
 ```
@@ -26,16 +50,21 @@ npm install
 2. **Set up environment variables:**
 ```bash
 cp .env.sample .env.local
+# Edit .env.local with your API keys
 ```
-Then edit `.env.local` with your API keys.
 
-3. **Start the development server:**
+3. **Run specific app:**
+```bash
+npm run dev:gsrealty     # GSRealty CRM on port 3004
+npm run dev:wabbit-re    # Wabbit RE on port 3000
+npm run dev:wabbit       # Wabbit on port 3002
+npm run dev:dashboard    # GS Site on port 3003
+```
+
+4. **Or run all apps (parallel):**
 ```bash
 npm run dev
 ```
-
-4. **Open your browser:**
-Navigate to [http://localhost:3000](http://localhost:3000)
 
 ## 🚨 Known Limitations
 

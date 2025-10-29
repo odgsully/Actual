@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { Upload, Download, FileText, CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
+import { Upload, Download, FileText, CheckCircle, AlertCircle, Loader2, Package } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -14,124 +14,123 @@ interface UploadStatus {
   downloadUrl?: string
 }
 
-type UploadType = 'breakups' | 'propertyradar'
-
 export default function ReportItPage() {
-  const [breakupsStatus, setBreakupsStatus] = useState<UploadStatus>({ status: 'idle' })
-  const [propertyRadarStatus, setPropertyRadarStatus] = useState<UploadStatus>({ status: 'idle' })
-  const [dragActiveBreakups, setDragActiveBreakups] = useState(false)
-  const [dragActivePropertyRadar, setDragActivePropertyRadar] = useState(false)
+  const [uploadStatus, setUploadStatus] = useState<UploadStatus>({ status: 'idle' })
+  const [dragActive, setDragActive] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const { toast } = useToast()
 
-  const handleDrag = useCallback((e: React.DragEvent, type: UploadType) => {
+  const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
     if (e.type === "dragenter" || e.type === "dragover") {
-      if (type === 'breakups') {
-        setDragActiveBreakups(true)
-      } else {
-        setDragActivePropertyRadar(true)
-      }
+      setDragActive(true)
     } else if (e.type === "dragleave") {
-      if (type === 'breakups') {
-        setDragActiveBreakups(false)
-      } else {
-        setDragActivePropertyRadar(false)
-      }
+      setDragActive(false)
     }
   }, [])
 
-  const handleDrop = useCallback((e: React.DragEvent, type: UploadType) => {
+  const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
-
-    if (type === 'breakups') {
-      setDragActiveBreakups(false)
-    } else {
-      setDragActivePropertyRadar(false)
-    }
+    setDragActive(false)
 
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFile(e.dataTransfer.files[0], type)
-    }
-  }, [])
+      const file = e.dataTransfer.files[0]
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, type: UploadType) => {
+      // Validate file type is xlsx
+      if (!file.name.endsWith('.xlsx')) {
+        toast({
+          title: "Invalid file format",
+          description: "Please upload an Excel file (.xlsx)",
+          variant: "destructive"
+        })
+        return
+      }
+
+      setSelectedFile(file)
+    }
+  }, [toast])
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      handleFile(e.target.files[0], type)
+      const file = e.target.files[0]
+
+      // Validate file type is xlsx
+      if (!file.name.endsWith('.xlsx')) {
+        toast({
+          title: "Invalid file format",
+          description: "Please upload an Excel file (.xlsx)",
+          variant: "destructive"
+        })
+        return
+      }
+
+      setSelectedFile(file)
     }
   }
 
-  const handleFile = async (file: File, type: UploadType) => {
-    // Validate file type
-    if (!file.name.match(/Complete_.*\.xlsx$/)) {
-      toast({
-        title: "Invalid file format",
-        description: "Please upload a file matching: Complete_LastName_YYYY-MM-DD-HHMM.xlsx",
-        variant: "destructive"
-      })
-      return
+  const confirmAndUpload = async () => {
+    if (selectedFile) {
+      await handleFile(selectedFile)
     }
+  }
 
-    const setStatus = type === 'breakups' ? setBreakupsStatus : setPropertyRadarStatus
-
-    setStatus({ status: 'uploading', message: 'Uploading file...', progress: 0 })
+  const handleFile = async (file: File) => {
+    setUploadStatus({ status: 'uploading', message: 'Uploading file...', progress: 0 })
 
     // Simulate upload progress
     const progressInterval = setInterval(() => {
-      setStatus(prev => ({
+      setUploadStatus(prev => ({
         ...prev,
         progress: Math.min((prev.progress || 0) + 10, 90)
       }))
     }, 200)
 
     try {
-      // TODO: Implement actual file upload
+      // Upload file to API
       const formData = new FormData()
       formData.append('file', file)
-      formData.append('type', type)
+      formData.append('type', 'breakups') // Always use breakups type for unified flow
 
-      // Simulated API call - replace with actual endpoint
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      // Make actual API call
+      const uploadResponse = await fetch('/api/admin/reportit/upload', {
+        method: 'POST',
+        body: formData,
+      })
 
       clearInterval(progressInterval)
 
-      const processingMessage = type === 'breakups'
-        ? 'Processing data and generating break-ups analyses...'
-        : 'Extracting PropertyRadar data from Complete file...'
+      if (!uploadResponse.ok) {
+        const errorData = await uploadResponse.json()
+        throw new Error(errorData.error?.message || 'Upload failed')
+      }
 
-      setStatus({
+      const uploadData = await uploadResponse.json()
+
+      setUploadStatus({
         status: 'processing',
-        message: processingMessage,
+        message: 'Processing complete analysis: 22 breakups analyses, charts, PDFs, and PropertyRadar export...',
         progress: 100
       })
 
-      // Simulate processing
-      await new Promise(resolve => setTimeout(resolve, 3000))
+      // Simulate processing time (in real implementation, this would be actual processing)
+      await new Promise(resolve => setTimeout(resolve, 2000))
 
-      // TODO: Replace with actual download URL from API
-      const downloadUrl = type === 'breakups'
-        ? `/api/admin/reportit/download/breakups`
-        : `/api/admin/reportit/download/propertyradar`
-
-      const successMessage = type === 'breakups'
-        ? 'Break-ups report generated successfully!'
-        : 'PropertyRadar file generated successfully!'
-
-      setStatus({
+      setUploadStatus({
         status: 'complete',
-        message: successMessage,
-        downloadUrl
+        message: 'Complete report package generated successfully!',
+        downloadUrl: uploadData.data.downloadUrl
       })
 
       toast({
         title: "Success!",
-        description: successMessage,
+        description: 'Complete report package with PropertyRadar export ready for download!',
       })
 
     } catch (error) {
       clearInterval(progressInterval)
-      setStatus({
+      setUploadStatus({
         status: 'error',
         message: 'An error occurred while processing your file.'
       })
@@ -143,199 +142,240 @@ export default function ReportItPage() {
     }
   }
 
-  const handleDownload = (type: UploadType) => {
-    const status = type === 'breakups' ? breakupsStatus : propertyRadarStatus
-    if (status.downloadUrl) {
-      window.open(status.downloadUrl, '_blank')
+  const handleDownload = () => {
+    if (uploadStatus.downloadUrl) {
+      window.open(uploadStatus.downloadUrl, '_blank')
     }
   }
 
-  const resetUpload = (type: UploadType) => {
-    if (type === 'breakups') {
-      setBreakupsStatus({ status: 'idle' })
-    } else {
-      setPropertyRadarStatus({ status: 'idle' })
-    }
+  const resetUpload = () => {
+    setUploadStatus({ status: 'idle' })
+    setSelectedFile(null)
   }
-
-  const renderUploadCard = (
-    type: UploadType,
-    status: UploadStatus,
-    dragActive: boolean,
-    title: string,
-    description: string
-  ) => (
-    <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>{description}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {status.status === 'idle' && (
-          <div
-            className={`relative border-2 border-dashed rounded-lg p-12 text-center hover:border-gray-400 transition-colors
-              ${dragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
-            onDragEnter={(e) => handleDrag(e, type)}
-            onDragLeave={(e) => handleDrag(e, type)}
-            onDragOver={(e) => handleDrag(e, type)}
-            onDrop={(e) => handleDrop(e, type)}
-          >
-            <Upload className="mx-auto h-12 w-12 text-gray-400" />
-            <p className="mt-2 text-sm text-gray-600">
-              Drag and drop your Complete_*.xlsx file here, or click to browse
-            </p>
-            <input
-              type="file"
-              accept=".xlsx"
-              onChange={(e) => handleFileSelect(e, type)}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            />
-            <Button className="mt-4">
-              Select File
-            </Button>
-          </div>
-        )}
-
-        {status.status === 'uploading' && (
-          <div className="space-y-4">
-            <div className="flex items-center space-x-3">
-              <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
-              <span className="text-sm text-gray-600">{status.message}</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2.5">
-              <div
-                className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
-                style={{ width: `${status.progress}%` }}
-              />
-            </div>
-          </div>
-        )}
-
-        {status.status === 'processing' && (
-          <div className="space-y-4">
-            <div className="flex items-center space-x-3">
-              <Loader2 className="h-5 w-5 animate-spin text-indigo-500" />
-              <span className="text-sm text-gray-600">{status.message}</span>
-            </div>
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                {type === 'breakups'
-                  ? 'Processing includes: 22 break-ups analyses, visualization generation, and report packaging. This may take up to 30 seconds.'
-                  : 'Extracting Property Radar data columns from your Complete file. This takes just a few seconds.'}
-              </AlertDescription>
-            </Alert>
-          </div>
-        )}
-
-        {status.status === 'complete' && (
-          <div className="space-y-4">
-            <Alert className="border-green-200 bg-green-50">
-              <CheckCircle className="h-4 w-4 text-green-600" />
-              <AlertDescription className="text-green-800">
-                {status.message}
-              </AlertDescription>
-            </Alert>
-            <div className="flex space-x-4">
-              <Button onClick={() => handleDownload(type)} className="flex items-center space-x-2">
-                <Download className="h-4 w-4" />
-                <span>
-                  {type === 'breakups' ? 'Download Break-ups Report (.zip)' : 'Download PropertyRadar (.xlsx)'}
-                </span>
-              </Button>
-              <Button variant="outline" onClick={() => resetUpload(type)}>
-                Upload Another File
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {status.status === 'error' && (
-          <div className="space-y-4">
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{status.message}</AlertDescription>
-            </Alert>
-            <Button onClick={() => resetUpload(type)}>Try Again</Button>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  )
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">ReportIt</h1>
+        <h1 className="text-3xl font-bold text-gray-900">ReportIt - Complete Property Analysis</h1>
         <p className="text-gray-600 mt-2">
-          Upload completed Excel files for comprehensive property analysis
+          Upload your Complete_*.xlsx file to generate a comprehensive analysis package
         </p>
       </div>
 
-      {/* Upload Cards - Two Sections */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {renderUploadCard(
-          'breakups',
-          breakupsStatus,
-          dragActiveBreakups,
-          'Upload for Break-ups Report',
-          'Upload your Complete_*.xlsx file to generate comprehensive 22 break-ups analyses package'
-        )}
+      {/* Main Upload Card */}
+      <Card className="border-2 border-blue-200 shadow-lg">
+        <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
+          <div className="flex items-center space-x-3">
+            <Package className="h-8 w-8 text-blue-600" />
+            <div>
+              <CardTitle className="text-2xl">Upload Complete Property Analysis</CardTitle>
+              <CardDescription className="text-base mt-1">
+                Single upload generates everything you need: analyses, charts, PDFs, and PropertyRadar export
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-6">
+          {/* Required File Info */}
+          <Alert className="mb-6 bg-blue-50 border-blue-200">
+            <FileText className="h-4 w-4" />
+            <AlertDescription>
+              <div className="font-medium mb-2">Required: Complete_*.xlsx file with:</div>
+              <ul className="text-sm space-y-1 ml-4">
+                <li>✓ MLS-Resi-Comps sheet</li>
+                <li>✓ MLS-Lease-Comps sheet</li>
+                <li>✓ Full-MCAO-API sheet</li>
+                <li>✓ Analysis sheet (with all columns including PropertyRadar data)</li>
+              </ul>
+            </AlertDescription>
+          </Alert>
 
-        {renderUploadCard(
-          'propertyradar',
-          propertyRadarStatus,
-          dragActivePropertyRadar,
-          'Upload for PropertyRadar',
-          'Upload your Complete_*.xlsx file to extract PropertyRadar data into separate template'
-        )}
-      </div>
+          {uploadStatus.status === 'idle' && (
+            <>
+              <div
+                className={`relative border-2 border-dashed rounded-lg p-12 text-center hover:border-gray-400 transition-colors
+                  ${dragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={handleDrop}
+              >
+                <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                <p className="mt-2 text-sm text-gray-600">
+                  Drag and drop your Complete Excel file (.xlsx) here, or click to browse
+                </p>
+                <input
+                  type="file"
+                  accept=".xlsx"
+                  onChange={handleFileSelect}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                />
+                <Button className="mt-4">
+                  Select File
+                </Button>
+              </div>
+
+              {/* Green ribbon showing selected file */}
+              {selectedFile && (
+                <div className="mt-4 bg-green-50 border-l-4 border-green-500 p-4 rounded-r-md">
+                  <div className="flex items-start">
+                    <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                    <div className="ml-3 flex-1">
+                      <p className="text-sm font-medium text-green-800">
+                        File Selected
+                      </p>
+                      <p className="text-sm text-green-700 mt-1">
+                        {selectedFile.name}
+                      </p>
+                      <p className="text-xs text-green-600 mt-1">
+                        {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex space-x-3">
+                    <Button
+                      onClick={confirmAndUpload}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      Upload & Generate Full Report
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setSelectedFile(null)}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {uploadStatus.status === 'uploading' && (
+            <div className="space-y-4">
+              <div className="flex items-center space-x-3">
+                <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
+                <span className="text-sm text-gray-600">{uploadStatus.message}</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2.5">
+                <div
+                  className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                  style={{ width: `${uploadStatus.progress}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          {uploadStatus.status === 'processing' && (
+            <div className="space-y-4">
+              <div className="flex items-center space-x-3">
+                <Loader2 className="h-5 w-5 animate-spin text-indigo-500" />
+                <span className="text-sm text-gray-600">{uploadStatus.message}</span>
+              </div>
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Processing includes: 22 break-ups analyses, 22 charts, 5 PDF reports, PropertyRadar export, and complete data package. This may take up to 30 seconds.
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
+
+          {uploadStatus.status === 'complete' && (
+            <div className="space-y-4">
+              <Alert className="border-green-200 bg-green-50">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                <AlertDescription className="text-green-800">
+                  {uploadStatus.message}
+                </AlertDescription>
+              </Alert>
+
+              {/* Output Includes Section */}
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4">
+                <h3 className="font-semibold text-green-900 mb-3">Package Contents:</h3>
+                <ul className="space-y-2 text-sm text-green-800">
+                  <li className="flex items-start">
+                    <CheckCircle className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" />
+                    <span><strong>22 Comparative Analyses</strong> - Complete property breakdowns</span>
+                  </li>
+                  <li className="flex items-start">
+                    <CheckCircle className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" />
+                    <span><strong>22 Visualization Charts</strong> - High-quality PNG graphics</span>
+                  </li>
+                  <li className="flex items-start">
+                    <CheckCircle className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" />
+                    <span><strong>5 Professional PDF Reports</strong> - Executive summaries and deep dives</span>
+                  </li>
+                  <li className="flex items-start">
+                    <CheckCircle className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" />
+                    <span><strong>PropertyRadar Export</strong> - Ready-to-use Excel template</span>
+                  </li>
+                  <li className="flex items-start">
+                    <CheckCircle className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" />
+                    <span><strong>Complete Data Package</strong> - JSON, CSV, and summary files</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="flex space-x-4">
+                <Button onClick={handleDownload} className="flex items-center space-x-2 bg-green-600 hover:bg-green-700">
+                  <Download className="h-4 w-4" />
+                  <span>Download Complete Report Package (.zip)</span>
+                </Button>
+                <Button variant="outline" onClick={resetUpload}>
+                  Upload Another File
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {uploadStatus.status === 'error' && (
+            <div className="space-y-4">
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{uploadStatus.message}</AlertDescription>
+              </Alert>
+              <Button onClick={resetUpload}>Try Again</Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Instructions Card */}
       <Card>
         <CardHeader>
-          <CardTitle>Pipeline Instructions</CardTitle>
+          <CardTitle>What Gets Generated</CardTitle>
+          <CardDescription>Complete package contents from a single upload</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <h3 className="font-semibold text-sm">Before uploading, ensure:</h3>
-            <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
-              <li>File is named: Complete_LastName_YYYY-MM-DD-HHMM.xlsx</li>
-              <li>RENOVATE_SCORE column (R) is filled with Y, N, or 0.5</li>
-              <li>Property Radar column (S) is filled with Y/N if applicable</li>
-              <li>File contains sheets: MLS-Resi-Comps, MLS-Lease-Comps, Full-MCAO-API, Analysis</li>
-            </ul>
-          </div>
-
-          <div className="space-y-2">
-            <h3 className="font-semibold text-sm">Two Upload Options:</h3>
-            <div className="ml-4 space-y-3">
-              <div>
-                <p className="font-medium text-sm text-gray-700">1. Break-ups Report (.zip)</p>
-                <ul className="list-disc list-inside text-sm text-gray-600 space-y-1 ml-2">
-                  <li>Enhanced Excel with 22 break-ups analyses</li>
-                  <li>Professional visualizations (charts and graphs)</li>
-                  <li>5 PDF reports (Executive Summary, Comparative Analysis, etc.)</li>
-                  <li>Raw data files for transparency</li>
-                </ul>
-              </div>
-              <div>
-                <p className="font-medium text-sm text-gray-700">2. PropertyRadar File (.xlsx)</p>
-                <ul className="list-disc list-inside text-sm text-gray-600 space-y-1 ml-2">
-                  <li>Separate Excel file with 12 Property Radar comp columns</li>
-                  <li>Ready for manual data entry and tracking</li>
-                  <li>Template format: PropertyRadar_LastName_Timestamp.xlsx</li>
-                  <li>Upload the same Complete file to extract PropertyRadar data</li>
-                </ul>
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <h3 className="font-semibold text-sm">Analysis & Data:</h3>
+              <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+                <li>22 comparative analyses</li>
+                <li>Enhanced Excel file with all calculations</li>
+                <li>PropertyRadar export (columns AD-AO)</li>
+                <li>Complete property data CSV</li>
+                <li>Summary statistics JSON</li>
+              </ul>
+            </div>
+            <div className="space-y-2">
+              <h3 className="font-semibold text-sm">Visualizations & Reports:</h3>
+              <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+                <li>22 high-quality PNG charts (300 DPI)</li>
+                <li>Executive Summary PDF</li>
+                <li>Property Characteristics PDF</li>
+                <li>Market Analysis PDF</li>
+                <li>Financial Analysis PDF</li>
+                <li>Market Activity PDF</li>
+              </ul>
             </div>
           </div>
 
           <Alert>
             <FileText className="h-4 w-4" />
             <AlertDescription>
-              Files should be placed in <code className="font-mono text-xs bg-gray-100 px-1 py-0.5 rounded">/RE/Pending-Bin/</code> before uploading here.
-              After processing, they will be moved to <code className="font-mono text-xs bg-gray-100 px-1 py-0.5 rounded">/RE/Completed/</code>
+              All outputs are packaged in a single ZIP file named: <code className="font-mono text-xs bg-gray-100 px-1 py-0.5 rounded">Breakups_Report_ClientName_Date.zip</code>
             </AlertDescription>
           </Alert>
         </CardContent>
