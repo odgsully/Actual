@@ -10,11 +10,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { writeFile, mkdir, readFile as fsReadFile } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
+import * as path from 'path';
 import ExcelJS from 'exceljs';
 import { generatePropertyRadarExcel, generatePropertyRadarFilename } from '@/lib/processing/propertyradar-generator';
 import { generateAllBreakupsAnalyses } from '@/lib/processing/breakups-generator';
 import { generateAllVisualizations } from '@/lib/processing/breakups-visualizer';
-import { generateAllPDFReports } from '@/lib/processing/breakups-pdf-generator';
+import { generateUnifiedPDFReport } from '@/lib/processing/breakups-pdf-unified';
 import { packageBreakupsReport } from '@/lib/processing/breakups-packager';
 
 const LOG_PREFIX = '[ReportIt API - Upload]';
@@ -264,8 +265,21 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       console.log(`${LOG_PREFIX} [DEBUG] Charts array length:`, visualizationResult.charts.length);
       console.log(`${LOG_PREFIX} [DEBUG] Errors:`, visualizationResult.errors);
 
-      // STEP 3: Generate 5 PDF reports
-      console.log(`${LOG_PREFIX} [3/5] Generating 5 professional PDF reports...`);
+      // STEP 3: Extract subject property address from row 2
+      console.log(`${LOG_PREFIX} [3/6] Extracting subject property address...`);
+      const analysisSheetForAddress = uploadedWorkbook.getWorksheet('Analysis');
+      let subjectPropertyAddress = 'Unknown Property';
+      if (analysisSheetForAddress && analysisSheetForAddress.rowCount >= 2) {
+        const row2 = analysisSheetForAddress.getRow(2);
+        const fullAddress = row2.getCell(2).value; // Column B = FULL_ADDRESS
+        if (fullAddress) {
+          subjectPropertyAddress = String(fullAddress);
+          console.log(`${LOG_PREFIX} Subject property: ${subjectPropertyAddress}`);
+        }
+      }
+
+      // STEP 4: Generate unified professional PDF report
+      console.log(`${LOG_PREFIX} [4/6] Generating unified professional PDF report...`);
       // Extract chart file paths from successful charts
       const chartPaths = visualizationResult.charts
         .filter(chart => chart.success && chart.filePath)
@@ -276,27 +290,43 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       const transformedData = transformAnalysisResultsForPDF(analysisResults, clientName);
       console.log(`${LOG_PREFIX} [DEBUG] Transformed data for PDF generation`);
 
-      // Generate PDFs using pdf-lib (no external font dependencies)
-      const pdfResult = await generateAllPDFReports(
-        transformedData,
-        chartPaths,
-        reportsDir
-      );
-      console.log(`${LOG_PREFIX} PDFs complete: ${pdfResult.generatedFiles.length}/5 generated`);
-      if (pdfResult.errors.length > 0) {
-        console.error(`${LOG_PREFIX} PDF errors:`, pdfResult.errors);
+      // Generate filename from address
+      const addressSlug = subjectPropertyAddress
+        .replace(/[^a-zA-Z0-9\s]/g, '')
+        .replace(/\s+/g, '_')
+        .substring(0, 50);
+      const timestamp = new Date().toISOString().split('T')[0];
+      const pdfFileName = `GSRealty_Analysis_${addressSlug}_${timestamp}.pdf`;
+      const pdfFilePath = path.join(reportsDir, pdfFileName);
+
+      // Generate unified PDF using pdf-lib
+      const logoPath = path.join(process.cwd(), 'logo1.png');
+      const pdfResult = await generateUnifiedPDFReport({
+        analysisResults: transformedData,
+        chartPaths: chartPaths,
+        outputPath: pdfFilePath,
+        subjectPropertyAddress: subjectPropertyAddress,
+        logoPath: logoPath,
+      });
+
+      if (pdfResult.success) {
+        console.log(`${LOG_PREFIX} PDF complete: ${pdfResult.filePath}`);
+        console.log(`${LOG_PREFIX}   - Size: ${(pdfResult.fileSize / 1024 / 1024).toFixed(2)} MB`);
+        console.log(`${LOG_PREFIX}   - Pages: ${pdfResult.pageCount}`);
+      } else {
+        console.error(`${LOG_PREFIX} PDF generation failed:`, pdfResult.error);
       }
 
-      // STEP 4: Generate PropertyRadar export
-      console.log(`${LOG_PREFIX} [4/5] Generating PropertyRadar export...`);
+      // STEP 5: Generate PropertyRadar export
+      console.log(`${LOG_PREFIX} [5/6] Generating PropertyRadar export...`);
       const propertyRadarBuffer = await generatePropertyRadarExcel(uploadedWorkbook, clientName);
       const propertyRadarFileName = generatePropertyRadarFilename(clientName);
       const propertyRadarPath = join(breakupsDir, propertyRadarFileName);
       await writeFile(propertyRadarPath, propertyRadarBuffer);
       console.log(`${LOG_PREFIX} PropertyRadar export generated: ${propertyRadarPath}`);
 
-      // STEP 5: Package everything into a .zip file
-      console.log(`${LOG_PREFIX} [5/5] Packaging into downloadable .zip file...`);
+      // STEP 6: Package everything into a .zip file
+      console.log(`${LOG_PREFIX} [6/6] Packaging into downloadable .zip file...`);
 
       // Read properties from Analysis sheet for CSV export
       const analysisSheet = uploadedWorkbook.getWorksheet('Analysis');
@@ -319,7 +349,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         enhancedExcel: uploadedBuffer,
         analysisResults: analysisResults as any, // Type conversion needed
         chartPaths: chartPaths,
-        pdfPaths: pdfResult.generatedFiles,
+        pdfPaths: pdfResult.success ? [pdfResult.filePath] : [], // Single PDF file
         propertyRadarPath: propertyRadarPath, // NEW: Include PropertyRadar export
         properties,
         outputDir: breakupsDir,

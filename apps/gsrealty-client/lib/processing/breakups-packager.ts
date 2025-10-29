@@ -133,14 +133,10 @@ const CHART_CONFIGS = [
 
 /**
  * PDF Report Configuration
- * Defines expected PDF reports
+ * Single unified professional PDF report
  */
 const PDF_CONFIGS = [
-  { name: 'Executive_Summary.pdf', title: 'Executive Summary' },
-  { name: 'Property_Characteristics.pdf', title: 'Property Characteristics Analysis' },
-  { name: 'Market_Analysis.pdf', title: 'Market Analysis' },
-  { name: 'Financial_Analysis.pdf', title: 'Financial Impact Analysis' },
-  { name: 'Market_Activity.pdf', title: 'Market Activity Analysis' },
+  { pattern: /GSRealty_Analysis_.*\.pdf/, title: 'Comprehensive Property Analysis Report' },
 ]
 
 /**
@@ -214,12 +210,13 @@ CONTENTS
    - Age Impact on Price
    - Improved Net Operating Income
 
-4. reports/ (5 Professional PDF Reports)
-   - Executive_Summary.pdf - Key findings and recommendations
-   - Property_Characteristics.pdf - Detailed property analysis
-   - Market_Analysis.pdf - Market positioning insights
-   - Financial_Analysis.pdf - Financial impact analysis
-   - Market_Activity.pdf - Market activity trends
+4. reports/ (Professional PDF Report)
+   - GSRealty_Analysis_[Address]_[Date].pdf - Comprehensive analysis report with:
+     * Professional cover page with branding
+     * Hyperlinked table of contents
+     * Executive summary
+     * All 22 analyses with embedded charts
+     * Category-organized sections
 
 5. data/ (Raw Data Exports)
    - analysis_results.json - Complete analysis data in JSON format
