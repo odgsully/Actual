@@ -73,16 +73,32 @@ export default function MCAOLookupPage() {
         body: formData,
       })
 
-      const data = await response.json()
+      if (response.ok) {
+        // Handle ZIP file download
+        const blob = await response.blob()
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19)
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `MCAO_Bulk_${timestamp}.zip`
+        document.body.appendChild(a)
+        a.click()
+        window.URL.revokeObjectURL(url)
+        document.body.removeChild(a)
 
-      if (data.success) {
-        setBulkStatus(data)
-        // Auto-download if available
-        if (data.downloadUrl) {
-          window.location.href = data.downloadUrl
-        }
+        // Show success message
+        setBulkStatus({
+          success: true,
+          message: 'Processing complete! Your ZIP file has been downloaded.'
+        })
       } else {
-        setError(data.error || 'Processing failed')
+        // Try to parse error message
+        try {
+          const data = await response.json()
+          setError(data.error || 'Processing failed')
+        } catch {
+          setError('Processing failed. Please try again.')
+        }
       }
     } catch (err: any) {
       setError('Network error: ' + err.message)
@@ -173,7 +189,7 @@ export default function MCAOLookupPage() {
       {/* Bulk Upload */}
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-xl font-semibold text-brand-black mb-4">
-          Bulk APN Upload
+          Bulk Address → APN → MCAO Lookup
         </h2>
         <div className="space-y-4">
           <div className="flex gap-3">
@@ -201,9 +217,15 @@ export default function MCAOLookupPage() {
               Process File
             </button>
           </div>
-          <p className="text-sm text-gray-500">
-            File must contain an "APN" column
-          </p>
+          <div className="text-sm text-gray-600 space-y-1">
+            <p>📋 <strong>Required:</strong> A column with addresses (accepted headers: Address, FULL_ADDRESS, Property Address, etc.)</p>
+            <p>📦 <strong>Output:</strong> ZIP file containing:</p>
+            <ul className="ml-5 text-gray-500">
+              <li>• APN_Grab_*.xlsx - Address to APN mapping</li>
+              <li>• MCAO_*.xlsx - Full MCAO data (559+ fields)</li>
+              <li>• Your original input file</li>
+            </ul>
+          </div>
         </div>
       </div>
 
@@ -266,23 +288,17 @@ export default function MCAOLookupPage() {
       )}
 
       {/* Bulk Status */}
-      {bulkStatus && (
+      {bulkStatus && bulkStatus.success && (
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-xl font-semibold text-brand-black mb-4">
             Bulk Processing Complete
           </h2>
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-2">
-            <p>
-              <strong>Total APNs:</strong> {bulkStatus.total}
-            </p>
-            <p>
-              <strong>Successfully Processed:</strong> {bulkStatus.processed}
-            </p>
-            <p>
-              <strong>Errors:</strong> {bulkStatus.errors}
-            </p>
-            <p className="text-green-700 font-medium">
-              File downloaded automatically!
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <p className="text-green-700 font-medium flex items-center">
+              <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              {bulkStatus.message || 'Processing complete! Your ZIP file has been downloaded.'}
             </p>
           </div>
         </div>

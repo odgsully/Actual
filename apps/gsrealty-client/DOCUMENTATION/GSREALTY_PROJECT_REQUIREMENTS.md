@@ -204,11 +204,14 @@ When CSV/XLSX uploaded:
 
 #### 3.2.5 APN Lookup Tool
 
-**Source Script:**
-`/Users/garrettsullivan/Desktop/BHRF/Data_Recourses/LANDSCRAPE/adhs-restore-28-Jul-2025/APN/apn_lookup.py`
+**Source Script (HISTORICAL - now integrated):**
+~~Originally from external BHRF directory~~ - Now implemented in project via:
+- `lib/mcao/arcgis-lookup.ts` - ArcGIS-based lookup
+- `lib/mcao/batch-apn-lookup.ts` - Batch processing
+- `scripts/bulk_apn_lookup.py` - Python bulk processor
 
-**Integration:**
-- Copy to `/apps/gsrealty-client/APN/apn_lookup.py`
+**Integration (COMPLETE):**
+- Implemented at `/apps/gsrealty-client/lib/mcao/`
 - Create API endpoint: `/api/admin/apn-lookup`
 - Accept APN as input
 - Return property data from MCAO
@@ -618,10 +621,14 @@ async def mcao_lookup(request, apn: str):
 
 ### 9.2 APN Lookup Integration
 
-**Source File:** `/Users/garrettsullivan/Desktop/BHRF/Data_Recourses/LANDSCRAPE/adhs-restore-28-Jul-2025/APN/apn_lookup.py`
+**Status:** ✅ COMPLETE - Now using ArcGIS-based lookup
 
-**Integration Steps:**
-1. Copy `apn_lookup.py` to `/apps/gsrealty-client/APN/apn_lookup.py`
+**Current Implementation:**
+- `lib/mcao/arcgis-lookup.ts` - Primary ArcGIS lookup
+- `app/api/admin/mcao/arcgis-lookup/route.ts` - API endpoint
+
+**Original Integration Steps (HISTORICAL):**
+1. ~~Copy apn_lookup.py~~ - Replaced with TypeScript implementation
 2. Review Python dependencies
 3. Create Next.js API route wrapper:
 ```typescript

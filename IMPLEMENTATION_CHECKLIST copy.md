@@ -270,7 +270,7 @@ module.exports = {
 ### 📱 Target Applications
 1. **Wabbit RE** (`/wabbit-re`) - Real estate ranking/discovery platform (current codebase)
 2. **Wabbit** (`/wabbit`) - General ranking platform with different features (fork of Wabbit RE, non-real estate)
-3. **Cursor MY MAP** (`/crm`) - Standalone CRM system (completely independent from ranking apps)
+3. **GSRealty Client** (`/gsrealty` or port 3004) - Real estate CRM system (MCAO lookup, ReportIt, client management)
 4. **GS Site Dashboard** (`/` or `/dashboard`) - Personal dashboard/launcher with Notion integration for navigating between apps
 
 ### 🏗️ Architecture Decisions
@@ -411,26 +411,17 @@ module.exports = {
 - [x] Test Wabbit app (FROM ROOT): `npm run dev:wabbit` ✅
 - [ ] Commit: `git commit -m "feat: create wabbit app from wabbit-re fork"`
 
-### Migrate Cursor MY MAP (CRM)
-- [x] Created CRM landing page at `/crm` in GS Dashboard ✅
-- [ ] If in separate repo:
-  ```bash
-  cd /path/to/cursor-map
-  git remote add monorepo /path/to/gs-site
-  git fetch monorepo
-  ```
-- [ ] Move to monorepo: `apps/crm`
-- [ ] Update package.json:
-  - [ ] Change name to `@your-domain/crm`
-  - [ ] Update description to reflect CRM functionality
-- [ ] Ensure complete independence:
-  - [ ] No shared data models with ranking apps
-  - [ ] Separate database tables/schemas
-  - [ ] Independent API routes
-- [ ] Fix import paths
-- [ ] Update environment variables
-- [ ] Test: `npm run dev:crm`
-- [ ] Commit: `git commit -m "feat: migrate cursor-map CRM to monorepo"`
+### GSRealty Client (CRM) - Already in Monorepo ✅
+- [x] GSRealty Client exists at `apps/gsrealty-client/` ✅
+- [x] Running on port 3004 ✅
+- [x] Has own package.json with name `gsrealty-client` ✅
+- [x] Complete independence from ranking apps:
+  - [x] Separate database tables (clients, files, mcao_cache, invitations)
+  - [x] Independent API routes (/api/admin/*, /api/events/*)
+  - [x] No shared data models with wabbit apps
+- [x] Environment variables configured ✅
+- [x] Test: `npm run dev:gsrealty` ✅
+- **Note**: Replaces originally planned "Cursor MY MAP" - that migration is no longer needed
 
 ### Create GS Site Dashboard
 - [x] Create Next.js app (FROM ROOT): `npx create-next-app@latest apps/gs-site --typescript --tailwind` ✅
@@ -480,7 +471,7 @@ module.exports = {
 - [ ] Design isolated schema strategy:
   - [ ] Wabbit RE tables: `properties`, `user_properties`, `rankings`
   - [ ] Wabbit tables: `items`, `user_items`, `rankings_general`
-  - [ ] CRM tables: `contacts`, `deals`, `activities`, `pipelines`
+  - [ ] GSRealty Client tables: `clients`, `files`, `mcao_cache`, `invitations`, `events`
   - [ ] Shared tables (if any): `users` (TBD on sharing)
 - [ ] Add `app_source` column to any shared tables:
   ```sql
@@ -491,12 +482,12 @@ module.exports = {
   ```sql
   CREATE SCHEMA IF NOT EXISTS wabbit_re;
   CREATE SCHEMA IF NOT EXISTS wabbit;
-  CREATE SCHEMA IF NOT EXISTS crm;
+  CREATE SCHEMA IF NOT EXISTS gsrealty;
   ```
 - [ ] Update RLS policies for complete app isolation
 - [ ] Test database access from each app
 - [ ] Verify data isolation works
-- [ ] Document which tables belong to which app
+- [x] Document which tables belong to which app - **See `docs/DATABASE_OWNERSHIP.md`** ✅
 
 ### Implement SSO (Optional - TBD)
 - [ ] Decide on user strategy:
@@ -518,12 +509,12 @@ module.exports = {
 - [ ] Update Vercel rewrites for subdirectory routing:
   - [ ] `/wabbit-re/*` → Wabbit RE app
   - [ ] `/wabbit/*` → Wabbit app
-  - [ ] `/crm/*` → Cursor MY MAP CRM
+  - [ ] `/gsrealty/*` → GSRealty Client (or keep on port 3004)
   - [ ] `/` or `/dashboard` → GS Site Dashboard
 - [ ] Configure Next.js `basePath` for each app:
   - [ ] `wabbit-re`: basePath = '/wabbit-re'
   - [ ] `wabbit`: basePath = '/wabbit'
-  - [ ] `crm`: basePath = '/crm'
+  - [ ] `gsrealty-client`: basePath = '/gsrealty' (or separate deployment)
   - [ ] `gs-site`: basePath = '/' or '/dashboard'
 - [ ] Test subdirectory routing locally
 - [ ] Update all internal links to respect basePath
@@ -613,8 +604,10 @@ module.exports = {
 - [ ] Update all README files
 - [ ] Document deployment process
 - [ ] Create troubleshooting guide
-- [ ] Document architecture decisions
+- [x] Document architecture decisions - **See `docs/ARCHITECTURE.md`** ✅
 - [ ] Update API documentation
+- [x] Safety protocols documented - **See `docs/SAFETY_PROTOCOLS.md`** ✅
+- [x] Emergency runbook created - **See `docs/RUNBOOK.md`** ✅
 
 ### Cleanup
 - [ ] Remove old deployment configurations
@@ -635,10 +628,10 @@ module.exports = {
 ## ✅ Final Checklist
 
 ### Success Criteria
-- [ ] All 4 apps accessible via subdirectories:
+- [ ] All 4 apps accessible via subdirectories/ports:
   - [ ] `/wabbit-re` - Real estate ranking platform
   - [ ] `/wabbit` - General ranking platform
-  - [ ] `/crm` - CRM system
+  - [ ] `/gsrealty` (or port 3004) - GSRealty Client CRM
   - [ ] `/` or `/dashboard` - Personal dashboard hub
 - [ ] Authentication working (SSO or isolated per decision)
 - [ ] Database properly isolated between apps
@@ -710,11 +703,11 @@ vercel --prod
 **App Suite Summary**:
 - **Wabbit RE**: Real estate-specific ranking and property discovery
 - **Wabbit**: General-purpose ranking platform (non-real estate)
-- **Cursor MY MAP**: Standalone CRM system
+- **GSRealty Client**: Real estate CRM (MCAO lookup, ReportIt, client management) - *replaces originally planned "Cursor MY MAP"*
 - **GS Site Dashboard**: Personal hub with Notion integration
 
-**Last Updated**: January 15, 2025
-**Checklist Version**: 1.2.0
+**Last Updated**: December 17, 2025
+**Checklist Version**: 1.3.0
 **Risk Assessment**: LOW (with proper backups)
 
 ---
@@ -733,13 +726,14 @@ vercel --prod
 
 **Current Status:**
 - ✅ Monorepo structure fully operational
-- ✅ **3 Apps Running:**
+- ✅ **4 Apps Running:**
   - Wabbit RE: Real estate platform (port 3000, path /wabbit-re)
   - Wabbit: General ranking platform (port 3002, path /wabbit)
   - GS Dashboard: Personal hub with Notion (port 3003, root path)
+  - GSRealty Client: Real estate CRM (port 3004)
 - ✅ **Notion Integration:** Connected with API key
 - ✅ **Shared Packages:** Supabase, UI, Utils created
-- ✅ **CRM Landing Page:** Ready at /crm in dashboard
+- ✅ **GSRealty Client:** Full CRM at apps/gsrealty-client/ (port 3004)
 - ✅ All apps have database connectivity
 - ✅ Build process completes successfully
 - ✅ No circular dependencies

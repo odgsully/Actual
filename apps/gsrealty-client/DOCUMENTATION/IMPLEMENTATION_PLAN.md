@@ -664,10 +664,9 @@ apps/gs-site (Garrett's Personal Site)
 
 **Tasks:**
 
-1. **Copy APN Lookup Script**
-   ```bash
-   cp /Users/garrettsullivan/Desktop/BHRF/.../apn_lookup.py APN/
-   ```
+1. **APN Lookup Script** ✅ COMPLETE
+   - ~~HISTORICAL: Originally copied from external directory~~
+   - Now implemented natively at `lib/mcao/arcgis-lookup.ts`
 
 2. **Create APN Lookup API**
    ```typescript

@@ -2,9 +2,24 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## User Communication Rules
+
+**"Reply in chat"** = Text response only. NO tool calls (no Read, Write, Edit, Bash, etc.). Just answer conversationally.
+
+**"ULTRATHINK"** = Use extended thinking for deep analysis before responding.
+
 ## ⚠️ Critical Context (September 5, 2024)
 
 **IMPORTANT**: This is the restored working version from the `main` branch. The `clean-deployment` branch was corrupted (missing 34,199 files including authentication) and should NOT be used. See `Fix_explain_09.05.md` and `DEPLOYMENT_FIX_CONTEXT.md` for restoration details.
+
+## Safety Documentation
+
+For detailed safety protocols, database ownership, and emergency procedures, see:
+- [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) - System overview
+- [docs/DATABASE_OWNERSHIP.md](./docs/DATABASE_OWNERSHIP.md) - Table ownership rules
+- [docs/SAFETY_PROTOCOLS.md](./docs/SAFETY_PROTOCOLS.md) - Guardrails and protection
+- [docs/RUNBOOK.md](./docs/RUNBOOK.md) - Emergency procedures
+- [docs/ESCAPE_HATCHES.md](./docs/ESCAPE_HATCHES.md) - Legitimate bypasses
 
 ## Common Development Commands
 

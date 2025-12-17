@@ -215,11 +215,16 @@ async function queryParcels(where: string): Promise<ParcelFeature[]> {
   })
 
   const url = `${PARCEL_QUERY_URL}?${params}`
+  console.log(`${LOG_PREFIX} Querying parcels with WHERE: ${where}`)
+  console.log(`${LOG_PREFIX} Full URL: ${url}`)
 
   const response = await fetchWithTimeout(url, TIMEOUT_MS)
   const data = await response.json()
 
+  console.log(`${LOG_PREFIX} Response status: ${response.status}, features found: ${data.features?.length || 0}`)
+
   if (data.error) {
+    console.error(`${LOG_PREFIX} ArcGIS error:`, data.error)
     throw new Error(`ArcGIS error: ${JSON.stringify(data.error)}`)
   }
 
@@ -238,11 +243,15 @@ async function geocodeAddress(address: string): Promise<{ x: number, y: number }
   })
 
   const url = `${GEOCODER_URL}?${params}`
+  console.log(`${LOG_PREFIX} Geocoding address: ${address}`)
+  console.log(`${LOG_PREFIX} Geocode URL: ${url}`)
 
   const response = await fetchWithTimeout(url, TIMEOUT_MS)
   const data = await response.json()
 
   const candidates: GeocodeCandidate[] = data.candidates || []
+  console.log(`${LOG_PREFIX} Geocode candidates found: ${candidates.length}`)
+
   if (candidates.length === 0) {
     return null
   }
@@ -296,8 +305,9 @@ async function identifyParcel(x: number, y: number): Promise<ParcelFeature['attr
  * Build SQL WHERE clause for parcel query
  */
 function buildWhereClause(components: AddressComponents, loose: boolean): string | null {
-  const { number, name, city, stype } = components
+  const { number, name, city, stype, predir } = components
 
+  // Require all essential components like Python implementation
   if (!number || !name || !city) {
     return null
   }
@@ -305,8 +315,13 @@ function buildWhereClause(components: AddressComponents, loose: boolean): string
   // Escape single quotes for SQL
   const esc = (s: string) => s.replace(/'/g, "''")
 
-  let where = `PHYSICAL_STREET_NUM='${esc(number)}' AND PHYSICAL_STREET_NAME='${esc(name)}' AND PHYSICAL_CITY='${esc(city)}'`
+  // Include predir in the name if present (e.g., "N WILKINSON" instead of just "WILKINSON")
+  const fullStreetName = predir ? `${predir} ${name}` : name
 
+  // Build WHERE clause matching Python implementation - always include city
+  let where = `PHYSICAL_STREET_NUM='${esc(number)}' AND PHYSICAL_STREET_NAME='${esc(fullStreetName)}' AND PHYSICAL_CITY='${esc(city)}'`
+
+  // Add street type for exact match (not for loose match)
   if (!loose && stype) {
     where += ` AND PHYSICAL_STREET_TYPE='${esc(stype)}'`
   }
@@ -351,33 +366,69 @@ function normalizeAddress(address: string): AddressComponents {
   let cleaned = raw.replace(/\s+(?:APT|UNIT|SUITE|STE|#)\s*\S+\b/gi, '')
   cleaned = cleaned.replace(/\s+/g, ' ').trim().toUpperCase()
 
-  // Try to parse: "19829 N 27TH AVE PHOENIX"
-  const regex = /^\s*(\d+)\s+(?:([NSEW]|NE|NW|SE|SW)\s+)?([\w\-']+)\s+([A-Z\.]+)\s+(.*)$/
-  const match = regex.exec(cleaned)
+  // Normalize street type
+  const typeMap: Record<string, string> = {
+    'STREET': 'ST', 'ST': 'ST', 'AVENUE': 'AVE', 'AVE': 'AVE',
+    'ROAD': 'RD', 'RD': 'RD', 'DRIVE': 'DR', 'DR': 'DR',
+    'BOULEVARD': 'BLVD', 'BLVD': 'BLVD', 'LANE': 'LN', 'LN': 'LN',
+    'COURT': 'CT', 'CT': 'CT', 'PLACE': 'PL', 'PL': 'PL', 'WAY': 'WAY',
+    'CIRCLE': 'CIR', 'CIR': 'CIR', 'PLAZA': 'PLZ', 'PLZ': 'PLZ',
+    'TERRACE': 'TER', 'TER': 'TER', 'PARKWAY': 'PKWY', 'PKWY': 'PKWY'
+  }
+
+  // Common street types to help identify the pattern
+  const streetTypes = ['ST', 'STREET', 'AVE', 'AVENUE', 'RD', 'ROAD', 'DR', 'DRIVE',
+    'BLVD', 'BOULEVARD', 'LN', 'LANE', 'CT', 'COURT', 'PL', 'PLACE', 'WAY',
+    'CIR', 'CIRCLE', 'PLZ', 'PLAZA', 'TER', 'TERRACE', 'PKWY', 'PARKWAY', 'TRAIL', 'PATH']
+
+  // Try to parse addresses with optional city at the end
+  // Pattern: NUMBER [PREDIR] NAME(S) STYPE [CITY]
+  const regexWithOptionalCity = /^\s*(\d+)\s+(?:([NSEW]|NE|NW|SE|SW)\s+)?(.+?)\s+(ST|STREET|AVE|AVENUE|RD|ROAD|DR|DRIVE|BLVD|BOULEVARD|LN|LANE|CT|COURT|PL|PLACE|WAY|CIR|CIRCLE|PLZ|PLAZA|TER|TERRACE|PKWY|PARKWAY|TRAIL|PATH)\b\s*(.*)$/i
+  const match = regexWithOptionalCity.exec(cleaned)
 
   if (match) {
     const [, number, predir, name, stype, tail] = match
 
-    // Normalize street type
-    const typeMap: Record<string, string> = {
-      'STREET': 'ST', 'ST': 'ST', 'AVENUE': 'AVE', 'AVE': 'AVE',
-      'ROAD': 'RD', 'RD': 'RD', 'DRIVE': 'DR', 'DR': 'DR',
-      'BOULEVARD': 'BLVD', 'BLVD': 'BLVD', 'LANE': 'LN', 'LN': 'LN',
-      'COURT': 'CT', 'CT': 'CT', 'PLACE': 'PL', 'PL': 'PL', 'WAY': 'WAY'
-    }
-
-    // Extract city from tail (remove state/zip)
+    // Extract city from tail if present (remove state/zip)
     const cityParts = tail
       .replace(/,/g, ' ')
       .split(/\s+/)
       .filter(p => p && !/^\d{5}(-\d{4})?$/.test(p) && !['AZ', 'ARIZONA'].includes(p))
 
+    // Don't default to any city - require explicit city like Python implementation
+    const city = cityParts[0] || undefined
+
     return {
       number,
       predir: predir || undefined,
-      name,
-      stype: typeMap[stype.replace(/\./g, '')] || stype.replace(/\./g, ''),
-      city: cityParts[0] || undefined,
+      name: name.trim(),
+      stype: typeMap[stype.toUpperCase().replace(/\./g, '')] || stype.toUpperCase().replace(/\./g, ''),
+      city,
+      raw
+    }
+  }
+
+  // Special case for numbered streets (e.g., "5660 N 68TH PL")
+  const numberedStreetRegex = /^\s*(\d+)\s+(?:([NSEW]|NE|NW|SE|SW)\s+)?(\d+(?:ST|ND|RD|TH))\s+(ST|STREET|AVE|AVENUE|RD|ROAD|DR|DRIVE|BLVD|BOULEVARD|LN|LANE|CT|COURT|PL|PLACE|WAY|CIR|CIRCLE)\b\s*(.*)$/i
+  const numberedMatch = numberedStreetRegex.exec(cleaned)
+
+  if (numberedMatch) {
+    const [, number, predir, name, stype, tail] = numberedMatch
+
+    // Extract city from tail if present
+    const cityParts = tail
+      .replace(/,/g, ' ')
+      .split(/\s+/)
+      .filter(p => p && !/^\d{5}(-\d{4})?$/.test(p) && !['AZ', 'ARIZONA'].includes(p))
+
+    const city = cityParts[0] || undefined
+
+    return {
+      number,
+      predir: predir || undefined,
+      name: name.trim(),
+      stype: typeMap[stype.toUpperCase().replace(/\./g, '')] || stype.toUpperCase().replace(/\./g, ''),
+      city,
       raw
     }
   }
@@ -418,7 +469,13 @@ async function fetchWithTimeout(url: string, timeoutMs: number): Promise<Respons
   const timeout = setTimeout(() => controller.abort(), timeoutMs)
 
   try {
-    const response = await fetch(url, { signal: controller.signal })
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'apn-lookup-ts/1.0 (+https://mcassessor.maricopa.gov)',
+        'Accept': 'application/json'
+      }
+    })
     clearTimeout(timeout)
 
     if (!response.ok) {
