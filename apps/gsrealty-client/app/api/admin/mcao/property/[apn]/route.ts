@@ -12,9 +12,9 @@ import { getMCAODataByAPN, deleteMCAOData } from '@/lib/database/mcao'
 import { isValidAPN, formatAPN, parseToSummary } from '@/lib/types/mcao-data'
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     apn: string
-  }
+  }>
 }
 
 /**
@@ -31,7 +31,7 @@ interface RouteParams {
  */
 export async function GET(req: NextRequest, { params }: RouteParams) {
   try {
-    const { apn: rawAPN } = params
+    const { apn: rawAPN } = await params
 
     // Validate APN
     if (!rawAPN) {
@@ -120,7 +120,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
  */
 export async function DELETE(req: NextRequest, { params }: RouteParams) {
   try {
-    const { apn: rawAPN } = params
+    const { apn: rawAPN } = await params
 
     // Validate APN
     if (!rawAPN) {
@@ -184,7 +184,7 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
  */
 export async function PATCH(req: NextRequest, { params }: RouteParams) {
   try {
-    const { apn: rawAPN } = params
+    const { apn: rawAPN } = await params
     const body = await req.json()
     const { propertyId } = body
 

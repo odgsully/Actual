@@ -12,7 +12,7 @@
 
 import * as fs from 'fs'
 import * as path from 'path'
-import * as archiver from 'archiver'
+import archiver from 'archiver'
 import { promisify } from 'util'
 
 const LOG_PREFIX = '[Breakups Packager]'
@@ -501,12 +501,12 @@ async function createZipArchive(sourceDir: string, outputZipPath: string): Promi
       resolve(zipSize)
     })
 
-    archive.on('error', (err) => {
+    archive.on('error', (err: Error) => {
       console.error(`${LOG_PREFIX} ZIP archive error:`, err)
       reject(err)
     })
 
-    archive.on('warning', (err) => {
+    archive.on('warning', (err: archiver.ArchiverError) => {
       if (err.code === 'ENOENT') {
         console.warn(`${LOG_PREFIX} ZIP warning:`, err)
       } else {

@@ -62,7 +62,7 @@ export class BulkProcessor {
       const zipBuffer = await zipGenerator.createZip({
         [`APN_Grab_${timestamp}.xlsx`]: apnGrabBuffer,
         [`MCAO_${timestamp}.xlsx`]: mcaoBuffer,
-        [file.name]: buffer,
+        [file.name]: buffer as Buffer,
       })
 
       return {
@@ -101,7 +101,7 @@ export class BulkProcessor {
       }
 
       // Extract addresses
-      for (const row of result.data) {
+      for (const row of result.data as Record<string, string>[]) {
         const address = row[addressColumn]
         if (address && typeof address === 'string' && address.trim()) {
           records.push({
@@ -117,6 +117,7 @@ export class BulkProcessor {
       try {
         // Try parsing with ExcelJS first
         const workbook = new ExcelJS.Workbook()
+        // @ts-expect-error - ExcelJS types incompatible with Node.js 20+ Buffer types
         await workbook.xlsx.load(buffer)
 
         // Get the first worksheet - try multiple methods

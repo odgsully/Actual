@@ -26,10 +26,10 @@ import { downloadFromSupabase, createSignedUrl } from '@/lib/storage/supabase-st
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { fileId: string } }
+  { params }: { params: Promise<{ fileId: string }> }
 ) {
   try {
-    const { fileId } = params
+    const { fileId } = await params
     const searchParams = req.nextUrl.searchParams
     const mode = searchParams.get('mode') || 'download'
 

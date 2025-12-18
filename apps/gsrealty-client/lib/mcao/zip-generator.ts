@@ -1,4 +1,4 @@
-import * as archiver from 'archiver'
+import archiver from 'archiver'
 import { PassThrough } from 'stream'
 
 export class ZipGenerator {
@@ -22,7 +22,7 @@ export class ZipGenerator {
       })
 
       // Handle errors
-      archive.on('error', (err) => {
+      archive.on('error', (err: Error) => {
         reject(err)
       })
 

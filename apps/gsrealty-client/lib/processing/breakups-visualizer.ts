@@ -1012,7 +1012,7 @@ async function generateAnalysis19(data: any, outputDir: string, analysisId: stri
 /**
  * Analysis 20: Distribution Tails (Box Plot - approximated with bar)
  */
-async function generateAnalysis20(data: any, outputDir: string): Promise<SingleVisualizationResult> {
+async function generateAnalysis20(data: any, outputDir: string, analysisId: string | number, analysisName: string): Promise<SingleVisualizationResult> {
   const config = {
     type: 'bar',
     data: {
@@ -1051,7 +1051,7 @@ async function generateAnalysis20(data: any, outputDir: string): Promise<SingleV
  * Analysis 21: Expected NOI (Waterfall Chart)
  * Enhanced with waterfall-style progression and cap rate thresholds
  */
-async function generateAnalysis21(data: any, outputDir: string): Promise<SingleVisualizationResult> {
+async function generateAnalysis21(data: any, outputDir: string, analysisId: string | number, analysisName: string): Promise<SingleVisualizationResult> {
   const monthlyRent = data?.monthlyRent || 0;
   const annualIncome = data?.annualIncome || 0;
   const operatingExpenses = data?.operatingExpenses || 0;
@@ -1109,7 +1109,7 @@ async function generateAnalysis21(data: any, outputDir: string): Promise<SingleV
  * Analysis 22: Improved NOI (Waterfall Chart)
  * Enhanced with ROI progression and threshold-based coloring
  */
-async function generateAnalysis22(data: any, outputDir: string): Promise<SingleVisualizationResult> {
+async function generateAnalysis22(data: any, outputDir: string, analysisId: string | number, analysisName: string): Promise<SingleVisualizationResult> {
   const currentNOI = data?.currentNOI || 0;
   const improvedNOI = data?.improvedNOI || 0;
   const noiIncrease = data?.noiIncrease || 0;

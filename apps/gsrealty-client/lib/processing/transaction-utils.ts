@@ -130,7 +130,7 @@ export function getAnnualRent(property: PropertyDataBase): number {
 /**
  * Calculate price per square foot for sale properties
  */
-export function calculatePricePerSqft(saleProperty: PropertyData): number {
+export function calculatePricePerSqft(saleProperty: PropertyDataBase): number {
   if (saleProperty.IS_RENTAL === 'Y') {
     throw new Error('Cannot calculate price/sqft for lease property');
   }
@@ -143,7 +143,7 @@ export function calculatePricePerSqft(saleProperty: PropertyData): number {
 /**
  * Calculate rent per square foot for lease properties (monthly)
  */
-export function calculateRentPerSqft(leaseProperty: PropertyData): number {
+export function calculateRentPerSqft(leaseProperty: PropertyDataBase): number {
   if (leaseProperty.IS_RENTAL === 'N') {
     throw new Error('Cannot calculate rent/sqft for sale property');
   }
@@ -156,7 +156,7 @@ export function calculateRentPerSqft(leaseProperty: PropertyData): number {
 /**
  * Calculate annual rent per square foot for lease properties
  */
-export function calculateAnnualRentPerSqft(leaseProperty: PropertyData): number {
+export function calculateAnnualRentPerSqft(leaseProperty: PropertyDataBase): number {
   return calculateRentPerSqft(leaseProperty) * 12;
 }
 
@@ -167,7 +167,7 @@ export function calculateAnnualRentPerSqft(leaseProperty: PropertyData): number 
 /**
  * Calculate average for sale properties
  */
-export function calculateAverageSalePrice(saleProperties: PropertyData[]): number {
+export function calculateAverageSalePrice(saleProperties: PropertyDataBase[]): number {
   const filtered = saleProperties.filter((p) => p.IS_RENTAL === 'N' && p.SALE_PRICE > 0);
   if (filtered.length === 0) return 0;
   const sum = filtered.reduce((acc, p) => acc + p.SALE_PRICE, 0);
@@ -177,7 +177,7 @@ export function calculateAverageSalePrice(saleProperties: PropertyData[]): numbe
 /**
  * Calculate average for lease properties (monthly)
  */
-export function calculateAverageMonthlyRent(leaseProperties: PropertyData[]): number {
+export function calculateAverageMonthlyRent(leaseProperties: PropertyDataBase[]): number {
   const filtered = leaseProperties.filter((p) => p.IS_RENTAL === 'Y' && p.SALE_PRICE > 0);
   if (filtered.length === 0) return 0;
   const sum = filtered.reduce((acc, p) => acc + p.SALE_PRICE, 0);
@@ -187,14 +187,14 @@ export function calculateAverageMonthlyRent(leaseProperties: PropertyData[]): nu
 /**
  * Calculate average annual rent for lease properties
  */
-export function calculateAverageAnnualRent(leaseProperties: PropertyData[]): number {
+export function calculateAverageAnnualRent(leaseProperties: PropertyDataBase[]): number {
   return calculateAverageMonthlyRent(leaseProperties) * 12;
 }
 
 /**
  * Calculate median for sale properties
  */
-export function calculateMedianSalePrice(saleProperties: PropertyData[]): number {
+export function calculateMedianSalePrice(saleProperties: PropertyDataBase[]): number {
   const filtered = saleProperties.filter((p) => p.IS_RENTAL === 'N' && p.SALE_PRICE > 0);
   if (filtered.length === 0) return 0;
 
@@ -210,7 +210,7 @@ export function calculateMedianSalePrice(saleProperties: PropertyData[]): number
 /**
  * Calculate median monthly rent for lease properties
  */
-export function calculateMedianMonthlyRent(leaseProperties: PropertyData[]): number {
+export function calculateMedianMonthlyRent(leaseProperties: PropertyDataBase[]): number {
   const filtered = leaseProperties.filter((p) => p.IS_RENTAL === 'Y' && p.SALE_PRICE > 0);
   if (filtered.length === 0) return 0;
 

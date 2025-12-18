@@ -27,10 +27,10 @@ import { deleteLocalFile } from '@/lib/storage/local-storage'
  */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { fileId: string } }
+  { params }: { params: Promise<{ fileId: string }> }
 ) {
   try {
-    const { fileId } = params
+    const { fileId } = await params
     const searchParams = req.nextUrl.searchParams
     const includeLocal = searchParams.get('includeLocal') === 'true'
 
@@ -125,10 +125,10 @@ export async function DELETE(
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { fileId: string } }
+  { params }: { params: Promise<{ fileId: string }> }
 ) {
   try {
-    const { fileId } = params
+    const { fileId } = await params
 
     if (!fileId) {
       return NextResponse.json(

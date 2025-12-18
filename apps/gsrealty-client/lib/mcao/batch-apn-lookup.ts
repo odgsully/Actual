@@ -124,7 +124,7 @@ export async function batchLookupAPNs(
  * Uses new ArcGIS-based lookup service (public Maricopa County endpoints)
  */
 async function lookupSingleAddress(address: AddressLookup): Promise<LookupResult> {
-  let lastError: string | undefined
+  let lastError = 'Failed to lookup APN'
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
@@ -179,7 +179,7 @@ async function lookupSingleAddress(address: AddressLookup): Promise<LookupResult
   return {
     address: address.address,
     success: false,
-    error: lastError || 'Failed to lookup APN',
+    error: lastError,
   }
 }
 

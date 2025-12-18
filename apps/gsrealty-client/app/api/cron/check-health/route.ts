@@ -26,8 +26,9 @@ interface HealthAlert {
 export async function GET(request: NextRequest) {
   try {
     // Verify cron authentication - accept both Vercel's signature and manual triggers
-    const vercelCronSignature = headers().get('x-vercel-cron-signature');
-    const authHeader = headers().get('authorization');
+    const headersList = await headers();
+    const vercelCronSignature = headersList.get('x-vercel-cron-signature');
+    const authHeader = headersList.get('authorization');
     const cronSecret = process.env.CRON_SECRET;
     
     // Allow either Vercel's cron signature OR manual Bearer token

@@ -931,6 +931,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const bytes = await file.arrayBuffer();
     const uploadedBuffer = Buffer.from(bytes);
     const uploadedWorkbook = new ExcelJS.Workbook();
+    // @ts-expect-error - ExcelJS types incompatible with Node.js 20+ Buffer types
     await uploadedWorkbook.xlsx.load(uploadedBuffer);
 
     console.log(`${LOG_PREFIX} Workbook loaded with ${uploadedWorkbook.worksheets.length} sheets`);

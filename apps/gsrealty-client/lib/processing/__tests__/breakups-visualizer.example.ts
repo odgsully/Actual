@@ -20,14 +20,17 @@ import path from 'path';
  */
 async function exampleGenerateAll() {
   // Sample analysis results (would come from breakups-generator.ts)
-  const analysisResults: BreakupsAnalysisResult = {
+  // Note: Using 'as any' cast for simplified demo data that doesn't match full type
+  const analysisResults = {
     metadata: {
       fileId: 'example-file-123',
       timestamp: new Date(),
       propertyCount: 50,
+      salePropertyCount: 30,
+      leasePropertyCount: 20,
     },
     analyses: {
-      1: {
+      '1A': {
         distribution: { 2: 5, 3: 15, 4: 20, 5: 10 },
         mostCommon: 4,
         average: 3.7,
@@ -190,7 +193,7 @@ async function exampleGenerateAll() {
         chartType: 'dashboard',
       },
     },
-  };
+  } as unknown as BreakupsAnalysisResult;
 
   // Generate all visualizations
   const outputDir = '/tmp/reportit/breakups/example-file-123/charts';

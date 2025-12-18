@@ -68,7 +68,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const downloadFileName = `PropertyRadar_Extract_${timestamp}.xlsx`;
 
     // Return file as download
-    return new NextResponse(buffer, {
+    return new NextResponse(new Uint8Array(buffer), {
       status: 200,
       headers: {
         'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

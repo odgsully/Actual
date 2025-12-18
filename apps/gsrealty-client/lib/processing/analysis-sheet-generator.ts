@@ -120,6 +120,7 @@ export interface PropertyDataForAnalysis {
   mlsData?: any
   mcaoData?: MCAOApiResponse
   address: string
+  apn?: string // APN for the property
 }
 
 /**
@@ -480,7 +481,7 @@ function addPropertyRow(
   if (property.itemLabel === 'Subject Property') {
     // For subject property, use LotSize field (should be at top level or in flattened data)
     row.getCell(ANALYSIS_COLUMNS.LOT_SIZE).value = parseWholeNumber(
-      mcao?.lotSize || mcao?.LotSize || rawData['Approx Lot SqFt']
+      mcao?.lotSize || (mcao as any)?.LotSize || rawData['Approx Lot SqFt']
     )
   } else {
     row.getCell(ANALYSIS_COLUMNS.LOT_SIZE).value = parseWholeNumber(
@@ -567,7 +568,7 @@ function addPropertyRow(
     } else {
       row.getCell(ANALYSIS_COLUMNS.DWELLING_TYPE).value =
         mcao?.propertyType ||
-        mcao?.PropertyType ||
+        (mcao as any)?.PropertyType ||
         rawData['Dwelling Type'] || 'N/A'
     }
   } else {
@@ -578,7 +579,7 @@ function addPropertyRow(
   if (property.itemLabel === 'Subject Property') {
     row.getCell(ANALYSIS_COLUMNS.SUBDIVISION_NAME).value =
       mcao?.subdivision ||
-      mcao?.SubdivisionName ||
+      (mcao as any)?.SubdivisionName ||
       (mcaoFlattened as any)['SubdivisionName'] ||
       rawData['Subdivision'] || 'N/A'
   } else {

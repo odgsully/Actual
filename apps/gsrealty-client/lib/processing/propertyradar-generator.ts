@@ -41,7 +41,8 @@ export async function generatePropertyRadarExcel(
   if (!analysisSheet) {
     console.warn(`${LOG_PREFIX} No Analysis sheet found in uploaded file`)
     // Return empty template
-    return await templateWorkbook.xlsx.writeBuffer() as Buffer
+    const buf = await templateWorkbook.xlsx.writeBuffer()
+    return Buffer.from(buf)
   }
 
   console.log(`${LOG_PREFIX} Reading Analysis sheet with ${analysisSheet.rowCount} rows`)
@@ -86,7 +87,7 @@ export async function generatePropertyRadarExcel(
 
   console.log(`${LOG_PREFIX} PropertyRadar Excel generated successfully`)
 
-  return buffer as Buffer
+  return Buffer.from(buffer)
 }
 
 /**

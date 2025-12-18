@@ -157,7 +157,7 @@ export async function POST(request: NextRequest) {
     await cleanup(inputFilePath, outputDir)
 
     // Return the ZIP file
-    return new NextResponse(zipBuffer, {
+    return new NextResponse(new Uint8Array(zipBuffer), {
       headers: {
         'Content-Type': 'application/zip',
         'Content-Disposition': `attachment; filename="MCAO_Bulk_${timestamp}.zip"`,
