@@ -1,52 +1,43 @@
 {
-  "buildCommand": "turbo run build",
-  "rewrites": [
-    {
-      "source": "/wabbit-re/:path*",
-      "destination": "/apps/wabbit-re/:path*"
-    },
-    {
-      "source": "/wabbit/:path*",
-      "destination": "/apps/wabbit/:path*"
-    },
-    {
-      "source": "/crm/:path*",
-      "destination": "/apps/crm/:path*"
-    },
-    {
-      "source": "/gsrealty/:path*",
-      "destination": "/apps/gsrealty-client/:path*"
-    }
-  ],
+  "buildCommand": "cd apps/gsrealty-client && npm run build",
+  "outputDirectory": "apps/gsrealty-client/.next",
+  "installCommand": "cd apps/gsrealty-client && npm install",
+  "framework": "nextjs",
   "crons": [
     {
-      "path": "/wabbit-re/api/cron/hourly-scrape",
+      "path": "/api/cron/hourly-scrape",
       "schedule": "0 * * * *"
     },
     {
-      "path": "/wabbit-re/api/cron/daily-cleanup",
+      "path": "/api/cron/daily-cleanup",
       "schedule": "0 3 * * *"
     },
     {
-      "path": "/wabbit-re/api/cron/check-health",
+      "path": "/api/cron/check-health",
       "schedule": "*/15 * * * *"
     }
   ],
   "functions": {
-    "apps/wabbit-re/app/api/cron/hourly-scrape/route.ts": {
+    "app/api/cron/hourly-scrape/route.ts": {
       "maxDuration": 300
     },
-    "apps/wabbit-re/app/api/cron/daily-cleanup/route.ts": {
+    "app/api/cron/daily-cleanup/route.ts": {
       "maxDuration": 60
     },
-    "apps/wabbit-re/app/api/cron/check-health/route.ts": {
+    "app/api/cron/check-health/route.ts": {
       "maxDuration": 10
     },
-    "apps/wabbit-re/app/api/scrape/test/route.ts": {
+    "app/api/scrape/test/route.ts": {
       "maxDuration": 60
     },
-    "apps/wabbit-re/app/api/scrape/on-demand/route.ts": {
+    "app/api/scrape/on-demand/route.ts": {
       "maxDuration": 300
+    },
+    "app/api/admin/reportit/upload/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/admin/mcao/bulk/route.ts": {
+      "maxDuration": 120
     }
   }
 }
