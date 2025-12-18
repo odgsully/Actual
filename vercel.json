@@ -16,28 +16,5 @@
       "path": "/api/cron/check-health",
       "schedule": "*/15 * * * *"
     }
-  ],
-  "functions": {
-    "app/api/cron/hourly-scrape/route.ts": {
-      "maxDuration": 300
-    },
-    "app/api/cron/daily-cleanup/route.ts": {
-      "maxDuration": 60
-    },
-    "app/api/cron/check-health/route.ts": {
-      "maxDuration": 10
-    },
-    "app/api/scrape/test/route.ts": {
-      "maxDuration": 60
-    },
-    "app/api/scrape/on-demand/route.ts": {
-      "maxDuration": 300
-    },
-    "app/api/admin/reportit/upload/route.ts": {
-      "maxDuration": 60
-    },
-    "app/api/admin/mcao/bulk/route.ts": {
-      "maxDuration": 120
-    }
-  }
+  ]
 }
