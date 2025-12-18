@@ -7,7 +7,7 @@ import { MCAOClient } from '@/lib/mcao/client'
 import { ExcelGenerator } from '@/lib/mcao/excel-generator'
 import * as XLSX from 'xlsx'
 
-export const maxDuration = 900 // 15 minutes for large files
+export const maxDuration = 300 // 5 minutes (Pro plan max is 800s)
 export const dynamic = 'force-dynamic'
 
 // Use system temp directory
