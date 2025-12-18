@@ -1,7 +1,7 @@
 /**
- * ReportIt Break-ups Analysis Generator
+ * ReportIt Break-ups Analysis Generator (v2)
  *
- * Core calculation engine for 22 comparative property analyses
+ * Core calculation engine for 26 comparative property analyses with lease/sale differentiation
  * Reads data from Analysis sheet and returns structured results
  *
  * @module breakups-generator
@@ -9,8 +9,18 @@
  */
 
 import * as ExcelJS from 'exceljs'
+import {
+  filterSaleProperties,
+  filterLeaseProperties,
+  calculateAverageSalePrice,
+  calculateAverageMonthlyRent,
+  calculateAverageAnnualRent,
+  calculatePricePerSqft,
+  calculateRentPerSqft,
+  calculateAnnualRentPerSqft,
+} from './transaction-utils'
 
-const LOG_PREFIX = '[Breakups Generator]'
+const LOG_PREFIX = '[Breakups Generator v2]'
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -55,44 +65,64 @@ export interface PropertyData {
 }
 
 /**
- * Complete breakups analysis results container
+ * Complete breakups analysis results container (v2 with 26 differentiated analyses)
  */
 export interface BreakupsAnalysisResult {
-  // Category A: Property Characteristics (1-5)
-  brDistribution: BRDistributionResult
-  hoaAnalysis: HOAAnalysisResult
-  strAnalysis: STRAnalysisResult
-  renovationImpact: RenovationImpactResult
-  compsClassification: CompsClassificationResult
+  // v2 Structure: 26 analyses (13 split + 9 combined + 2 lease-only + 2 sale-only)
 
-  // Category B: Market Positioning (6-10)
-  sqftVariance: SqftVarianceResult
-  priceVariance: PriceVarianceResult
-  leaseVsSale: LeaseVsSaleResult
-  propertyRadarComps: PropertyRadarCompsResult
-  individualPRComps: IndividualPRCompsResult
+  // Category A: Property Characteristics - SPLIT: 1, 3, 4 | KEEP: 2, 5
+  brDistribution_Sale: BRDistributionResult
+  brDistribution_Lease: BRDistributionResultLease
+  hoaAnalysis: HOAAnalysisResult // Analysis 2: Combined
+  strAnalysis_Sale: STRAnalysisResult
+  strAnalysis_Lease: STRAnalysisResultLease
+  renovationImpact_Sale: RenovationImpactResult
+  renovationImpact_Lease: RenovationImpactResultLease
+  compsClassification: CompsClassificationResult // Analysis 5: Combined
 
-  // Category C: Time & Location (11-14)
-  brPrecision: BRPrecisionResult
-  timeFrames: TimeFramesResult
-  directVsIndirect: DirectVsIndirectResult
-  recentDirectVsIndirect: RecentDirectVsIndirectResult
+  // Category B: Market Positioning - SPLIT: 6, 7 | KEEP: 8, 9, 10
+  sqftVariance_Sale: SqftVarianceResult
+  sqftVariance_Lease: SqftVarianceResultLease
+  priceVariance_Sale: PriceVarianceResult
+  priceVariance_Lease: PriceVarianceResultLease
+  leaseVsSale: LeaseVsSaleResult // Analysis 8: Comparison
+  propertyRadarComps: PropertyRadarCompsResult // Analysis 9: Combined
+  individualPRComps: IndividualPRCompsResult // Analysis 10: Combined
 
-  // Category D: Market Activity (15-16)
-  activeVsClosed: ActiveVsClosedResult
-  activeVsPending: ActiveVsPendingResult
+  // Category C: Time & Location - SPLIT: 11 | KEEP: 12, 13, 14
+  brPrecision_Sale: BRPrecisionResult
+  brPrecision_Lease: BRPrecisionResultLease
+  timeFrames: TimeFramesResult // Analysis 12: Combined
+  directVsIndirect: DirectVsIndirectResult // Analysis 13: Combined
+  recentDirectVsIndirect: RecentDirectVsIndirectResult // Analysis 14: Combined
 
-  // Category E: Financial Impact (17-22)
-  renovationDelta: RenovationDeltaResult
-  partialRenovationDelta: PartialRenovationDeltaResult
-  interquartileRanges: InterquartileRangesResult
-  distributionTails: DistributionTailsResult
-  expectedNOI: ExpectedNOIResult
-  improvedNOI: ImprovedNOIResult
+  // Category D: Market Activity - SPLIT: 15, 16
+  activeVsClosed_Sale: ActiveVsClosedResult
+  activeVsClosed_Lease: ActiveVsClosedResultLease
+  activeVsPending_Sale: ActiveVsPendingResult
+  activeVsPending_Lease: ActiveVsPendingResultLease
+
+  // Category E: Financial Impact - SPLIT: 17, 18, 19, 20 | KEEP: 21, 22
+  renovationDelta_Sale: RenovationDeltaResult
+  renovationDelta_Lease: RenovationDeltaResultLease
+  partialRenovationDelta_Sale: PartialRenovationDeltaResult
+  partialRenovationDelta_Lease: PartialRenovationDeltaResultLease
+  interquartileRanges_Sale: InterquartileRangesResult
+  interquartileRanges_Lease: InterquartileRangesResultLease
+  distributionTails_Sale: DistributionTailsResult
+  distributionTails_Lease: DistributionTailsResult
+  expectedNOI: ExpectedNOIResult // Analysis 21: Lease-only
+  improvedNOI: ImprovedNOIResult // Analysis 22: Lease-only
 }
 
 // Individual analysis result types
 export interface BRDistributionResult {
+  distribution: Record<string, number>
+  mostCommon: string
+  average: number
+}
+
+export interface BRDistributionResultLease {
   distribution: Record<string, number>
   mostCommon: string
   average: number
@@ -110,10 +140,24 @@ export interface STRAnalysisResult {
   premiumPercentage: number
 }
 
+export interface STRAnalysisResultLease {
+  strEligible: { count: number; avgMonthlyRent: number; avgAnnualRent: number }
+  nonSTR: { count: number; avgMonthlyRent: number; avgAnnualRent: number }
+  premiumPercentage: number
+}
+
 export interface RenovationImpactResult {
   Y: { count: number; avgPrice: number; avgPricePerSqft: number }
   N: { count: number; avgPrice: number; avgPricePerSqft: number }
   '0.5': { count: number; avgPrice: number; avgPricePerSqft: number }
+  premiumYvsN: number
+  premium05vsN: number
+}
+
+export interface RenovationImpactResultLease {
+  Y: { count: number; avgMonthlyRent: number; avgAnnualRent: number }
+  N: { count: number; avgMonthlyRent: number; avgAnnualRent: number }
+  '0.5': { count: number; avgMonthlyRent: number; avgAnnualRent: number }
   premiumYvsN: number
   premium05vsN: number
 }
@@ -129,9 +173,20 @@ export interface SqftVarianceResult {
   optimalRange: { min: number; max: number }
 }
 
+export interface SqftVarianceResultLease {
+  within20: { count: number; avgRentPerSqft: number }
+  outside20: { count: number; avgRentPerSqft: number }
+  optimalRange: { min: number; max: number }
+}
+
 export interface PriceVarianceResult {
   within20: { count: number; avgDaysOnMarket: number }
   outside20: { count: number; underpriced: number; overpriced: number }
+}
+
+export interface PriceVarianceResultLease {
+  within20: { count: number; avgDaysOnMarket: number }
+  outside20: { count: number; belowMarket: number; aboveMarket: number }
 }
 
 export interface LeaseVsSaleResult {
@@ -160,6 +215,11 @@ export interface BRPrecisionResult {
   within1: { count: number; avgPrice: number; priceRange: { min: number; max: number } }
 }
 
+export interface BRPrecisionResultLease {
+  exact: { count: number; avgMonthlyRent: number; rentRange: { min: number; max: number } }
+  within1: { count: number; avgMonthlyRent: number; rentRange: { min: number; max: number } }
+}
+
 export interface TimeFramesResult {
   t12: { count: number; avgPrice: number }
   t36: { count: number; avgPrice: number }
@@ -184,9 +244,22 @@ export interface ActiveVsClosedResult {
   listToSaleRatio: number
 }
 
+export interface ActiveVsClosedResultLease {
+  active: { count: number; avgListRent: number; avgDaysOnMarket: number }
+  closed: { count: number; avgLeaseRent: number; avgDaysToLease: number }
+  absorptionRate: number
+  listToLeaseRatio: number
+}
+
 export interface ActiveVsPendingResult {
   active: { count: number; avgListPrice: number; avgDaysActive: number }
   pending: { count: number; avgDaysToContract: number }
+  pendingRatio: number
+}
+
+export interface ActiveVsPendingResultLease {
+  active: { count: number; avgListRent: number; avgDaysActive: number }
+  pending: { count: number; avgDaysToPending: number }
   pendingRatio: number
 }
 
@@ -197,6 +270,15 @@ export interface RenovationDeltaResult {
   percentageIncrease: number
 }
 
+export interface RenovationDeltaResultLease {
+  renovatedAvg: number
+  notRenovatedAvg: number
+  delta: number
+  percentageIncrease: number
+  monthlyIncomeUplift: number
+  annualIncomeUplift: number
+}
+
 export interface PartialRenovationDeltaResult {
   partialAvg: number
   notRenovatedAvg: number
@@ -204,12 +286,32 @@ export interface PartialRenovationDeltaResult {
   percentageIncrease: number
 }
 
+export interface PartialRenovationDeltaResultLease {
+  partialAvg: number
+  notRenovatedAvg: number
+  delta: number
+  percentageIncrease: number
+  monthlyIncomeUplift: number
+  annualIncomeUplift: number
+}
+
 export interface InterquartileRangesResult {
   price: { q25: number; median: number; q75: number; iqr: number }
   pricePerSqft: { q25: number; median: number; q75: number; iqr: number }
 }
 
+export interface InterquartileRangesResultLease {
+  monthlyRent: { q25: number; median: number; q75: number; iqr: number }
+  annualRent: { q25: number; median: number; q75: number; iqr: number }
+  rentPerSqft: { q25: number; median: number; q75: number; iqr: number }
+}
+
 export interface DistributionTailsResult {
+  percentiles: { p5: number; p10: number; p50: number; p90: number; p95: number }
+  ranges: { middle80: number; middle90: number }
+}
+
+export interface DistributionTailsResultLease {
   percentiles: { p5: number; p10: number; p50: number; p90: number; p95: number }
   ranges: { middle80: number; middle90: number }
 }
@@ -236,17 +338,17 @@ export interface ImprovedNOIResult {
 // ============================================================================
 
 /**
- * Generate all 22 breakups analyses from workbook
+ * Generate all 26 breakups analyses from workbook (v2 with lease/sale differentiation)
  *
  * @param workbook - ExcelJS workbook with Analysis sheet
  * @param subjectProperty - Subject property data for relative comparisons
- * @returns Complete analysis results
+ * @returns Complete analysis results with 26 differentiated analyses
  */
 export async function generateAllBreakupsAnalyses(
   workbook: ExcelJS.Workbook,
   subjectProperty: any
 ): Promise<BreakupsAnalysisResult> {
-  console.log(`${LOG_PREFIX} Starting all breakups analyses`)
+  console.log(`${LOG_PREFIX} Starting all breakups analyses (v2 - 26 analyses)`)
 
   // Read property data from Analysis sheet
   const properties = readAnalysisSheet(workbook)
@@ -262,66 +364,98 @@ export async function generateAllBreakupsAnalyses(
   const subjectBR = subject.BR || subjectProperty?.bedrooms || 0
   const estimatedValue = subject.SALE_PRICE || subjectProperty?.estimatedValue || 0
 
-  // Category A: Property Characteristics (1-5)
+  // Filter properties by transaction type (v2 differentiation)
+  const saleProperties = filterSaleProperties(properties)
+  const leaseProperties = filterLeaseProperties(properties)
+
+  console.log(`${LOG_PREFIX} Filtered: ${saleProperties.length} sale properties, ${leaseProperties.length} lease properties`)
+
+  // Category A: Property Characteristics (1-5) - SPLIT: 1, 3, 4 | KEEP: 2, 5
   console.log(`${LOG_PREFIX} Running Category A: Property Characteristics`)
-  const brDistribution = analyzeBRDistribution(properties)
-  const hoaAnalysis = analyzeHOA(properties)
-  const strAnalysis = analyzeSTR(properties)
-  const renovationImpact = analyzeRenovationImpact(properties)
-  const compsClassification = analyzeCompsClassification(properties)
+  const brDistribution_Sale = analyzeBRDistribution_Sale(saleProperties)
+  const brDistribution_Lease = analyzeBRDistribution_Lease(leaseProperties)
+  const hoaAnalysis = analyzeHOA(properties) // Analysis 2: Combined (no split needed)
+  const strAnalysis_Sale = analyzeSTR_Sale(saleProperties)
+  const strAnalysis_Lease = analyzeSTR_Lease(leaseProperties)
+  const renovationImpact_Sale = analyzeRenovationImpact_Sale(saleProperties)
+  const renovationImpact_Lease = analyzeRenovationImpact_Lease(leaseProperties)
+  const compsClassification = analyzeCompsClassification(properties) // Analysis 5: Combined (no split needed)
 
-  // Category B: Market Positioning (6-10)
+  // Category B: Market Positioning (6-10) - SPLIT: 6, 7 | KEEP: 8, 9, 10
   console.log(`${LOG_PREFIX} Running Category B: Market Positioning`)
-  const sqftVariance = analyzeSqftVariance(properties, subjectSqft)
-  const priceVariance = analyzePriceVariance(properties, estimatedValue)
-  const leaseVsSale = analyzeLeaseVsSale(properties)
-  const propertyRadarComps = analyzePropertyRadarComps(properties)
-  const individualPRComps = analyzeIndividualPRComps(properties, subject)
+  const sqftVariance_Sale = analyzeSqftVariance_Sale(saleProperties, subjectSqft)
+  const sqftVariance_Lease = analyzeSqftVariance_Lease(leaseProperties, subjectSqft)
+  const priceVariance_Sale = analyzePriceVariance_Sale(saleProperties, estimatedValue)
+  const priceVariance_Lease = analyzePriceVariance_Lease(leaseProperties, estimatedValue)
+  const leaseVsSale = analyzeLeaseVsSale(properties) // Analysis 8: Comparison (no split needed)
+  const propertyRadarComps = analyzePropertyRadarComps(properties) // Analysis 9: Combined (no split needed)
+  const individualPRComps = analyzeIndividualPRComps(properties, subject) // Analysis 10: Combined (no split needed)
 
-  // Category C: Time & Location (11-14)
+  // Category C: Time & Location (11-14) - SPLIT: 11 | KEEP: 12, 13, 14
   console.log(`${LOG_PREFIX} Running Category C: Time & Location`)
-  const brPrecision = analyzeBRPrecision(properties, subjectBR)
-  const timeFrames = analyzeTimeFrames(properties)
-  const directVsIndirect = analyzeDirectVsIndirect(properties)
-  const recentDirectVsIndirect = analyzeRecentDirectVsIndirect(properties)
+  const brPrecision_Sale = analyzeBRPrecision_Sale(saleProperties, subjectBR)
+  const brPrecision_Lease = analyzeBRPrecision_Lease(leaseProperties, subjectBR)
+  const timeFrames = analyzeTimeFrames(properties) // Analysis 12: Combined (no split needed)
+  const directVsIndirect = analyzeDirectVsIndirect(properties) // Analysis 13: Combined (no split needed)
+  const recentDirectVsIndirect = analyzeRecentDirectVsIndirect(properties) // Analysis 14: Combined (no split needed)
 
-  // Category D: Market Activity (15-16)
+  // Category D: Market Activity (15-16) - SPLIT: 15, 16
   console.log(`${LOG_PREFIX} Running Category D: Market Activity`)
-  const activeVsClosed = analyzeActiveVsClosed(properties)
-  const activeVsPending = analyzeActiveVsPending(properties)
+  const activeVsClosed_Sale = analyzeActiveVsClosed_Sale(saleProperties)
+  const activeVsClosed_Lease = analyzeActiveVsClosed_Lease(leaseProperties)
+  const activeVsPending_Sale = analyzeActiveVsPending_Sale(saleProperties)
+  const activeVsPending_Lease = analyzeActiveVsPending_Lease(leaseProperties)
 
-  // Category E: Financial Impact (17-22)
+  // Category E: Financial Impact (17-22) - SPLIT: 17, 18, 19, 20 | KEEP: 21, 22
   console.log(`${LOG_PREFIX} Running Category E: Financial Impact`)
-  const renovationDelta = calculateRenovationDelta(properties)
-  const partialRenovationDelta = calculatePartialRenovationDelta(properties)
-  const interquartileRanges = calculateInterquartileRanges(properties)
-  const distributionTails = analyzeDistributionTails(properties)
-  const expectedNOI = calculateExpectedNOI(subject)
-  const improvedNOI = calculateImprovedNOI(subject)
+  const renovationDelta_Sale = calculateRenovationDelta_Sale(saleProperties)
+  const renovationDelta_Lease = calculateRenovationDelta_Lease(leaseProperties)
+  const partialRenovationDelta_Sale = calculatePartialRenovationDelta_Sale(saleProperties)
+  const partialRenovationDelta_Lease = calculatePartialRenovationDelta_Lease(leaseProperties)
+  const interquartileRanges_Sale = calculateInterquartileRanges_Sale(saleProperties)
+  const interquartileRanges_Lease = calculateInterquartileRanges_Lease(leaseProperties)
+  const distributionTails_Sale = analyzeDistributionTails_Sale(saleProperties)
+  const distributionTails_Lease = analyzeDistributionTails_Lease(leaseProperties)
+  const expectedNOI = calculateExpectedNOI(subject) // Analysis 21: Lease-only (no split needed)
+  const improvedNOI = calculateImprovedNOI(subject) // Analysis 22: Lease-only (no split needed)
 
-  console.log(`${LOG_PREFIX} All analyses complete`)
+  console.log(`${LOG_PREFIX} All 26 analyses complete (v2)`)
 
   return {
-    brDistribution,
+    // v2: 26 differentiated analyses (13 split analyses = 26, plus 9 combined = 35 total properties)
+    // Note: Some analyses are kept combined when differentiation doesn't apply
+    brDistribution_Sale,
+    brDistribution_Lease,
     hoaAnalysis,
-    strAnalysis,
-    renovationImpact,
+    strAnalysis_Sale,
+    strAnalysis_Lease,
+    renovationImpact_Sale,
+    renovationImpact_Lease,
     compsClassification,
-    sqftVariance,
-    priceVariance,
+    sqftVariance_Sale,
+    sqftVariance_Lease,
+    priceVariance_Sale,
+    priceVariance_Lease,
     leaseVsSale,
     propertyRadarComps,
     individualPRComps,
-    brPrecision,
+    brPrecision_Sale,
+    brPrecision_Lease,
     timeFrames,
     directVsIndirect,
     recentDirectVsIndirect,
-    activeVsClosed,
-    activeVsPending,
-    renovationDelta,
-    partialRenovationDelta,
-    interquartileRanges,
-    distributionTails,
+    activeVsClosed_Sale,
+    activeVsClosed_Lease,
+    activeVsPending_Sale,
+    activeVsPending_Lease,
+    renovationDelta_Sale,
+    renovationDelta_Lease,
+    partialRenovationDelta_Sale,
+    partialRenovationDelta_Lease,
+    interquartileRanges_Sale,
+    interquartileRanges_Lease,
+    distributionTails_Sale,
+    distributionTails_Lease,
     expectedNOI,
     improvedNOI,
   }
@@ -332,22 +466,54 @@ export async function generateAllBreakupsAnalyses(
 // ============================================================================
 
 /**
- * Analysis 1: BR Sizes Distribution
- * Analyze distribution of properties by bedroom count
+ * Analysis 1A: BR Sizes Distribution - Sale Market
+ * Analyze distribution of sale properties by bedroom count
  */
-export function analyzeBRDistribution(properties: PropertyData[]): BRDistributionResult {
+export function analyzeBRDistribution_Sale(properties: PropertyData[]): BRDistributionResult {
+  const saleProps = filterSaleProperties(properties)
   const distribution: Record<string, number> = {}
 
-  properties.forEach((prop) => {
+  saleProps.forEach((prop) => {
     const br = prop.BR ? String(prop.BR) : 'Unknown'
     distribution[br] = (distribution[br] || 0) + 1
   })
 
-  const mostCommon = Object.keys(distribution).reduce((a, b) =>
-    distribution[a] > distribution[b] ? a : b
-  )
+  // Handle empty distribution (no sale properties)
+  const keys = Object.keys(distribution)
+  const mostCommon = keys.length > 0
+    ? keys.reduce((a, b) => distribution[a] > distribution[b] ? a : b)
+    : 'N/A'
 
-  const validBRs = properties.filter((p) => p.BR && !isNaN(Number(p.BR))).map((p) => Number(p.BR))
+  const validBRs = saleProps.filter((p) => p.BR && !isNaN(Number(p.BR))).map((p) => Number(p.BR))
+  const average = calculateAverage(validBRs)
+
+  return {
+    distribution,
+    mostCommon,
+    average,
+  }
+}
+
+/**
+ * Analysis 1B: BR Sizes Distribution - Lease Market
+ * Analyze distribution of lease properties by bedroom count
+ */
+export function analyzeBRDistribution_Lease(properties: PropertyData[]): BRDistributionResultLease {
+  const leaseProps = filterLeaseProperties(properties)
+  const distribution: Record<string, number> = {}
+
+  leaseProps.forEach((prop) => {
+    const br = prop.BR ? String(prop.BR) : 'Unknown'
+    distribution[br] = (distribution[br] || 0) + 1
+  })
+
+  // Handle empty distribution (no lease properties)
+  const keys = Object.keys(distribution)
+  const mostCommon = keys.length > 0
+    ? keys.reduce((a, b) => distribution[a] > distribution[b] ? a : b)
+    : 'N/A'
+
+  const validBRs = leaseProps.filter((p) => p.BR && !isNaN(Number(p.BR))).map((p) => Number(p.BR))
   const average = calculateAverage(validBRs)
 
   return {
@@ -375,33 +541,60 @@ export function analyzeHOA(properties: PropertyData[]): HOAAnalysisResult {
 }
 
 /**
- * Analysis 3: STR vs Non-STR
- * Short-term rental eligibility comparison
+ * Analysis 3A: STR vs Non-STR - Sale Market
+ * Short-term rental eligibility comparison for sale properties
  * Note: STR_ELIGIBLE field not in current schema, returns placeholder
  */
-export function analyzeSTR(properties: PropertyData[]): STRAnalysisResult {
+export function analyzeSTR_Sale(properties: PropertyData[]): STRAnalysisResult {
+  const saleProps = filterSaleProperties(properties)
+
   // Note: STR_ELIGIBLE field not currently in Analysis sheet schema
   // This is a placeholder implementation
-  console.warn(`${LOG_PREFIX} STR_ELIGIBLE field not available in Analysis sheet`)
+  console.warn(`${LOG_PREFIX} STR_ELIGIBLE field not available - Analysis 3A (Sale)`)
 
-  const avgPrice = calculateAverage(properties.map((p) => p.SALE_PRICE))
-  const avgPricePerSqft = calculateAverage(properties.map((p) => p.SALE_PRICE / p.SQFT).filter((x) => !isNaN(x)))
+  const avgPrice = calculateAverageSalePrice(saleProps)
+  const avgPricePerSqft = calculateAverage(
+    saleProps.map((p) => p.SALE_PRICE / p.SQFT).filter((x) => !isNaN(x) && isFinite(x))
+  )
 
   return {
     strEligible: { count: 0, avgPrice: 0, avgPricePerSqft: 0 },
-    nonSTR: { count: properties.length, avgPrice, avgPricePerSqft },
+    nonSTR: { count: saleProps.length, avgPrice, avgPricePerSqft },
     premiumPercentage: 0,
   }
 }
 
 /**
- * Analysis 4: RENOVATE_SCORE Impact (Y vs N vs 0.5)
- * Analyze impact of renovation status on property values
+ * Analysis 3B: STR vs Non-STR - Lease Market
+ * Short-term rental eligibility comparison for lease properties
+ * Note: STR_ELIGIBLE field not in current schema, returns placeholder
  */
-export function analyzeRenovationImpact(properties: PropertyData[]): RenovationImpactResult {
-  const renovated = properties.filter((p) => p.RENOVATE_SCORE === 'Y')
-  const notRenovated = properties.filter((p) => p.RENOVATE_SCORE === 'N')
-  const partial = properties.filter((p) => p.RENOVATE_SCORE === '0.5')
+export function analyzeSTR_Lease(properties: PropertyData[]): STRAnalysisResultLease {
+  const leaseProps = filterLeaseProperties(properties)
+
+  // Note: STR_ELIGIBLE field not currently in Analysis sheet schema
+  // This is a placeholder implementation
+  console.warn(`${LOG_PREFIX} STR_ELIGIBLE field not available - Analysis 3B (Lease)`)
+
+  const avgMonthlyRent = calculateAverageMonthlyRent(leaseProps)
+  const avgAnnualRent = avgMonthlyRent * 12
+
+  return {
+    strEligible: { count: 0, avgMonthlyRent: 0, avgAnnualRent: 0 },
+    nonSTR: { count: leaseProps.length, avgMonthlyRent, avgAnnualRent },
+    premiumPercentage: 0,
+  }
+}
+
+/**
+ * Analysis 4A: RENOVATE_SCORE Impact (Y vs N vs 0.5) - Sale Market
+ * Analyze impact of renovation status on sale property values
+ */
+export function analyzeRenovationImpact_Sale(properties: PropertyData[]): RenovationImpactResult {
+  const saleProps = filterSaleProperties(properties)
+  const renovated = saleProps.filter((p) => p.RENOVATE_SCORE === 'Y')
+  const notRenovated = saleProps.filter((p) => p.RENOVATE_SCORE === 'N')
+  const partial = saleProps.filter((p) => p.RENOVATE_SCORE === '0.5')
 
   const calculateMetrics = (props: PropertyData[]) => {
     const prices = props.map((p) => p.SALE_PRICE).filter((x) => !isNaN(x))
@@ -419,6 +612,42 @@ export function analyzeRenovationImpact(properties: PropertyData[]): RenovationI
 
   const premiumYvsN = metricsN.avgPrice > 0 ? ((metricsY.avgPrice - metricsN.avgPrice) / metricsN.avgPrice) * 100 : 0
   const premium05vsN = metricsN.avgPrice > 0 ? ((metrics05.avgPrice - metricsN.avgPrice) / metricsN.avgPrice) * 100 : 0
+
+  return {
+    Y: metricsY,
+    N: metricsN,
+    '0.5': metrics05,
+    premiumYvsN,
+    premium05vsN,
+  }
+}
+
+/**
+ * Analysis 4B: RENOVATE_SCORE Impact (Y vs N vs 0.5) - Lease Market
+ * Analyze impact of renovation status on lease property rents
+ */
+export function analyzeRenovationImpact_Lease(properties: PropertyData[]): RenovationImpactResultLease {
+  const leaseProps = filterLeaseProperties(properties)
+  const renovated = leaseProps.filter((p) => p.RENOVATE_SCORE === 'Y')
+  const notRenovated = leaseProps.filter((p) => p.RENOVATE_SCORE === 'N')
+  const partial = leaseProps.filter((p) => p.RENOVATE_SCORE === '0.5')
+
+  const calculateMetrics = (props: PropertyData[]) => {
+    const monthlyRents = props.map((p) => p.SALE_PRICE).filter((x) => !isNaN(x))
+    const annualRents = props.map((p) => p.SALE_PRICE * 12).filter((x) => !isNaN(x))
+    return {
+      count: props.length,
+      avgMonthlyRent: calculateAverage(monthlyRents),
+      avgAnnualRent: calculateAverage(annualRents),
+    }
+  }
+
+  const metricsY = calculateMetrics(renovated)
+  const metricsN = calculateMetrics(notRenovated)
+  const metrics05 = calculateMetrics(partial)
+
+  const premiumYvsN = metricsN.avgMonthlyRent > 0 ? ((metricsY.avgMonthlyRent - metricsN.avgMonthlyRent) / metricsN.avgMonthlyRent) * 100 : 0
+  const premium05vsN = metricsN.avgMonthlyRent > 0 ? ((metrics05.avgMonthlyRent - metricsN.avgMonthlyRent) / metricsN.avgMonthlyRent) * 100 : 0
 
   return {
     Y: metricsY,
@@ -457,13 +686,14 @@ export function analyzeCompsClassification(properties: PropertyData[]): CompsCla
 // ============================================================================
 
 /**
- * Analysis 6: Square Footage Variance (Within 20%)
- * Analyze properties within/outside 20% of subject property square footage
+ * Analysis 6A: Square Footage Variance (Within 20%) - Sale Market
+ * Analyze sale properties within/outside 20% of subject property square footage
  */
-export function analyzeSqftVariance(properties: PropertyData[], subjectSqft: number): SqftVarianceResult {
+export function analyzeSqftVariance_Sale(properties: PropertyData[], subjectSqft: number): SqftVarianceResult {
+  const saleProps = filterSaleProperties(properties)
   const threshold = subjectSqft * 0.2
-  const within20 = properties.filter((p) => Math.abs(p.SQFT - subjectSqft) <= threshold)
-  const outside20 = properties.filter((p) => Math.abs(p.SQFT - subjectSqft) > threshold)
+  const within20 = saleProps.filter((p) => Math.abs(p.SQFT - subjectSqft) <= threshold)
+  const outside20 = saleProps.filter((p) => Math.abs(p.SQFT - subjectSqft) > threshold)
 
   const within20PricePerSqft = within20.map((p) => p.SALE_PRICE / p.SQFT).filter((x) => !isNaN(x) && isFinite(x))
   const outside20PricePerSqft = outside20.map((p) => p.SALE_PRICE / p.SQFT).filter((x) => !isNaN(x) && isFinite(x))
@@ -485,13 +715,43 @@ export function analyzeSqftVariance(properties: PropertyData[], subjectSqft: num
 }
 
 /**
- * Analysis 7: Price Variance (Within 20% estimated)
- * Analyze properties within/outside 20% of estimated value
+ * Analysis 6B: Square Footage Variance (Within 20%) - Lease Market
+ * Analyze lease properties within/outside 20% of subject property square footage
  */
-export function analyzePriceVariance(properties: PropertyData[], estimatedValue: number): PriceVarianceResult {
+export function analyzeSqftVariance_Lease(properties: PropertyData[], subjectSqft: number): SqftVarianceResultLease {
+  const leaseProps = filterLeaseProperties(properties)
+  const threshold = subjectSqft * 0.2
+  const within20 = leaseProps.filter((p) => Math.abs(p.SQFT - subjectSqft) <= threshold)
+  const outside20 = leaseProps.filter((p) => Math.abs(p.SQFT - subjectSqft) > threshold)
+
+  const within20RentPerSqft = within20.map((p) => p.SALE_PRICE / p.SQFT).filter((x) => !isNaN(x) && isFinite(x))
+  const outside20RentPerSqft = outside20.map((p) => p.SALE_PRICE / p.SQFT).filter((x) => !isNaN(x) && isFinite(x))
+
+  return {
+    within20: {
+      count: within20.length,
+      avgRentPerSqft: calculateAverage(within20RentPerSqft),
+    },
+    outside20: {
+      count: outside20.length,
+      avgRentPerSqft: calculateAverage(outside20RentPerSqft),
+    },
+    optimalRange: {
+      min: subjectSqft * 0.8,
+      max: subjectSqft * 1.2,
+    },
+  }
+}
+
+/**
+ * Analysis 7A: Price Variance (Within 20% estimated) - Sale Market
+ * Analyze sale properties within/outside 20% of estimated value
+ */
+export function analyzePriceVariance_Sale(properties: PropertyData[], estimatedValue: number): PriceVarianceResult {
+  const saleProps = filterSaleProperties(properties)
   const threshold = estimatedValue * 0.2
-  const within20 = properties.filter((p) => Math.abs(p.SALE_PRICE - estimatedValue) <= threshold)
-  const outside20 = properties.filter((p) => Math.abs(p.SALE_PRICE - estimatedValue) > threshold)
+  const within20 = saleProps.filter((p) => Math.abs(p.SALE_PRICE - estimatedValue) <= threshold)
+  const outside20 = saleProps.filter((p) => Math.abs(p.SALE_PRICE - estimatedValue) > threshold)
 
   const underpriced = outside20.filter((p) => p.SALE_PRICE < estimatedValue - threshold).length
   const overpriced = outside20.filter((p) => p.SALE_PRICE > estimatedValue + threshold).length
@@ -510,26 +770,69 @@ export function analyzePriceVariance(properties: PropertyData[], estimatedValue:
 }
 
 /**
- * Analysis 8: Lease SQFT vs Expected Value SQFT
- * Compare rental pricing per square foot to sales pricing
+ * Analysis 7B: Rent Variance (Within 20% estimated) - Lease Market
+ * Analyze lease properties within/outside 20% of estimated monthly rent
+ */
+export function analyzePriceVariance_Lease(properties: PropertyData[], estimatedRent: number): PriceVarianceResultLease {
+  const leaseProps = filterLeaseProperties(properties)
+  const threshold = estimatedRent * 0.2
+  const within20 = leaseProps.filter((p) => Math.abs(p.SALE_PRICE - estimatedRent) <= threshold)
+  const outside20 = leaseProps.filter((p) => Math.abs(p.SALE_PRICE - estimatedRent) > threshold)
+
+  const belowMarket = outside20.filter((p) => p.SALE_PRICE < estimatedRent - threshold).length
+  const aboveMarket = outside20.filter((p) => p.SALE_PRICE > estimatedRent + threshold).length
+
+  return {
+    within20: {
+      count: within20.length,
+      avgDaysOnMarket: calculateAverage(within20.map((p) => p.DAYS_ON_MARKET)),
+    },
+    outside20: {
+      count: outside20.length,
+      belowMarket,
+      aboveMarket,
+    },
+  }
+}
+
+/**
+ * Analysis 8: Lease vs Sale Comparison
+ * Compare rental pricing per square foot to sales pricing (v2 - FIXED)
  */
 export function analyzeLeaseVsSale(properties: PropertyData[]): LeaseVsSaleResult {
-  const leases = properties.filter((p) => p.IS_RENTAL === 'Y')
-  const sales = properties.filter((p) => p.IS_RENTAL === 'N')
+  const leaseProps = filterLeaseProperties(properties)
+  const saleProps = filterSaleProperties(properties)
 
-  // Note: MONTHLY_RENT field not in current schema
-  // Using placeholder calculation
-  const salePricePerSqft = sales.map((p) => p.SALE_PRICE / p.SQFT).filter((x) => !isNaN(x) && isFinite(x))
+  // Calculate sale price per sqft
+  const salePricePerSqft = saleProps
+    .map((p) => p.SALE_PRICE / p.SQFT)
+    .filter((x) => !isNaN(x) && isFinite(x))
+  const avgSalePricePerSqft = calculateAverage(salePricePerSqft)
+
+  // Calculate monthly and annual rent per sqft
+  const monthlyRentPerSqft = leaseProps
+    .map((p) => p.SALE_PRICE / p.SQFT) // SALE_PRICE = monthly rent for leases
+    .filter((x) => !isNaN(x) && isFinite(x))
+  const avgMonthlyRentPerSqft = calculateAverage(monthlyRentPerSqft)
+  const avgAnnualRentPerSqft = avgMonthlyRentPerSqft * 12
+
+  // Calculate cap rate (assuming 30% operating expenses)
+  const capRate = avgSalePricePerSqft > 0 ? (avgAnnualRentPerSqft * 0.7) / avgSalePricePerSqft : 0
+
+  // Calculate rent-to-value ratio
+  const avgMonthlyRent = calculateAverageMonthlyRent(leaseProps)
+  const avgSalePrice = calculateAverageSalePrice(saleProps)
+  const rentToValueRatio = avgSalePrice > 0 ? (avgMonthlyRent * 12) / avgSalePrice : 0
 
   return {
     lease: {
-      avgAnnualPerSqft: 0,
-      capRate: 0,
+      avgAnnualPerSqft: avgAnnualRentPerSqft,
+      capRate: capRate * 100, // Convert to percentage
     },
     sale: {
-      avgPerSqft: calculateAverage(salePricePerSqft),
+      avgPerSqft: avgSalePricePerSqft,
     },
-    rentToValueRatio: 0,
+    rentToValueRatio: rentToValueRatio * 100, // Convert to percentage
   }
 }
 
@@ -579,9 +882,14 @@ export function analyzeIndividualPRComps(properties: PropertyData[], subjectProp
  * Analysis 11: Exact BR vs Within ±1 BR
  * Analyze impact of bedroom count matching precision
  */
-export function analyzeBRPrecision(properties: PropertyData[], subjectBR: number): BRPrecisionResult {
-  const exact = properties.filter((p) => p.BR === subjectBR)
-  const within1 = properties.filter((p) => Math.abs(p.BR - subjectBR) <= 1)
+/**
+ * Analysis 11A: BR Precision (Exact vs Within ±1) - Sale Market
+ * Compare exact BR match vs properties within 1 BR difference for sale properties
+ */
+export function analyzeBRPrecision_Sale(properties: PropertyData[], subjectBR: number): BRPrecisionResult {
+  const saleProps = filterSaleProperties(properties)
+  const exact = saleProps.filter((p) => p.BR === subjectBR)
+  const within1 = saleProps.filter((p) => Math.abs(p.BR - subjectBR) <= 1)
 
   const calculateMetrics = (props: PropertyData[]) => {
     const prices = props.map((p) => p.SALE_PRICE).filter((x) => !isNaN(x))
@@ -589,6 +897,30 @@ export function analyzeBRPrecision(properties: PropertyData[], subjectBR: number
       count: props.length,
       avgPrice: calculateAverage(prices),
       priceRange: getRange(prices),
+    }
+  }
+
+  return {
+    exact: calculateMetrics(exact),
+    within1: calculateMetrics(within1),
+  }
+}
+
+/**
+ * Analysis 11B: BR Precision (Exact vs Within ±1) - Lease Market
+ * Compare exact BR match vs properties within 1 BR difference for lease properties
+ */
+export function analyzeBRPrecision_Lease(properties: PropertyData[], subjectBR: number): BRPrecisionResultLease {
+  const leaseProps = filterLeaseProperties(properties)
+  const exact = leaseProps.filter((p) => p.BR === subjectBR)
+  const within1 = leaseProps.filter((p) => Math.abs(p.BR - subjectBR) <= 1)
+
+  const calculateMetrics = (props: PropertyData[]) => {
+    const monthlyRents = props.map((p) => p.SALE_PRICE).filter((x) => !isNaN(x))
+    return {
+      count: props.length,
+      avgMonthlyRent: calculateAverage(monthlyRents),
+      rentRange: getRange(monthlyRents),
     }
   }
 
@@ -705,12 +1037,13 @@ export function analyzeRecentDirectVsIndirect(properties: PropertyData[]): Recen
 // ============================================================================
 
 /**
- * Analysis 15: Active vs Closed
- * Compare active listings to closed sales
+ * Analysis 15A: Active vs Closed - Sale Market
+ * Compare active sale listings to closed sales
  */
-export function analyzeActiveVsClosed(properties: PropertyData[]): ActiveVsClosedResult {
-  const active = properties.filter((p) => p.STATUS === 'A')
-  const closed = properties.filter((p) => p.STATUS === 'C')
+export function analyzeActiveVsClosed_Sale(properties: PropertyData[]): ActiveVsClosedResult {
+  const saleProps = filterSaleProperties(properties)
+  const active = saleProps.filter((p) => p.STATUS === 'A')
+  const closed = saleProps.filter((p) => p.STATUS === 'C')
 
   const activePrices = active.map((p) => p.OG_LIST_PRICE).filter((x) => !isNaN(x))
   const closedPrices = closed.map((p) => p.SALE_PRICE).filter((x) => !isNaN(x))
@@ -718,7 +1051,9 @@ export function analyzeActiveVsClosed(properties: PropertyData[]): ActiveVsClose
   const avgListPrice = calculateAverage(activePrices)
   const avgSalePrice = calculateAverage(closedPrices)
 
-  const absorptionRate = closed.length / (active.length + closed.length) || 0
+  // Handle empty arrays - check denominator to avoid NaN
+  const totalCount = active.length + closed.length
+  const absorptionRate = totalCount > 0 ? closed.length / totalCount : 0
   const listToSaleRatio = avgListPrice > 0 ? avgSalePrice / avgListPrice : 0
 
   return {
@@ -738,14 +1073,53 @@ export function analyzeActiveVsClosed(properties: PropertyData[]): ActiveVsClose
 }
 
 /**
- * Analysis 16: Active vs Pending
- * Analyze current market activity levels
+ * Analysis 15B: Active vs Closed - Lease Market
+ * Compare active lease listings to closed leases
  */
-export function analyzeActiveVsPending(properties: PropertyData[]): ActiveVsPendingResult {
-  const active = properties.filter((p) => p.STATUS === 'A')
-  const pending = properties.filter((p) => p.STATUS === 'P')
+export function analyzeActiveVsClosed_Lease(properties: PropertyData[]): ActiveVsClosedResultLease {
+  const leaseProps = filterLeaseProperties(properties)
+  const active = leaseProps.filter((p) => p.STATUS === 'A')
+  const closed = leaseProps.filter((p) => p.STATUS === 'C')
 
-  const pendingRatio = pending.length / (active.length + pending.length) || 0
+  const activeRents = active.map((p) => p.OG_LIST_PRICE).filter((x) => !isNaN(x))
+  const closedRents = closed.map((p) => p.SALE_PRICE).filter((x) => !isNaN(x))
+
+  const avgListRent = calculateAverage(activeRents)
+  const avgLeaseRent = calculateAverage(closedRents)
+
+  // Handle empty arrays - check denominator to avoid NaN
+  const totalCount = active.length + closed.length
+  const absorptionRate = totalCount > 0 ? closed.length / totalCount : 0
+  const listToLeaseRatio = avgListRent > 0 ? avgLeaseRent / avgListRent : 0
+
+  return {
+    active: {
+      count: active.length,
+      avgListRent,
+      avgDaysOnMarket: calculateAverage(active.map((p) => p.DAYS_ON_MARKET)),
+    },
+    closed: {
+      count: closed.length,
+      avgLeaseRent,
+      avgDaysToLease: calculateAverage(closed.map((p) => p.DAYS_ON_MARKET)),
+    },
+    absorptionRate,
+    listToLeaseRatio,
+  }
+}
+
+/**
+ * Analysis 16A: Active vs Pending - Sale Market
+ * Analyze current sale market activity levels
+ */
+export function analyzeActiveVsPending_Sale(properties: PropertyData[]): ActiveVsPendingResult {
+  const saleProps = filterSaleProperties(properties)
+  const active = saleProps.filter((p) => p.STATUS === 'A')
+  const pending = saleProps.filter((p) => p.STATUS === 'P')
+
+  // Handle empty arrays - check denominator to avoid NaN
+  const totalCount = active.length + pending.length
+  const pendingRatio = totalCount > 0 ? pending.length / totalCount : 0
 
   return {
     active: {
@@ -761,17 +1135,45 @@ export function analyzeActiveVsPending(properties: PropertyData[]): ActiveVsPend
   }
 }
 
+/**
+ * Analysis 16B: Active vs Pending - Lease Market
+ * Analyze current lease market activity levels
+ */
+export function analyzeActiveVsPending_Lease(properties: PropertyData[]): ActiveVsPendingResultLease {
+  const leaseProps = filterLeaseProperties(properties)
+  const active = leaseProps.filter((p) => p.STATUS === 'A')
+  const pending = leaseProps.filter((p) => p.STATUS === 'P')
+
+  // Handle empty arrays - check denominator to avoid NaN
+  const totalCount = active.length + pending.length
+  const pendingRatio = totalCount > 0 ? pending.length / totalCount : 0
+
+  return {
+    active: {
+      count: active.length,
+      avgListRent: calculateAverage(active.map((p) => p.OG_LIST_PRICE)),
+      avgDaysActive: calculateAverage(active.map((p) => p.DAYS_ON_MARKET)),
+    },
+    pending: {
+      count: pending.length,
+      avgDaysToPending: calculateAverage(pending.map((p) => p.DAYS_ON_MARKET)),
+    },
+    pendingRatio,
+  }
+}
+
 // ============================================================================
 // CATEGORY E: FINANCIAL IMPACT (17-22)
 // ============================================================================
 
 /**
- * Analysis 17: Δ $/sqft (Y RENOVATION_SCORE vs N)
- * Calculate price per square foot differential for renovated properties
+ * Analysis 17A: Δ $/sqft (Y RENOVATION_SCORE vs N) - Sale Market
+ * Calculate price per square foot differential for renovated sale properties
  */
-export function calculateRenovationDelta(properties: PropertyData[]): RenovationDeltaResult {
-  const renovated = properties.filter((p) => p.RENOVATE_SCORE === 'Y')
-  const notRenovated = properties.filter((p) => p.RENOVATE_SCORE === 'N')
+export function calculateRenovationDelta_Sale(properties: PropertyData[]): RenovationDeltaResult {
+  const saleProps = filterSaleProperties(properties)
+  const renovated = saleProps.filter((p) => p.RENOVATE_SCORE === 'Y')
+  const notRenovated = saleProps.filter((p) => p.RENOVATE_SCORE === 'N')
 
   const avgSqftY = calculateAverage(renovated.map((p) => p.SALE_PRICE / p.SQFT).filter((x) => !isNaN(x) && isFinite(x)))
   const avgSqftN = calculateAverage(notRenovated.map((p) => p.SALE_PRICE / p.SQFT).filter((x) => !isNaN(x) && isFinite(x)))
@@ -788,12 +1190,41 @@ export function calculateRenovationDelta(properties: PropertyData[]): Renovation
 }
 
 /**
- * Analysis 18: Δ $/sqft (0.5 vs N)
- * Calculate impact of partial renovations
+ * Analysis 17B: Δ rent/sqft (Y RENOVATION_SCORE vs N) - Lease Market
+ * Calculate rent per square foot differential for renovated lease properties
  */
-export function calculatePartialRenovationDelta(properties: PropertyData[]): PartialRenovationDeltaResult {
-  const partial = properties.filter((p) => p.RENOVATE_SCORE === '0.5')
-  const notRenovated = properties.filter((p) => p.RENOVATE_SCORE === 'N')
+export function calculateRenovationDelta_Lease(properties: PropertyData[]): RenovationDeltaResultLease {
+  const leaseProps = filterLeaseProperties(properties)
+  const renovated = leaseProps.filter((p) => p.RENOVATE_SCORE === 'Y')
+  const notRenovated = leaseProps.filter((p) => p.RENOVATE_SCORE === 'N')
+
+  const avgRentSqftY = calculateAverage(renovated.map((p) => p.SALE_PRICE / p.SQFT).filter((x) => !isNaN(x) && isFinite(x)))
+  const avgRentSqftN = calculateAverage(notRenovated.map((p) => p.SALE_PRICE / p.SQFT).filter((x) => !isNaN(x) && isFinite(x)))
+
+  const delta = avgRentSqftY - avgRentSqftN
+  const percentageIncrease = avgRentSqftN > 0 ? (delta / avgRentSqftN) * 100 : 0
+
+  const avgMonthlyRentY = calculateAverageMonthlyRent(renovated)
+  const avgMonthlyRentN = calculateAverageMonthlyRent(notRenovated)
+
+  return {
+    renovatedAvg: avgRentSqftY,
+    notRenovatedAvg: avgRentSqftN,
+    delta,
+    percentageIncrease,
+    monthlyIncomeUplift: avgMonthlyRentY - avgMonthlyRentN,
+    annualIncomeUplift: (avgMonthlyRentY - avgMonthlyRentN) * 12,
+  }
+}
+
+/**
+ * Analysis 18A: Δ $/sqft (0.5 vs N) - Sale Market
+ * Calculate impact of partial renovations on sale properties
+ */
+export function calculatePartialRenovationDelta_Sale(properties: PropertyData[]): PartialRenovationDeltaResult {
+  const saleProps = filterSaleProperties(properties)
+  const partial = saleProps.filter((p) => p.RENOVATE_SCORE === '0.5')
+  const notRenovated = saleProps.filter((p) => p.RENOVATE_SCORE === 'N')
 
   const avgSqft05 = calculateAverage(partial.map((p) => p.SALE_PRICE / p.SQFT).filter((x) => !isNaN(x) && isFinite(x)))
   const avgSqftN = calculateAverage(notRenovated.map((p) => p.SALE_PRICE / p.SQFT).filter((x) => !isNaN(x) && isFinite(x)))
@@ -810,12 +1241,42 @@ export function calculatePartialRenovationDelta(properties: PropertyData[]): Par
 }
 
 /**
- * Analysis 19: Interquartile Range (25th-75th percentile)
- * Analyze middle 50% of market for price AND $/sqft
+ * Analysis 18B: Δ rent/sqft (0.5 vs N) - Lease Market
+ * Calculate impact of partial renovations on lease properties
  */
-export function calculateInterquartileRanges(properties: PropertyData[]): InterquartileRangesResult {
-  const prices = properties.map((p) => p.SALE_PRICE).filter((x) => !isNaN(x)).sort((a, b) => a - b)
-  const pricesPerSqft = properties
+export function calculatePartialRenovationDelta_Lease(properties: PropertyData[]): PartialRenovationDeltaResultLease {
+  const leaseProps = filterLeaseProperties(properties)
+  const partial = leaseProps.filter((p) => p.RENOVATE_SCORE === '0.5')
+  const notRenovated = leaseProps.filter((p) => p.RENOVATE_SCORE === 'N')
+
+  const avgRentSqft05 = calculateAverage(partial.map((p) => p.SALE_PRICE / p.SQFT).filter((x) => !isNaN(x) && isFinite(x)))
+  const avgRentSqftN = calculateAverage(notRenovated.map((p) => p.SALE_PRICE / p.SQFT).filter((x) => !isNaN(x) && isFinite(x)))
+
+  const delta = avgRentSqft05 - avgRentSqftN
+  const percentageIncrease = avgRentSqftN > 0 ? (delta / avgRentSqftN) * 100 : 0
+
+  const avgMonthlyRent05 = calculateAverageMonthlyRent(partial)
+  const avgMonthlyRentN = calculateAverageMonthlyRent(notRenovated)
+
+  return {
+    partialAvg: avgRentSqft05,
+    notRenovatedAvg: avgRentSqftN,
+    delta,
+    percentageIncrease,
+    monthlyIncomeUplift: avgMonthlyRent05 - avgMonthlyRentN,
+    annualIncomeUplift: (avgMonthlyRent05 - avgMonthlyRentN) * 12,
+  }
+}
+
+/**
+ * Analysis 19A: Interquartile Range (25th-75th percentile) - Sale Market
+ * Analyze middle 50% of sale market for price AND $/sqft
+ */
+export function calculateInterquartileRanges_Sale(properties: PropertyData[]): InterquartileRangesResult {
+  const saleProps = filterSaleProperties(properties)
+
+  const prices = saleProps.map((p) => p.SALE_PRICE).filter((x) => !isNaN(x)).sort((a, b) => a - b)
+  const pricesPerSqft = saleProps
     .map((p) => p.SALE_PRICE / p.SQFT)
     .filter((x) => !isNaN(x) && isFinite(x))
     .sort((a, b) => a - b)
@@ -837,11 +1298,48 @@ export function calculateInterquartileRanges(properties: PropertyData[]): Interq
 }
 
 /**
- * Analysis 20: Distribution Tails (10th-90th & 5th-95th percentiles)
- * Analyze extreme market values
+ * Analysis 19B: Interquartile Range (25th-75th percentile) - Lease Market
+ * Analyze middle 50% of lease market for monthly rent, annual rent, and rent/sqft
  */
-export function analyzeDistributionTails(properties: PropertyData[]): DistributionTailsResult {
-  const prices = properties.map((p) => p.SALE_PRICE).filter((x) => !isNaN(x)).sort((a, b) => a - b)
+export function calculateInterquartileRanges_Lease(properties: PropertyData[]): InterquartileRangesResultLease {
+  const leaseProps = filterLeaseProperties(properties)
+
+  const monthlyRents = leaseProps.map((p) => p.SALE_PRICE).filter((x) => !isNaN(x)).sort((a, b) => a - b)
+  const annualRents = leaseProps.map((p) => p.SALE_PRICE * 12).filter((x) => !isNaN(x)).sort((a, b) => a - b)
+  const rentPerSqft = leaseProps
+    .map((p) => p.SALE_PRICE / p.SQFT)
+    .filter((x) => !isNaN(x) && isFinite(x))
+    .sort((a, b) => a - b)
+
+  return {
+    monthlyRent: {
+      q25: percentile(monthlyRents, 25),
+      median: percentile(monthlyRents, 50),
+      q75: percentile(monthlyRents, 75),
+      iqr: percentile(monthlyRents, 75) - percentile(monthlyRents, 25),
+    },
+    annualRent: {
+      q25: percentile(annualRents, 25),
+      median: percentile(annualRents, 50),
+      q75: percentile(annualRents, 75),
+      iqr: percentile(annualRents, 75) - percentile(annualRents, 25),
+    },
+    rentPerSqft: {
+      q25: percentile(rentPerSqft, 25),
+      median: percentile(rentPerSqft, 50),
+      q75: percentile(rentPerSqft, 75),
+      iqr: percentile(rentPerSqft, 75) - percentile(rentPerSqft, 25),
+    },
+  }
+}
+
+/**
+ * Analysis 20A: Distribution Tails (10th-90th & 5th-95th percentiles) - Sale Market
+ * Analyze extreme sale price values
+ */
+export function analyzeDistributionTails_Sale(properties: PropertyData[]): DistributionTailsResult {
+  const saleProps = filterSaleProperties(properties)
+  const prices = saleProps.map((p) => p.SALE_PRICE).filter((x) => !isNaN(x)).sort((a, b) => a - b)
 
   return {
     percentiles: {
@@ -854,6 +1352,29 @@ export function analyzeDistributionTails(properties: PropertyData[]): Distributi
     ranges: {
       middle80: percentile(prices, 90) - percentile(prices, 10),
       middle90: percentile(prices, 95) - percentile(prices, 5),
+    },
+  }
+}
+
+/**
+ * Analysis 20B: Distribution Tails (10th-90th & 5th-95th percentiles) - Lease Market
+ * Analyze extreme monthly rent values
+ */
+export function analyzeDistributionTails_Lease(properties: PropertyData[]): DistributionTailsResultLease {
+  const leaseProps = filterLeaseProperties(properties)
+  const monthlyRents = leaseProps.map((p) => p.SALE_PRICE).filter((x) => !isNaN(x)).sort((a, b) => a - b)
+
+  return {
+    percentiles: {
+      p5: percentile(monthlyRents, 5),
+      p10: percentile(monthlyRents, 10),
+      p50: percentile(monthlyRents, 50),
+      p90: percentile(monthlyRents, 90),
+      p95: percentile(monthlyRents, 95),
+    },
+    ranges: {
+      middle80: percentile(monthlyRents, 90) - percentile(monthlyRents, 10),
+      middle90: percentile(monthlyRents, 95) - percentile(monthlyRents, 5),
     },
   }
 }

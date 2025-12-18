@@ -1,4 +1,8 @@
-# 📋 Monorepo Migration Implementation Checklist
+# 📋 Monorepo Migration Progress Tracker
+
+> **Related Document**: See [`MIGRATION_SAFETY_PROTOCOLS.md`](./MIGRATION_SAFETY_PROTOCOLS.md) for ultra-conservative safety procedures, disaster recovery, and backup protocols. Use those protocols for high-risk operations (database changes, production deployments).
+
+---
 
 ## 🎯 Overview
 Migrating from single Wabbit Real Estate app to a 4-app monorepo architecture under one domain, creating a personal app suite with isolated functionality.

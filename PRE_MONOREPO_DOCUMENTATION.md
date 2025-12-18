@@ -167,7 +167,8 @@ Actual/
 ### Documentation
 - `README.md` - Project overview
 - `CLAUDE.md` - Claude Code instructions
-- `IMPLEMENTATION_CHECKLIST copy.md` - Monorepo migration plan
+- `MIGRATION_PROGRESS_TRACKER.md` - Monorepo migration roadmap (formerly IMPLEMENTATION_CHECKLIST copy.md)
+- `MIGRATION_SAFETY_PROTOCOLS.md` - Ultra-conservative safety procedures
 - `VERCEL_DEPLOYMENT_STATUS.md` - Deployment status
 - `SUPABASE_SETUP.md` - Database setup guide
 

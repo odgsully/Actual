@@ -375,10 +375,10 @@ Real estate client management system with Admin and Client dashboards, Supabase 
 ## Notes
 
 ### Important Paths
-- **Client Listings Directory**: `/Users/garrettsullivan/Desktop/‼️/RE/RealtyONE/MY LISTINGS/`
-- **MCAO-UI Source**: `/Users/garrettsullivan/Desktop/‼️/RE/Projects/PV Splittable/MCAO-UI/`
-- **APN Script Source**: `/Users/garrettsullivan/Desktop/BHRF/Data_Recourses/LANDSCRAPE/adhs-restore-28-Jul-2025/APN/apn_lookup.py`
-- **Project Location**: `/tiles/GSrealty-client/`
+- **Client Listings Directory**: (external - user's local listings)
+- **MCAO-UI Source**: ~~HISTORICAL~~ Now integrated at `apps/gsrealty-client/lib/mcao/`
+- **APN Script Source**: ~~HISTORICAL~~ Now integrated at `apps/gsrealty-client/lib/mcao/arcgis-lookup.ts`
+- **Project Location**: `apps/gsrealty-client/`
 
 ### Key Requirements
 - Supabase table: `GSRealty-client`

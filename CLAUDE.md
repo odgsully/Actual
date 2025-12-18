@@ -21,6 +21,17 @@ For detailed safety protocols, database ownership, and emergency procedures, see
 - [docs/RUNBOOK.md](./docs/RUNBOOK.md) - Emergency procedures
 - [docs/ESCAPE_HATCHES.md](./docs/ESCAPE_HATCHES.md) - Legitimate bypasses
 
+## Monorepo Migration Documentation
+
+**Current Status:** 60% Complete (Phase 2) - See documents below for details.
+
+| Document | Purpose |
+|----------|---------|
+| [`MIGRATION_PROGRESS_TRACKER.md`](./MIGRATION_PROGRESS_TRACKER.md) | **Primary roadmap** - Day-to-day progress, troubleshooting, operational status |
+| [`MIGRATION_SAFETY_PROTOCOLS.md`](./MIGRATION_SAFETY_PROTOCOLS.md) | **Safety reference** - Ultra-conservative procedures for high-risk operations |
+
+**When to use Safety Protocols:** Database schema changes, production deployments, file moves/deletes, any operation that could cause data loss.
+
 ## Common Development Commands
 
 ### Development & Build
@@ -119,6 +130,8 @@ Production deployment requires these in `.env.production` or `.env.local`:
 
 ### Important Documentation Files
 - `README.md` - Project overview and quick start
+- `MIGRATION_PROGRESS_TRACKER.md` - **Main development roadmap** (60% complete)
+- `MIGRATION_SAFETY_PROTOCOLS.md` - Ultra-conservative safety procedures for migrations
 - `WABBIT_PRD.md` - Product requirements document
 - `SUBAGENT_PLAN.md` - Architecture and implementation plan
 - `SUPABASE_SETUP.md` - Database setup instructions

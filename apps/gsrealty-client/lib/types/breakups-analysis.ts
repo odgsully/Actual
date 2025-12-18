@@ -1,20 +1,44 @@
 /**
  * ReportIt Break-ups Analysis Type Definitions
  *
- * Type definitions for 22 comparative property analyses
+ * Type definitions for 26 comparative property analyses (v2 with lease/sale differentiation)
  * Used by breakups-generator.ts and breakups-visualizer.ts
  *
  * @module lib/types/breakups-analysis
  */
 
 // ============================================================================
-// Analysis Result Types (for each of the 22 analyses)
+// Transaction Type Enum (v2)
 // ============================================================================
 
 /**
- * Analysis 1: BR Sizes Distribution
+ * Transaction type for property differentiation
+ * IS_RENTAL='N' → SALE (SALE_PRICE = purchase price)
+ * IS_RENTAL='Y' → LEASE (SALE_PRICE = monthly rent)
+ */
+export enum TransactionType {
+  SALE = 'sale',
+  LEASE = 'lease',
+}
+
+// ============================================================================
+// Analysis Result Types (for each of the 26 analyses)
+// ============================================================================
+
+/**
+ * Analysis 1A: BR Sizes Distribution - Sale Market
  */
 export interface BRDistributionAnalysis {
+  distribution: Record<number, number>; // bedroom count -> property count
+  mostCommon: number;
+  average: number;
+  chartType: 'pie';
+}
+
+/**
+ * Analysis 1B: BR Sizes Distribution - Lease Market
+ */
+export interface BRDistributionAnalysisLease {
   distribution: Record<number, number>; // bedroom count -> property count
   mostCommon: number;
   average: number;
@@ -39,7 +63,7 @@ export interface HOAAnalysis {
 }
 
 /**
- * Analysis 3: STR vs Non-STR
+ * Analysis 3: STR vs Non-STR (Base interface)
  */
 export interface STRAnalysis {
   strEligible: {
@@ -57,12 +81,42 @@ export interface STRAnalysis {
 }
 
 /**
- * Analysis 4: RENOVATE_SCORE Impact
+ * Analysis 3B: STR vs Non-STR (Lease Market)
+ */
+export interface STRAnalysisLease {
+  strEligible: {
+    count: number;
+    avgMonthlyRent: number;
+    avgAnnualRent: number;
+  };
+  nonSTR: {
+    count: number;
+    avgMonthlyRent: number;
+    avgAnnualRent: number;
+  };
+  premiumPercentage: number;
+  chartType: 'pie';
+}
+
+/**
+ * Analysis 4A: RENOVATE_SCORE Impact (Sale Market)
  */
 export interface RenovationImpactAnalysis {
   Y: PropertyMetrics;
   N: PropertyMetrics;
   '0.5': PropertyMetrics;
+  premiumYvsN: number;
+  premium05vsN: number;
+  chartType: 'bar';
+}
+
+/**
+ * Analysis 4B: RENOVATE_SCORE Impact (Lease Market)
+ */
+export interface RenovationImpactAnalysisLease {
+  Y: PropertyMetricsLease;
+  N: PropertyMetricsLease;
+  '0.5': PropertyMetricsLease;
   premiumYvsN: number;
   premium05vsN: number;
   chartType: 'bar';
@@ -87,7 +141,7 @@ export interface CompsClassificationAnalysis {
 }
 
 /**
- * Analysis 6: Square Footage Variance (Within 20%)
+ * Analysis 6A: Square Footage Variance (Within 20%) - Sale Market
  */
 export interface SqftVarianceAnalysis {
   subjectSqft: number;
@@ -108,7 +162,28 @@ export interface SqftVarianceAnalysis {
 }
 
 /**
- * Analysis 7: Price Variance (Within 20%)
+ * Analysis 6B: Square Footage Variance (Within 20%) - Lease Market
+ */
+export interface SqftVarianceAnalysisLease {
+  subjectSqft: number;
+  within20: {
+    count: number;
+    avgRentPerSqft: number;
+    rentCorrelation: number;
+  };
+  outside20: {
+    count: number;
+    avgRentPerSqft: number;
+  };
+  optimalRange: {
+    min: number;
+    max: number;
+  };
+  chartType: 'scatter';
+}
+
+/**
+ * Analysis 7A: Price Variance (Within 20%) - Sale Market
  */
 export interface PriceVarianceAnalysis {
   estimatedValue: number;
@@ -121,6 +196,24 @@ export interface PriceVarianceAnalysis {
     count: number;
     underpriced: number;
     overpriced: number;
+  };
+  chartType: 'scatter';
+}
+
+/**
+ * Analysis 7B: Rent Variance (Within 20%) - Lease Market
+ */
+export interface PriceVarianceAnalysisLease {
+  estimatedRent: number;
+  within20: {
+    count: number;
+    characteristics: CharacteristicsSummary;
+    avgDaysOnMarket: number;
+  };
+  outside20: {
+    count: number;
+    belowMarket: number;
+    aboveMarket: number;
   };
   chartType: 'scatter';
 }
@@ -174,7 +267,7 @@ export interface IndividualPRCompsAnalysis {
 }
 
 /**
- * Analysis 11: Exact BR vs Within ±1 BR
+ * Analysis 11A: Exact BR vs Within ±1 BR - Sale Market
  */
 export interface BRPrecisionAnalysis {
   subjectBR: number;
@@ -187,6 +280,25 @@ export interface BRPrecisionAnalysis {
     count: number;
     avgPrice: number;
     priceRange: PriceRange;
+  };
+  precisionImpact: number;
+  chartType: 'bar';
+}
+
+/**
+ * Analysis 11B: Exact BR vs Within ±1 BR - Lease Market
+ */
+export interface BRPrecisionAnalysisLease {
+  subjectBR: number;
+  exact: {
+    count: number;
+    avgMonthlyRent: number;
+    rentRange: PriceRange;
+  };
+  within1: {
+    count: number;
+    avgMonthlyRent: number;
+    rentRange: PriceRange;
   };
   precisionImpact: number;
   chartType: 'bar';
@@ -247,7 +359,7 @@ export interface RecentDirectVsIndirectAnalysis {
 }
 
 /**
- * Analysis 15: Active vs Closed
+ * Analysis 15A: Active vs Closed - Sale Market
  */
 export interface ActiveVsClosedAnalysis {
   active: {
@@ -266,7 +378,26 @@ export interface ActiveVsClosedAnalysis {
 }
 
 /**
- * Analysis 16: Active vs Pending
+ * Analysis 15B: Active vs Closed - Lease Market
+ */
+export interface ActiveVsClosedAnalysisLease {
+  active: {
+    count: number;
+    avgListRent: number;
+    avgDaysOnMarket: number;
+  };
+  closed: {
+    count: number;
+    avgLeaseRent: number;
+    avgDaysToLease: number;
+  };
+  absorptionRate: number;
+  listToLeaseRatio: number;
+  chartType: 'bar';
+}
+
+/**
+ * Analysis 16A: Active vs Pending - Sale Market
  */
 export interface ActiveVsPendingAnalysis {
   active: {
@@ -285,7 +416,26 @@ export interface ActiveVsPendingAnalysis {
 }
 
 /**
- * Analysis 17: Delta $/sqft (Y RENOVATION_SCORE vs N)
+ * Analysis 16B: Active vs Pending - Lease Market
+ */
+export interface ActiveVsPendingAnalysisLease {
+  active: {
+    count: number;
+    avgListRent: number;
+    avgDaysActive: number;
+  };
+  pending: {
+    count: number;
+    avgPendingRent: number;
+    avgDaysToPending: number;
+  };
+  pendingRatio: number;
+  marketMomentum: number;
+  chartType: 'bar';
+}
+
+/**
+ * Analysis 17A: Delta $/sqft (Y RENOVATION_SCORE vs N) - Sale Market
  */
 export interface RenovationDeltaAnalysis {
   renovatedAvg: number;
@@ -297,7 +447,20 @@ export interface RenovationDeltaAnalysis {
 }
 
 /**
- * Analysis 18: Delta $/sqft (0.5 vs N)
+ * Analysis 17B: Delta rent/sqft (Y RENOVATION_SCORE vs N) - Lease Market
+ */
+export interface RenovationDeltaAnalysisLease {
+  renovatedAvg: number;
+  notRenovatedAvg: number;
+  delta: number;
+  percentageIncrease: number;
+  monthlyIncomeUplift: number;
+  annualIncomeUplift: number;
+  chartType: 'waterfall';
+}
+
+/**
+ * Analysis 18A: Delta $/sqft (0.5 vs N) - Sale Market
  */
 export interface PartialRenovationDeltaAnalysis {
   partialAvg: number;
@@ -309,7 +472,20 @@ export interface PartialRenovationDeltaAnalysis {
 }
 
 /**
- * Analysis 19: Interquartile Range
+ * Analysis 18B: Delta rent/sqft (0.5 vs N) - Lease Market
+ */
+export interface PartialRenovationDeltaAnalysisLease {
+  partialAvg: number;
+  notRenovatedAvg: number;
+  delta: number;
+  percentageIncrease: number;
+  monthlyIncomeUplift: number;
+  annualIncomeUplift: number;
+  chartType: 'waterfall';
+}
+
+/**
+ * Analysis 19A: Interquartile Range - Sale Market
  */
 export interface InterquartileRangeAnalysis {
   price: QuartileData;
@@ -319,9 +495,40 @@ export interface InterquartileRangeAnalysis {
 }
 
 /**
- * Analysis 20: Distribution Tails
+ * Analysis 19B: Interquartile Range - Lease Market
+ */
+export interface InterquartileRangeAnalysisLease {
+  monthlyRent: QuartileData;
+  annualRent: QuartileData;
+  rentPerSqft: QuartileData;
+  outliers: number[];
+  chartType: 'boxplot';
+}
+
+/**
+ * Analysis 20A: Distribution Tails - Sale Market
  */
 export interface DistributionTailsAnalysis {
+  percentiles: {
+    p5: number;
+    p10: number;
+    p50: number;
+    p90: number;
+    p95: number;
+  };
+  ranges: {
+    middle80: number;
+    middle90: number;
+  };
+  skewness: number;
+  kurtosis: number;
+  chartType: 'boxplot';
+}
+
+/**
+ * Analysis 20B: Distribution Tails - Lease Market
+ */
+export interface DistributionTailsAnalysisLease {
   percentiles: {
     p5: number;
     p10: number;
@@ -376,6 +583,14 @@ export interface PropertyMetrics {
   avgSqft?: number;
 }
 
+export interface PropertyMetricsLease {
+  count: number;
+  avgMonthlyRent: number;
+  avgAnnualRent: number;
+  avgRentPerSqft?: number;
+  avgSqft?: number;
+}
+
 export interface CharacteristicsSummary {
   avgBedrooms: number;
   avgBathrooms: number;
@@ -401,7 +616,7 @@ export interface QuartileData {
 // ============================================================================
 
 /**
- * Complete result containing all 22 analyses
+ * Complete result containing all 26 analyses (v2 with lease/sale differentiation)
  * This is what breakups-generator.ts returns
  */
 export interface BreakupsAnalysisResult {
@@ -410,33 +625,47 @@ export interface BreakupsAnalysisResult {
     fileId: string;
     timestamp: Date;
     propertyCount: number;
+    salePropertyCount: number;
+    leasePropertyCount: number;
     subjectProperty?: any;
   };
 
-  // All 22 analyses
+  // All 26 analyses (13 split into A/B, plus 9 unchanged, plus 2 lease-only)
   analyses: {
-    1: BRDistributionAnalysis;
-    2: HOAAnalysis;
-    3: STRAnalysis;
-    4: RenovationImpactAnalysis;
-    5: CompsClassificationAnalysis;
-    6: SqftVarianceAnalysis;
-    7: PriceVarianceAnalysis;
-    8: LeaseVsSaleAnalysis;
-    9: PropertyRadarCompsAnalysis;
-    10: IndividualPRCompsAnalysis;
-    11: BRPrecisionAnalysis;
-    12: TimeFrameAnalysis;
-    13: DirectVsIndirectAnalysis;
-    14: RecentDirectVsIndirectAnalysis;
-    15: ActiveVsClosedAnalysis;
-    16: ActiveVsPendingAnalysis;
-    17: RenovationDeltaAnalysis;
-    18: PartialRenovationDeltaAnalysis;
-    19: InterquartileRangeAnalysis;
-    20: DistributionTailsAnalysis;
-    21: ExpectedNOIAnalysis;
-    22: ImprovedNOIAnalysis;
+    '1A': BRDistributionAnalysis; // Sale market
+    '1B': BRDistributionAnalysisLease; // Lease market
+    2: HOAAnalysis; // Not split (count-based, minimal price impact)
+    '3A': STRAnalysis; // Sale market
+    '3B': STRAnalysisLease; // Lease market
+    '4A': RenovationImpactAnalysis; // Sale market
+    '4B': RenovationImpactAnalysisLease; // Lease market
+    5: CompsClassificationAnalysis; // Not split (categorization analysis)
+    '6A': SqftVarianceAnalysis; // Sale market
+    '6B': SqftVarianceAnalysisLease; // Lease market
+    '7A': PriceVarianceAnalysis; // Sale market
+    '7B': PriceVarianceAnalysisLease; // Lease market
+    8: LeaseVsSaleAnalysis; // Lease vs Sale comparison (keeps differentiation)
+    9: PropertyRadarCompsAnalysis; // Not split (PropertyRadar specific)
+    10: IndividualPRCompsAnalysis; // Not split (PropertyRadar specific)
+    '11A': BRPrecisionAnalysis; // Sale market
+    '11B': BRPrecisionAnalysisLease; // Lease market
+    12: TimeFrameAnalysis; // Not split (time-based trends)
+    13: DirectVsIndirectAnalysis; // Not split (location-based)
+    14: RecentDirectVsIndirectAnalysis; // Not split (location + time based)
+    '15A': ActiveVsClosedAnalysis; // Sale market
+    '15B': ActiveVsClosedAnalysisLease; // Lease market
+    '16A': ActiveVsPendingAnalysis; // Sale market
+    '16B': ActiveVsPendingAnalysisLease; // Lease market
+    '17A': RenovationDeltaAnalysis; // Sale market
+    '17B': RenovationDeltaAnalysisLease; // Lease market
+    '18A': PartialRenovationDeltaAnalysis; // Sale market
+    '18B': PartialRenovationDeltaAnalysisLease; // Lease market
+    '19A': InterquartileRangeAnalysis; // Sale market
+    '19B': InterquartileRangeAnalysisLease; // Lease market
+    '20A': DistributionTailsAnalysis; // Sale market
+    '20B': DistributionTailsAnalysisLease; // Lease market
+    21: ExpectedNOIAnalysis; // Lease-only (NOI analysis)
+    22: ImprovedNOIAnalysis; // Lease-only (NOI analysis)
   };
 }
 
@@ -494,36 +723,48 @@ export const CHART_COLORS = {
 export const CHART_CONFIG = {
   width: 1200,
   height: 800,
-  dpi: 300,
+  dpi: 400, // Increased from 300 for higher print quality
   backgroundColor: '#FFFFFF',
   fontFamily: 'Arial, Helvetica, sans-serif',
   fontSize: 14,
 } as const;
 
 /**
- * Analysis names for file naming
+ * Analysis names for file naming (v2 with 26 analyses)
  */
-export const ANALYSIS_NAMES: Record<number, string> = {
-  1: 'br_distribution',
+export const ANALYSIS_NAMES: Record<string, string> = {
+  '1A': 'br_distribution_sale',
+  '1B': 'br_distribution_lease',
   2: 'hoa_vs_non_hoa',
-  3: 'str_vs_non_str',
-  4: 'renovation_impact',
+  '3A': 'str_vs_non_str_sale',
+  '3B': 'str_vs_non_str_lease',
+  '4A': 'renovation_impact_sale',
+  '4B': 'renovation_impact_lease',
   5: 'comps_classification',
-  6: 'sqft_variance',
-  7: 'price_variance',
+  '6A': 'sqft_variance_sale',
+  '6B': 'sqft_variance_lease',
+  '7A': 'price_variance_sale',
+  '7B': 'price_variance_lease',
   8: 'lease_vs_sale',
   9: 'property_radar_comps',
   10: 'individual_pr_comps',
-  11: 'br_precision',
+  '11A': 'br_precision_sale',
+  '11B': 'br_precision_lease',
   12: 'time_frame_analysis',
   13: 'direct_vs_indirect',
   14: 'recent_direct_vs_indirect',
-  15: 'active_vs_closed',
-  16: 'active_vs_pending',
-  17: 'renovation_delta',
-  18: 'partial_renovation_delta',
-  19: 'interquartile_range',
-  20: 'distribution_tails',
+  '15A': 'active_vs_closed_sale',
+  '15B': 'active_vs_closed_lease',
+  '16A': 'active_vs_pending_sale',
+  '16B': 'active_vs_pending_lease',
+  '17A': 'renovation_delta_sale',
+  '17B': 'renovation_delta_lease',
+  '18A': 'partial_renovation_delta_sale',
+  '18B': 'partial_renovation_delta_lease',
+  '19A': 'interquartile_range_sale',
+  '19B': 'interquartile_range_lease',
+  '20A': 'distribution_tails_sale',
+  '20B': 'distribution_tails_lease',
   21: 'expected_noi',
   22: 'improved_noi',
 } as const;
