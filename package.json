@@ -34,9 +34,12 @@
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,md}\"",
     "db:migrate": "npm --prefix apps/wabbit-re run db:migrate",
     "db:seed": "npm --prefix apps/wabbit-re run db:seed",
-    "db:seed-demo": "npm --prefix apps/wabbit-re run db:seed-demo"
+    "db:seed-demo": "npm --prefix apps/wabbit-re run db:seed-demo",
+    "prepare": "husky"
   },
   "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
     "prettier": "^3.0.3",
     "turbo": "^2.5.6"
   },
@@ -47,5 +50,18 @@
   "packageManager": "npm@9.8.1",
   "dependencies": {
     "next": "^14.2.33"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix --max-warnings=0",
+      "prettier --write"
+    ],
+    "*.{js,jsx}": [
+      "eslint --fix --max-warnings=0",
+      "prettier --write"
+    ],
+    "*.{json,md,css}": [
+      "prettier --write"
+    ]
   }
 }
