@@ -135,8 +135,8 @@ Production deployment requires these in `.env.production` or `.env.local`:
 - `WABBIT_PRD.md` - Product requirements document
 - `SUBAGENT_PLAN.md` - Architecture and implementation plan
 - `docs/supabase/SUPABASE_SETUP.md` - Database setup instructions
-- `GOOGLE_MAPS_SETUP.md` - Maps API configuration
-- `DEMO_SETUP.md` - Demo account setup instructions
+- `apps/wabbit-re/docs/setup/GOOGLE_MAPS_SETUP.md` - Maps API configuration
+- `apps/wabbit-re/docs/setup/DEMO_SETUP.md` - Demo account setup instructions
 - `database-schema.sql` - Complete database schema
 - `test-verification-flow.md` - Testing documentation
 

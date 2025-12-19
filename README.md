@@ -290,8 +290,8 @@ Private - All rights reserved
 - `docs/supabase/SUPABASE_SETUP.md` - Supabase configuration guide
 
 ### Setup Guides
-- `GOOGLE_MAPS_SETUP.md` - Google Maps API configuration
-- `DEMO_SETUP.md` - Demo account setup instructions
+- `apps/wabbit-re/docs/setup/GOOGLE_MAPS_SETUP.md` - Google Maps API configuration
+- `apps/wabbit-re/docs/setup/DEMO_SETUP.md` - Demo account setup instructions
 - `test-verification-flow.md` - Testing email verification
 
 ### Deployment & Recovery
