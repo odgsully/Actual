@@ -227,7 +227,107 @@ cat ~/.claude/safety_audit.jsonl | jq 'select(.timestamp > "2024-12-01")'
 
 ---
 
+## Monorepo Deployment (Updated Dec 2025)
+
+### App Configuration
+
+| App | Port | Path | Health Endpoint |
+|-----|------|------|-----------------|
+| GS Site Dashboard | 3003 | `/` | `/api/health` |
+| Wabbit RE | 3000 | `/wabbit-re` | `/wabbit-re/api/health` |
+| Wabbit | 3002 | `/wabbit` | `/wabbit/api/health` |
+| GSRealty Client | 3004 | `/gsrealty` | `/gsrealty/api/health` |
+
+### Deploy to Production (GitHub Actions)
+
+1. Go to GitHub → Actions → "Deploy to Production"
+2. Click "Run workflow"
+3. Type `deploy` to confirm
+4. Monitor the workflow progress
+
+### Deploy to Production (Hetzner/PM2)
+
+```bash
+# SSH to server
+ssh deploy@5.78.100.116
+
+# Run deployment script
+cd /var/www/wabbit
+./deployment/deploy.sh
+
+# This will:
+# - Backup current deployment
+# - Pull latest code
+# - Install dependencies
+# - Build all apps
+# - Restart PM2
+# - Run health checks
+# - Auto-rollback on failure
+```
+
+### Verify Deployment
+
+```bash
+# Local verification
+./scripts/verify-deployment.sh
+
+# Remote verification (production)
+./scripts/verify-deployment.sh https://wabbit-rank.ai
+
+# Remote verification (staging)
+./scripts/verify-deployment.sh https://staging.wabbit-rank.ai
+```
+
+### Check All Apps Status (Hetzner)
+
+```bash
+ssh deploy@5.78.100.116
+
+# View all apps
+pm2 status
+
+# View logs for specific app
+pm2 logs gs-site --lines 50
+pm2 logs wabbit-re --lines 50
+pm2 logs wabbit --lines 50
+pm2 logs gsrealty --lines 50
+
+# Monitor all apps
+pm2 monit
+```
+
+### Quick Health Check
+
+```bash
+# Production
+curl -s https://wabbit-rank.ai/api/health | jq
+curl -s https://wabbit-rank.ai/wabbit-re/api/health | jq
+curl -s https://wabbit-rank.ai/wabbit/api/health | jq
+curl -s https://wabbit-rank.ai/gsrealty/api/health | jq
+
+# Local
+curl -s http://localhost:3003/api/health | jq
+curl -s http://localhost:3000/api/health | jq
+curl -s http://localhost:3002/api/health | jq
+curl -s http://localhost:3004/api/health | jq
+```
+
+---
+
 ## Rollback Procedures
+
+### Interactive Rollback (Hetzner)
+
+```bash
+ssh deploy@5.78.100.116
+cd /var/www/wabbit
+
+# Interactive mode - shows available backups
+./scripts/rollback.sh
+
+# Or specify backup directly
+./scripts/rollback.sh backup_20251219_120000.tar.gz
+```
 
 ### Vercel Deployment Rollback
 ```bash
@@ -236,6 +336,11 @@ vercel ls
 
 # Promote previous deployment
 vercel promote [deployment-url]
+
+# Or from Vercel Dashboard:
+# 1. Go to project → Deployments
+# 2. Find previous working deployment
+# 3. Click ⋮ → Promote to Production
 ```
 
 ### Database Migration Rollback
@@ -259,21 +364,26 @@ git reset --hard HEAD~1
 git checkout [commit-hash] -- path/to/file
 ```
 
-### PM2/Hetzner Rollback
+### PM2/Hetzner Manual Rollback
 ```bash
-ssh user@5.78.100.116
+ssh deploy@5.78.100.116
+cd /var/www/wabbit
 
-# Stop current
-pm2 stop wabbit
+# Stop all apps
+pm2 stop all
 
-# Restore backup
-cd /var/www
-rm -rf wabbit
-mv wabbit-backup-YYYYMMDD wabbit
+# Restore from backup
+BACKUP="backup_YYYYMMDD_HHMMSS.tar.gz"
+rm -rf /var/www/wabbit/*
+tar -xzf /var/backups/wabbit/$BACKUP -C /var/www/wabbit
 
-# Restart
-cd wabbit
-pm2 start ecosystem.config.js
+# Rebuild and restart
+npm ci
+npm run build
+pm2 restart ecosystem.config.js --update-env
+
+# Verify
+./scripts/verify-deployment.sh
 ```
 
 ---

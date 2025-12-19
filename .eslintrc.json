@@ -1,0 +1,21 @@
+{
+  "root": true,
+  "extends": ["eslint:recommended"],
+  "env": {
+    "node": true,
+    "es2022": true
+  },
+  "parserOptions": {
+    "ecmaVersion": "latest",
+    "sourceType": "module"
+  },
+  "ignorePatterns": ["node_modules/", ".next/", "out/", "build/", "apps/", "packages/"],
+  "overrides": [
+    {
+      "files": ["*.js"],
+      "rules": {
+        "no-unused-vars": "warn"
+      }
+    }
+  ]
+}

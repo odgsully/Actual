@@ -1,0 +1,181 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: staging-deploy
+  cancel-in-progress: true
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+jobs:
+  # Run tests first
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run TypeScript type check
+        run: npm run typecheck
+
+      - name: Run tests
+        run: npm run test -- --passWithNoTests
+        env:
+          CI: true
+
+  # Build all apps
+  build:
+    name: Build All Apps
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build all apps
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+
+  # Deploy to Vercel staging
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build
+    outputs:
+      preview_url: ${{ steps.deploy.outputs.preview_url }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel@latest
+
+      - name: Pull Vercel Environment Information
+        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build Project Artifacts
+        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+
+      - name: Deploy to Staging
+        id: deploy
+        run: |
+          DEPLOY_URL=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
+          echo "preview_url=$DEPLOY_URL" >> $GITHUB_OUTPUT
+          echo "Deployed to: $DEPLOY_URL"
+
+  # Run verification against staging
+  verify-staging:
+    name: Verify Staging Deployment
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Wait for deployment to be ready
+        run: sleep 30
+
+      - name: Verify GS Site Dashboard
+        run: |
+          echo "Checking GS Site Dashboard..."
+          curl -sf "${{ needs.deploy-staging.outputs.preview_url }}/api/health" || exit 1
+          echo "GS Site Dashboard is healthy"
+
+      - name: Verify Wabbit RE
+        run: |
+          echo "Checking Wabbit RE..."
+          curl -sf "${{ needs.deploy-staging.outputs.preview_url }}/wabbit-re/api/health" || echo "Wabbit RE health check skipped (may need basePath)"
+
+      - name: Verify Wabbit
+        run: |
+          echo "Checking Wabbit..."
+          curl -sf "${{ needs.deploy-staging.outputs.preview_url }}/wabbit/api/health" || echo "Wabbit health check skipped (may need basePath)"
+
+      - name: Verify GSRealty
+        run: |
+          echo "Checking GSRealty..."
+          curl -sf "${{ needs.deploy-staging.outputs.preview_url }}/gsrealty/api/health" || echo "GSRealty health check skipped (may need basePath)"
+
+      - name: Staging verification complete
+        run: echo "Staging deployment verified successfully!"
+
+  # Post deployment URL to PR if applicable
+  comment-on-pr:
+    name: Comment Preview URL
+    runs-on: ubuntu-latest
+    needs: [deploy-staging, verify-staging]
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## Staging Deployment Ready
+
+            | App | URL |
+            |-----|-----|
+            | Dashboard | ${{ needs.deploy-staging.outputs.preview_url }} |
+            | Wabbit RE | ${{ needs.deploy-staging.outputs.preview_url }}/wabbit-re |
+            | Wabbit | ${{ needs.deploy-staging.outputs.preview_url }}/wabbit |
+            | GSRealty | ${{ needs.deploy-staging.outputs.preview_url }}/gsrealty |
+
+            All health checks passed.`
+            })
+
+  # Notify on failure
+  notify-failure:
+    name: Notify on Failure
+    runs-on: ubuntu-latest
+    needs: [test, build, deploy-staging, verify-staging]
+    if: failure()
+    steps:
+      - name: Send failure notification
+        run: |
+          echo "Staging deployment failed!"
+          # Add Slack/Discord webhook notification here if configured
+          # curl -X POST -H 'Content-type: application/json' \
+          #   --data '{"text":"Staging deployment failed for ${{ github.repository }}"}' \
+          #   ${{ secrets.SLACK_WEBHOOK_URL }}

@@ -1,8 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // basePath: '/gsrealty',  // Commented out for root path deployment
-  // assetPrefix: '/gsrealty',  // Commented out for root path deployment
+  // Only use basePath in production for multi-app deployment
+  // In development, run at root for easier local development
+  ...(process.env.NODE_ENV === 'production' && {
+    basePath: '/gsrealty',
+    assetPrefix: '/gsrealty',
+  }),
   images: {
     domains: ['localhost', 'your-supabase-url.supabase.co'],
     remotePatterns: [
@@ -14,7 +18,7 @@ const nextConfig = {
   },
   env: {
     NEXT_PUBLIC_APP_NAME: 'GSRealty Client Manager',
-    NEXT_PUBLIC_BASE_PATH: '/gsrealty',
+    NEXT_PUBLIC_BASE_PATH: process.env.NODE_ENV === 'production' ? '/gsrealty' : '',
   },
   output: 'standalone',
 }

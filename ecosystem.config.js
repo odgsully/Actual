@@ -1,64 +1,130 @@
-// PM2 Configuration for Wabbit Production
-// This file manages the Node.js process on the server
+// PM2 Configuration for GS Personal App Suite (Monorepo)
+// This file manages all Node.js processes on the server
+//
+// App routing (via Nginx):
+//   /              → GS Site Dashboard (port 3003)
+//   /wabbit-re/*   → Wabbit RE - Real estate ranking (port 3000)
+//   /wabbit/*      → Wabbit - General ranking (port 3002)
+//   /gsrealty/*    → GSRealty Client - CRM (port 3004)
+
+const commonConfig = {
+  instances: 1,
+  exec_mode: 'fork',
+  autorestart: true,
+  watch: false,
+  max_memory_restart: '512M',
+  min_uptime: '10s',
+  listen_timeout: 3000,
+  kill_timeout: 5000,
+  restart_delay: 4000,
+  max_restarts: 10,
+  merge_logs: true,
+  time: true,
+  ignore_watch: [
+    'node_modules',
+    '.next',
+    'logs',
+    '.git',
+    'public/uploads'
+  ],
+};
 
 module.exports = {
-  apps: [{
-    name: 'wabbit',
-    script: 'npm',
-    args: 'start',
-    cwd: '/var/www/wabbit',
-    instances: 1, // Use 1 instance for CPX11 (2 vCPU)
-    exec_mode: 'fork',
-    autorestart: true,
-    watch: false,
-    max_memory_restart: '1G',
-    
-    // Environment variables
-    env: {
-      NODE_ENV: 'production',
-      PORT: 3000,
+  apps: [
+    // ============================================
+    // GS Site Dashboard (Root - port 3003)
+    // ============================================
+    {
+      ...commonConfig,
+      name: 'gs-site',
+      script: 'npm',
+      args: 'start',
+      cwd: '/var/www/wabbit/apps/gs-site',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3003,
+      },
+      env_production: {
+        NODE_ENV: 'production',
+        PORT: 3003,
+      },
+      error_file: '/var/log/pm2/gs-site-error.log',
+      out_file: '/var/log/pm2/gs-site-out.log',
+      log_file: '/var/log/pm2/gs-site-combined.log',
     },
-    
-    // Logging
-    error_file: '/var/log/pm2/wabbit-error.log',
-    out_file: '/var/log/pm2/wabbit-out.log',
-    log_file: '/var/log/pm2/wabbit-combined.log',
-    time: true,
-    
-    // Advanced features
-    min_uptime: '10s',
-    listen_timeout: 3000,
-    kill_timeout: 5000,
-    
-    // Restart strategy
-    restart_delay: 4000,
-    max_restarts: 10,
-    
-    // Monitoring
-    instance_var: 'INSTANCE_ID',
-    merge_logs: true,
-    
-    // Auto restart on file changes (disabled in production)
-    ignore_watch: [
-      'node_modules',
-      '.next',
-      'logs',
-      '.git',
-      'public/uploads'
-    ],
-    
-    // Environment specific to production
-    env_production: {
-      NODE_ENV: 'production',
-      PORT: 3000,
-    }
-  }],
 
-  // Deployment configuration (optional, for PM2 deploy)
+    // ============================================
+    // Wabbit RE - Real Estate Ranking (port 3000)
+    // ============================================
+    {
+      ...commonConfig,
+      name: 'wabbit-re',
+      script: 'npm',
+      args: 'start',
+      cwd: '/var/www/wabbit/apps/wabbit-re',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3000,
+      },
+      env_production: {
+        NODE_ENV: 'production',
+        PORT: 3000,
+      },
+      error_file: '/var/log/pm2/wabbit-re-error.log',
+      out_file: '/var/log/pm2/wabbit-re-out.log',
+      log_file: '/var/log/pm2/wabbit-re-combined.log',
+    },
+
+    // ============================================
+    // Wabbit - General Ranking (port 3002)
+    // ============================================
+    {
+      ...commonConfig,
+      name: 'wabbit',
+      script: 'npm',
+      args: 'start',
+      cwd: '/var/www/wabbit/apps/wabbit',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3002,
+      },
+      env_production: {
+        NODE_ENV: 'production',
+        PORT: 3002,
+      },
+      error_file: '/var/log/pm2/wabbit-error.log',
+      out_file: '/var/log/pm2/wabbit-out.log',
+      log_file: '/var/log/pm2/wabbit-combined.log',
+    },
+
+    // ============================================
+    // GSRealty Client - CRM (port 3004)
+    // ============================================
+    {
+      ...commonConfig,
+      name: 'gsrealty',
+      script: 'npm',
+      args: 'start',
+      cwd: '/var/www/wabbit/apps/gsrealty-client',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3004,
+      },
+      env_production: {
+        NODE_ENV: 'production',
+        PORT: 3004,
+      },
+      error_file: '/var/log/pm2/gsrealty-error.log',
+      out_file: '/var/log/pm2/gsrealty-out.log',
+      log_file: '/var/log/pm2/gsrealty-combined.log',
+    },
+  ],
+
+  // Deployment configuration
   deploy: {
     production: {
       user: 'deploy',
-      host: 'your-server-ip',
+      host: '5.78.100.116',
       ref: 'origin/main',
       repo: 'git@github.com:yourusername/wabbit.git',
       path: '/var/www/wabbit',

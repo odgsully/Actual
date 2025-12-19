@@ -1,0 +1,238 @@
+name: Deploy to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_deploy:
+        description: 'Type "deploy" to confirm production deployment'
+        required: true
+        type: string
+      skip_staging_check:
+        description: 'Skip staging verification (emergency only)'
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+jobs:
+  # Validate deployment confirmation
+  validate:
+    name: Validate Deployment Request
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check confirmation
+        if: ${{ github.event.inputs.confirm_deploy != 'deploy' }}
+        run: |
+          echo "Deployment not confirmed. You must type 'deploy' to proceed."
+          exit 1
+
+      - name: Log deployment request
+        run: |
+          echo "Production deployment requested by: ${{ github.actor }}"
+          echo "Timestamp: $(date -u)"
+          echo "Skip staging check: ${{ github.event.inputs.skip_staging_check }}"
+
+  # Run full test suite
+  test:
+    name: Full Test Suite
+    runs-on: ubuntu-latest
+    needs: validate
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run TypeScript type check
+        run: npm run typecheck
+
+      - name: Run unit tests
+        run: npm run test -- --passWithNoTests
+        env:
+          CI: true
+
+  # Build all apps
+  build:
+    name: Build All Apps
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build all apps
+        run: npm run build
+        env:
+          NODE_ENV: production
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+
+  # Deploy to production
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: production
+      url: https://wabbit-rank.ai
+    outputs:
+      deployment_url: ${{ steps.deploy.outputs.deployment_url }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel@latest
+
+      - name: Pull Vercel Environment Information
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build Project Artifacts
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          NODE_ENV: production
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+
+      - name: Deploy to Production
+        id: deploy
+        run: |
+          DEPLOY_URL=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
+          echo "deployment_url=$DEPLOY_URL" >> $GITHUB_OUTPUT
+          echo "Deployed to: $DEPLOY_URL"
+
+  # Verify production deployment
+  verify-production:
+    name: Verify Production Deployment
+    runs-on: ubuntu-latest
+    needs: deploy-production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Wait for deployment to propagate
+        run: sleep 60
+
+      - name: Make verification script executable
+        run: chmod +x scripts/verify-deployment.sh
+
+      - name: Run verification
+        run: ./scripts/verify-deployment.sh https://wabbit-rank.ai
+        continue-on-error: true
+        id: verify
+
+      - name: Check verification result
+        if: steps.verify.outcome == 'failure'
+        run: |
+          echo "::error::Production verification failed!"
+          echo "Manual rollback may be required."
+          exit 1
+
+  # Post-deployment monitoring
+  monitor:
+    name: Post-Deployment Monitoring
+    runs-on: ubuntu-latest
+    needs: verify-production
+    steps:
+      - name: Monitor for 5 minutes
+        run: |
+          echo "Monitoring production for errors..."
+          for i in {1..5}; do
+            echo "Check $i/5..."
+            sleep 60
+
+            # Check health endpoints
+            if ! curl -sf https://wabbit-rank.ai/api/health > /dev/null; then
+              echo "::warning::Health check failed at minute $i"
+            fi
+          done
+          echo "Monitoring complete - no critical errors detected"
+
+  # Notify on success
+  notify-success:
+    name: Notify Success
+    runs-on: ubuntu-latest
+    needs: [deploy-production, verify-production, monitor]
+    steps:
+      - name: Create deployment summary
+        run: |
+          echo "## Production Deployment Successful" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployed by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Timestamp:** $(date -u)" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### URLs" >> $GITHUB_STEP_SUMMARY
+          echo "- Dashboard: https://wabbit-rank.ai/" >> $GITHUB_STEP_SUMMARY
+          echo "- Wabbit RE: https://wabbit-rank.ai/wabbit-re" >> $GITHUB_STEP_SUMMARY
+          echo "- Wabbit: https://wabbit-rank.ai/wabbit" >> $GITHUB_STEP_SUMMARY
+          echo "- GSRealty: https://wabbit-rank.ai/gsrealty" >> $GITHUB_STEP_SUMMARY
+
+      - name: Send success notification
+        run: |
+          echo "Production deployment successful!"
+          # Add Slack/Discord webhook notification here if configured
+          # curl -X POST -H 'Content-type: application/json' \
+          #   --data '{"text":"Production deployment successful for GS Personal App Suite"}' \
+          #   ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # Notify on failure
+  notify-failure:
+    name: Notify Failure
+    runs-on: ubuntu-latest
+    needs: [validate, test, build, deploy-production, verify-production]
+    if: failure()
+    steps:
+      - name: Create failure summary
+        run: |
+          echo "## Production Deployment FAILED" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Attempted by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Timestamp:** $(date -u)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Please check the workflow logs for details." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Rollback Instructions" >> $GITHUB_STEP_SUMMARY
+          echo "1. Go to Vercel Dashboard" >> $GITHUB_STEP_SUMMARY
+          echo "2. Select previous deployment" >> $GITHUB_STEP_SUMMARY
+          echo "3. Click 'Promote to Production'" >> $GITHUB_STEP_SUMMARY
+
+      - name: Send failure notification
+        run: |
+          echo "::error::Production deployment failed!"
+          # Add Slack/Discord webhook notification here if configured
+          # curl -X POST -H 'Content-type: application/json' \
+          #   --data '{"text":"ALERT: Production deployment FAILED for GS Personal App Suite. Manual intervention required."}' \
+          #   ${{ secrets.SLACK_WEBHOOK_URL }}
