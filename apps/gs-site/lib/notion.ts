@@ -61,7 +61,7 @@ export async function fetchDatabases(): Promise<NotionDatabase[]> {
       filter: {
         property: 'object',
         value: 'database'
-      },
+      } as any,
       page_size: 100
     });
 
@@ -95,18 +95,19 @@ export async function fetchPageContent(pageId: string) {
 // Search Notion content
 export async function searchNotion(query: string, filter?: 'page' | 'database') {
   try {
-    const searchFilter = filter ? {
-      filter: {
+    const searchParams: any = {
+      query,
+      page_size: 20
+    };
+
+    if (filter) {
+      searchParams.filter = {
         property: 'object',
         value: filter
-      }
-    } : {};
+      };
+    }
 
-    const response = await notion.search({
-      query,
-      ...searchFilter,
-      page_size: 20
-    });
+    const response = await notion.search(searchParams);
 
     return response.results;
   } catch (error) {

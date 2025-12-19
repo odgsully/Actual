@@ -8,10 +8,22 @@
 Migrating from single Wabbit Real Estate app to a 4-app monorepo architecture under one domain, creating a personal app suite with isolated functionality.
 
 **Target Architecture**: Monorepo with Turborepo, Vercel subdirectory routing, shared Supabase
-**Risk Level**: Low (with proper backups)
-**Timeline**: 4 weeks
-**Feasibility**: 8/10
-**Status**: ✅ Phase 0-1 Complete & Verified | 🚀 Ready for Phase 2 (January 15, 2025)
+**Risk Level**: Low (with proper backups) → MEDIUM (critical gaps identified Dec 18, 2025)
+**Timeline**: 4 weeks + 1 week for security hardening
+**Feasibility**: 8/10 → 9/10 (after addressing blockers)
+**Status**: ✅ Phase 0-1 Complete | ✅ Phase 2 95% | ⚠️ BLOCKERS IDENTIFIED (Dec 18, 2025)
+
+### ⚠️ CRITICAL BLOCKERS STATUS (December 18, 2025)
+
+| Issue | Severity | Phase | Status |
+|-------|----------|-------|--------|
+| React 18 vs 19 version conflict | **CRITICAL** | Phase 2 | ✅ **RESOLVED** |
+| 11 tables missing RLS policies | **CRITICAL** | Phase 3 | ⏳ Pending |
+| Shared packages created but unused | **HIGH** | Phase 2 | ⏳ Pending |
+| No CI/CD automated testing gates | **HIGH** | Phase 2.5 | ⏳ Pending |
+| 35-45% code duplication across apps | **MEDIUM** | Phase 5 | ⏳ Pending |
+
+> **Progress**: 1 of 2 CRITICAL blockers resolved. Database RLS hardening remains before Phase 3.
 
 ---
 
@@ -466,10 +478,219 @@ module.exports = {
 - [x] Build succeeds for all apps ✅
 - [x] Can navigate between apps locally ✅
 
+### ✅ Version Alignment (COMPLETED - December 18, 2025)
+*Added: December 18, 2025 | Completed: December 18, 2025*
+
+**Decision: Standardized on React 18** (safer, less work, better ecosystem compatibility)
+
+**Final Aligned Versions:**
+```
+App              Next.js    React     Tailwind   Status
+─────────────────────────────────────────────────────────
+wabbit-re        14.2.35    18.3.1    3.4.1      ✅ Aligned
+wabbit           14.2.35    18.3.1    3.4.1      ✅ Aligned
+gs-site          14.2.35    18.3.1    3.4.1      ✅ Downgraded
+gsrealty-client  14.2.35    18.3.1    3.4.1      ✅ Downgraded
+```
+
+**Changes Made:**
+- [x] **DECISION**: Standardize on React 18 ✅
+  - [x] Option A: Downgrade gs-site/gsrealty to React 18 ✅
+- [x] Standardized Next.js to 14.2.35 (patched security version)
+- [x] Aligned Tailwind to 3.4.1 across all apps
+- [x] All 4 apps build successfully ✅
+- [ ] Commit: `git commit -m "fix: align React/Next.js versions across all apps"`
+
+**Additional fixes for gs-site:**
+- Replaced Geist font (Next.js 15+) with Inter
+- Updated Tailwind 4 → Tailwind 3 config format
+- Fixed ESLint 9 flat config → ESLint 8 .eslintrc.json
+- Fixed Notion API type errors
+
+### 🔗 Shared Package Integration (INCOMPLETE - HIGH PRIORITY)
+*Added: December 18, 2025*
+
+**Current State:** Packages exist but are completely orphaned - NO app imports from them.
+
+```
+packages/supabase/  → Created, NOT imported by any app
+packages/ui/        → Created, NO components defined
+packages/utils/     → Created, only exports safety.ts
+```
+
+**Each app has duplicate implementations:**
+- `apps/*/lib/supabase/client.ts` (4 copies)
+- `apps/*/lib/supabase/server.ts` (4 copies)
+- `apps/*/contexts/AuthContext.tsx` (3 copies with hardcoded demo account)
+
+**Tasks:**
+- [ ] Move Supabase client to packages/supabase:
+  - [ ] Export createBrowserClient, createServerClient
+  - [ ] Update all apps to import from `@gs-site/supabase`
+  - [ ] Delete duplicate `lib/supabase/` in each app
+- [ ] Create packages/auth:
+  - [ ] Move AuthContext to shared package
+  - [ ] Remove hardcoded demo account (use env var: `DEMO_USER_EMAIL`)
+  - [ ] Implement shared useAuth hook
+- [ ] Update tsconfig.json in each app:
+  - [ ] Add path alias: `"@gs-site/*": ["../../packages/*"]`
+- [ ] Verify turbo.json has package dependencies defined
+- [ ] Test all apps after migration to shared packages
+
+---
+
+## 🔧 Phase 2.5: CI/CD Foundation (NEW)
+*Duration: 2-3 days*
+*Added: December 18, 2025*
+
+> **Why this phase?** Currently NO automated testing gates exist. Broken code can reach production. This phase adds critical safety infrastructure.
+
+### Automated Testing Gate
+- [ ] Create `.github/workflows/test.yml`:
+  ```yaml
+  name: Test
+  on: [pull_request, push]
+  jobs:
+    test:
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v4
+        - uses: actions/setup-node@v4
+        - run: npm ci
+        - run: npm run lint
+        - run: npm run typecheck
+        - run: npm run test
+        - run: npm run build
+  ```
+- [ ] Add branch protection to main:
+  - [ ] Require status checks to pass before merge
+  - [ ] Require PR review before merge
+- [ ] Test workflow on a feature branch
+
+### Pre-commit Hooks
+- [ ] Install husky: `npm install -D husky lint-staged`
+- [ ] Initialize husky: `npx husky init`
+- [ ] Create `.husky/pre-commit`:
+  ```bash
+  #!/bin/sh
+  npx lint-staged
+  ```
+- [ ] Add to package.json:
+  ```json
+  "lint-staged": {
+    "*.{ts,tsx}": ["eslint --fix", "prettier --write"],
+    "*.{json,md}": ["prettier --write"]
+  }
+  ```
+- [ ] Create `.husky/pre-push`:
+  ```bash
+  #!/bin/sh
+  npm run test
+  ```
+- [ ] Test hooks locally
+
+### Deployment Automation (Vercel)
+- [ ] Create `.github/workflows/deploy-staging.yml`:
+  - [ ] Deploy to Vercel preview on push to main
+  - [ ] Run smoke tests against staging URL
+  - [ ] Post staging URL to PR comments
+- [ ] Create `.github/workflows/deploy-production.yml`:
+  - [ ] Manual trigger only (workflow_dispatch)
+  - [ ] Require all tests passing
+  - [ ] Deploy to production
+  - [ ] Run post-deploy health checks
+  - [ ] Alert on failure (Slack/Discord webhook)
+
+### Verification Checkpoint 2.5
+- [ ] All PRs require passing tests before merge
+- [ ] Pre-commit hooks prevent bad commits
+- [ ] Staging deploys automatically on push to main
+- [ ] Production deploys require manual approval
+- [ ] Team notified on deploy success/failure
+
 ---
 
 ## 🔗 Phase 3: Integration
 *Duration: 5-7 days*
+
+### 🚨 Database Security Hardening (NEW - CRITICAL)
+*Added: December 18, 2025*
+
+> **CRITICAL:** 11 tables are missing RLS policies. Any authenticated user can read ALL data from these tables.
+
+**Tables Exposed to ALL Authenticated Users:**
+
+| Table | App Owner | Data at Risk |
+|-------|-----------|--------------|
+| `properties` | wabbit-re | All property listings |
+| `property_images` | wabbit-re | All property photos |
+| `property_locations` | wabbit-re | Location intelligence data |
+| `activity_log` | shared | Complete audit trail |
+| `gsrealty_clients` | gsrealty | Client contact information |
+| `gsrealty_properties` | gsrealty | Client property records |
+| `gsrealty_users` | gsrealty | User credentials/roles |
+| `gsrealty_login_activity` | gsrealty | Login audit records |
+| `gsrealty_admin_settings` | gsrealty | Application configuration |
+| `third_party_connections` | wabbit-re | External API credentials |
+| `user_profiles` (INSERT) | shared | Missing INSERT policy |
+
+**Required RLS Policies:**
+- [ ] Add RLS to `properties` table:
+  ```sql
+  ALTER TABLE properties ENABLE ROW LEVEL SECURITY;
+  CREATE POLICY "Public read access" ON properties FOR SELECT USING (true);
+  ```
+- [ ] Add RLS to `gsrealty_clients` (role-based):
+  ```sql
+  ALTER TABLE gsrealty_clients ENABLE ROW LEVEL SECURITY;
+  CREATE POLICY "Admin full access" ON gsrealty_clients FOR ALL
+    USING (auth.jwt() ->> 'role' = 'admin');
+  CREATE POLICY "Client own data" ON gsrealty_clients FOR SELECT
+    USING (user_id = auth.uid());
+  ```
+- [ ] Add RLS to `gsrealty_users` (admin-only write, self-read)
+- [ ] Add RLS to `gsrealty_properties` (role-based like clients)
+- [ ] Add RLS to `gsrealty_login_activity` (admin-only read)
+- [ ] Add RLS to `gsrealty_admin_settings` (admin-only)
+- [ ] Add RLS to `activity_log` (admin-only read)
+- [ ] Add INSERT policy to `user_profiles`
+- [ ] Hash invitation tokens (currently plaintext in database)
+- [ ] Add `app_context` column to audit tables for cross-app tracking
+- [ ] Test RLS policies from each app's context
+- [ ] Document RLS policies in `docs/DATABASE_OWNERSHIP.md`
+
+### 🔧 basePath Standardization (NEW - MEDIUM PRIORITY)
+*Added: December 18, 2025*
+
+**Current Inconsistency:**
+
+| App | basePath Config | Behavior | Issue |
+|-----|-----------------|----------|-------|
+| wabbit-re | Conditional on NODE_ENV | Dev: `/`, Prod: `/wabbit-re` | ✅ Correct |
+| wabbit | Always `/wabbit` | Always uses basePath | ❌ Inconsistent |
+| gs-site | None | Always at root | ⚠️ May conflict |
+| gsrealty-client | Commented out, env var unused | Deployed at root | ❌ Broken config |
+
+**Tasks:**
+- [ ] **DECISION**: Subdirectory routing or separate deployments?
+  - [ ] Option A: All apps behind reverse proxy with basePath
+  - [ ] Option B: Separate Vercel deployments per app (different URLs)
+- [ ] If Option A (subdirectory):
+  - [ ] Standardize all apps to use conditional basePath:
+    ```javascript
+    // next.config.js pattern for ALL apps
+    const basePath = process.env.NODE_ENV === 'production' ? '/app-name' : '';
+    module.exports = { basePath, assetPrefix: basePath };
+    ```
+  - [ ] Fix gsrealty-client to use `NEXT_PUBLIC_BASE_PATH` env var
+  - [ ] Configure Nginx reverse proxy (see `deployment/nginx.conf`)
+  - [ ] Test all apps at their subdirectory paths
+- [ ] If Option B (separate deployments):
+  - [ ] Remove basePath from all apps
+  - [ ] Create separate `vercel.json` per app
+  - [ ] Configure separate domains/subdomains
+- [ ] Update all hardcoded URLs to use relative paths or env vars
+- [ ] Test navigation between apps in production-like environment
 
 ### Database Updates
 - [ ] Design isolated schema strategy:
@@ -550,12 +771,58 @@ module.exports = {
 ## 🚢 Phase 4: Deployment
 *Duration: 3-5 days*
 
+### 🛡️ Deployment Hardening (NEW)
+*Added: December 18, 2025*
+
+> **Current Gaps:** No staging environment, weak verification (only health check), no automated rollback, no monitoring.
+
+### Create Staging Environment (NEW - HIGH PRIORITY)
+- [ ] Set up staging.wabbit-rank.ai or Vercel preview environment
+- [ ] Configure staging with same env vars as production
+- [ ] Create staging deployment workflow:
+  - [ ] Auto-deploy to staging on push to main
+  - [ ] Run smoke tests against staging
+  - [ ] Manual approval gate for production promotion
+- [ ] Add staging URL to allowed domains in Google Cloud Console
+
+### Enhanced Verification (NEW)
+- [ ] Create `scripts/verify-deployment.sh`:
+  ```bash
+  #!/bin/bash
+  # Health check
+  curl -f $APP_URL/api/health || exit 1
+  # API route verification
+  curl -f $APP_URL/api/preferences || exit 1
+  curl -f $APP_URL/api/setup/validate || exit 1
+  # Database connectivity
+  npm run test:smoke || exit 1
+  # Check for errors in logs
+  vercel logs --since 2m | grep -i error && exit 1
+  echo "All checks passed!"
+  ```
+- [ ] Add to deployment pipeline: run verification after each deploy
+- [ ] Fail deployment if any verification fails
+- [ ] Alert team on verification failure
+
+### Automated Rollback (NEW)
+- [ ] Store previous deployment URL before promoting
+- [ ] Create rollback trigger:
+  - [ ] If health check fails 3x in 5 minutes → auto-rollback
+  - [ ] Alert on Slack/Discord when rollback triggered
+- [ ] For Hetzner/PM2 deployments:
+  - [ ] Store last 3 deployments in cloud storage (S3/Cloudflare R2)
+  - [ ] Create `scripts/rollback.sh` with verification
+- [ ] Test rollback procedure monthly
+- [ ] Document rollback steps in `docs/RUNBOOK.md`
+
 ### Pre-Deployment Testing
 - [ ] Full build test: `npm run build`
 - [ ] Run all test suites
 - [ ] Test production build locally
 - [ ] Verify all features work
 - [ ] Check for console errors
+- [ ] **NEW:** Validate environment variables exist
+- [ ] **NEW:** Run database schema compatibility check
 
 ### Vercel Deployment Setup
 - [ ] Create new Vercel project (or update existing)
@@ -563,6 +830,7 @@ module.exports = {
 - [ ] Set up build commands
 - [ ] Configure domains/subdomains
 - [ ] Test preview deployment
+- [ ] **NEW:** Configure deployment protection (require team member approval)
 
 ### Deploy to Staging
 - [ ] Push to staging branch
@@ -570,6 +838,8 @@ module.exports = {
 - [ ] Test all apps on staging URL
 - [ ] Verify subdirectory routing
 - [ ] Test cross-app navigation
+- [ ] **NEW:** Run full E2E test suite against staging
+- [ ] **NEW:** Performance baseline comparison
 
 ### Production Deployment
 - [ ] Final backup of current production
@@ -577,6 +847,8 @@ module.exports = {
 - [ ] Monitor deployment
 - [ ] Test production URLs immediately
 - [ ] Monitor error logs
+- [ ] **NEW:** Wait 5 minutes, then run enhanced verification
+- [ ] **NEW:** Monitor error rate for first 30 minutes
 
 ### Post-Deployment
 - [ ] Verify all apps accessible
@@ -584,6 +856,8 @@ module.exports = {
 - [ ] Check cron job execution
 - [ ] Monitor performance metrics
 - [ ] Document any issues
+- [ ] **NEW:** Send deployment notification to team
+- [ ] **NEW:** Update deployment log with timestamp and commit hash
 
 ### Verification Checkpoint 4
 - [ ] All apps live and accessible
@@ -591,18 +865,66 @@ module.exports = {
 - [ ] Performance acceptable
 - [ ] Users can navigate between apps
 - [ ] Data flowing correctly
+- [ ] **NEW:** Automated rollback tested and working
+- [ ] **NEW:** Monitoring alerts configured
 
 ---
 
 ## 🛟 Phase 5: Stabilization
 *Duration: 2-3 days*
 
+### 🔄 Code Consolidation (NEW - MEDIUM PRIORITY)
+*Added: December 18, 2025*
+
+> **Current State:** 35-45% code duplication across apps. Same logic implemented 3-4 times.
+
+**Duplicated Code Identified:**
+
+| Category | Files Duplicated | Location |
+|----------|------------------|----------|
+| Auth Context | 3 copies | `apps/*/contexts/AuthContext.tsx` |
+| Supabase Client | 4 copies | `apps/*/lib/supabase/client.ts` |
+| Supabase Server | 4 copies | `apps/*/lib/supabase/server.ts` |
+| Database Queries | 3 copies | `apps/*/lib/database/*.ts` |
+| UI Components | 3 copies | Button, Card, Modal patterns |
+| Form Validation | 3 copies | Similar Zod schemas |
+
+**Consolidation Tasks:**
+- [ ] Extract to `packages/auth`:
+  - [ ] Move AuthContext from apps
+  - [ ] Create shared useAuth hook
+  - [ ] Move SignInModal component
+  - [ ] Remove hardcoded demo account (use `DEMO_USER_EMAIL` env var)
+  - [ ] Update all apps to import from `@gs-site/auth`
+
+- [ ] Extract to `packages/database`:
+  - [ ] Move user profile queries
+  - [ ] Move preference management
+  - [ ] Create common query patterns (CRUD helpers)
+  - [ ] Update all apps to use shared database layer
+
+- [ ] Extract to `packages/ui`:
+  - [ ] Move Button, Card, Modal components
+  - [ ] Move theme provider
+  - [ ] Create Radix UI wrapper components
+  - [ ] Export from single entry point
+
+- [ ] Measure duplication:
+  - [ ] Run `npx jscpd .` to measure before/after
+  - [ ] Target: < 15% duplication (down from 35-45%)
+
+- [ ] Update imports across all apps
+- [ ] Test all apps after consolidation
+- [ ] Commit: `git commit -m "refactor: consolidate shared code into packages"`
+
 ### Monitoring
 - [ ] Set up error tracking (Sentry/similar)
-- [ ] Configure uptime monitoring
-- [ ] Set up alerts for failures
-- [ ] Monitor database performance
+- [ ] Configure uptime monitoring (UptimeRobot/Checkly)
+- [ ] Set up alerts for failures (Slack/Discord webhooks)
+- [ ] Monitor database performance (Supabase dashboard)
 - [ ] Track user analytics
+- [ ] **NEW:** Set up deployment notifications
+- [ ] **NEW:** Configure performance monitoring (Web Vitals)
 
 ### Documentation
 - [ ] Update all README files
@@ -710,21 +1032,26 @@ vercel --prod
 - **GSRealty Client**: Real estate CRM (MCAO lookup, ReportIt, client management) - *replaces originally planned "Cursor MY MAP"*
 - **GS Site Dashboard**: Personal hub with Notion integration
 
-**Last Updated**: December 17, 2025
-**Checklist Version**: 1.3.0
-**Risk Assessment**: LOW (with proper backups)
+**Last Updated**: December 18, 2025
+**Checklist Version**: 2.0.0 (Major update with security hardening)
+**Risk Assessment**: MEDIUM → LOW (after addressing critical blockers)
 
 ---
 
-## 📊 Migration Progress Summary (January 16, 2025)
+## 📊 Migration Progress Summary (December 18, 2025)
 
-### Overall Progress: 60% Complete 🎉
+### Overall Progress: 50% Functional / 65% Structural 🔧
+
+> **Note:** Version alignment resolved (Dec 18). Remaining: database security, shared packages, CI/CD.
 
 **Phase Completion:**
 - ✅ Phase 0: Pre-Migration Preparation - **100% Complete**
 - ✅ Phase 1: Foundation Setup - **100% Complete** ✨
-- ✅ Phase 2: App Expansion - **95% Complete** 🎆
-- 🚀 Phase 3: Integration - **READY TO START**
+- ⚠️ Phase 2: App Expansion - **85% Complete** (1 blocker resolved)
+  - ✅ Version alignment complete (React 18.3.1)
+  - ❌ Shared packages unused
+- 🆕 Phase 2.5: CI/CD Foundation - **0% (NEW - Not Started)**
+- 🚀 Phase 3: Integration - **BLOCKED** (requires Phase 2 completion)
 - ⏳ Phase 4: Deployment - **0% (Not Started)**
 - ⏳ Phase 5: Stabilization - **0% (Not Started)**
 
@@ -736,18 +1063,38 @@ vercel --prod
   - GS Dashboard: Personal hub with Notion (port 3003, root path)
   - GSRealty Client: Real estate CRM (port 3004)
 - ✅ **Notion Integration:** Connected with API key
-- ✅ **Shared Packages:** Supabase, UI, Utils created
+- ⚠️ **Shared Packages:** Created but NOT used by any app
 - ✅ **GSRealty Client:** Full CRM at apps/gsrealty-client/ (port 3004)
 - ✅ All apps have database connectivity
 - ✅ Build process completes successfully
 - ✅ No circular dependencies
 
-**Critical Success:** 🎉
-- Symlink solution implemented: `ln -s ../../.env.local apps/wabbit-re/.env.local`
-- API health check confirms: `{"status":"healthy","database":"configured"}`
-- All blockers resolved!
+**Critical Blockers Status (Dec 18, 2025):** 🔧
+| Issue | Severity | Status |
+|-------|----------|--------|
+| React 18 vs 19 conflict | CRITICAL | ✅ **RESOLVED** - All apps on React 18.3.1 |
+| 11 tables missing RLS | CRITICAL | ⏳ Pending |
+| Shared packages orphaned | HIGH | ⏳ Pending |
+| No CI/CD pipeline | HIGH | ⏳ Pending |
+
+**Priority Action Items:**
+
+**This Week (BLOCKING):**
+1. [x] Version alignment decision - React 18 ✅
+2. [ ] Add RLS to critical tables (gsrealty_clients, gsrealty_users)
+3. [ ] Create basic CI workflow (lint + typecheck + test)
+
+**Next Week (HIGH):**
+4. [ ] Integrate shared packages - Start with packages/supabase
+5. [ ] Fix basePath inconsistency across apps
+6. [ ] Add pre-commit hooks (husky + lint-staged)
+
+**This Month (MEDIUM):**
+7. [ ] Create staging environment
+8. [ ] Enhanced deployment verification
+9. [ ] Set up Sentry monitoring
 
 **Next Milestone:**
-Begin Phase 3: Integration - Database isolation, routing configuration, and SSO decision
+Complete Phase 2 blockers (version alignment, shared packages) before proceeding to Phase 2.5 (CI/CD)
 
-**Estimated Time to Phase 3:** 5-7 days (Phase 2 duration)
+**Estimated Time to Production-Ready:** 3-4 weeks (including new Phase 2.5)
