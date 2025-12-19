@@ -23,6 +23,7 @@
     "db:check-spatial": "tsx scripts/check-spatial-setup.ts"
   },
   "dependencies": {
+    "@gs-site/auth": "*",
     "@gs-site/supabase": "*",
     "@googlemaps/js-api-loader": "^1.16.2",
     "@googlemaps/markerclusterer": "^2.5.0",

@@ -1,0 +1,15 @@
+{
+  "name": "@gs-site/auth",
+  "version": "1.0.0",
+  "description": "Shared authentication context and utilities for Wabbit apps",
+  "main": "index.ts",
+  "types": "index.ts",
+  "private": true,
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.3"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "next": ">=14.0.0"
+  }
+}
