@@ -72,3 +72,4 @@ gbs_properties.pdf
 test_data_support.csv
 .gitignore
 gbs_properties copy.pdf
+supabase/.temp/
