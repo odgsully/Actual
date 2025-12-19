@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## ⚠️ Critical Context (September 5, 2024)
 
-**IMPORTANT**: This is the restored working version from the `main` branch. The `clean-deployment` branch was corrupted (missing 34,199 files including authentication) and should NOT be used. See `Fix_explain_09.05.md` and `DEPLOYMENT_FIX_CONTEXT.md` for restoration details.
+**IMPORTANT**: This is the restored working version from the `main` branch. The `clean-deployment` branch was corrupted (missing 34,199 files including authentication) and should NOT be used. See `Fix_explain_09.05.md` and `docs/deployment/DEPLOYMENT_FIX_CONTEXT.md` for restoration details.
 
 ## Safety Documentation
 
@@ -134,7 +134,7 @@ Production deployment requires these in `.env.production` or `.env.local`:
 - `MIGRATION_SAFETY_PROTOCOLS.md` - Ultra-conservative safety procedures for migrations
 - `WABBIT_PRD.md` - Product requirements document
 - `SUBAGENT_PLAN.md` - Architecture and implementation plan
-- `SUPABASE_SETUP.md` - Database setup instructions
+- `docs/supabase/SUPABASE_SETUP.md` - Database setup instructions
 - `GOOGLE_MAPS_SETUP.md` - Maps API configuration
 - `DEMO_SETUP.md` - Demo account setup instructions
 - `database-schema.sql` - Complete database schema
@@ -181,7 +181,7 @@ The platform processes:
   - See `Fix_explain_09.05.md` for details
 - **DNS Issue**: Nameserver mismatch between Namecheap and Cloudflare
   - Required: lana.ns.cloudflare.com and leif.ns.cloudflare.com
-  - See `DEPLOYMENT_FIX_CONTEXT.md` for resolution steps
+  - See `docs/deployment/DEPLOYMENT_FIX_CONTEXT.md` for resolution steps
 
 ### Testing Checklist
 Before deployment, verify:

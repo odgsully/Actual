@@ -287,7 +287,7 @@ Private - All rights reserved
 ### Database Documentation
 - `database-schema.sql` - Complete database structure
 - `database-migration-temp-preferences.sql` - Temporary preferences migration
-- `SUPABASE_SETUP.md` - Supabase configuration guide
+- `docs/supabase/SUPABASE_SETUP.md` - Supabase configuration guide
 
 ### Setup Guides
 - `GOOGLE_MAPS_SETUP.md` - Google Maps API configuration
@@ -295,9 +295,9 @@ Private - All rights reserved
 - `test-verification-flow.md` - Testing email verification
 
 ### Deployment & Recovery
-- `DEPLOYMENT_FIX_CONTEXT.md` - Deployment fix procedures
+- `docs/deployment/DEPLOYMENT_FIX_CONTEXT.md` - Deployment fix procedures
 - `Fix_explain_09.05.md` - Directory restoration documentation
-- `deployment/DEPLOYMENT_GUIDE.md` - Complete deployment guide
+- `docs/deployment/DEPLOYMENT_GUIDE.md` - Complete deployment guide
 
 ## Support
 

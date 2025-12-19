@@ -60,7 +60,7 @@ supabase-backups-2025-01-15/
 │
 ├── documentation/
 │   ├── BACKUP_ORGANIZATION_GUIDE.md (this file)
-│   ├── SUPABASE_BACKUP_INSTRUCTIONS.md
+│   ├── SUPABASE_BACKUP_INSTRUCTIONS.md (from docs/supabase/)
 │   └── restore-instructions.md (TO CREATE)
 │
 └── README.md (TO CREATE - backup metadata)
@@ -81,7 +81,7 @@ supabase-backups-2025-01-15/
    mv supabase-all-tables.md supabase-backups-2025-01-15/schema/
    mv supabase-rls-policies-backup-9.15.md supabase-backups-2025-01-15/security/
    mv supabase-functions-triggers.md supabase-backups-2025-01-15/functions/
-   cp SUPABASE_BACKUP_INSTRUCTIONS.md supabase-backups-2025-01-15/documentation/
+   cp docs/supabase/SUPABASE_BACKUP_INSTRUCTIONS.md supabase-backups-2025-01-15/documentation/
    cp BACKUP_ORGANIZATION_GUIDE.md supabase-backups-2025-01-15/documentation/
    ```
 
@@ -253,4 +253,4 @@ find ~ -name "*supabase*backup*" -type f 2>/dev/null
 If restoration fails or you need the encryption password:
 - Primary: [Your email]
 - Backup: [Team member email]
-- Documentation: This guide + SUPABASE_BACKUP_INSTRUCTIONS.md
+- Documentation: This guide + docs/supabase/SUPABASE_BACKUP_INSTRUCTIONS.md
