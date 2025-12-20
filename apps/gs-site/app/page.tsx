@@ -1,133 +1,179 @@
 import Link from "next/link";
-import NotionWidget from '@/components/NotionWidget';
+import {
+  Database,
+  Rabbit,
+  ListTodo,
+  Heart,
+  Printer,
+  Calendar as CalendarIcon,
+  ExternalLink,
+  Upload,
+  Youtube,
+  Activity,
+  FileText,
+  LayoutGrid,
+  Sparkles,
+  Zap
+} from "lucide-react";
+
+type TileType = 'link' | 'upload' | 'calendar' | 'dashboard';
+
+interface DashboardTile {
+  id: string;
+  title: string;
+  type: TileType;
+  href?: string;
+  external?: boolean;
+  icon: React.ReactNode;
+  description?: string;
+}
+
+const tiles: DashboardTile[] = [
+  {
+    id: 'crm-adhs',
+    title: 'CRM/ADHS',
+    type: 'link',
+    href: '/crm',
+    icon: <Database className="w-5 h-5" />,
+    description: 'Customer database'
+  },
+  {
+    id: 'new-gs-wab',
+    title: 'New GS Wab',
+    type: 'link',
+    href: 'http://localhost:3000',
+    external: true,
+    icon: <Rabbit className="w-5 h-5" />,
+    description: 'Auto sign-in'
+  },
+  {
+    id: 'wab-tasklist',
+    title: 'Wab: Task List',
+    type: 'link',
+    href: 'http://localhost:3000/rank-feed?rank=0-3',
+    external: true,
+    icon: <ListTodo className="w-5 h-5" />,
+    description: 'Rank 0-3'
+  },
+  {
+    id: 'wab-favorites',
+    title: 'Wab: Favorites',
+    type: 'link',
+    href: 'http://localhost:3000/list-view?filter=favorites',
+    external: true,
+    icon: <Heart className="w-5 h-5" />,
+    description: 'Saved items'
+  },
+  {
+    id: 'print-daily',
+    title: 'Print DAILY',
+    type: 'link',
+    href: '#trigger-daily',
+    icon: <Printer className="w-5 h-5" />,
+    description: 'Tomorrow workflow'
+  },
+  {
+    id: 'print-weekly',
+    title: 'Print WEEKLIES',
+    type: 'link',
+    href: '#trigger-weekly',
+    icon: <FileText className="w-5 h-5" />,
+    description: 'Weekly workflow'
+  },
+  {
+    id: 'my-wabbit',
+    title: 'Go to my Wabbit',
+    type: 'link',
+    href: 'http://localhost:3002',
+    external: true,
+    icon: <Rabbit className="w-5 h-5" />,
+    description: 'Personal ranking'
+  },
+  {
+    id: 'epsn3-bin',
+    title: 'EPSN3 Bin',
+    type: 'upload',
+    icon: <Upload className="w-5 h-5" />,
+    description: 'Upload file'
+  },
+  {
+    id: 'gs-scheduler',
+    title: 'GS Scheduler',
+    type: 'calendar',
+    icon: <CalendarIcon className="w-5 h-5" />,
+    description: 'Calendar view'
+  },
+  {
+    id: 'youtube-wrapper',
+    title: 'YouTube Timeline',
+    type: 'link',
+    href: '#youtube-timeline',
+    icon: <Youtube className="w-5 h-5" />,
+    description: 'Video wrapper'
+  },
+  {
+    id: 'whoop-insights',
+    title: 'Whoop Insights',
+    type: 'dashboard',
+    icon: <Activity className="w-5 h-5" />,
+    description: 'API dashboard'
+  },
+  {
+    id: 'shadcn-examples',
+    title: 'UI Examples',
+    type: 'link',
+    href: '/examples',
+    icon: <LayoutGrid className="w-5 h-5" />,
+    description: 'shadcn/ui demos'
+  },
+  {
+    id: 'cult-ui',
+    title: 'CultUI',
+    type: 'link',
+    href: '/ui-libraries/cult-ui',
+    icon: <Sparkles className="w-5 h-5" />,
+    description: '48+ animated components'
+  },
+  {
+    id: 'motion-primitives',
+    title: 'Motion-Primitives',
+    type: 'link',
+    href: '/ui-libraries/motion-primitives',
+    icon: <Zap className="w-5 h-5" />,
+    description: '30+ animation effects'
+  }
+];
 
 export default function Home() {
-  const apps = [
-    {
-      id: 'crm',
-      title: 'Cursor MY MAP CRM',
-      description: 'Customer relationship management system',
-      href: '/crm',
-      bgColor: 'bg-blue-600',
-      hoverColor: 'hover:bg-blue-700',
-      icon: '📊'
-    },
-    {
-      id: 'wabbit-re',
-      title: 'Wabbit RE',
-      description: 'Real estate property ranking platform',
-      href: 'http://localhost:3000/wabbit-re',
-      external: true,
-      bgColor: 'bg-green-600',
-      hoverColor: 'hover:bg-green-700',
-      icon: '🏠'
-    },
-    {
-      id: 'wabbit',
-      title: 'Wabbit',
-      description: 'General-purpose ranking platform',
-      href: 'http://localhost:3002/wabbit',
-      external: true,
-      bgColor: 'bg-purple-600',
-      hoverColor: 'hover:bg-purple-700',
-      icon: '⭐'
-    },
-    {
-      id: 'notion',
-      title: 'Notion Integration',
-      description: 'Second brain knowledge base',
-      href: '#',
-      bgColor: 'bg-gray-600',
-      hoverColor: 'hover:bg-gray-700',
-      icon: '📝',
-      comingSoon: false,
-      integrated: true
-    }
-  ];
-
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            GS Site Dashboard
+      <header className="border-b border-border">
+        <div className="max-w-6xl mx-auto px-6 py-4">
+          <h1 className="text-lg font-medium text-foreground tracking-tight">
+            GS Dashboard
           </h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-300">
-            Personal app suite and launcher
+          <p className="text-xs text-muted-foreground mt-0.5 tracking-wide uppercase">
+            Personal App Suite
           </p>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {apps.map((app) => (
-            <div key={app.id} className="relative group">
-              {app.external ? (
-                <a
-                  href={app.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`block p-6 rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 ${
-                    app.comingSoon
-                      ? 'bg-gray-100 dark:bg-gray-700 cursor-not-allowed opacity-60'
-                      : `${app.bgColor} ${app.hoverColor} text-white`
-                  }`}
-                >
-                  <AppTileContent app={app} />
-                </a>
-              ) : app.comingSoon ? (
-                <div
-                  className={`block p-6 rounded-lg shadow-lg transition-all duration-200 bg-gray-100 dark:bg-gray-700 cursor-not-allowed opacity-60`}
-                >
-                  <AppTileContent app={app} />
-                </div>
-              ) : (
-                <Link
-                  href={app.href}
-                  className={`block p-6 rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 ${app.bgColor} ${app.hoverColor} text-white`}
-                >
-                  <AppTileContent app={app} />
-                </Link>
-              )}
-            </div>
+      <main className="max-w-6xl mx-auto px-6 py-8">
+        {/* Tile Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          {tiles.map((tile) => (
+            <TileCard key={tile.id} tile={tile} />
           ))}
-        </div>
-
-        {/* Quick Stats & Notion Integration */}
-        <div className="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* System Status */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-              System Status
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">3</div>
-                <div className="text-sm text-gray-600 dark:text-gray-300">Active Apps</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">1</div>
-                <div className="text-sm text-gray-600 dark:text-gray-300">Coming Soon</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">100%</div>
-                <div className="text-sm text-gray-600 dark:text-gray-300">Uptime</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Notion Integration Widget */}
-          <NotionWidget />
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="mt-auto bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <p className="text-center text-gray-600 dark:text-gray-300">
-            © 2025 GS Site - Personal App Suite
+      <footer className="mt-auto border-t border-border">
+        <div className="max-w-6xl mx-auto px-6 py-4">
+          <p className="text-xs text-muted-foreground text-center tracking-wide">
+            GS Site 2025
           </p>
         </div>
       </footer>
@@ -135,43 +181,75 @@ export default function Home() {
   );
 }
 
-function AppTileContent({ app }: { app: any }) {
-  return (
+function TileCard({ tile }: { tile: DashboardTile }) {
+  const baseClasses = `
+    group
+    flex flex-col
+    p-4
+    h-28
+    bg-card
+    border border-border
+    hover:bg-accent
+    hover:border-muted-foreground/30
+    transition-colors duration-150
+    cursor-pointer
+  `;
+
+  const content = (
     <>
-      <div className="flex items-center justify-between mb-4">
-        <span className="text-4xl">{app.icon}</span>
-        {app.external && !app.comingSoon && (
-          <svg
-            className="w-5 h-5 opacity-70"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-            />
-          </svg>
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-muted-foreground group-hover:text-foreground transition-colors">
+          {tile.icon}
+        </span>
+        {tile.external && (
+          <ExternalLink className="w-3 h-3 text-muted-foreground opacity-50" />
+        )}
+        {tile.type === 'upload' && (
+          <Upload className="w-3 h-3 text-muted-foreground opacity-50" />
+        )}
+        {tile.type === 'calendar' && (
+          <CalendarIcon className="w-3 h-3 text-muted-foreground opacity-50" />
+        )}
+        {tile.type === 'dashboard' && (
+          <Activity className="w-3 h-3 text-muted-foreground opacity-50" />
         )}
       </div>
-      <h3 className="text-xl font-semibold mb-2">
-        {app.title}
-        {app.comingSoon && (
-          <span className="ml-2 text-xs bg-gray-500 text-white px-2 py-1 rounded">
-            Coming Soon
-          </span>
+      <div className="flex-1 flex flex-col justify-end">
+        <h3 className="text-sm font-medium text-foreground leading-tight">
+          {tile.title}
+        </h3>
+        {tile.description && (
+          <p className="text-xs text-muted-foreground mt-1 tracking-wide">
+            {tile.description}
+          </p>
         )}
-        {app.integrated && (
-          <span className="ml-2 text-xs bg-green-500 text-white px-2 py-1 rounded">
-            Integrated
-          </span>
-        )}
-      </h3>
-      <p className={app.comingSoon ? "text-gray-600 dark:text-gray-400" : "text-white/90"}>
-        {app.description}
-      </p>
+      </div>
     </>
+  );
+
+  if (tile.type === 'link' && tile.href) {
+    if (tile.external) {
+      return (
+        <a
+          href={tile.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={baseClasses}
+        >
+          {content}
+        </a>
+      );
+    }
+    return (
+      <Link href={tile.href} className={baseClasses}>
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <div className={baseClasses}>
+      {content}
+    </div>
   );
 }
