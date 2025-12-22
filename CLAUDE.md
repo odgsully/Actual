@@ -8,6 +8,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **"ULTRATHINK"** = Use extended thinking for deep analysis before responding.
 
+### Shortcut Abbreviations
+
+| Shortcut | Meaning |
+|----------|---------|
+| **ric** | Reply in chat (text response only, no tool calls) |
+| **susin** | Spin up subagents if needed |
+| **aacqin** | Ask any clarifying questions if needed |
+
 ## ⚠️ Critical Context (September 5, 2024)
 
 **IMPORTANT**: This is the restored working version from the `main` branch. The `clean-deployment` branch was corrupted (missing 34,199 files including authentication) and should NOT be used. See `Fix_explain_09.05.md` and `docs/deployment/DEPLOYMENT_FIX_CONTEXT.md` for restoration details.
@@ -23,7 +31,7 @@ For detailed safety protocols, database ownership, and emergency procedures, see
 
 ## Monorepo Migration Documentation
 
-**Current Status:** 60% Complete (Phase 2) - See documents below for details.
+**Current Status:** 95% Complete (Phase 4) - See documents below for details.
 
 | Document | Purpose |
 |----------|---------|
@@ -130,7 +138,7 @@ Production deployment requires these in `.env.production` or `.env.local`:
 
 ### Important Documentation Files
 - `README.md` - Project overview and quick start
-- `MIGRATION_PROGRESS_TRACKER.md` - **Main development roadmap** (60% complete)
+- `MIGRATION_PROGRESS_TRACKER.md` - **Main development roadmap** (95% complete)
 - `MIGRATION_SAFETY_PROTOCOLS.md` - Ultra-conservative safety procedures for migrations
 - `WABBIT_PRD.md` - Product requirements document
 - `SUBAGENT_PLAN.md` - Architecture and implementation plan
