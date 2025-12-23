@@ -261,7 +261,7 @@ const SPECIALIZED_TILES: Array<{
   },
   // Logic-only tiles (Phase 8)
   {
-    match: (name) => name.toLowerCase().includes('days till') || name.toLowerCase().includes('panel for days'),
+    match: (name) => name.toLowerCase().includes('days till') || name.toLowerCase().includes('panel for days') || name.toLowerCase() === 'spacead',
     component: DaysTillCounterTile,
   },
   {

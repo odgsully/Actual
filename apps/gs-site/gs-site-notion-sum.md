@@ -1,354 +1,667 @@
-# GS Site Integration Summary
+# GS Site Tile Logic & Goals (Source of Truth)
 
-## Source
+> **IMPORTANT**: This file is the PRIMARY source of truth for tile logic and goals.
+> Notion is the secondary reference. When discrepancies exist, this file takes precedence.
+>
+> **Last Synced from Notion**: December 23, 2025
+> **Total Tiles**: 47
+
+---
+
+## Source References
 - **Notion Page**: "GS SITE [in Monorepo]"
 - **Page ID**: `26fcf08f-4499-80e7-9514-da5905461e73`
 - **Tiles Database ID**: `28fcf08f-4499-8017-b530-ff06c9f64f97`
 - **URL**: https://www.notion.so/GS-SITE-in-Monorepo-26fcf08f449980e79514da5905461e73
-- **Last Edited**: December 22, 2025
-- **Retrieved**: December 22, 2025
 
 ---
 
-## Overview
+## Quick Stats
 
-GS Site is a personal dashboard hub accessible at `wabbit-rank.ai/gs-site`. The site should be "Caffeinated for all-time ON screen" - always visible and actively monitored.
+| Metric | Count |
+|--------|-------|
+| **Total Tiles** | 47 |
+| **Not Started** | 45 |
+| **In Progress** | 2 |
+| **Done** | 0 |
 
-### Key Objective
-Create a unified dashboard that integrates data from:
-- Supabase (Wabbit Task List)
-- Notion databases (Habits, Calendar, Tiles)
-- External APIs (Whoop, YouTube, X/Twitter, Apple Contacts, GitHub)
+### By Menu Category
+| Category | Count |
+|----------|-------|
+| Org | 21 |
+| Software | 15 |
+| Health | 10 |
+| Content | 7 |
+| Real Estate | 5 |
+| Learn | 2 |
 
----
-
-## Menu Filtering System
-
-### Implementation Plan
-
-Use **CULTUI's BG Animate Button** component for category filtering at the top of GS Site.
-
-#### Button Layout (Left to Right)
-```
-[ALL] [Real Estate] [Software] [Org] [Content] [Health] [Learn]
-```
-
-#### Component: `components/ui/bg-animate-button.tsx`
-Already installed. Supports gradients: `sunrise`, `ocean`, `candy`, `forest`, `sunset`, `nebula`, `default`
-
-#### Suggested Gradient Assignments
-| Button | Gradient | Notion Color |
-|--------|----------|--------------|
-| ALL | `default` (purple) | - |
-| Real Estate | `sunset` (orange-red) | brown |
-| Software | `ocean` (blue) | blue |
-| Org | `nebula` (purple) | purple |
-| Content | `candy` (pink-red) | red |
-| Health | `forest` (green) | yellow |
-| Learn | `sunrise` (warm) | pink |
-
-#### Filtering Logic
-```typescript
-type MenuCategory = 'Real Estate' | 'Software' | 'Org' | 'Content' | 'Health' | 'Learn';
-
-interface Tile {
-  name: string;
-  menu: MenuCategory[];  // Multi-select - tile can belong to multiple categories
-  status: 'Not started' | 'In progress' | 'Done';
-  desc: string;
-  shadcn: string[];
-  phase: string[];
-}
-
-// Filter function
-const filterTiles = (tiles: Tile[], category: MenuCategory | 'ALL') => {
-  if (category === 'ALL') return tiles;
-  return tiles.filter(tile => tile.menu.includes(category));
-};
-```
-
-#### Multi-Category Tiles
-Tiles with multiple MENU values appear **identical** in each filtered view. Example:
-- "18. Natural SQL language query UI" appears in: Real Estate, Software, Org, Content, Health (5 categories)
+### By Third Party Integration
+| Integration | Count | Notes |
+|-------------|-------|-------|
+| Logic | 22 | Internal logic/computation |
+| EXTRA LOGIC | 11 | Complex/additional logic needed |
+| Notion | 7 | Notion API integration |
+| Wabbit | 6 | Cross-app integration |
+| GitHub | 5 | GitHub API |
+| Scheduler 3rd P | 3 | Social scheduling platform |
+| Google | 3 | Google Forms/APIs |
+| Whoop | 2 | Health tracking API |
+| Twilio | 2 | Communication API |
+| Brother Printer | 2 | Local printer automation |
+| Apple | 2 | Apple Contacts/APIs |
+| YouTube 3rd P | 1 | YouTube API |
+| GS Site Realty | 1 | Internal app link |
+| Datadog | 1 | Monitoring dashboard |
 
 ---
 
-## Tiles Database Schema
+## Tile Database Schema
 
-### Properties
 | Property | Type | Description |
 |----------|------|-------------|
 | **Name** | Title | Tile name/label |
 | **MENU** | Multi-select | Category filter (Real Estate, Software, Org, Content, Health, Learn) |
 | **Status** | Status | Not started / In progress / Done |
-| **Desc** | Rich Text | Detailed description |
+| **Desc** | Rich Text | Detailed description and logic requirements |
 | **shadcn** | Multi-select | UI components needed (Button, Form, Graphic, Logic, etc.) |
 | **Phase** | Multi-select | When tile displays (GS Site Standing, Morning, Evening) |
 | **Select** | Select | Priority (1, 2, 3) |
-
-### MENU Options
-| Category | Color | Tile Count |
-|----------|-------|------------|
-| Real Estate | Brown | 10 |
-| Software | Blue | 21 |
-| Org | Purple | 28 |
-| Content | Red | 8 |
-| Health | Yellow | 12 |
-| Learn | Pink | 2 |
+| **3rd P** | Multi-select | Third party integrations required |
+| **Action warning?** | Checkbox | Has active warning |
+| **Action desc** | Rich Text | Warning description |
+| **SETTINGS** | Multi-select | Admin-configurable settings |
 
 ---
 
-## Complete Tiles Database (56 Records)
+## Complete Tile Reference
 
-### By MENU Category
+### Priority 1 Tiles (Critical)
 
----
-
-### Real Estate (10 tiles)
-
-| Name | Status | Description | Components |
-|------|--------|-------------|------------|
-| **CRM** | Not started | Link to gsrealty-client site | Button |
-| **10. Open House To-Do form** | In progress | - | Toggle List, Button |
-| **GS-clients Admin Dash page** | Not started | - | Button |
-| **2. Random Daily Contact** | Not started | Access to Apple contacts. | Button |
-| **RealtyOne KPI's calculator** | Not started | Formula vibe where you can edit Assumptions for Annual Commission, adjusts ABSs, listings needed, average commission, closed volume needed, closed avg sales price, transactions needed (total vs. per month), budgeted expenses, listings needed at 80% close rate | Graphic |
-| **Call tree Launch** | Not started | Interactive UI IF/THEN, train Agents to marginally deviate to improve | Button |
-| **18. Natural SQL language query UI** | Not started | Supabase Setup for all Projects to query in natural language | Logic |
-| **12. Multi-wk time frame Phase form** | Not started | Once a 2-week poll asking what kind of phase the last week & upcoming week feels like | Form |
-| **9. /prime-cc** | Not started | Improvements on any given codebase. Duolingo style multiple choice for Best Practices. Optional BRANCH→TEST→new TEST result. Give ID to Supabase for reference | Logic |
+#### EPSN3 Bin
+- **Status**: Not started
+- **Menu**: Content
+- **Phase**: GS Site Standing
+- **Components**: React plugin, Dropzone
+- **Third Party**: -
+- **Description**: Upload/choose file button for ESPN3 content
 
 ---
 
-### Software (21 tiles)
-
-| Name | Status | Description | Components |
-|------|--------|-------------|------------|
-| **Jump to Wab: Task List Value** | Not started | Notion Database 'Task List' (Rank VALUE 0-3) | Button |
-| **GS-clients Admin Dash page** | Not started | - | Button |
-| **New GS Wab; auto-sign into main Wab** | Not started | Link to wabbit site new wab | Button |
-| **Jump to Wab:** | Not started | - | Button |
-| **Go to my Wabbit** | Not started | Link to wabbit site home | Button |
-| **7. LLM Arena link/preview?** | Not started | - | Button |
-| **8. /tools** | Not started | Custom-command random for codebases. Duolingo style matching & definition review of tools | Logic |
-| **17. Github API?** | Not started | Search for Arizona related public repos. Should this be a tile or report? | Button, Logic |
-| **Call my Questioning Agent: Daniel Park** | Not started | Upon call with agent, unique menu. "Hello? This is Daniel." 1. Codebase critical gaps? 2. Clarity on goals? | Button, Logic |
-| **Select Github Repo dropdown** | Not started | Goes to New Issue [ADW Workflow button]. This is my IDP | Button, Logic |
-| **IDP Datadog Dash** | Not started | Homebase Button. Health of all tests, scrapers & pipelines/codebases | Button |
-| **Claude Code usage MAX plan** | Not started | Token OpenRouter usage. Is it possible on timer or Anthropic API credits? | Logic |
-| **Annual Github Commits count** | Not started | For both odgsully & odgsully-agent | Logic |
-| **AI Agent workforce admin board** | Not started | Jump to: 1. Notion overview 2. Agents admin nitty gritty | Button |
-| **odgsully Github repos** | Not started | Link | Button |
-| **9. /prime-cc** | Not started | Improvements on any given codebase (also update jarvis_briefme) | Logic |
-| **18. Natural SQL language query UI** | Not started | Supabase Setup for all Projects | Logic |
-| **12. Multi-wk time frame Phase form** | Not started | 2-week poll on phase feeling | Form |
-| **2. Random Daily Contact** | Not started | Access to Apple contacts | Button |
+#### 13. Panel for Days Till... Space Ad MUST SHOOT
+- **Status**: Not started
+- **Menu**: Org, Content
+- **Phase**: GS Site Standing
+- **Components**: Graphic, Logic
+- **Third Party**: Logic
+- **Description**: Count of days till 04/14/2026. Countdown timer graphic.
 
 ---
 
-### Org (28 tiles)
-
-| Name | Status | Description | Components |
-|------|--------|-------------|------------|
-| **GS Site Admin view** | Not started | Wherever shadcn column has 'Logic', its variables, description should be in Admin view | Button |
-| **Physically print WEEKLIES workflow trigger** | Not started | Automate ordering Brother 0DW print of WEEKLIES pdf. Exporting from Notion to Files | Button |
-| **Physically print tomorrow DAILY UI trigger** | Not started | Automate ordering Brother 0DW print of DAILY pdf | Button |
-| **15. Forms (monthly) & printoff** | Not started | Monthly Make+Track KPIs | Form, Logic |
-| **Forms (quarterly) & printoff** | Not started | Quarterly Make+Track KPIs | Form, Logic |
-| **14. Forms Streak** | Not started | Minimum 2x/day | Graphic, Logic |
-| **Forms completed this week Count** | Not started | - | Logic, Graphic |
-| **11. Prev day, prev week Time Spent pie chart** | Not started | Time Allocation dropdown with two pie charts. Counterbalance Note with Re-Balance suggestions | Graphic, Logic |
-| **4. Non-Google Form** | Not started | Supabase backend with whisper/audio API. Git summary, record Loom & transcribe. LLM /prime for mission & codebase | Form, Button |
-| **1. Whoop API Insights Dash** | Not started | Background logic: 1. Request from Whoop on timer 2. Filter through 3. Display | Graphic, Logic |
-| **6. Create Health tracker chart** | Not started | - | Graphic |
-| **Clean iCloud folder structure graphic** | Not started | Permissions to view & COUNT unplaced folders. Dropdown detailing files | Graphic, Button, Logic |
-| **Main dots style for Recurring Monthly important tasks** | Not started | Like TECH SORT 7 | Graphic |
-| **UI LIBRARIES** | Done | Kokonut UI, StyleUI, CultUI, Motion-primitives, Prompt-kit | - |
-| **Habitat Pic check** | Not started | Photo upload of organized environment: clean sink, clothes laid out, phone across room | Dropzone |
-| **Morning Form** | Not started | Must complete prior to GS Site Standing. 1. AM Weight→Notion Habits 2. Record 45sec AM vid | Pop-up |
-| **Accountability Report send-off to Circle** | Not started | Monthly report to circle via email. Gif/comment library to send back | Calendar & Date Picker |
-| **Notion Habits STREAKS** | Not started | COUNT table for days in a row (1 day offset) | Graphic, Logic |
-| **Task List Wabbed %** | Not started | This weeks/months (toggle) Task list percent wabbed | Graphic, Logic |
-| **Cali Task List to do** | Not started | Wabbit Rankings this week Count /out of Total or threshold of GRADES [A,B+,B,B-,C+] | Button |
-| **8. /tools** | Not started | Custom-command random for codebases | Logic |
-| **9. /prime-cc** | Not started | Improvements on any given codebase | Logic |
-| **13. Panel for Days Till… Space Ad MUST SHOOT** | Not started | Countdown timer | Graphic, Logic |
-| **18. Natural SQL language query UI** | Not started | Natural language queries | Logic |
-| **12. Multi-wk time frame Phase form** | Not started | 2-week poll | Form |
-| **Call tree Launch** | Not started | Interactive UI IF/THEN | Button |
-| **AI Agent workforce admin board** | Not started | Jump to Notion overview and Agents admin | Button |
+#### 18. Natural SQL language query UI for all databases toggle
+- **Status**: Not started
+- **Menu**: Real Estate, Software, Org, Content, Health
+- **Phase**: GS Site Standing
+- **Components**: Logic
+- **Third Party**: Logic, GitHub, EXTRA LOGIC
+- **Description**: Supabase Setup for all Projects to be able to query in natural language. Make a copy from tac-8 from /Users/garrettsullivan/Desktop/AUTOMATE/IndyDevDan/TAC/
 
 ---
 
-### Content (8 tiles)
-
-| Name | Status | Description | Components |
-|------|--------|-------------|------------|
-| **EPSN3 Bin** | Not started | Upload/choose file button | React plugin, Dropzone |
-| **GS socials Scheduler** | Not started | Calendar view with scheduled posts. Link with recurring Task List. Graphic for missed timeslots | Calendar & Date Picker, Graphic |
-| **YouTube wrapper/Timeline Open** | Not started | Drop URL for Transcript analysis | Button |
-| **3. Socials stats** | Not started | YouTube & X (both accounts) stats | Graphic |
-| **5. Create Eating Challenges** | Not started | Create recipe with ingredients from Inventory | Graphic, Logic |
-| **13. Panel for Days Till… Space Ad MUST SHOOT** | Not started | Countdown | Graphic, Logic |
-| **18. Natural SQL language query UI** | Not started | Natural language queries | Logic |
-| **12. Multi-wk time frame Phase form** | Not started | 2-week poll | Form |
+#### 15. Forms (monthly) & printoff
+- **Status**: Not started
+- **Menu**: Org
+- **Phase**: GS Site Standing
+- **Components**: Form, Logic
+- **Third Party**: Logic
+- **Description**: Monthly Make+Track KPIs. Create a pdf report with all KPI's.
 
 ---
 
-### Health (12 tiles)
-
-| Name | Status | Description | Components |
-|------|--------|-------------|------------|
-| **1. Whoop API Insights Dash** | Not started | Health/fitness dashboard from Whoop API | Graphic, Logic |
-| **Days since bloodwork done Counter** | Not started | Entire Garrett MD export PDF. Contains autobiographical health info | Logic |
-| **5. Create Eating Challenges** | Not started | Create recipe with inventory ingredients | Graphic, Logic |
-| **6. Create Health tracker chart** | Not started | - | Graphic |
-| **14. Forms Streak** | Not started | Minimum 2x/day | Graphic, Logic |
-| **2. Random Daily Contact** | Not started | Access to Apple contacts | Button |
-| **Habitat Pic check** | Not started | Photo upload of organized environment | Dropzone |
-| **Notion Habits STREAKS** | Not started | COUNT days in a row | Graphic, Logic |
-| **Memento Morri** | Not started | Weeks expected to live, 50 years. Animation enlarges & scratches boxes | Button |
-| **18. Natural SQL language query UI** | Not started | Natural language queries | Logic |
-| **12. Multi-wk time frame Phase form** | Not started | 2-week poll | Form |
+#### 1. Whoop API Insights Dash
+- **Status**: Not started
+- **Menu**: Org, Health
+- **Phase**: GS Site Standing
+- **Components**: Graphic, Logic
+- **Third Party**: Whoop, EXTRA LOGIC
+- **Description**: Background logic to:
+  1. Actually Request from Whoop site on a timer
+  2. Filter through
+  3. Display insights
 
 ---
 
-### Learn (2 tiles)
-
-| Name | Status | Description | Components |
-|------|--------|-------------|------------|
-| **out of 20 invites remaining on Y-Combinator** | Not started | Scrape YC with login (Browserbase/Playwright). "0/20"=green "20/20"=red | Logic |
-| **Jarvis_Briefme report** | Not started | URL highlight & transcribe read. Connected to whisper/Google - ask questions | Button |
+#### 14. Forms Streak
+- **Status**: Not started
+- **Menu**: Org, Health
+- **Phase**: GS Site Standing
+- **Components**: Graphic, Logic
+- **Third Party**: Google, Logic
+- **Description**: If Minimum 2x/day Form submitted, this counts as a day of Forms created streak. This tile is populating with the prev. days data i.e. the current day should not count. i.e. if Monday 3 forms were submitted and Tuesday 2 forms were submitted, but Wednesday is today & it is 11:58pm, & there is 0 forms submitted. Then what should the streak counter show? It should show 2 day streak.
 
 ---
 
-### No Category (2 tiles)
+#### Jump to Wab: Task List Value
+- **Status**: Not started
+- **Menu**: Software
+- **Phase**: GS Site Standing
+- **Components**: Button
+- **Third Party**: Wabbit
+- **Description**: Button to jump to Wabbit Task List ranking interface
 
-| Name | Status | Description | Components |
-|------|--------|-------------|------------|
-| **Calendar Insights** | Not started | Fetch from Supabase Wabbit Task List (rank 0-3). Tiles for most productive: Time of Day, Days, Category, Specific task item | - |
-| **Habit Insights** | Not started | Insights from Habits (Notion/Supabase). Tiles: Streak Count with motivation slideshow, % summary, Weight & Body fat graph (2w, 1m, 3m, 6m buttons) | - |
+---
+
+#### GS socials Scheduler
+- **Status**: Not started
+- **Menu**: Content
+- **Phase**: GS Site Standing
+- **Components**: Calendar & Date Picker, Graphic
+- **Third Party**: Scheduler 3rd P
+- **Description**: Calendar view with what posts scheduled to come out. Link with recurring Task List Notion. Graphic for missed timeslots.
+
+---
+
+#### 11. Prev day, prev week Time Spent pie charts
+- **Status**: Not started
+- **Menu**: Org
+- **Phase**: GS Site Standing
+- **Components**: Graphic, Logic
+- **Third Party**: Notion
+- **Description**: Have a Time Allocation dropdown where you can click to dropdown these two pie charts. Categorize Notion Task List table records dynamically, this Notion page saved, LLM calls (local Kimi?) for every task created. Counterbalance Note somewhere at the bottom where based on algorithm it suggests a task to do today that can help Re-Bal (rebalance).
+
+---
+
+#### YouTube wrapper/Timeline Open
+- **Status**: Not started
+- **Menu**: Content
+- **Phase**: GS Site Standing
+- **Components**: Button
+- **Third Party**: YouTube 3rd P
+- **Description**: Drop URL in for Transcript analysis. Track Screentime in MINE & Apple screentime or yt plugin.
+
+---
+
+#### 2. Random Daily Contact
+- **Status**: Not started
+- **Menu**: Real Estate, Software, Health
+- **Phase**: GS Site Standing
+- **Components**: Button
+- **Third Party**: Apple
+- **Description**: For this, we need Access to Apple contacts. Use motion primitives 'Typewriter' component.
+
+---
+
+#### Call my Questioning Agent: Daniel Park
+- **Status**: Not started
+- **Menu**: Software
+- **Phase**: GS Site Standing
+- **Components**: Button, Logic
+- **Third Party**: Logic, EXTRA LOGIC
+- **Description**: Upon a call with an agent, A unique Menu. For Daniel Park, Menu: "Hello? This is Daniel."
+  1. Want to hear my thoughts on the codebase with the most critical gaps?
+  2. Can I get some clarity on goals for your codebases?
+
+---
+
+#### Select Github Repo dropdown: Go's to New Issue [ADW Workflow button]
+- **Status**: Not started
+- **Menu**: Software
+- **Phase**: GS Site Standing
+- **Components**: Button, Logic
+- **Third Party**: Logic, EXTRA LOGIC, GitHub
+- **Description**: Needs to on a timer scrape/understand GitHub repositories for odgsully account & have those via a dropdown select component. With a button underneath, clicking 'Go' will bring to that repo's GitHub New Issue link. For designated device Jump to Button.
+
+---
+
+#### Link to Datadog Dash
+- **Status**: Not started
+- **Menu**: Software
+- **Phase**: GS Site Standing
+- **Components**: Button
+- **Third Party**: Datadog
+- **Description**: Link to Datadog Dash.
+
+---
+
+#### Forms completed this week Count
+- **Status**: Not started
+- **Menu**: Org
+- **Phase**: GS Site Standing
+- **Components**: Logic, Graphic
+- **Third Party**: Google
+- **Description**: Count all Google Forms for given week starting on Sunday AM. Ending Sat night. Much same logic as Forms streak tile record.
+
+---
+
+#### Jarvis_Briefme report
+- **Status**: Not started
+- **Menu**: Learn
+- **Phase**: GS Site Standing
+- **Components**: Button
+- **Third Party**: Logic
+- **Description**: Pull in Jarvis_briefme repository & instead of having an output everyday in gmail drafts, put them in Supabase & store in gs site new pdf subpage.
+
+---
+
+#### Cali Task List DONE
+- **Status**: Not started
+- **Menu**: Org
+- **Phase**: GS Site Standing
+- **Components**: Button
+- **Third Party**: Wabbit, Notion
+- **Description**: Wabbit Rankings this week Count /out of Total or threshold of GRADES [A,B+,B,B-,C+, C]. This includes tiles for most productive:
+  1. Time of Day
+  2. Days
+  3. Category
+  4. Specific task item for previous week (highest rank)
+
+---
+
+#### Clean iCloud folder structure graphic
+- **Status**: Not started
+- **Menu**: Org
+- **Phase**: GS Site Standing
+- **Components**: Graphic, Button, Logic
+- **Third Party**: Logic, EXTRA LOGIC
+- **Description**: Permissions to view & COUNT unplaced folders for main. Those in !!, those in BHRF. Dropdown style underneath the Main count Graphics detailing which files. BHRF The following are 'typical': Desktop The following are 'typical': BHRF, AUTOMATE, !!, every cc [copy], thinorswim. AUTOMATE The following are 'typical': consult, Directory Logic, IndyDevDan, Research, STOCK, Vibe Code.
+
+---
+
+#### Forms (quarterly) & printoff
+- **Status**: Not started
+- **Menu**: Org
+- **Phase**: GS Site Standing
+- **Components**: Form, Logic
+- **Third Party**: Logic
+- **Description**: Forms Quarterly Make+Track KPIs. Create a pdf report with all KPI's.
+
+---
+
+#### Habitat Pic check
+- **Status**: Not started
+- **Menu**: Org, Health
+- **Phase**: Evening
+- **Components**: Dropzone
+- **Third Party**: Logic
+- **Description**: An actual photo upload Button of things around environment where it makes you feel Good & Organized. i.e. clean sink, clothes laid out, phone across room, clean bathroom, etc. Implement a drag and drop feature or select photos/files drop box for this to connect to supabase.
+
+---
+
+#### Morning Form
+- **Status**: Not started
+- **Menu**: Org
+- **Phase**: Morning
+- **Components**: Pop-up
+- **Third Party**: Logic, EXTRA LOGIC
+- **Description**: This form must be completed prior to any ability to get to GS Site Standing.
+  1. Notion Habits -> AM Weight
+  2. Record 45 second AM prompted vid. i.e. Goals, yday review. ABILITY TO OPEN CAMERA app. or record & output to Supabase. Or local folder.
+
+---
+
+#### GS Site Admin view Gear Button
+- **Status**: Not started
+- **Menu**: Org
+- **Phase**: GS Site Standing
+- **Components**: Button
+- **Third Party**: Logic
+- **Description**: Gear button able to go to separate page of GS Site. For those with values in SETTINGS column, have these backend settings available. It's variables, description, etc should be in the Admin view where it can be changed & saved.
+
+---
+
+#### Accountability Report send-off to Circle
+- **Status**: Not started
+- **Menu**: Org
+- **Phase**: GS Site Standing
+- **Components**: Calendar & Date Picker
+- **Third Party**: Logic, Scheduler 3rd P, Twilio
+- **Description**: Every month, circle gets a report via their email on progress. If they had access to a little gif/comment library to send back, that would be awesome.
+
+---
+
+#### Notion Habits STREAKS
+- **Status**: Not started
+- **Menu**: Health, Org
+- **Phase**: GS Site Standing
+- **Components**: Graphic, Logic
+- **Third Party**: Notion
+- **Description**: Notion database inline 'Habits' from 'Habits' page actually has consistency where it uses COUNT the table for days in a row (not yet counting the current day) 1 day offset.
+
+---
+
+### Priority 2 Tiles (Important)
+
+#### 5. Create Eating Challenges
+- **Status**: Not started
+- **Menu**: Health, Content
+- **Phase**: GS Site Standing
+- **Components**: Graphic, Logic
+- **Third Party**: Logic, EXTRA LOGIC
+- **Description**: Create a recipe with ingredients that are in my Inventory. Inventory create by documenting all from MyFitnessPal.
+
+---
+
+#### Physically print WEEKLIES workflow trigger
+- **Status**: Not started
+- **Menu**: Org
+- **Phase**: GS Site Standing
+- **Components**: Button
+- **Third Party**: Brother Printer
+- **Description**: Button that will automate ordering the Brother 0DW print of a designated WEEKLIES pdf. Exporting from Notion into local Files.
+
+---
+
+#### New GS Wab; auto-sign into main Wab
+- **Status**: Not started
+- **Menu**: Software
+- **Phase**: GS Site Standing
+- **Components**: Button
+- **Third Party**: Wabbit
+- **Description**: Link to wabbit site new wab.
+
+---
+
+#### Go to my Wabbit
+- **Status**: Not started
+- **Menu**: Software
+- **Phase**: GS Site Standing
+- **Components**: Button
+- **Third Party**: Wabbit
+- **Description**: Link to wabbit site home.
+
+---
+
+#### Codebase Duolingo
+- **Status**: Not started
+- **Menu**: Software, Org
+- **Phase**: GS Site Standing
+- **Components**: Logic
+- **Third Party**: GitHub, Logic, EXTRA LOGIC
+- **Description**: 8. /tools custom-command random for various any given codebase. Also a Duolingo style matching, and definition review of what all codebase tools do. Suggestion or just picked element of codebase? Create a Duolingo light version with just the bare bones. I want to connect to GitHub for all repos & create tasks accordingly. Questions should be basic according to tools features in codebases.
+
+---
+
+#### 3. Socials stats
+- **Status**: Not started
+- **Menu**: Content
+- **Phase**: GS Site Standing
+- **Components**: Graphic
+- **Third Party**: Scheduler 3rd P
+- **Description**: YouTube videos & Shorts posted. X (both accounts) stats such as Tweets sent. Instagram posts sent. Instagram stories sent.
+
+---
+
+#### Days since bloodwork done Counter
+- **Status**: Not started
+- **Menu**: Health
+- **Phase**: GS Site Standing
+- **Components**: Logic
+- **Third Party**: Logic
+- **Description**: Preview Days since count of Date of 2/28/2025. Upon click, Link to page that contains:
+  1. Contains general health information on me. Autobiographical... picky, workout frequency, medications nil
+  2. Report of diet, report of Workout habits, whoop, etc
+
+---
+
+#### Claude Code MAX plan usage
+- **Status**: Not started
+- **Menu**: Software
+- **Phase**: GS Site Standing
+- **Components**: Logic
+- **Third Party**: Logic
+- **Description**: Ability to view/scrape within the Max plan automated? Or can I do it/call it with OpenRouter or does it need to be Anthropic API key use?
+
+---
+
+#### Annual Github Commits count
+- **Status**: In progress
+- **Menu**: Software
+- **Phase**: GS Site Standing
+- **Components**: Logic
+- **Third Party**: GitHub
+- **Description**: For (both odgsully & odgsully-agent), use GitHub API or otherwise to count across codebases all commits for both accounts.
+
+---
+
+#### RealtyOne KPI's calculator
+- **Status**: Not started
+- **Menu**: Real Estate
+- **Phase**: GS Site Standing
+- **Components**: Graphic
+- **Third Party**: Logic
+- **Description**: Tile area with multiple text boxes that can edit & dynamically modify other boxes. Excel esque.
+  1. Assumptions dollar amount text boxes for: Annual Commission, and that adjusts ABS's, listings needed to hit, average commission, closed volume needed, closed volume, closed avg sales price, transactions needed (total vs. per month), budgeted expenses.
+  How many listings you need to hit your goal if...
+
+---
+
+#### odgsully Github repos
+- **Status**: Not started
+- **Menu**: Software
+- **Phase**: GS Site Standing
+- **Components**: Button
+- **Third Party**: GitHub
+- **Description**: Link to GitHub repos.
+
+---
+
+#### Task List Wabbed %
+- **Status**: Not started
+- **Menu**: Org
+- **Phase**: GS Site Standing
+- **Components**: Graphic, Logic
+- **Third Party**: Wabbit, Notion
+- **Description**: Toggle switch between 1. This weeks & 2. this months Task list Wab percent completed.
+
+---
+
+### Priority 3 Tiles (Nice to Have)
+
+#### 10. RealtyOne Events button
+- **Status**: In progress
+- **Menu**: Real Estate
+- **Phase**: GS Site Standing
+- **Components**: Button
+- **Third Party**: Notion
+- **Description**: Button to Notion URL for RealtyOne Events.
+
+---
+
+#### 6. Create Health tracker chart
+- **Status**: Not started
+- **Menu**: Org, Health
+- **Phase**: GS Site Standing
+- **Components**: Graphic
+- **Third Party**: Whoop, EXTRA LOGIC
+- **Description**: 2 Week chart with x-axis as dates (short format) & certain toggles for Weight (line chart), Mood, HR up chart (y-axis has max of 2 meaning 2 times that day).
+
+---
+
+#### 7. LLM Arena
+- **Status**: Not started
+- **Menu**: Software
+- **Phase**: GS Site Standing
+- **Components**: Button
+- **Third Party**: -
+- **Description**: Link button to LLM Arena site.
+
+---
+
+#### Physically print tomorrow DAILY UI trigger
+- **Status**: Not started
+- **Menu**: Org
+- **Phase**: GS Site Standing
+- **Components**: Button
+- **Third Party**: Brother Printer
+- **Description**: Button that will automate ordering the Brother 0DW print of a designated DAILY pdf.
+
+---
+
+#### Y-Combinator invites
+- **Status**: Not started
+- **Menu**: Learn
+- **Phase**: GS Site Standing
+- **Components**: Logic, Graphic
+- **Third Party**: Logic
+- **Description**: Scrape YC with login permissions (Browserbase?). or Playwright script out of 20 invites remaining on. "0/20"=green "20/20"=red.
+- **Implementation Note**: Weekly reset on Saturday night. State persisted in localStorage with `lastResetAt` tracking.
+
+---
+
+#### Memento Morri
+- **Status**: Not started
+- **Menu**: Health
+- **Phase**: GS Site Standing
+- **Components**: Button
+- **Third Party**: Logic, EXTRA LOGIC
+- **Description**: Create a simple Memento Morri referencing template of Life in Weeks.png. This should be completed in modern shadcn style. Weeks expected to live, 50 years. Every time it's opened up -> Long trail animation from Motion-Primitives that circle perimeter of weeks boxes since last time this page was opened.
+
+---
+
+### No Priority Set
+
+#### GS-clients Admin Dash page
+- **Status**: Not started
+- **Menu**: Real Estate, Software
+- **Phase**: GS Site Standing
+- **Components**: Button
+- **Third Party**: GS Site Realty
+- **Description**: Link to gsrealty-client site.
+
+---
+
+#### AI Agent workforce admin board
+- **Status**: Not started
+- **Menu**: Org, Software
+- **Phase**: GS Site Standing
+- **Components**: Button
+- **Third Party**: Logic, Twilio, EXTRA LOGIC
+- **Description**: Jump to: 1. Referencing Notion Stars database inline within at URL.
+
+---
+
+#### Cali Forward look
+- **Status**: Not started
+- **Menu**: (none)
+- **Phase**: (none)
+- **Components**: (none)
+- **Third Party**: Notion, Wabbit
+- **Description**: Fetching from not done Task List & Never Ending To Do. We want to rank tasks from this table via Wabbit to GIVE ADDITIONAL CONTEXT for creating Calendar Suggestions.
+
+---
+
+#### Emails sent
+- **Status**: Not started
+- **Menu**: (none)
+- **Phase**: (none)
+- **Components**: (none)
+- **Third Party**: Logic, Apple, Google
+- **Description**: Count from all gbsullivan@mac.com and gbsullivan6@gmail.com.
+
+---
+
+#### Habit Insights
+- **Status**: Not started
+- **Menu**: (none)
+- **Phase**: (none)
+- **Components**: Graphic
+- **Third Party**: Notion
+- **Description**: Goal here is to give insights into Habits coming from the Habits database in Notion and Supabase, this includes tiles for:
+  1. Streak Count... Slideshow corner click for motivation with the images from /youcandoit/
+  2. % summary of each
+  3. Weight (lbs) & Body fat % Graph, should have buttons for 2w, 1m, 3m, 6m
+
+---
+
+## Implementation Status by Component Type
+
+### Buttons (Simple Links)
+| Tile | Status | Target |
+|------|--------|--------|
+| Go to my Wabbit | Not started | wabbit-re home |
+| New GS Wab | Not started | wabbit-re new wab |
+| GS-clients Admin | Not started | gsrealty-client admin |
+| Jump to Wab: Task List | Not started | Wabbit task ranking |
+| LLM Arena | Not started | lmarena.ai |
+| odgsully Github repos | Not started | github.com/odgsully |
+| Link to Datadog Dash | Not started | Datadog dashboard |
+| RealtyOne Events | In progress | Notion page |
+
+### Graphics (Data Visualization)
+| Tile | Status | Data Source |
+|------|--------|-------------|
+| Notion Habits STREAKS | Not started | Notion Habits DB |
+| Task List Wabbed % | Not started | Notion + Wabbit |
+| Forms Streak | Not started | Google Forms |
+| Time Spent pie charts | Not started | Notion Task List |
+| Health tracker chart | Not started | Whoop API |
+| Space Ad Countdown | Not started | Static date (04/14/2026) |
+| Y-Combinator invites | Not started | localStorage (weekly reset) |
+
+### Forms (User Input)
+| Tile | Status | Backend |
+|------|--------|---------|
+| Morning Form | Not started | Notion + Supabase |
+| Forms (monthly) | Not started | PDF generation |
+| Forms (quarterly) | Not started | PDF generation |
+
+### Logic (Complex Backend)
+| Tile | Status | Integrations |
+|------|--------|--------------|
+| Natural SQL query UI | Not started | Supabase, LLM |
+| Whoop Insights | Not started | Whoop API |
+| Claude Code usage | Not started | Anthropic API? |
+| Codebase Duolingo | Not started | GitHub API |
+| Random Daily Contact | Not started | Apple Contacts |
 
 ---
 
 ## Phase System
 
-Tiles display at different times based on Phase:
-
 | Phase | Description | Tile Count |
 |-------|-------------|------------|
-| **GS Site Standing** | Always visible, main dashboard | 51 |
+| **GS Site Standing** | Always visible, main dashboard | 44 |
 | **Morning** | Must complete before accessing Standing | 1 |
 | **Evening** | Evening check-in tiles | 1 |
+| **Unassigned** | No phase set | 1 |
 
 ---
 
-## Component Requirements Summary
+## Environment Variables Required
 
-| Component | Count | Tiles |
-|-----------|-------|-------|
-| **Button** | 27 | Navigation, links, triggers |
-| **Graphic** | 18 | Charts, visualizations, counters |
-| **Logic** | 22 | Backend computation, APIs |
-| **Form** | 6 | User input, surveys |
-| **Calendar & Date Picker** | 3 | Scheduling, dates |
-| **Dropzone** | 3 | File uploads |
-| **Pop-up** | 1 | Morning Form |
-| **Toggle List** | 1 | Open House To-Do |
-| **React plugin** | 1 | EPSN3 Bin |
+```bash
+# Notion Integration
+NOTION_API_KEY=secret_xxx
+NOTION_HABITS_DATABASE_ID=xxx
+NOTION_TASKS_DATABASE_ID=xxx
+NOTION_TILES_DATABASE_ID=28fcf08f-4499-8017-b530-ff06c9f64f97
 
----
+# External APIs
+WHOOP_CLIENT_ID=xxx
+WHOOP_CLIENT_SECRET=xxx
+GITHUB_TOKEN=xxx
+GOOGLE_FORMS_API_KEY=xxx
 
-## Site Style
-
-### Style Guidelines
-- Use `site-ref` folder assets: `grid.png`, `gradient.png`, `grain.png`
-- Layout inspiration: https://ui.shadcn.com/
-
-### Top of Site
-1. Dashboard header with "GS" title + `signature.png`
-2. **Menu Filter Bar** using BG Animate Buttons:
-   - 7 buttons: ALL, Real Estate, Software, Org, Content, Health, Learn
-   - Client-side filtering
-   - Instant show/hide of tiles
-
----
-
-## Data Sources
-
-### Primary
-1. **Supabase** - Wabbit data, user preferences
-2. **Notion API** - Tiles, Habits, Calendar, Task databases
-
-### External APIs
-- **Whoop** - Fitness/health data
-- **YouTube API** - Channel stats
-- **X/Twitter API** - Social stats
-- **Apple Contacts** - Contact randomizer
-- **GitHub API** - Repo search, commit counts
-- **OpenRouter** - Token usage
-- **Claude Code API** - Usage monitoring
-
----
-
-## Technical Implementation
-
-### Menu Filter Component (Proposed)
-```tsx
-// components/MenuFilter.tsx
-'use client';
-
-import { useState } from 'react';
-import { BgAnimateButton } from '@/components/ui/bg-animate-button';
-
-const MENU_CATEGORIES = [
-  { id: 'ALL', label: 'ALL', gradient: 'default' as const },
-  { id: 'Real Estate', label: 'Real Estate', gradient: 'sunset' as const },
-  { id: 'Software', label: 'Software', gradient: 'ocean' as const },
-  { id: 'Org', label: 'Org', gradient: 'nebula' as const },
-  { id: 'Content', label: 'Content', gradient: 'candy' as const },
-  { id: 'Health', label: 'Health', gradient: 'forest' as const },
-  { id: 'Learn', label: 'Learn', gradient: 'sunrise' as const },
-];
-
-interface MenuFilterProps {
-  activeCategory: string;
-  onCategoryChange: (category: string) => void;
-}
-
-export function MenuFilter({ activeCategory, onCategoryChange }: MenuFilterProps) {
-  return (
-    <div className="flex gap-2 flex-wrap justify-center p-4">
-      {MENU_CATEGORIES.map((cat) => (
-        <BgAnimateButton
-          key={cat.id}
-          gradient={cat.gradient}
-          animation="spin-slow"
-          rounded="full"
-          shadow={activeCategory === cat.id ? 'deep' : 'soft'}
-          size="sm"
-          onClick={() => onCategoryChange(cat.id)}
-          className={activeCategory === cat.id ? 'ring-2 ring-white' : ''}
-        >
-          {cat.label}
-        </BgAnimateButton>
-      ))}
-    </div>
-  );
-}
+# Cross-App Integration
+WABBIT_RE_URL=http://localhost:3000
+GSREALTY_URL=http://localhost:3004
+WABBIT_URL=http://localhost:3002
 ```
 
-### Current Tech Stack
-- Next.js 14
-- Tailwind CSS
-- shadcn/ui + CULTUI + motion-primitives
-- Notion API integration (`/api/notion`)
-- Health check endpoint (`/api/health`)
+---
+
+## Sync History
+
+| Date | Action | Notes |
+|------|--------|-------|
+| 2025-12-23 | Full sync from Notion | 47 tiles, all fields captured |
+| 2025-12-22 | Initial creation | Based on Notion page structure |
 
 ---
 
-## Files Referenced
-- `signature.png` - Header signature image
-- `grid.png`, `gradient.png`, `grain.png` - Background textures
-- `/youcandoit/` - Motivational images for streak celebrations
-- `components/ui/bg-animate-button.tsx` - Animated gradient button component
+## How to Update This File
+
+1. **Manual updates**: Edit directly when implementing tile logic
+2. **Notion sync**: Run `npm run sync-tiles` for tile definitions only
+3. **Full resync**: Use Claude Code to fetch from Notion API and regenerate
+
+**Remember**: This file is the source of truth. Notion is secondary.

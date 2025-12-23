@@ -2,10 +2,11 @@
 
 > **Purpose**: Transform the current static tile grid into a dynamic, Notion-synced dashboard with intelligent warnings, 3rd party integrations, and component-specific UI patterns.
 >
-> **Last Updated**: December 22, 2025
+> **Last Updated**: December 23, 2025
 > **Branch**: `gssite-dec18-per-notion`
 > **Phase 0**: ✅ COMPLETE | **Phase 1**: ✅ COMPLETE | **Phase 2**: ✅ COMPLETE | **Phase 3**: ✅ COMPLETE | **Phase 4**: ✅ COMPLETE
 > **Phase 5**: ⛔ BLOCKED (no Wabbit app) | **Phase 6**: 📋 Research Done | **Phase 7**: 📋 Research Done | **Phase 8**: ✅ Logic Tiles Done
+> **Gmail Integration**: ✅ COMPLETE (Dec 23, 2025) - Emails Sent tile working with OAuth
 
 ---
 
@@ -1410,9 +1411,10 @@ syncTiles();
 
 ## Next Steps & Action Items
 
-**Current Status (December 22, 2025)**:
+**Current Status (December 23, 2025)**:
 - ✅ Phases 0-4: COMPLETE
 - ⛔ Phase 5: BLOCKED (no Wabbit app exists)
+- ✅ Gmail Integration: COMPLETE (Emails Sent tile with OAuth)
 - 📋 Phases 6-7: RESEARCH COMPLETE, implementation pending
 - ✅ Phase 8 Logic Tiles: COMPLETE (4 tiles implemented)
 - ⏳ Phase 8 Device Tiles: PENDING (printer integration)
@@ -1554,6 +1556,11 @@ NOTION_TASKS_DATABASE_ID=xxx
 
 # GitHub (configured in Phase 3)
 GITHUB_PAT=ghp_xxx
+
+# Google OAuth - Gmail Integration (configured Dec 2025)
+# CRITICAL: Must run on port 3003 - OAuth redirect URI is configured for this port
+GOOGLE_CLIENT_ID=xxx.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=GOCSPX-xxx
 
 # Wabbit Apps (Phase 5 - not yet needed)
 WABBIT_RE_URL=http://localhost:3000

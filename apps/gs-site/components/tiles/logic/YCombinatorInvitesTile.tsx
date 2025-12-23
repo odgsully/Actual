@@ -29,6 +29,8 @@ export interface YCInviteConfig {
   deadline?: string;
   /** Notes */
   notes?: string;
+  /** ISO timestamp of last weekly reset (Saturday night) */
+  lastResetAt?: string;
 }
 
 interface YCombinatorInvitesTileProps {
@@ -49,7 +51,42 @@ const DEFAULT_CONFIG: YCInviteConfig = {
   batch: 'W25',
   deadline: undefined,
   notes: undefined,
+  lastResetAt: undefined,
 };
+
+/**
+ * Get the most recent Saturday at 11:59 PM before or equal to the given date.
+ * Week resets Saturday night (end of Saturday).
+ */
+function getLastSaturdayNight(date: Date): Date {
+  const result = new Date(date);
+  const dayOfWeek = result.getDay(); // 0 = Sunday, 6 = Saturday
+
+  // Calculate days to subtract to get to Saturday
+  // If today is Sunday (0), go back 1 day
+  // If today is Saturday (6), use today
+  // Otherwise, go back (dayOfWeek + 1) days
+  const daysToSubtract = dayOfWeek === 0 ? 1 : dayOfWeek === 6 ? 0 : dayOfWeek + 1;
+
+  result.setDate(result.getDate() - daysToSubtract);
+  result.setHours(23, 59, 59, 999);
+  return result;
+}
+
+/**
+ * Check if we need to reset based on Saturday night boundary.
+ * Returns true if we've crossed a Saturday night since lastResetAt.
+ */
+function shouldResetForNewWeek(lastResetAt?: string): boolean {
+  if (!lastResetAt) return true; // First time, set the reset timestamp
+
+  const now = new Date();
+  const lastReset = new Date(lastResetAt);
+  const currentWeekSaturday = getLastSaturdayNight(now);
+
+  // If the last reset was before the most recent Saturday night, we need to reset
+  return lastReset < currentWeekSaturday;
+}
 
 function saveConfig(config: YCInviteConfig) {
   if (typeof window !== 'undefined') {
@@ -62,13 +99,27 @@ function loadConfig(): YCInviteConfig {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       try {
-        return { ...DEFAULT_CONFIG, ...JSON.parse(stored) };
+        const parsed = { ...DEFAULT_CONFIG, ...JSON.parse(stored) };
+
+        // Check if we need to reset for a new week
+        if (shouldResetForNewWeek(parsed.lastResetAt)) {
+          const resetConfig = {
+            ...parsed,
+            inviteCount: 0,
+            lastResetAt: new Date().toISOString(),
+          };
+          // Save the reset config immediately
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(resetConfig));
+          return resetConfig;
+        }
+
+        return parsed;
       } catch {
-        return DEFAULT_CONFIG;
+        return { ...DEFAULT_CONFIG, lastResetAt: new Date().toISOString() };
       }
     }
   }
-  return DEFAULT_CONFIG;
+  return { ...DEFAULT_CONFIG, lastResetAt: new Date().toISOString() };
 }
 
 // ============================================================

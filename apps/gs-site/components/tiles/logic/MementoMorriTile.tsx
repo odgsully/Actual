@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Skull, Settings2, Calendar as CalendarIcon } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Skull, Settings2, X, ExternalLink } from 'lucide-react';
+import Link from 'next/link';
 import { WarningBorderTrail } from '../WarningBorderTrail';
+import { LifeInWeeksVisualization, GS_BIRTH_DATE, GS_TARGET_LIFESPAN } from '@/components/LifeInWeeksVisualization';
 import type { Tile } from '@/lib/types/tiles';
 
 // ============================================================
@@ -29,15 +31,16 @@ interface MementoMorriTileProps {
 // Local Storage Key
 // ============================================================
 
-const STORAGE_KEY = 'mementoMorri';
+// Version suffix forces refresh when defaults change
+const STORAGE_KEY = 'mementoMorri_v2';
 
 // ============================================================
-// Default Configuration
+// Default Configuration (uses imported constants)
 // ============================================================
 
 const DEFAULT_CONFIG: MementoMorriConfig = {
-  birthDate: new Date('1990-01-01'),
-  expectedLifespan: 80,
+  birthDate: GS_BIRTH_DATE,
+  expectedLifespan: GS_TARGET_LIFESPAN,
   displayMode: 'weeks',
 };
 
@@ -105,6 +108,66 @@ function loadConfig(): MementoMorriConfig {
 }
 
 // ============================================================
+// Life In Weeks Modal Component
+// ============================================================
+
+interface LifeInWeeksModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  birthDate: Date;
+  expectedLifespan: number;
+}
+
+function LifeInWeeksModal({ isOpen, onClose, birthDate, expectedLifespan }: LifeInWeeksModalProps) {
+  if (!isOpen) return null;
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4"
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.9, opacity: 0 }}
+          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+          className="relative max-h-[95vh] overflow-auto bg-white py-8 px-6 md:px-12 rounded-lg"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header with close button and page link */}
+          <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
+            <Link
+              href="/life-in-weeks"
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              title="Open full page"
+            >
+              <ExternalLink className="w-5 h-5 text-gray-600" />
+            </Link>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              aria-label="Close"
+            >
+              <X className="w-6 h-6 text-gray-600" />
+            </button>
+          </div>
+
+          {/* Shared visualization component */}
+          <LifeInWeeksVisualization
+            birthDate={birthDate}
+            expectedLifespan={expectedLifespan}
+          />
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
+// ============================================================
 // Main Component
 // ============================================================
 
@@ -149,6 +212,7 @@ export function MementoMorriTile({
   });
 
   const [showSettings, setShowSettings] = useState(false);
+  const [showLifeInWeeks, setShowLifeInWeeks] = useState(false);
 
   // Save config changes
   useEffect(() => {
@@ -272,8 +336,11 @@ export function MementoMorriTile({
           </motion.div>
         )}
 
-        {/* Main Display */}
-        <div className="flex-1 flex flex-col justify-center">
+        {/* Main Display - Clickable to open Life in Weeks */}
+        <button
+          onClick={() => setShowLifeInWeeks(true)}
+          className="flex-1 flex flex-col justify-center cursor-pointer hover:bg-accent/50 rounded-md transition-colors -mx-1 px-1"
+        >
           {/* Primary Counter */}
           <div className="text-center">
             <motion.div
@@ -305,7 +372,7 @@ export function MementoMorriTile({
               <span>{percentageLived.toFixed(1)}%</span>
             </div>
           </div>
-        </div>
+        </button>
 
         {/* Status indicator */}
         {tile.status && tile.status !== 'Not started' && (
@@ -316,6 +383,14 @@ export function MementoMorriTile({
           />
         )}
       </div>
+
+      {/* Life In Weeks Modal */}
+      <LifeInWeeksModal
+        isOpen={showLifeInWeeks}
+        onClose={() => setShowLifeInWeeks(false)}
+        birthDate={birthDate}
+        expectedLifespan={expectedLifespan}
+      />
     </WarningBorderTrail>
   );
 }

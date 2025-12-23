@@ -41,15 +41,20 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    console.log('[Google OAuth] Exchanging code for tokens...');
+
     // Exchange code for tokens
     const tokens = await exchangeCodeForTokens(code);
+    console.log('[Google OAuth] Token exchange successful, email:', tokens.email);
 
     // For now, use a default user ID since we don't have full auth
     // In production, this would come from the session
     const userId = 'default-user';
 
     // Store tokens in database
+    console.log('[Google OAuth] Storing tokens for user:', userId);
     await storeGmailTokens(userId, tokens);
+    console.log('[Google OAuth] Tokens stored successfully');
 
     // Redirect back with success message
     const successUrl = new URL(returnUrl, process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3003');
@@ -58,7 +63,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.redirect(successUrl.toString());
   } catch (err) {
-    console.error('Failed to exchange code:', err);
+    console.error('[Google OAuth] Failed to exchange code:', err);
+    console.error('[Google OAuth] Error details:', err instanceof Error ? err.message : String(err));
     const errorUrl = new URL(returnUrl, process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3003');
     errorUrl.searchParams.set('error', 'auth_failed');
 

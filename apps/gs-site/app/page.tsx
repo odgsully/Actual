@@ -1,7 +1,8 @@
 'use client';
 
 import { useMemo } from 'react';
-import { RefreshCw, CloudOff } from 'lucide-react';
+import { RefreshCw, CloudOff, Settings } from 'lucide-react';
+import Link from 'next/link';
 import { MenuFilter } from '@/components/MenuFilter';
 import { PhaseReminder } from '@/components/PhaseReminder';
 import { TileDispatcher, TileErrorBoundary } from '@/components/tiles';
@@ -42,8 +43,8 @@ export default function Home() {
               Personal App Suite
             </p>
           </div>
-          {/* Connection status indicator */}
-          <div className="flex items-center gap-2">
+          {/* Connection status indicator & admin link */}
+          <div className="flex items-center gap-3">
             {isRefreshing && (
               <RefreshCw className="w-4 h-4 text-muted-foreground animate-spin" />
             )}
@@ -53,6 +54,13 @@ export default function Home() {
                 <span className="text-xs hidden sm:inline">Offline</span>
               </div>
             )}
+            <Link
+              href="/admin"
+              className="p-2 hover:bg-accent rounded-md transition-colors"
+              title="Admin Settings"
+            >
+              <Settings className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+            </Link>
           </div>
         </div>
       </header>

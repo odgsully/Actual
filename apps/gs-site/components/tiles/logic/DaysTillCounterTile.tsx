@@ -26,20 +26,51 @@ interface DaysTillCounterTileProps {
 }
 
 // ============================================================
-// Local Storage Key
+// Local Storage Key (tile-specific)
 // ============================================================
 
-const STORAGE_KEY = 'daysTillCounter';
+function getStorageKey(tileId: string): string {
+  return `daysTillCounter_${tileId}`;
+}
 
 // ============================================================
 // Default Configuration
 // ============================================================
 
 const DEFAULT_CONFIG: DaysTillConfig = {
-  targetDate: new Date('2025-12-31'), // Default to end of year
-  eventLabel: 'End of Year',
+  targetDate: new Date('2026-04-14'), // SpaceAd MUST SHOOT deadline
+  eventLabel: 'MUST SHOOT',
   showTime: false,
 };
+
+// ============================================================
+// Parse date from tile description (e.g., "Count of days till 04/14/2026")
+// ============================================================
+
+function parseDateFromDesc(desc: string | undefined): Date | null {
+  if (!desc) return null;
+
+  // Match MM/DD/YYYY format
+  const match = desc.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (match) {
+    const [, month, day, year] = match;
+    const date = new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
+    if (!isNaN(date.getTime())) {
+      return date;
+    }
+  }
+
+  // Match YYYY-MM-DD format
+  const isoMatch = desc.match(/(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) {
+    const date = new Date(isoMatch[0]);
+    if (!isNaN(date.getTime())) {
+      return date;
+    }
+  }
+
+  return null;
+}
 
 // ============================================================
 // Utility Functions
@@ -73,10 +104,10 @@ function calculateTimeRemaining(targetDate: Date) {
   };
 }
 
-function saveConfig(config: DaysTillConfig) {
+function saveConfig(tileId: string, config: DaysTillConfig) {
   if (typeof window !== 'undefined') {
     localStorage.setItem(
-      STORAGE_KEY,
+      getStorageKey(tileId),
       JSON.stringify({
         ...config,
         targetDate: config.targetDate.toISOString(),
@@ -85,21 +116,40 @@ function saveConfig(config: DaysTillConfig) {
   }
 }
 
-function loadConfig(): DaysTillConfig {
+function loadConfig(tileId: string, tile: Tile): DaysTillConfig {
+  // First, check if tile description contains a date - this takes priority
+  const descDate = parseDateFromDesc(tile.desc);
+
   if (typeof window !== 'undefined') {
-    const stored = localStorage.getItem(STORAGE_KEY);
+    const stored = localStorage.getItem(getStorageKey(tileId));
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
+        // If description has a date, use it (source of truth)
+        if (descDate) {
+          return {
+            ...parsed,
+            targetDate: descDate,
+          };
+        }
         return {
           ...parsed,
           targetDate: new Date(parsed.targetDate),
         };
       } catch {
-        return DEFAULT_CONFIG;
+        // Fall through to default
       }
     }
   }
+
+  // Use date from description if available, otherwise default
+  if (descDate) {
+    return {
+      ...DEFAULT_CONFIG,
+      targetDate: descDate,
+    };
+  }
+
   return DEFAULT_CONFIG;
 }
 
@@ -137,7 +187,7 @@ export function DaysTillCounterTile({
 }: DaysTillCounterTileProps) {
   const [config, setConfig] = useState<DaysTillConfig>(() => {
     if (initialConfig) return initialConfig;
-    return loadConfig();
+    return loadConfig(tile.id, tile);
   });
 
   const [timeRemaining, setTimeRemaining] = useState(() =>
@@ -158,9 +208,9 @@ export function DaysTillCounterTile({
   // Save config changes
   useEffect(() => {
     if (!initialConfig) {
-      saveConfig(config);
+      saveConfig(tile.id, config);
     }
-  }, [config, initialConfig]);
+  }, [config, initialConfig, tile.id]);
 
   const handleDateChange = (dateString: string) => {
     const newDate = new Date(dateString);
@@ -196,7 +246,10 @@ export function DaysTillCounterTile({
           <div className="flex items-center gap-1.5">
             <Timer className="w-4 h-4 text-muted-foreground" />
             <h3 className="text-xs font-medium text-foreground truncate">
-              {tile.name}
+              {/* Clean up tile name - extract key part after "..." or use as-is */}
+              {tile.name.includes('SpaceAd') ? 'SpaceAd' :
+               tile.name.includes('…') ? tile.name.split('…').pop()?.trim() :
+               tile.name.replace(/^\d+\.\s*/, '')}
             </h3>
           </div>
           <button

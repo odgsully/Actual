@@ -56,7 +56,7 @@ export const DEFAULT_SETTINGS: TileSettingsMap = {
     difficulty: 2,
   },
   'days-since-bloodwork': {
-    startDate: new Date().toISOString().split('T')[0],
+    startDate: '2025-02-28',
   },
   'morning-form': {
     videoDurationSeconds: 300, // 5 minutes

@@ -4,17 +4,39 @@
  * Queries the Habits database for streak tracking, completion rates,
  * and habit history. Used by the Habits STREAKS graphic tile.
  *
- * Database Schema (expected):
- * - Name: Title (habit name)
- * - Date: Date (when habit was performed)
- * - Completed: Checkbox (whether completed)
- * - Category: Select (optional grouping)
+ * ACTUAL Database Schema (from Notion):
+ * - Name: Title (day label/notes)
+ * - Date: Date (the day)
+ * - Weight: Number (body weight)
+ * - Checkbox columns for each habit:
+ *   - Box pack, Across room set, Heart rate UP, Stillness,
+ *   - Duolingo, Food Tracked, No DAJO, Box grabbed
+ * - Total Progress: Formula (calculates daily completion rate)
+ * - Day Key: Formula (formats date as YYYY-MM-DD)
+ *
+ * Structure: One row per DAY with multiple habit checkboxes
  */
 
 const NOTION_API_VERSION = '2022-06-28';
 
-// TODO: Replace with actual Habits database ID from Notion
 const HABITS_DATABASE_ID = process.env.NOTION_HABITS_DATABASE_ID || '';
+
+/**
+ * List of habit checkbox column names in Notion
+ * These are the actual property names from your Habits database
+ */
+const HABIT_COLUMNS = [
+  'Duolingo',
+  'Food Tracked',
+  'Heart rate UP',
+  'Stillness',
+  'Box pack',
+  'Across room set',
+  'No DAJO',
+  'Box grabbed',
+] as const;
+
+export type HabitName = (typeof HABIT_COLUMNS)[number];
 
 /**
  * Get Notion API key from environment
@@ -53,10 +75,25 @@ async function notionFetch(endpoint: string, body?: object): Promise<any> {
   return response.json();
 }
 
+/**
+ * A single day's habit record with all checkbox values
+ */
+export interface DailyHabitRecord {
+  id: string;
+  date: string; // ISO date string (YYYY-MM-DD)
+  weight?: number;
+  habits: Record<HabitName, boolean>;
+  totalProgress?: number; // From Notion formula if available
+}
+
+/**
+ * Legacy interface for backward compatibility
+ * Represents a single habit occurrence (flattened from daily record)
+ */
 export interface HabitEntry {
   id: string;
   name: string;
-  date: string; // ISO date string
+  date: string;
   completed: boolean;
   category?: string;
 }
@@ -78,12 +115,52 @@ export interface HabitsDateRange {
 }
 
 /**
- * Fetch habit entries for a date range
+ * Parse a Notion page into a DailyHabitRecord
  */
-export async function getHabitsForDateRange(
+function parseDailyRecord(page: any): DailyHabitRecord {
+  const habits: Record<string, boolean> = {};
+
+  // Extract each habit checkbox
+  for (const habitName of HABIT_COLUMNS) {
+    habits[habitName] = page.properties[habitName]?.checkbox || false;
+  }
+
+  return {
+    id: page.id,
+    date: page.properties.Date?.date?.start || '',
+    weight: page.properties.Weight?.number ?? undefined,
+    habits: habits as Record<HabitName, boolean>,
+    totalProgress: page.properties['Total Progress']?.formula?.number ?? undefined,
+  };
+}
+
+/**
+ * Convert daily records to flattened HabitEntry array (for backward compatibility)
+ */
+function flattenToHabitEntries(records: DailyHabitRecord[]): HabitEntry[] {
+  const entries: HabitEntry[] = [];
+
+  for (const record of records) {
+    for (const habitName of HABIT_COLUMNS) {
+      entries.push({
+        id: `${record.id}-${habitName}`,
+        name: habitName,
+        date: record.date,
+        completed: record.habits[habitName] || false,
+      });
+    }
+  }
+
+  return entries;
+}
+
+/**
+ * Fetch daily habit records for a date range
+ */
+export async function getDailyRecordsForDateRange(
   startDate: Date,
   endDate: Date
-): Promise<HabitEntry[]> {
+): Promise<DailyHabitRecord[]> {
   if (!HABITS_DATABASE_ID) {
     console.warn('NOTION_HABITS_DATABASE_ID not configured');
     return [];
@@ -116,17 +193,23 @@ export async function getHabitsForDateRange(
       page_size: 100,
     });
 
-    return response.results.map((page: any) => ({
-      id: page.id,
-      name: page.properties.Name?.title?.[0]?.plain_text || 'Unknown',
-      date: page.properties.Date?.date?.start || '',
-      completed: page.properties.Completed?.checkbox || false,
-      category: page.properties.Category?.select?.name,
-    }));
+    return response.results.map(parseDailyRecord);
   } catch (error) {
     console.error('Error fetching habits:', error);
     throw error;
   }
+}
+
+/**
+ * Fetch habit entries for a date range (backward compatible)
+ * Returns flattened array of habit entries
+ */
+export async function getHabitsForDateRange(
+  startDate: Date,
+  endDate: Date
+): Promise<HabitEntry[]> {
+  const records = await getDailyRecordsForDateRange(startDate, endDate);
+  return flattenToHabitEntries(records);
 }
 
 /**
@@ -137,53 +220,33 @@ export async function getCurrentStreak(habitName: string): Promise<number> {
     return 0;
   }
 
+  // Validate habit name
+  if (!HABIT_COLUMNS.includes(habitName as HabitName)) {
+    console.warn(`Unknown habit: ${habitName}`);
+    return 0;
+  }
+
   try {
-    // Get last 90 days of this habit
+    // Get last 90 days
     const endDate = new Date();
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - 90);
 
-    const response = await notionFetch(`/databases/${HABITS_DATABASE_ID}/query`, {
-      filter: {
-        and: [
-          {
-            property: 'Name',
-            title: {
-              equals: habitName,
-            },
-          },
-          {
-            property: 'Completed',
-            checkbox: {
-              equals: true,
-            },
-          },
-          {
-            property: 'Date',
-            date: {
-              on_or_after: startDate.toISOString().split('T')[0],
-            },
-          },
-        ],
-      },
-      sorts: [
-        {
-          property: 'Date',
-          direction: 'descending',
-        },
-      ],
-      page_size: 100,
-    });
+    const records = await getDailyRecordsForDateRange(startDate, endDate);
 
-    if (response.results.length === 0) {
+    if (records.length === 0) {
       return 0;
     }
 
-    // Calculate consecutive days from today
-    const completedDates = new Set(
-      response.results.map((page: any) => page.properties.Date?.date?.start)
-    );
+    // Build set of dates where this specific habit was completed
+    const completedDates = new Set<string>();
+    for (const record of records) {
+      if (record.habits[habitName as HabitName]) {
+        completedDates.add(record.date);
+      }
+    }
 
+    // Calculate consecutive days from today
     let streak = 0;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -223,10 +286,20 @@ export async function getHabitCompletionRate(
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
-    const entries = await getHabitsForDateRange(startDate, endDate);
+    const records = await getDailyRecordsForDateRange(startDate, endDate);
 
-    const completed = entries.filter((e) => e.completed).length;
-    const total = entries.length;
+    let completed = 0;
+    let total = 0;
+
+    for (const record of records) {
+      for (const habitName of HABIT_COLUMNS) {
+        total++;
+        if (record.habits[habitName]) {
+          completed++;
+        }
+      }
+    }
+
     const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
 
     return { completed, total, rate };
@@ -238,6 +311,7 @@ export async function getHabitCompletionRate(
 
 /**
  * Get all habit streaks summary
+ * Returns streak data for each individual habit column
  */
 export async function getAllHabitStreaks(): Promise<HabitStreak[]> {
   if (!HABITS_DATABASE_ID) {
@@ -245,33 +319,34 @@ export async function getAllHabitStreaks(): Promise<HabitStreak[]> {
   }
 
   try {
-    // Get all habits from last 90 days
+    // Get all records from last 90 days
     const endDate = new Date();
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - 90);
 
-    const entries = await getHabitsForDateRange(startDate, endDate);
+    const records = await getDailyRecordsForDateRange(startDate, endDate);
 
-    // Group by habit name
-    const habitGroups = new Map<string, HabitEntry[]>();
-    entries.forEach((entry) => {
-      const existing = habitGroups.get(entry.name) || [];
-      existing.push(entry);
-      habitGroups.set(entry.name, existing);
-    });
-
-    // Calculate streaks for each habit
     const streaks: HabitStreak[] = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-    for (const [habitName, habitEntries] of habitGroups) {
-      const completedEntries = habitEntries.filter((e) => e.completed);
-      const completedDates = new Set(completedEntries.map((e) => e.date));
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-      // Current streak
+    const thirtyDaysAgo = new Date(today);
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    for (const habitName of HABIT_COLUMNS) {
+      // Build set of completed dates for this habit
+      const completedDates = new Set<string>();
+      for (const record of records) {
+        if (record.habits[habitName]) {
+          completedDates.add(record.date);
+        }
+      }
+
+      // Calculate current streak
       let currentStreak = 0;
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
       for (let i = 0; i < 90; i++) {
         const checkDate = new Date(today);
         checkDate.setDate(checkDate.getDate() - i);
@@ -284,32 +359,58 @@ export async function getAllHabitStreaks(): Promise<HabitStreak[]> {
         }
       }
 
-      // Longest streak (simplified - just use current for now)
-      const longestStreak = currentStreak;
+      // Calculate longest streak
+      let longestStreak = 0;
+      let tempStreak = 0;
+      const sortedDates = Array.from(completedDates).sort();
+
+      for (let i = 0; i < sortedDates.length; i++) {
+        if (i === 0) {
+          tempStreak = 1;
+        } else {
+          const prevDate = new Date(sortedDates[i - 1]);
+          const currDate = new Date(sortedDates[i]);
+          const diffDays = Math.round(
+            (currDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24)
+          );
+
+          if (diffDays === 1) {
+            tempStreak++;
+          } else {
+            longestStreak = Math.max(longestStreak, tempStreak);
+            tempStreak = 1;
+          }
+        }
+      }
+      longestStreak = Math.max(longestStreak, tempStreak, currentStreak);
 
       // Last completed date
-      const sortedDates = Array.from(completedDates).sort().reverse();
-      const lastCompletedDate = sortedDates[0] || null;
+      const reversedDates = Array.from(completedDates).sort().reverse();
+      const lastCompletedDate = reversedDates[0] || null;
 
-      // 7-day rate
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      const last7Days = habitEntries.filter(
-        (e) => new Date(e.date) >= sevenDaysAgo
-      );
-      const completed7 = last7Days.filter((e) => e.completed).length;
-      const completionRate7Days =
-        last7Days.length > 0 ? Math.round((completed7 / 7) * 100) : 0;
+      // 7-day completion rate
+      let completed7 = 0;
+      for (let i = 0; i < 7; i++) {
+        const checkDate = new Date(today);
+        checkDate.setDate(checkDate.getDate() - i);
+        const dateStr = checkDate.toISOString().split('T')[0];
+        if (completedDates.has(dateStr)) {
+          completed7++;
+        }
+      }
+      const completionRate7Days = Math.round((completed7 / 7) * 100);
 
-      // 30-day rate
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      const last30Days = habitEntries.filter(
-        (e) => new Date(e.date) >= thirtyDaysAgo
-      );
-      const completed30 = last30Days.filter((e) => e.completed).length;
-      const completionRate30Days =
-        last30Days.length > 0 ? Math.round((completed30 / 30) * 100) : 0;
+      // 30-day completion rate
+      let completed30 = 0;
+      for (let i = 0; i < 30; i++) {
+        const checkDate = new Date(today);
+        checkDate.setDate(checkDate.getDate() - i);
+        const dateStr = checkDate.toISOString().split('T')[0];
+        if (completedDates.has(dateStr)) {
+          completed30++;
+        }
+      }
+      const completionRate30Days = Math.round((completed30 / 30) * 100);
 
       streaks.push({
         habitName,
@@ -345,38 +446,39 @@ export async function getHabitsHeatmapData(
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
-    const entries = await getHabitsForDateRange(startDate, endDate);
+    const records = await getDailyRecordsForDateRange(startDate, endDate);
 
-    // Group by date
-    const dateGroups = new Map<string, HabitEntry[]>();
-    entries.forEach((entry) => {
-      const existing = dateGroups.get(entry.date) || [];
-      existing.push(entry);
-      dateGroups.set(entry.date, existing);
+    const result: HabitsDateRange[] = records.map((record) => {
+      const habits: Array<{ name: string; completed: boolean }> = [];
+      let completedCount = 0;
+
+      for (const habitName of HABIT_COLUMNS) {
+        const completed = record.habits[habitName] || false;
+        habits.push({ name: habitName, completed });
+        if (completed) completedCount++;
+      }
+
+      return {
+        date: record.date,
+        completedCount,
+        totalCount: HABIT_COLUMNS.length,
+        habits,
+      };
     });
 
-    // Convert to array format
-    const result: HabitsDateRange[] = [];
-
-    for (const [date, dayEntries] of dateGroups) {
-      const completedCount = dayEntries.filter((e) => e.completed).length;
-      result.push({
-        date,
-        completedCount,
-        totalCount: dayEntries.length,
-        habits: dayEntries.map((e) => ({
-          name: e.name,
-          completed: e.completed,
-        })),
-      });
-    }
-
-    // Sort by date
+    // Sort by date ascending
     return result.sort((a, b) => a.date.localeCompare(b.date));
   } catch (error) {
     console.error('Error getting heatmap data:', error);
     return [];
   }
+}
+
+/**
+ * Get list of available habit names
+ */
+export function getHabitNames(): readonly string[] {
+  return HABIT_COLUMNS;
 }
 
 /**
