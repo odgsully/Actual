@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## User Communication Rules
 
-**"Reply in chat"** = Text response only. NO tool calls (no Read, Write, Edit, Bash, etc.). Just answer conversationally.
+**"Reply in chat"** = No modifying tools. Reading files is OK (Read, Glob, Grep, WebFetch). NO Write, Edit, Bash, or any tool that changes files/state. Answer conversationally using existing knowledge or read-only research.
 
 **"ULTRATHINK"** = Use extended thinking for deep analysis before responding.
 
@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 | Shortcut | Meaning |
 |----------|---------|
-| **ric** | Reply in chat (text response only, no tool calls) |
+| **ric** | Reply in chat (read-only tools OK, no modifications) |
 | **susin** | Spin up subagents if needed |
 | **aacqin** | Ask any clarifying questions if needed |
 
@@ -291,3 +291,49 @@ curl http://localhost:3000/api/cron/check-health
 After deploying to Vercel, verify cron jobs are active in Vercel Dashboard → Functions → Cron.
 
 For detailed implementation status, see `SCRAPING_SYSTEM_STATUS.md`.
+
+## GS Site Dashboard (December 22, 2025)
+
+### Development Status
+See [`apps/gs-site/tile-logic-untile.md`](./apps/gs-site/tile-logic-untile.md) for the complete implementation plan.
+
+**Branch**: `gssite-dec18-per-notion`
+
+| Phase | Status | Description |
+|-------|--------|-------------|
+| Phase 0 | ✅ Complete | Foundation Resilience - Static tiles, sync script |
+| Phase 1 | ✅ Complete | Core UI Components - ButtonTile, GraphicTile, CalendarTile, FormTile, DropzoneTile |
+| Phase 2 | ✅ Complete | Notion Dynamic Data - Habits streaks, task completion |
+| Phase 3 | ✅ Complete | GitHub Integration - Commits, repos, search |
+| Phase 4 | ✅ Complete | Graphic Components - ChartTile, CounterTile, ProgressTile, HeatmapTile |
+| Phase 5 | 🚧 Next Up | Wabbit Apps Integration - **NOT YET CONFIGURED** |
+| Phase 6-8 | ⏳ Pending | Google/Apple, Whoop/Content, Device/Logic |
+
+### ⚠️ Wabbit Apps Integration (Phase 5) - NOT CONFIGURED
+
+Cross-app integration between gs-site and other Wabbit apps is **not yet implemented**. The following are pending:
+
+**Missing Components**:
+- `/lib/wabbit/client.ts` - Internal API wrapper
+- `useWabbitStats()` hook - Fetch counts from each app
+- Deep links to specific app routes
+- Cross-app authentication check
+
+**Environment Variables Needed** (not yet added):
+```bash
+WABBIT_RE_URL=http://localhost:3000
+GSREALTY_URL=http://localhost:3004
+WABBIT_URL=http://localhost:3002
+```
+
+**Affected Tiles** (6 tiles):
+- CRM → gsrealty-client
+- Go to my Wabbit → wabbit-re
+- New GS Wab → wabbit
+- Jump to Wab: Task List → wabbit
+- Wab: Task Tile → wabbit
+- GS-clients Admin → gsrealty-client
+
+### GS Site Commands
+- `npm run dev:dashboard` - Start gs-site on port 3003
+- `npm run sync-tiles` - Sync tile definitions from Notion to `lib/data/tiles.ts`
