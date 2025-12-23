@@ -8,15 +8,15 @@ export type MenuCategory = 'ALL' | 'Real Estate' | 'Software' | 'Org' | 'Content
 const MENU_CATEGORIES: {
   id: MenuCategory;
   label: string;
-  gradient: 'default' | 'sunset' | 'ocean' | 'nebula' | 'candy' | 'forest' | 'sunrise';
+  gradient: 'default' | 'sunset' | 'ocean' | 'nebula' | 'candy' | 'forest' | 'sunrise' | 'gold';
 }[] = [
-  { id: 'ALL', label: 'ALL', gradient: 'default' },
+  { id: 'Org', label: 'Org', gradient: 'nebula' },
   { id: 'Real Estate', label: 'Real Estate', gradient: 'sunset' },
   { id: 'Software', label: 'Software', gradient: 'ocean' },
-  { id: 'Org', label: 'Org', gradient: 'nebula' },
   { id: 'Content', label: 'Content', gradient: 'candy' },
   { id: 'Health', label: 'Health', gradient: 'forest' },
-  { id: 'Learn', label: 'Learn', gradient: 'sunrise' },
+  { id: 'Learn', label: 'Learn', gradient: 'gold' },
+  { id: 'ALL', label: 'ALL', gradient: 'default' },
 ];
 
 interface MenuFilterProps {

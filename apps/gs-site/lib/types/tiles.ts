@@ -27,7 +27,9 @@ export type ThirdPartyIntegration =
   | 'GitHub'
   | 'Notion'
   | 'Logic'
-  | 'Datadog';
+  | 'Datadog'
+  | 'Twilio'
+  | 'EXTRA LOGIC';
 
 export type TilePriority = '1' | '2' | '3' | null;
 

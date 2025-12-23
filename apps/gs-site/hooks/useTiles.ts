@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import type { Tile, TilePhase } from '@/lib/types/tiles';
-import { STATIC_TILES } from '@/lib/data/tiles';
+import { STATIC_TILES, LOCAL_TILES } from '@/lib/data/tiles';
 
 interface TilesResponse {
   tiles: Tile[];
@@ -92,9 +92,11 @@ export function useTiles(options: UseTilesOptions = {}) {
     );
   }
 
-  // Merge API data with static data, or use static data alone
-  const tiles = query.data?.tiles ?? staticTiles;
-  const count = query.data?.count ?? staticTiles.length;
+  // Merge API data with local tiles, or use static data alone
+  // LOCAL_TILES are always prepended (they don't come from Notion)
+  const apiOrStaticTiles = query.data?.tiles ?? staticTiles;
+  const tiles = query.data ? [...LOCAL_TILES, ...apiOrStaticTiles] : apiOrStaticTiles;
+  const count = tiles.length;
 
   return {
     /**

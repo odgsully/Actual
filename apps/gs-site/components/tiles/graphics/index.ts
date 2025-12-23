@@ -8,6 +8,16 @@
 // Notion-connected tiles
 export { HabitsStreakTile } from './HabitsStreakTile';
 export { TaskWabbedTile } from './TaskWabbedTile';
+export { HabitInsightsTile } from './HabitInsightsTile';
+export { CaliTaskListTile } from './CaliTaskListTile';
+export { CaliForwardLookTile } from './CaliForwardLookTile';
+
+// Custom Form tiles (Phase 5)
+export { FormStreakTile } from './FormStreakTile';
+export { FormsCompletedTile } from './FormsCompletedTile';
+
+// Gmail tiles (Phase 5)
+export { EmailsSentTile } from './EmailsSentTile';
 
 // GitHub-connected tiles (Phase 3)
 export { GitHubSearchTile } from './GitHubSearchTile';

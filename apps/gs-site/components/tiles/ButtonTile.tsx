@@ -35,6 +35,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { WarningBorderTrail } from './WarningBorderTrail';
+import { useConnectionHealth } from '@/hooks/useConnectionHealth';
 import type { TileComponentProps } from './TileRegistry';
 import type { Tile } from '@/lib/types/tiles';
 
@@ -104,6 +105,8 @@ function getTileHref(tile: Tile): string | null {
   // Internal routes
   if (name.includes('crm')) return '/crm';
   if (name.includes('ui librar')) return '/examples';
+  if (name.includes('cultui') || name.includes('cult-ui') || tile.id === 'local-cult-ui-library') return '/ui-libraries/cult-ui';
+  if (name.includes('motion-primitives') || name.includes('motion primitives') || tile.id === 'local-motion-primitives-library') return '/ui-libraries/motion-primitives';
 
   // External routes
   if (name.includes('llm arena')) return 'https://lmarena.ai';
@@ -150,6 +153,9 @@ export function ButtonTile({ tile, className }: TileComponentProps) {
   const href = getTileHref(tile);
   const external = isExternalLink(tile);
   const Icon = getTileIcon(tile);
+
+  // Use real-time health check for warning state
+  const { shouldShowWarning } = useConnectionHealth(tile);
 
   const baseClasses = `
     group
@@ -274,10 +280,10 @@ export function ButtonTile({ tile, className }: TileComponentProps) {
     </div>
   );
 
-  // Wrap with warning border if action warning is active
+  // Wrap with warning border if action warning is active (real-time health check)
   return (
     <WarningBorderTrail
-      active={tile.actionWarning}
+      active={shouldShowWarning}
       hoverMessage={tile.actionDesc}
     >
       {tileElement}

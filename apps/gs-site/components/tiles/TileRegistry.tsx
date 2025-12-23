@@ -42,6 +42,21 @@ const TaskWabbedTile = dynamic(
   { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
 );
 
+const HabitInsightsTile = dynamic(
+  () => import('./graphics/HabitInsightsTile').then(mod => ({ default: mod.HabitInsightsTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
+const CaliTaskListTile = dynamic(
+  () => import('./graphics/CaliTaskListTile').then(mod => ({ default: mod.CaliTaskListTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
+const CaliForwardLookTile = dynamic(
+  () => import('./graphics/CaliForwardLookTile').then(mod => ({ default: mod.CaliForwardLookTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
 // GitHub-connected tiles (Phase 3)
 const GitHubSearchTile = dynamic(
   () => import('./graphics/GitHubSearchTile').then(mod => ({ default: mod.GitHubSearchTile })),
@@ -79,6 +94,23 @@ const HeatmapTile = dynamic(
   { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
 );
 
+// Custom Form tiles (Phase 5 - Sprint 5)
+const FormStreakTile = dynamic(
+  () => import('./graphics/FormStreakTile').then(mod => ({ default: mod.FormStreakTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
+const FormsCompletedTile = dynamic(
+  () => import('./graphics/FormsCompletedTile').then(mod => ({ default: mod.FormsCompletedTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
+// Gmail tiles (Phase 5 - Sprint 5)
+const EmailsSentTile = dynamic(
+  () => import('./graphics/EmailsSentTile').then(mod => ({ default: mod.EmailsSentTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
 // Logic-only tiles (Phase 8) - lazy loaded
 const DaysTillCounterTile = dynamic(
   () => import('./logic/DaysTillCounterTile').then(mod => ({ default: mod.DaysTillCounterTile })),
@@ -98,6 +130,33 @@ const MementoMorriTile = dynamic(
 const EPSN3BinTile = dynamic(
   () => import('./logic/EPSN3BinTile').then(mod => ({ default: mod.EPSN3BinTile })),
   { loading: () => <TileSkeleton variant="dropzone" />, ssr: false }
+);
+
+// New Logic-only tiles (Phase 8 continued)
+const DaysSinceBloodworkTile = dynamic(
+  () => import('./logic/DaysSinceBloodworkTile').then(mod => ({ default: mod.DaysSinceBloodworkTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
+const RealtyOneKPIsTile = dynamic(
+  () => import('./logic/RealtyOneKPIsTile').then(mod => ({ default: mod.RealtyOneKPIsTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
+const YCombinatorInvitesTile = dynamic(
+  () => import('./logic/YCombinatorInvitesTile').then(mod => ({ default: mod.YCombinatorInvitesTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
+// Cross-app integration tiles (Sprint 3)
+const ComingSoonTile = dynamic(
+  () => import('./ComingSoonTile').then(mod => ({ default: mod.ComingSoonTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
+const WabbitLinkTile = dynamic(
+  () => import('./WabbitLinkTile').then(mod => ({ default: mod.WabbitLinkTile })),
+  { loading: () => <TileSkeleton variant="default" />, ssr: false }
 );
 
 /**
@@ -129,9 +188,10 @@ const TILE_COMPONENTS: Partial<Record<ShadcnComponent, ComponentType<TileCompone
  * These override type-based mapping for specific data visualizations.
  *
  * Name matching is case-insensitive and uses includes() for flexibility.
+ * Some matchers also receive the tile object for checking thirdParty field.
  */
 const SPECIALIZED_TILES: Array<{
-  match: (name: string) => boolean;
+  match: (name: string, tile?: Tile) => boolean;
   component: ComponentType<TileComponentProps>;
 }> = [
   // Notion tiles
@@ -142,6 +202,41 @@ const SPECIALIZED_TILES: Array<{
   {
     match: (name) => name.toLowerCase().includes('task') && name.toLowerCase().includes('wabbed'),
     component: TaskWabbedTile,
+  },
+  {
+    match: (name) => name.toLowerCase().includes('habit') && name.toLowerCase().includes('insight'),
+    component: HabitInsightsTile,
+  },
+  {
+    match: (name) =>
+      (name.toLowerCase().includes('cali') && name.toLowerCase().includes('task') && name.toLowerCase().includes('done')) ||
+      name.toLowerCase() === 'cali task list done',
+    component: CaliTaskListTile,
+  },
+  {
+    match: (name) =>
+      name.toLowerCase().includes('forward') && name.toLowerCase().includes('look'),
+    component: CaliForwardLookTile,
+  },
+  // Custom Form tiles (Phase 5 - Sprint 5)
+  {
+    match: (name) =>
+      name.toLowerCase().includes('form') && name.toLowerCase().includes('streak'),
+    component: FormStreakTile,
+  },
+  {
+    match: (name) =>
+      (name.toLowerCase().includes('forms') && name.toLowerCase().includes('completed')) ||
+      (name.toLowerCase().includes('forms') && name.toLowerCase().includes('this week')) ||
+      name.toLowerCase() === 'forms completed this week',
+    component: FormsCompletedTile,
+  },
+  // Gmail tiles (Phase 5 - Sprint 5)
+  {
+    match: (name) =>
+      name.toLowerCase().includes('emails sent') ||
+      (name.toLowerCase().includes('email') && name.toLowerCase().includes('sent')),
+    component: EmailsSentTile,
   },
   // GitHub tiles (Phase 3)
   {
@@ -180,6 +275,51 @@ const SPECIALIZED_TILES: Array<{
   {
     match: (name) => name.toLowerCase().includes('epsn3') || name.toLowerCase().includes('epsn'),
     component: EPSN3BinTile,
+  },
+  // New Logic-only tiles (Phase 8 continued)
+  {
+    match: (name) =>
+      name.toLowerCase().includes('bloodwork') ||
+      name.toLowerCase().includes('days since bloodwork'),
+    component: DaysSinceBloodworkTile,
+  },
+  {
+    match: (name) =>
+      name.toLowerCase().includes('realtyone') && name.toLowerCase().includes('kpi'),
+    component: RealtyOneKPIsTile,
+  },
+  {
+    match: (name) =>
+      name.toLowerCase().includes('y-combinator') ||
+      name.toLowerCase().includes('ycombinator') ||
+      name.toLowerCase().includes('yc invite'),
+    component: YCombinatorInvitesTile,
+  },
+  // Cross-app navigation tiles (Sprint 3)
+  {
+    match: (name) =>
+      name.toLowerCase().includes('jump to wab') ||
+      name.toLowerCase() === 'go to my wabbit' ||
+      name.toLowerCase().includes('gs-clients admin') ||
+      name.toLowerCase() === 'new gs wab' ||
+      name.toLowerCase() === 'wab: task tile' ||
+      (name.toLowerCase() === 'crm' && !name.toLowerCase().includes('tag')),
+    component: WabbitLinkTile,
+  },
+  // Coming soon tiles (services not yet implemented)
+  {
+    match: (name, tile) =>
+      tile?.thirdParty?.includes('Whoop') ||
+      tile?.thirdParty?.includes('Apple') ||
+      tile?.thirdParty?.includes('Brother Printer') ||
+      tile?.thirdParty?.includes('YouTube 3rd P') ||
+      tile?.thirdParty?.includes('Scheduler 3rd P') ||
+      name.toLowerCase().includes('whoop') ||
+      name.toLowerCase().includes('physically print') ||
+      name.toLowerCase().includes('socials scheduler') ||
+      name.toLowerCase().includes('socials stats') ||
+      (name.toLowerCase().includes('youtube') && name.toLowerCase().includes('wrapper')),
+    component: ComingSoonTile,
   },
 ];
 
@@ -225,7 +365,7 @@ function getPrimaryShadcnType(tile: Tile): ShadcnComponent {
  */
 function getSpecializedComponent(tile: Tile): ComponentType<TileComponentProps> | null {
   for (const specialized of SPECIALIZED_TILES) {
-    if (specialized.match(tile.name)) {
+    if (specialized.match(tile.name, tile)) {
       return specialized.component;
     }
   }

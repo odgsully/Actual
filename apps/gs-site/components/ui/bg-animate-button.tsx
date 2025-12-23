@@ -51,6 +51,8 @@ const innerSpanVariants = cva(
           "bg-[conic-gradient(from_90deg_at_50%_50%,#fe5d75_0%,#f5af19_50%,#fe5d75_100%)] ",
         nebula:
           "bg-[conic-gradient(from_90deg_at_50%_50%,#A77BFE_0%,#8860D0_50%,#A77BFE_100%)] ",
+        gold:
+          "bg-[conic-gradient(from_90deg_at_50%_50%,#ffd700_0%,#ffec8b_25%,#f4c430_50%,#ffec8b_75%,#ffd700_100%)] ",
         default:
           "bg-[conic-gradient(from_90deg_at_50%_50%,#E2CBFF_0%,#393BB2_50%,#E2CBFF_100%)] ",
       },
@@ -93,6 +95,7 @@ const buttonVariants = cva(
         forest: "text-black font-bold",
         sunset: "text-black font-bold",
         nebula: "text-white font-bold",
+        gold: "text-black font-bold",
         default: "text-white font-bold",
       },
       rounded: {
@@ -130,6 +133,7 @@ export interface UnifiedButtonProps
     | "forest"
     | "sunset"
     | "nebula"
+    | "gold"
 }
 
 const BgAnimateButton = React.forwardRef<HTMLButtonElement, UnifiedButtonProps>(

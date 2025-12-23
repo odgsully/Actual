@@ -25,6 +25,10 @@ export { TileErrorBoundary } from './TileErrorBoundary';
 export { TileSkeleton, TileGridSkeleton, TileDataSkeleton } from './TileSkeleton';
 export { WarningBorderTrail } from './WarningBorderTrail';
 
+// Cross-app integration tiles (Sprint 3)
+export { ComingSoonTile } from './ComingSoonTile';
+export { WabbitLinkTile } from './WabbitLinkTile';
+
 // Logic-only tiles (Phase 8) - Re-export from logic/index.ts
 export {
   DaysTillCounterTile,

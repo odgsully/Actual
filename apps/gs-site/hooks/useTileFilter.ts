@@ -35,7 +35,7 @@ export function useTileFilter(
   tiles: Tile[],
   options: UseTileFilterOptions = {}
 ): UseTileFilterReturn {
-  const { initialCategory = 'ALL' } = options;
+  const { initialCategory = 'Org' } = options;
   const [activeCategory, setActiveCategory] = useState<MenuCategory>(initialCategory);
 
   const filterTiles = useCallback(

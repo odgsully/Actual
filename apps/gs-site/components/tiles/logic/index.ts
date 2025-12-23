@@ -18,6 +18,9 @@ export { DaysTillCounterTile } from './DaysTillCounterTile';
 export { RecurringDotsTile } from './RecurringDotsTile';
 export { MementoMorriTile } from './MementoMorriTile';
 export { EPSN3BinTile } from './EPSN3BinTile';
+export { DaysSinceBloodworkTile } from './DaysSinceBloodworkTile';
+export { RealtyOneKPIsTile } from './RealtyOneKPIsTile';
+export { YCombinatorInvitesTile } from './YCombinatorInvitesTile';
 
 export type {
   DaysTillConfig,
@@ -36,3 +39,16 @@ export type {
   UploadRecord,
   EPSN3Config,
 } from './EPSN3BinTile';
+
+export type {
+  DaysSinceConfig,
+} from './DaysSinceBloodworkTile';
+
+export type {
+  KPIInputs,
+  KPIResults,
+} from './RealtyOneKPIsTile';
+
+export type {
+  YCInviteConfig,
+} from './YCombinatorInvitesTile';
