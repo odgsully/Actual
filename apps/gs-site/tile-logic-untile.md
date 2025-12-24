@@ -5,7 +5,7 @@
 > **Last Updated**: December 23, 2025
 > **Branch**: `gssite-dec18-per-notion`
 > **Phase 0**: ✅ COMPLETE | **Phase 1**: ✅ COMPLETE | **Phase 2**: ✅ COMPLETE | **Phase 3**: ✅ COMPLETE | **Phase 4**: ✅ COMPLETE
-> **Phase 5**: ⛔ BLOCKED (no Wabbit app) | **Phase 6**: 📋 Research Done | **Phase 7**: 📋 Research Done | **Phase 8**: ✅ Logic Tiles Done
+> **Phase 5**: ⛔ BLOCKED (no Wabbit app) | **Phase 6**: 📋 Research Done | **Phase 7**: 🚧 WHOOP OAuth Done | **Phase 8**: ✅ Logic Tiles Done
 > **Gmail Integration**: ✅ COMPLETE (Dec 23, 2025) - Emails Sent tile working with OAuth
 
 ---
@@ -854,18 +854,18 @@ const ChartTile = dynamic(() => import('./graphics/ChartTile'), {
 - [ ] No broken functionality on first load
 - [x] API requirements documented
 
-### Phase 7: Whoop & Content APIs 📋 RESEARCH COMPLETE
+### Phase 7: Whoop & Content APIs 🚧 WHOOP OAUTH COMPLETE
 
 **Goal**: Health metrics and social media stats (7 tiles)
 
 **📄 Full Documentation**: [`docs/PHASE_7_REQUIREMENTS.md`](./docs/PHASE_7_REQUIREMENTS.md) (~1,100 lines)
 
 **Whoop Tiles** (3):
-| Tile | Data | Cache |
-|------|------|-------|
-| Whoop Insights | HRV, Recovery, Strain | 15 min |
-| Health Tracker | Multi-day trends | 30 min |
-| Bloodwork Counter | Days since last test | N/A (static) |
+| Tile | Data | Cache | Status |
+|------|------|-------|--------|
+| Whoop Insights | HRV, Recovery, Strain | 15 min | ✅ Complete |
+| Health Tracker | Multi-day trends | 30 min | ✅ Complete |
+| Bloodwork Counter | Days since last test | N/A (static) | ✅ Already exists (DaysSinceBloodworkTile) |
 
 **Content Tiles** (4):
 | Tile | API | Cache |
@@ -882,13 +882,19 @@ const ChartTile = dynamic(() => import('./graphics/ChartTile'), {
 
 **Budget Impact**: X API Basic tier = $100/month recurring
 
-**Estimated Effort**: 89 hours total
+**Estimated Effort**: 89 hours total (reduced by ~11h with WHOOP OAuth done)
 
-- [ ] **7.1** Create `/lib/whoop/client.ts` - Whoop API
-  - OAuth 2.0 authentication
-  - Fetch recovery, strain, sleep data
-  - Cache for 15 minutes (data updates slowly)
-- [ ] **7.2** Implement Whoop tiles with multi-line charts
+**WHOOP OAuth Setup** (December 23, 2025):
+- [x] **7.1** Create `/lib/whoop/client.ts` - Whoop API ✅
+  - OAuth 2.0 authentication with token refresh
+  - Recovery, strain, and cycle data endpoints
+  - 15-minute cache with stale-while-revalidate
+- [x] **7.1a** Create `/app/api/auth/whoop/*` - OAuth routes ✅
+- [x] **7.1b** Create `/app/api/whoop/*` - Data API routes ✅
+- [x] **7.1c** Create `hooks/useWhoopData.ts` - React Query hooks ✅
+- [x] **7.2** Implement Whoop tiles with multi-line charts ✅
+  - WhoopInsightsTile - Recovery %, HRV, Strain, RHR
+  - HealthTrackerTile - 7-day sparkline, trend analysis
 - [ ] **7.3** Create `/lib/youtube/client.ts` - YouTube Data API
   - API Key for public data (simpler than OAuth)
   - Fetch subscriber count, view counts, recent videos

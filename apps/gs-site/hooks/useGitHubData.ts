@@ -54,6 +54,23 @@ export interface GitHubCommitStats {
   lastCommitDate: string | null;
 }
 
+/**
+ * Per-user commit breakdown for stacked charts
+ */
+export interface UserCommitBreakdown {
+  username: string;
+  totalCommits: number;
+  monthlyBreakdown: MonthlyCommits[];
+  lastCommitDate: string | null;
+}
+
+/**
+ * Extended commit stats with per-user breakdown
+ */
+export interface GitHubCommitStatsWithUserBreakdown extends GitHubCommitStats {
+  byUser: UserCommitBreakdown[];
+}
+
 // ============================================================
 // Fetch Functions
 // ============================================================
@@ -74,11 +91,12 @@ async function fetchUserRepos(username: string): Promise<GitHubRepo[]> {
 
 /**
  * Fetch annual commits from API
+ * Returns extended stats with per-user breakdown for stacked charts
  */
 async function fetchAnnualCommits(
   usernames: string[],
   year?: number
-): Promise<GitHubCommitStats> {
+): Promise<GitHubCommitStatsWithUserBreakdown> {
   const params = new URLSearchParams();
   usernames.forEach((u) => params.append('username', u));
   if (year) params.set('year', String(year));
@@ -235,12 +253,20 @@ export function useGitHubSearchMutation() {
 }
 
 /**
- * Hook to get combined stats from odgsully + odgsully-agent
+ * GitHub accounts to track for commit stats
+ */
+const ODGSULLY_ACCOUNTS = ['odgsully', 'odgsully-agents'] as const;
+
+/**
+ * Hook to get combined stats from odgsully GitHub accounts
  *
- * Convenience hook for the Annual Github Commits tile
+ * Convenience hook for the Annual Github Commits tile.
+ * Returns per-user breakdown for stacked bar chart visualization.
+ *
+ * Tracked accounts: odgsully, odgsully-agents
  */
 export function useOdgsullyAnnualCommits(year?: number) {
-  return useGitHubCommits(['odgsully', 'odgsully-agent'], year);
+  return useGitHubCommits([...ODGSULLY_ACCOUNTS], year);
 }
 
 /**

@@ -487,3 +487,141 @@ export function getHabitNames(): readonly string[] {
 export function isHabitsDatabaseConfigured(): boolean {
   return Boolean(HABITS_DATABASE_ID && getNotionApiKey());
 }
+
+/**
+ * Get or create today's habit record
+ */
+export async function getTodaysRecord(date?: string): Promise<DailyHabitRecord | null> {
+  if (!HABITS_DATABASE_ID) {
+    console.warn('NOTION_HABITS_DATABASE_ID not configured');
+    return null;
+  }
+
+  const targetDate = date || new Date().toISOString().split('T')[0];
+
+  try {
+    const response = await notionFetch(`/databases/${HABITS_DATABASE_ID}/query`, {
+      filter: {
+        property: 'Date',
+        date: {
+          equals: targetDate,
+        },
+      },
+      page_size: 1,
+    });
+
+    if (response.results.length > 0) {
+      return parseDailyRecord(response.results[0]);
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error fetching today\'s record:', error);
+    throw error;
+  }
+}
+
+/**
+ * Create a new daily habit record
+ */
+export async function createDailyRecord(date: string): Promise<string> {
+  if (!HABITS_DATABASE_ID) {
+    throw new Error('NOTION_HABITS_DATABASE_ID not configured');
+  }
+
+  const apiKey = getNotionApiKey();
+  if (!apiKey) {
+    throw new Error('NOTION_API_KEY not configured');
+  }
+
+  const response = await fetch('https://api.notion.com/v1/pages', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Notion-Version': NOTION_API_VERSION,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      parent: { database_id: HABITS_DATABASE_ID },
+      properties: {
+        Name: {
+          title: [{ text: { content: date } }],
+        },
+        Date: {
+          date: { start: date },
+        },
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Failed to create habit record: ${response.status} - ${error}`);
+  }
+
+  const data = await response.json();
+  return data.id;
+}
+
+/**
+ * Update a checkbox property on a habit record
+ */
+export async function updateHabitCheckbox(
+  pageId: string,
+  propertyName: string,
+  value: boolean
+): Promise<void> {
+  const apiKey = getNotionApiKey();
+  if (!apiKey) {
+    throw new Error('NOTION_API_KEY not configured');
+  }
+
+  const response = await fetch(`https://api.notion.com/v1/pages/${pageId}`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Notion-Version': NOTION_API_VERSION,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      properties: {
+        [propertyName]: {
+          checkbox: value,
+        },
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Failed to update habit: ${response.status} - ${error}`);
+  }
+}
+
+/**
+ * Update or create today's habit with a checkbox value
+ * This is the main function for inline habit updates
+ */
+export async function updateTodaysHabit(
+  propertyName: string,
+  value: boolean,
+  date?: string
+): Promise<{ success: boolean; pageId: string }> {
+  const targetDate = date || new Date().toISOString().split('T')[0];
+
+  // Try to get existing record
+  let record = await getTodaysRecord(targetDate);
+  let pageId: string;
+
+  if (record) {
+    pageId = record.id;
+  } else {
+    // Create new record for today
+    pageId = await createDailyRecord(targetDate);
+  }
+
+  // Update the checkbox property
+  await updateHabitCheckbox(pageId, propertyName, value);
+
+  return { success: true, pageId };
+}

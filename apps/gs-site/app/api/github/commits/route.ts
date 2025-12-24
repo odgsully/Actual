@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
   getAnnualCommits,
-  getCombinedAnnualCommits,
+  getCombinedAnnualCommitsWithUserBreakdown,
   isGitHubConfigured,
 } from '@/lib/github/client';
 
@@ -9,6 +9,7 @@ import {
  * GET /api/github/commits
  *
  * Returns annual commit statistics for one or more GitHub users.
+ * When multiple users are provided, includes per-user breakdown for stacked charts.
  *
  * Query params:
  * - username: GitHub username(s) - can be repeated for multiple users
@@ -16,7 +17,18 @@ import {
  *
  * @example
  * /api/github/commits?username=odgsully
- * /api/github/commits?username=odgsully&username=odgsully-agent&year=2025
+ * /api/github/commits?username=odgsully&username=odgsully-agents&year=2025
+ *
+ * Response for multiple users includes `byUser` array for stacked chart support:
+ * {
+ *   totalCommits: 150,
+ *   monthlyBreakdown: [...],
+ *   lastCommitDate: "2025-12-20",
+ *   byUser: [
+ *     { username: "odgsully", totalCommits: 128, monthlyBreakdown: [...] },
+ *     { username: "odgsully-agents", totalCommits: 22, monthlyBreakdown: [...] }
+ *   ]
+ * }
  */
 export async function GET(request: NextRequest) {
   try {
@@ -50,9 +62,23 @@ export async function GET(request: NextRequest) {
     let stats;
 
     if (usernames.length === 1) {
-      stats = await getAnnualCommits(usernames[0], year);
+      // Single user - return basic stats
+      const basicStats = await getAnnualCommits(usernames[0], year);
+      // Wrap in user breakdown format for consistency
+      stats = {
+        ...basicStats,
+        byUser: [
+          {
+            username: usernames[0],
+            totalCommits: basicStats.totalCommits,
+            monthlyBreakdown: basicStats.monthlyBreakdown,
+            lastCommitDate: basicStats.lastCommitDate,
+          },
+        ],
+      };
     } else {
-      stats = await getCombinedAnnualCommits(usernames, year);
+      // Multiple users - return with per-user breakdown for stacked charts
+      stats = await getCombinedAnnualCommitsWithUserBreakdown(usernames, year);
     }
 
     return NextResponse.json(stats, {

@@ -357,19 +357,10 @@ export function MementoMorriTile({
             </div>
           </div>
 
-          {/* Progress Bar */}
-          <div className="mt-3">
-            <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
-              <motion.div
-                className="h-full bg-gradient-to-r from-green-500 via-yellow-500 to-red-500"
-                initial={{ width: 0 }}
-                animate={{ width: `${percentageLived}%` }}
-                transition={{ duration: 1, ease: 'easeOut' }}
-              />
-            </div>
-            <div className="flex items-center justify-between mt-1 text-xs text-muted-foreground">
-              <span>{age} years old</span>
-              <span>{percentageLived.toFixed(1)}%</span>
+          {/* Simple text stats instead of colored bar */}
+          <div className="mt-3 text-center">
+            <div className="text-xs text-muted-foreground">
+              {age} years old · {percentageLived.toFixed(0)}% of {expectedLifespan}
             </div>
           </div>
         </button>

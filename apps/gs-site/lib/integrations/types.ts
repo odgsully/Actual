@@ -79,10 +79,11 @@ export const SERVICE_CONFIGS: Partial<Record<ThirdPartyIntegration, ServiceConfi
   },
   Whoop: {
     name: 'Whoop',
+    healthEndpoint: '/api/whoop/insights',
     timeout: 5000,
     retryCount: 1,
-    errorSeverity: ErrorSeverity.LOW,
-    implementationStatus: 'coming_soon',
+    errorSeverity: ErrorSeverity.HIGH, // Health data is important
+    implementationStatus: 'implemented',
   },
   Apple: {
     name: 'Apple',
@@ -159,13 +160,12 @@ export const SERVICE_CONFIGS: Partial<Record<ThirdPartyIntegration, ServiceConfi
 /**
  * Services that are currently implemented and can be health-checked
  */
-export const IMPLEMENTED_SERVICES: ThirdPartyIntegration[] = ['Notion', 'GitHub', 'Logic', 'EXTRA LOGIC'];
+export const IMPLEMENTED_SERVICES: ThirdPartyIntegration[] = ['Notion', 'GitHub', 'Whoop', 'Logic', 'EXTRA LOGIC'];
 
 /**
  * Services that will show "Coming Soon" status
  */
 export const COMING_SOON_SERVICES: ThirdPartyIntegration[] = [
-  'Whoop',
   'Apple',
   'Brother Printer',
   'YouTube 3rd P',

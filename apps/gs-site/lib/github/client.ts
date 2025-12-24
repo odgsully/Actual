@@ -121,6 +121,20 @@ export interface GitHubCommitStats {
   lastCommitDate: string | null;
 }
 
+/**
+ * Extended commit stats with per-user breakdown for stacked charts
+ */
+export interface UserCommitBreakdown {
+  username: string;
+  totalCommits: number;
+  monthlyBreakdown: MonthlyCommits[];
+  lastCommitDate: string | null;
+}
+
+export interface GitHubCommitStatsWithUserBreakdown extends GitHubCommitStats {
+  byUser: UserCommitBreakdown[];
+}
+
 // ============================================================
 // User & Profile
 // ============================================================
@@ -403,6 +417,68 @@ export async function getCombinedAnnualCommits(
   };
 }
 
+/**
+ * Get combined annual commits with per-user breakdown for stacked charts
+ *
+ * @param usernames Array of GitHub usernames
+ * @param year Year to fetch
+ * @returns Combined stats plus individual user breakdowns
+ */
+export async function getCombinedAnnualCommitsWithUserBreakdown(
+  usernames: string[],
+  year?: number
+): Promise<GitHubCommitStatsWithUserBreakdown> {
+  const results = await Promise.all(
+    usernames.map(async (username) => {
+      const stats = await getAnnualCommits(username, year);
+      return {
+        username,
+        ...stats,
+      };
+    })
+  );
+
+  // Merge monthly breakdowns for combined totals
+  const mergedMonthly = new Map<string, number>();
+  let totalCommits = 0;
+  let lastCommitDate: string | null = null;
+
+  // Build per-user breakdown array
+  const byUser: UserCommitBreakdown[] = results.map((result) => ({
+    username: result.username,
+    totalCommits: result.totalCommits,
+    monthlyBreakdown: result.monthlyBreakdown,
+    lastCommitDate: result.lastCommitDate,
+  }));
+
+  // Calculate combined totals
+  for (const result of results) {
+    totalCommits += result.totalCommits;
+
+    if (result.lastCommitDate) {
+      if (!lastCommitDate || result.lastCommitDate > lastCommitDate) {
+        lastCommitDate = result.lastCommitDate;
+      }
+    }
+
+    for (const { month, commits } of result.monthlyBreakdown) {
+      const current = mergedMonthly.get(month) || 0;
+      mergedMonthly.set(month, current + commits);
+    }
+  }
+
+  const monthlyBreakdown = Array.from(mergedMonthly.entries())
+    .map(([month, commits]) => ({ month, commits }))
+    .sort((a, b) => a.month.localeCompare(b.month));
+
+  return {
+    totalCommits,
+    monthlyBreakdown,
+    lastCommitDate,
+    byUser,
+  };
+}
+
 // ============================================================
 // Convenience Exports
 // ============================================================
@@ -416,6 +492,7 @@ export const github = {
   getRepoCommitActivity,
   getAnnualCommits,
   getCombinedAnnualCommits,
+  getCombinedAnnualCommitsWithUserBreakdown,
   isConfigured: isGitHubConfigured,
 };
 

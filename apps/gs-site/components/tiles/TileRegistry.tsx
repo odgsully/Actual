@@ -111,6 +111,17 @@ const EmailsSentTile = dynamic(
   { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
 );
 
+// WHOOP tiles (Phase 7)
+const WhoopInsightsTile = dynamic(
+  () => import('./graphics/WhoopInsightsTile').then(mod => ({ default: mod.WhoopInsightsTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
+const HealthTrackerTile = dynamic(
+  () => import('./graphics/HealthTrackerTile').then(mod => ({ default: mod.HealthTrackerTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
 // Logic-only tiles (Phase 8) - lazy loaded
 const DaysTillCounterTile = dynamic(
   () => import('./logic/DaysTillCounterTile').then(mod => ({ default: mod.DaysTillCounterTile })),
@@ -159,6 +170,12 @@ const WabbitLinkTile = dynamic(
   { loading: () => <TileSkeleton variant="default" />, ssr: false }
 );
 
+// Morning Form tile (Phase Morning - blocking form)
+const MorningFormTile = dynamic(
+  () => import('./forms/MorningFormTile').then(mod => ({ default: mod.MorningFormTile })),
+  { loading: () => <TileSkeleton variant="form" />, ssr: false }
+);
+
 /**
  * Props passed to all tile components
  */
@@ -194,6 +211,11 @@ const SPECIALIZED_TILES: Array<{
   match: (name: string, tile?: Tile) => boolean;
   component: ComponentType<TileComponentProps>;
 }> = [
+  // Morning Form tile (blocking form with Feeding + Photo)
+  {
+    match: (name) => name.toLowerCase() === 'morning form',
+    component: MorningFormTile,
+  },
   // Notion tiles
   {
     match: (name) => name.toLowerCase().includes('habits') && name.toLowerCase().includes('streak'),
@@ -237,6 +259,17 @@ const SPECIALIZED_TILES: Array<{
       name.toLowerCase().includes('emails sent') ||
       (name.toLowerCase().includes('email') && name.toLowerCase().includes('sent')),
     component: EmailsSentTile,
+  },
+  // WHOOP tiles (Phase 7)
+  {
+    match: (name) =>
+      name.toLowerCase().includes('whoop') && name.toLowerCase().includes('insight'),
+    component: WhoopInsightsTile,
+  },
+  {
+    match: (name) =>
+      name.toLowerCase().includes('health') && name.toLowerCase().includes('tracker'),
+    component: HealthTrackerTile,
   },
   // GitHub tiles (Phase 3)
   {
@@ -309,12 +342,10 @@ const SPECIALIZED_TILES: Array<{
   // Coming soon tiles (services not yet implemented)
   {
     match: (name, tile) =>
-      tile?.thirdParty?.includes('Whoop') ||
       tile?.thirdParty?.includes('Apple') ||
       tile?.thirdParty?.includes('Brother Printer') ||
       tile?.thirdParty?.includes('YouTube 3rd P') ||
       tile?.thirdParty?.includes('Scheduler 3rd P') ||
-      name.toLowerCase().includes('whoop') ||
       name.toLowerCase().includes('physically print') ||
       name.toLowerCase().includes('socials scheduler') ||
       name.toLowerCase().includes('socials stats') ||

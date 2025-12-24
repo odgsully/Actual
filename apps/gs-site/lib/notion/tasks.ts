@@ -306,8 +306,8 @@ export async function getOverdueTasks(): Promise<OverdueTask[]> {
 
     return response.results
       .map(parseTask)
-      .filter((task) => task.status !== 'Done')
-      .map((task) => {
+      .filter((task: Task) => task.status !== 'Done')
+      .map((task: Task) => {
         const dueDate = task.dueDate ? new Date(task.dueDate) : today;
         const daysOverdue = Math.floor(
           (today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)
@@ -349,7 +349,7 @@ export async function getInProgressTasks(): Promise<Task[]> {
 
     return response.results
       .map(parseTask)
-      .filter((task) => task.status !== 'Done');
+      .filter((task: Task) => task.status !== 'Done');
   } catch (error) {
     console.error('Error fetching in-progress tasks:', error);
     throw error;
@@ -423,7 +423,7 @@ export async function getHighPriorityTasks(): Promise<Task[]> {
     // Filter out completed tasks client-side
     return response.results
       .map(parseTask)
-      .filter((task) => task.status !== 'Done');
+      .filter((task: Task) => task.status !== 'Done');
   } catch (error) {
     console.error('Error fetching high-priority tasks:', error);
     throw error;

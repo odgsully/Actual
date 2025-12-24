@@ -146,8 +146,22 @@ export default function AdminLayout({
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-6">{children}</main>
+        <main className="flex-1 p-6 pb-16">{children}</main>
       </div>
+
+      {/* Footer */}
+      <footer className="border-t border-border bg-background/50">
+        <div className="flex items-center justify-center gap-4 px-4 py-3 text-xs text-muted-foreground">
+          <span>GS Dashboard</span>
+          <span className="text-border">•</span>
+          <Link
+            href="/privacy"
+            className="hover:text-foreground transition-colors"
+          >
+            Privacy Policy
+          </Link>
+        </div>
+      </footer>
     </div>
   );
 }

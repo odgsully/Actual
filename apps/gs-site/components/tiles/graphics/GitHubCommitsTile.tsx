@@ -1,7 +1,7 @@
 'use client';
 
-import { GitCommit, TrendingUp, AlertCircle, RefreshCw, Calendar } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
+import { GitCommit, AlertCircle, RefreshCw, Calendar, User, Bot } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { useOdgsullyAnnualCommits } from '@/hooks/useGitHubData';
 import { WarningBorderTrail } from '../WarningBorderTrail';
 import type { Tile } from '@/lib/types/tiles';
@@ -21,13 +21,25 @@ function formatMonth(monthStr: string): string {
 }
 
 /**
- * GitHubCommitsTile - Annual commits bar chart
+ * Short username display for legend
+ */
+function getShortUsername(username: string): string {
+  if (username === 'odgsully') return 'Me';
+  if (username === 'odgsully-agents') return 'Agents';
+  return username;
+}
+
+/**
+ * GitHubCommitsTile - Annual commits stacked bar chart
  *
- * Shows monthly commit counts for odgsully + odgsully-agent accounts.
+ * Shows monthly commit counts for odgsully + odgsully-agents accounts
+ * with a stacked bar visualization.
  *
  * Features:
- * - Bar chart with monthly breakdown
+ * - Stacked bar chart with per-user breakdown
+ * - odgsully (green) as base, odgsully-agents (purple) stacked on top
  * - YTD total prominently displayed
+ * - Mini legend showing both accounts
  * - Last commit date indicator
  * - Cache: 1 hour (expensive query)
  *
@@ -57,12 +69,48 @@ export function GitHubCommitsTile({ tile, className }: GitHubCommitsTileProps) {
     ${className ?? ''}
   `.trim();
 
-  // Transform data for chart
-  const chartData = stats?.monthlyBreakdown.map((item) => ({
-    month: formatMonth(item.month),
-    commits: item.commits,
-    fullMonth: item.month,
-  })) || [];
+  // Transform data for stacked chart
+  // Merge all users' monthly data into single chart data points
+  const chartData = (() => {
+    if (!stats?.byUser || stats.byUser.length === 0) return [];
+
+    // Get all unique months across all users
+    const allMonths = new Set<string>();
+    stats.byUser.forEach((user) => {
+      user.monthlyBreakdown.forEach((m) => allMonths.add(m.month));
+    });
+
+    // Sort months and create data points
+    return Array.from(allMonths)
+      .sort()
+      .map((month) => {
+        const dataPoint: Record<string, string | number> = {
+          month: formatMonth(month),
+          fullMonth: month,
+        };
+
+        // Add each user's commits for this month
+        stats.byUser.forEach((user) => {
+          const monthData = user.monthlyBreakdown.find((m) => m.month === month);
+          dataPoint[user.username] = monthData?.commits ?? 0;
+        });
+
+        return dataPoint;
+      });
+  })();
+
+  // Get per-user totals for the legend
+  const userTotals = stats?.byUser?.map((user) => ({
+    username: user.username,
+    shortName: getShortUsername(user.username),
+    total: user.totalCommits,
+  })) ?? [];
+
+  // Color mapping for users
+  const userColors: Record<string, string> = {
+    odgsully: 'hsl(142, 76%, 36%)', // Green
+    'odgsully-agents': 'hsl(262, 83%, 58%)', // Purple
+  };
 
   return (
     <WarningBorderTrail
@@ -112,8 +160,8 @@ export function GitHubCommitsTile({ tile, className }: GitHubCommitsTileProps) {
           {/* Success state */}
           {!isLoading && !error && stats && (
             <>
-              {/* Total commits */}
-              <div className="flex items-baseline gap-2 mb-2">
+              {/* Total commits with per-user breakdown */}
+              <div className="flex items-baseline gap-2 mb-1">
                 <span className="text-2xl font-bold text-foreground">
                   {stats.totalCommits.toLocaleString()}
                 </span>
@@ -122,11 +170,31 @@ export function GitHubCommitsTile({ tile, className }: GitHubCommitsTileProps) {
                 </span>
               </div>
 
-              {/* Mini bar chart */}
+              {/* Mini legend showing per-user totals */}
+              {userTotals.length > 1 && (
+                <div className="flex items-center gap-3 mb-2 text-[10px]">
+                  {userTotals.map((user) => (
+                    <div key={user.username} className="flex items-center gap-1">
+                      <div
+                        className="w-2 h-2 rounded-sm"
+                        style={{ backgroundColor: userColors[user.username] || 'hsl(var(--primary))' }}
+                      />
+                      <span className="text-muted-foreground">
+                        {user.shortName}: {user.total}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Stacked bar chart */}
               {chartData.length > 0 && (
                 <div className="flex-1 min-h-[3rem]">
-                  <ResponsiveContainer width="100%" height={48}>
-                    <BarChart data={chartData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+                  <ResponsiveContainer width="100%" height={52}>
+                    <BarChart
+                      data={chartData}
+                      margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
+                    >
                       <XAxis
                         dataKey="month"
                         tick={{ fontSize: 8 }}
@@ -140,15 +208,24 @@ export function GitHubCommitsTile({ tile, className }: GitHubCommitsTileProps) {
                           border: '1px solid hsl(var(--border))',
                           borderRadius: '6px',
                           fontSize: '10px',
+                          padding: '6px 8px',
                         }}
-                        formatter={(value: number) => [value, 'Commits']}
+                        formatter={(value: number, name: string) => [
+                          value,
+                          getShortUsername(name),
+                        ]}
                         labelFormatter={(label) => label}
                       />
-                      <Bar
-                        dataKey="commits"
-                        fill="hsl(var(--primary))"
-                        radius={[2, 2, 0, 0]}
-                      />
+                      {/* Render bars for each user - stacked */}
+                      {stats.byUser.map((user, index) => (
+                        <Bar
+                          key={user.username}
+                          dataKey={user.username}
+                          stackId="commits"
+                          fill={userColors[user.username] || `hsl(${index * 60}, 70%, 50%)`}
+                          radius={index === stats.byUser.length - 1 ? [2, 2, 0, 0] : [0, 0, 0, 0]}
+                        />
+                      ))}
                     </BarChart>
                   </ResponsiveContainer>
                 </div>

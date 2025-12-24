@@ -6,7 +6,8 @@ import { useMemo } from 'react';
 // Hardcoded User Configuration
 // ============================================================
 
-export const GS_BIRTH_DATE = new Date('1999-02-11');
+// Use noon UTC to avoid timezone day-shift issues
+export const GS_BIRTH_DATE = new Date('1999-02-11T12:00:00Z');
 export const GS_TARGET_LIFESPAN = 50; // Target age: 50 (year 2049)
 
 // ============================================================
@@ -49,15 +50,16 @@ export function LifeInWeeksVisualization({
   const totalWeeks = expectedLifespan * 52;
   const weeksPerYear = 52;
 
-  // Calculate end year
-  const endYear = birthDate.getFullYear() + expectedLifespan;
+  // Calculate end year (using UTC to avoid timezone issues)
+  const endYear = birthDate.getUTCFullYear() + expectedLifespan;
 
   // Halfway point for the MEMENTO MORI divider
   const halfwayYear = Math.floor(expectedLifespan / 2);
 
-  // Format birth date
-  const birthMonth = birthDate.toLocaleString('en-US', { month: 'short' }).toUpperCase();
-  const birthDay = birthDate.getDate();
+  // Format birth date using UTC to avoid timezone issues
+  const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+  const birthMonth = monthNames[birthDate.getUTCMonth()];
+  const birthDay = birthDate.getUTCDate();
 
   // Generate weeks array - each row is a year, each column is a week
   const weeksGrid = useMemo(() => {
