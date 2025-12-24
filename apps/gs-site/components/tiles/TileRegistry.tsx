@@ -176,6 +176,9 @@ const MorningFormTile = dynamic(
   { loading: () => <TileSkeleton variant="form" />, ssr: false }
 );
 
+// Evening Check-In modal is imported directly by page.tsx for PhaseReminder
+// (no tile needed - modal only)
+
 /**
  * Props passed to all tile components
  */
@@ -318,7 +321,8 @@ const SPECIALIZED_TILES: Array<{
   },
   {
     match: (name) =>
-      name.toLowerCase().includes('realtyone') && name.toLowerCase().includes('kpi'),
+      (name.toLowerCase().includes('realtyone') && name.toLowerCase().includes('kpi')) ||
+      (name.toLowerCase() === 're kpi\'s & calc'),
     component: RealtyOneKPIsTile,
   },
   {

@@ -202,23 +202,23 @@
 
 ---
 
-#### Select Github Repo dropdown: Go's to New Issue [ADW Workflow button]
-- **Status**: Not started
+#### ~~Select Github Repo dropdown~~ [HIDDEN]
+- **Status**: HIDDEN - Removed from dashboard
 - **Menu**: Software
 - **Phase**: GS Site Standing
 - **Components**: Button, Logic
 - **Third Party**: Logic, EXTRA LOGIC, GitHub
-- **Description**: Needs to on a timer scrape/understand GitHub repositories for odgsully account & have those via a dropdown select component. With a button underneath, clicking 'Go' will bring to that repo's GitHub New Issue link. For designated device Jump to Button.
+- **Description**: ~~Needs to on a timer scrape/understand GitHub repositories for odgsully account.~~
 
 ---
 
-#### Link to Datadog Dash
+#### Datadog
 - **Status**: Not started
 - **Menu**: Software
 - **Phase**: GS Site Standing
 - **Components**: Button
 - **Third Party**: Datadog
-- **Description**: Link to Datadog Dash.
+- **Description**: *(no subtitle)*
 
 ---
 
@@ -276,13 +276,13 @@
 
 ---
 
-#### Habitat Pic check
-- **Status**: Not started
+#### ~~Habitat Pic check~~ [HIDDEN]
+- **Status**: HIDDEN - Removed from dashboard
 - **Menu**: Org, Health
 - **Phase**: Evening
 - **Components**: Dropzone
 - **Third Party**: Logic
-- **Description**: An actual photo upload Button of things around environment where it makes you feel Good & Organized. i.e. clean sink, clothes laid out, phone across room, clean bathroom, etc. Implement a drag and drop feature or select photos/files drop box for this to connect to supabase.
+- **Description**: ~~Photo upload for environment pictures.~~
 
 ---
 
@@ -376,7 +376,7 @@
 - **Phase**: GS Site Standing
 - **Components**: Logic
 - **Third Party**: GitHub, Logic, EXTRA LOGIC
-- **Description**: 8. /tools custom-command random for various any given codebase. Also a Duolingo style matching, and definition review of what all codebase tools do. Suggestion or just picked element of codebase? Create a Duolingo light version with just the bare bones. I want to connect to GitHub for all repos & create tasks accordingly. Questions should be basic according to tools features in codebases.
+- **Description**: *(no subtitle)*
 
 ---
 
@@ -476,13 +476,13 @@
 
 ---
 
-#### 7. LLM Arena
+#### LLM Arena
 - **Status**: Not started
 - **Menu**: Software
 - **Phase**: GS Site Standing
 - **Components**: Button
 - **Third Party**: -
-- **Description**: Link button to LLM Arena site.
+- **Description**: *(no subtitle)*
 
 ---
 
@@ -529,13 +529,13 @@
 
 ---
 
-#### AI Agent workforce admin board
+#### Audio Agent Admin
 - **Status**: Not started
 - **Menu**: Org, Software
 - **Phase**: GS Site Standing
 - **Components**: Button
 - **Third Party**: Logic, Twilio, EXTRA LOGIC
-- **Description**: Jump to: 1. Referencing Notion Stars database inline within at URL.
+- **Description**: *(no subtitle)*
 
 ---
 
@@ -583,7 +583,7 @@
 | Jump to Wab: Task List | Not started | Wabbit task ranking |
 | LLM Arena | Not started | lmarena.ai |
 | odgsully Github repos | Not started | github.com/odgsully |
-| Link to Datadog Dash | Not started | Datadog dashboard |
+| Datadog | Not started | Datadog dashboard |
 | RealtyOne Events | In progress | Notion page |
 
 ### Graphics (Data Visualization)

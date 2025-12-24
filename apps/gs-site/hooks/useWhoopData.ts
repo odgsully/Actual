@@ -194,14 +194,14 @@ export function useWhoopMetrics() {
     lastUpdated: data?.lastUpdated,
     refetch,
 
-    // Recovery metrics
-    recoveryScore: recovery?.score ?? null,
-    recoveryColor: recovery?.score ? getRecoveryColor(recovery.score) : null,
-    hrv: recovery?.recovery_score?.hrv_rmssd ?? null,
-    rhr: recovery?.recovery_score?.resting_heart_rate ?? null,
-    spo2: recovery?.recovery_score?.spo2_percentage ?? null,
-    skinTemp: recovery?.recovery_score?.skin_temp_celsius ?? null,
-    isCalibrating: recovery?.user_calibrating ?? false,
+    // Recovery metrics (V2 API structure)
+    recoveryScore: recovery?.score?.recovery_score ?? null,
+    recoveryColor: recovery?.score?.recovery_score ? getRecoveryColor(recovery.score.recovery_score) : null,
+    hrv: recovery?.score?.hrv_rmssd_milli ?? null,
+    rhr: recovery?.score?.resting_heart_rate ?? null,
+    spo2: recovery?.score?.spo2_percentage ?? null,
+    skinTemp: recovery?.score?.skin_temp_celsius ?? null,
+    isCalibrating: recovery?.score?.user_calibrating ?? false,
 
     // Strain metrics
     strain: cycle?.score?.strain ?? null,

@@ -138,14 +138,14 @@ export function WhoopInsightsTile({ tile, className }: WhoopInsightsTileProps) {
             </div>
           )}
 
-          {!isLoading && !error && isConnected && recovery && (
+          {!isLoading && !error && isConnected && recovery?.score && (
             <>
               {/* Recovery Score - prominent */}
               <div className="flex items-center gap-2 mb-2">
-                <div className={`flex items-center gap-1 px-2 py-1 rounded-md ${getRecoveryBg(recovery.score)}`}>
-                  <Battery className={`w-4 h-4 ${getRecoveryColor(recovery.score)}`} />
-                  <span className={`text-2xl font-bold ${getRecoveryColor(recovery.score)}`}>
-                    {recovery.score}%
+                <div className={`flex items-center gap-1 px-2 py-1 rounded-md ${getRecoveryBg(recovery.score.recovery_score)}`}>
+                  <Battery className={`w-4 h-4 ${getRecoveryColor(recovery.score.recovery_score)}`} />
+                  <span className={`text-2xl font-bold ${getRecoveryColor(recovery.score.recovery_score)}`}>
+                    {Math.round(recovery.score.recovery_score)}%
                   </span>
                 </div>
                 <span className="text-xs text-muted-foreground">Recovery</span>
@@ -155,7 +155,7 @@ export function WhoopInsightsTile({ tile, className }: WhoopInsightsTileProps) {
               <div className="flex items-center gap-4 text-xs">
                 <div className="flex items-center gap-1">
                   <Heart className="w-3 h-3 text-pink-500" />
-                  <span className="font-medium">{Math.round(recovery.recovery_score.hrv_rmssd)}</span>
+                  <span className="font-medium">{Math.round(recovery.score.hrv_rmssd_milli)}</span>
                   <span className="text-muted-foreground">ms HRV</span>
                 </div>
                 {cycle?.score && (
@@ -168,9 +168,9 @@ export function WhoopInsightsTile({ tile, className }: WhoopInsightsTileProps) {
               </div>
 
               {/* Resting HR */}
-              {recovery.recovery_score.resting_heart_rate && (
+              {recovery.score.resting_heart_rate && (
                 <div className="text-[10px] text-muted-foreground mt-1">
-                  RHR: {recovery.recovery_score.resting_heart_rate} bpm
+                  RHR: {recovery.score.resting_heart_rate} bpm
                 </div>
               )}
             </>

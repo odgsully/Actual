@@ -141,7 +141,7 @@ export const WARNING_TESTS: Record<string, WarningTestFn> = {
  */
 export const TILE_WARNING_MAP: Record<string, string> = {
   // Notion-dependent tiles
-  '10. RealtyOne Events button': 'notion-disconnected',
+  'RE Events': 'notion-disconnected',
   'Cali Task List DONE': 'notion-disconnected',
   'Notion Habits STREAKS': 'notion-disconnected',
   'Task List Wabbed %': 'notion-disconnected',
@@ -152,7 +152,7 @@ export const TILE_WARNING_MAP: Record<string, string> = {
   'EPSN3 Bin': 'frequency-not-met',
 
   // External links
-  '7. LLM Arena': 'link-not-found',
+  'LLM Arena': 'link-not-found',
 
   // Local model
   '11. Prev day, prev week Time Spent pie charts': 'local-model-disconnected',

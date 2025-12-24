@@ -39,14 +39,14 @@ export async function GET(request: NextRequest) {
 
     const data = await getHistoricalData(tokens.access_token, days);
 
-    // Transform data for charting
+    // Transform data for charting (V2 API structure)
     const chartData = data.recoveries.map((recovery, index) => {
       const cycle = data.cycles[index];
       return {
         date: recovery.created_at,
-        recovery: recovery.score,
-        hrv: recovery.recovery_score?.hrv_rmssd || null,
-        rhr: recovery.recovery_score?.resting_heart_rate || null,
+        recovery: recovery.score?.recovery_score || 0,
+        hrv: recovery.score?.hrv_rmssd_milli || null,
+        rhr: recovery.score?.resting_heart_rate || null,
         strain: cycle?.score?.strain || null,
       };
     }).reverse(); // Oldest first for charts

@@ -20,19 +20,19 @@ export const WHOOP_CONFIG = {
   clientId: process.env.WHOOP_CLIENT_ID!,
   clientSecret: process.env.WHOOP_CLIENT_SECRET!,
   redirectUri: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3003'}/api/auth/whoop/callback`,
-  // Required scopes for health data
+  // Required scopes for health data (must match WHOOP Developer Dashboard)
   scopes: [
-    'read:profile',   // Access user profile (needed to get user_id)
-    'read:recovery',  // Access recovery scores, HRV, RHR
-    'read:cycles',    // Access physiological cycles with strain/HR metrics
-    'read:sleep',     // Access sleep data
-    'read:workout',   // Access workout data
-    'offline',        // Get refresh token for long-lived access
+    'read:profile',           // Access user profile (needed to get user_id)
+    'read:recovery',          // Access recovery scores, HRV, RHR
+    'read:cycles',            // Access physiological cycles with strain/HR metrics
+    'read:sleep',             // Access sleep data
+    'read:workout',           // Access workout data
+    'read:body_measurement',  // Access body measurements
   ],
   // API endpoints
   authUrl: 'https://api.prod.whoop.com/oauth/oauth2/auth',
   tokenUrl: 'https://api.prod.whoop.com/oauth/oauth2/token',
-  apiBaseUrl: 'https://api.prod.whoop.com/developer/v1',
+  apiBaseUrl: 'https://api.prod.whoop.com/developer/v2',
 };
 
 // ============================================================
@@ -47,23 +47,22 @@ export interface WhoopToken {
 }
 
 export interface WhoopRecoveryScore {
+  user_calibrating: boolean;
   recovery_score: number;
   resting_heart_rate: number;
-  hrv_rmssd: number;
+  hrv_rmssd_milli: number;  // V2 API field name
   spo2_percentage: number | null;
   skin_temp_celsius: number | null;
-  user_calibrating: boolean;
 }
 
 export interface WhoopRecovery {
   cycle_id: number;
-  sleep_id: number;
-  score: number;
-  user_calibrating: boolean;
+  sleep_id: string;  // V2 uses UUID string
+  user_id: number;
   created_at: string;
   updated_at: string;
-  score_state: 'SCORED' | 'PENDING' | 'UNSCORABLE';
-  recovery_score: WhoopRecoveryScore;
+  score_state: 'SCORED' | 'PENDING_SCORE' | 'UNSCORABLE';  // V2 uses PENDING_SCORE
+  score: WhoopRecoveryScore | null;  // V2 nests score object here
 }
 
 export interface WhoopCycleScore {
@@ -122,6 +121,10 @@ export function getAuthorizationUrl(state?: string): string {
  * Exchange authorization code for tokens
  */
 export async function exchangeCodeForTokens(code: string): Promise<WhoopToken> {
+  console.log('[WHOOP] exchangeCodeForTokens called with code:', code.substring(0, 20) + '...');
+  console.log('[WHOOP] Using tokenUrl:', WHOOP_CONFIG.tokenUrl);
+  console.log('[WHOOP] Using redirectUri:', WHOOP_CONFIG.redirectUri);
+
   const response = await fetch(WHOOP_CONFIG.tokenUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -134,6 +137,8 @@ export async function exchangeCodeForTokens(code: string): Promise<WhoopToken> {
     }),
   });
 
+  console.log('[WHOOP] Token exchange response status:', response.status);
+
   if (!response.ok) {
     const error = await response.text();
     console.error('[WHOOP] Token exchange failed:', error);
@@ -142,6 +147,9 @@ export async function exchangeCodeForTokens(code: string): Promise<WhoopToken> {
 
   const data = await response.json();
   console.log('[WHOOP] Token response keys:', Object.keys(data));
+  console.log('[WHOOP] NEW access_token preview:', data.access_token?.substring(0, 30) + '...');
+  console.log('[WHOOP] NEW refresh_token preview:', data.refresh_token?.substring(0, 30) + '...');
+  console.log('[WHOOP] expires_in:', data.expires_in);
 
   // Try to get user_id from token response first (some OAuth providers include it)
   let userId = data.user_id || data.sub || data.user?.id;
@@ -213,13 +221,21 @@ export async function refreshAccessToken(refreshToken: string): Promise<Omit<Who
  * Store WHOOP tokens in the database
  */
 export async function storeWhoopTokens(userId: string, tokens: WhoopToken): Promise<void> {
+  console.log('[WHOOP] storeWhoopTokens called for user:', userId);
+  console.log('[WHOOP] Token preview:', tokens.access_token.substring(0, 20) + '...');
+
   // First check if a record exists
-  const { data: existing } = await supabase
+  const { data: existing, error: selectError } = await supabase
     .from('user_integrations')
     .select('id')
     .eq('user_id', userId)
     .eq('service', 'whoop')
     .single();
+
+  if (selectError && selectError.code !== 'PGRST116') {
+    // PGRST116 = no rows returned, which is fine for insert
+    console.error('[WHOOP] Error checking existing record:', selectError);
+  }
 
   const record = {
     user_id: userId,
@@ -231,25 +247,37 @@ export async function storeWhoopTokens(userId: string, tokens: WhoopToken): Prom
     updated_at: new Date().toISOString(),
   };
 
+  console.log('[WHOOP] Existing record:', existing ? `id=${existing.id}` : 'none');
+
   let error;
+  let result;
   if (existing) {
     // Update existing record
-    const result = await supabase
+    console.log('[WHOOP] Updating existing record...');
+    result = await supabase
       .from('user_integrations')
       .update(record)
-      .eq('id', existing.id);
+      .eq('id', existing.id)
+      .select();
     error = result.error;
+    console.log('[WHOOP] Update result:', { error: result.error, data: result.data });
   } else {
     // Insert new record
-    const result = await supabase
+    console.log('[WHOOP] Inserting new record...');
+    result = await supabase
       .from('user_integrations')
-      .insert(record);
+      .insert(record)
+      .select();
     error = result.error;
+    console.log('[WHOOP] Insert result:', { error: result.error, data: result.data });
   }
 
   if (error) {
+    console.error('[WHOOP] Failed to store tokens:', error);
     throw new Error(`Failed to store tokens: ${error.message}`);
   }
+
+  console.log('[WHOOP] Tokens stored successfully');
 }
 
 /**
@@ -268,7 +296,7 @@ export async function getWhoopTokens(userId: string): Promise<WhoopToken | null>
   }
 
   // Check if token needs refresh (refresh 1 minute before expiry)
-  if (new Date(data.expires_at).getTime() < Date.now() - 60000) {
+  if (new Date(data.expires_at).getTime() < Date.now() + 60000) {
     try {
       const newTokens = await refreshAccessToken(data.refresh_token);
       await supabase

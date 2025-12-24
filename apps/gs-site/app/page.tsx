@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import { RefreshCw, CloudOff, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { MenuFilter } from '@/components/MenuFilter';
@@ -9,7 +10,28 @@ import { TileDispatcher, TileErrorBoundary } from '@/components/tiles';
 import { useTiles } from '@/hooks/useTiles';
 import { useTileFilter } from '@/hooks/useTileFilter';
 
+// Dynamic imports for phase modals to avoid SSR issues
+const EveningCheckInModal = dynamic(
+  () => import('@/components/tiles/forms/EveningCheckInTile').then(mod => mod.EveningCheckInModal),
+  { ssr: false }
+);
+const MorningFormModal = dynamic(
+  () => import('@/components/tiles/forms/MorningFormTile').then(mod => mod.MorningFormModal),
+  { ssr: false }
+);
+
 export default function Home() {
+  // Phase form modal state
+  const [showMorningModal, setShowMorningModal] = useState(false);
+  const [showEveningModal, setShowEveningModal] = useState(false);
+
+  const handlePhaseComplete = useCallback((phase: 'morning' | 'evening' | null) => {
+    if (phase === 'morning') {
+      setShowMorningModal(true);
+    } else if (phase === 'evening') {
+      setShowEveningModal(true);
+    }
+  }, []);
   // Static tiles render immediately, API enriches in background
   const { tiles, isRefreshing, isError, isStatic } = useTiles();
 
@@ -66,11 +88,11 @@ export default function Home() {
       </header>
 
       {/* Phase Reminder */}
-      <PhaseReminder
-        onCompleteClick={(phase) => {
-          console.log('Open phase form:', phase);
-        }}
-      />
+      <PhaseReminder onCompleteClick={handlePhaseComplete} />
+
+      {/* Phase Form Modals */}
+      <MorningFormModal isOpen={showMorningModal} onClose={() => setShowMorningModal(false)} />
+      <EveningCheckInModal isOpen={showEveningModal} onClose={() => setShowEveningModal(false)} />
 
       {/* Menu Filter */}
       <div className="border-b border-border bg-card/50">
