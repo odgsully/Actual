@@ -80,7 +80,7 @@ export async function GET() {
       stats,
       recent: (recent || []).map((r) => ({
         id: r.id,
-        callId: r.voice_calls?.external_call_id,
+        callId: r.voice_calls?.[0]?.external_call_id,
         syncStatus: r.sync_status,
         storagePath: r.storage_path,
         fileSizeBytes: r.file_size_bytes,
@@ -119,19 +119,13 @@ export async function POST(request: NextRequest) {
     // Sync specific recording by ID
     if (recordingId) {
       const result = await syncRecording(recordingId);
-      return NextResponse.json({
-        success: result.success,
-        ...result,
-      });
+      return NextResponse.json(result);
     }
 
     // Sync recording from URL (immediate sync after call)
     if (callId && recordingUrl) {
       const result = await syncRecordingFromUrl(callId, recordingUrl);
-      return NextResponse.json({
-        success: result.success,
-        ...result,
-      });
+      return NextResponse.json(result);
     }
 
     return NextResponse.json(

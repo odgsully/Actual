@@ -123,7 +123,7 @@ export async function syncRecording(recordingId: string): Promise<RecordingSyncR
     }
 
     // Generate storage path
-    const callId = recording.voice_calls?.external_call_id || recording.call_id;
+    const callId = recording.voice_calls?.[0]?.external_call_id || recording.call_id;
     const date = new Date().toISOString().split('T')[0];
     const storagePath = `${date}/${callId}.wav`;
 
