@@ -1,0 +1,26 @@
+# Jarvis_BriefMe Supabase Integration Requirements
+# Python 3.12+
+
+# Supabase client
+supabase>=2.0.0
+postgrest>=0.13.0
+
+# PDF generation
+weasyprint>=60.0
+Pillow>=10.0.0
+
+# Additional WeasyPrint dependencies (may be needed depending on OS)
+# For macOS: brew install cairo pango gdk-pixbuf libffi
+# For Ubuntu/Debian: apt-get install build-essential python3-dev python3-pip python3-setuptools python3-wheel python3-cffi libcairo2 libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf2.0-0 libffi-dev shared-mime-info
+
+# HTTP client (used by supabase-py)
+httpx>=0.24.0
+
+# Async support
+asyncio>=3.4.3
+
+# Environment management (optional but recommended)
+python-dotenv>=1.0.0
+
+# Logging
+structlog>=23.1.0

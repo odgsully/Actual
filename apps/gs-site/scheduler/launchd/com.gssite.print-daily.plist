@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.gssite.print-daily</string>
+
+    <key>Comment</key>
+    <string>GS-Site Daily Print Job - Runs at 5:00 AM Arizona time every day</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/garrettsullivan/gs-site-scheduler/scripts/daily-print.sh</string>
+    </array>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>5</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>TZ</key>
+        <string>America/Phoenix</string>
+        <key>PATH</key>
+        <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>GS_SITE_URL</key>
+        <string>http://localhost:3003</string>
+    </dict>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/garrettsullivan/gs-site-scheduler</string>
+
+    <key>StandardOutPath</key>
+    <string>/Users/garrettsullivan/gs-site-scheduler/logs/daily.stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/garrettsullivan/gs-site-scheduler/logs/daily.stderr.log</string>
+
+    <key>RunAtLoad</key>
+    <false/>
+</dict>
+</plist>
