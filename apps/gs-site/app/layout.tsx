@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
+import { QueryProvider } from "@/lib/query-provider";
 import "./globals.css";
 
 const inter = Inter({
@@ -7,9 +8,14 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+});
+
 export const metadata: Metadata = {
-  title: "GS Site Dashboard",
-  description: "Personal dashboard hub with app launcher and Notion integration",
+  title: "GS Dashboard",
+  description: "Personal dashboard hub",
 };
 
 export default function RootLayout({
@@ -18,9 +24,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${inter.variable} font-sans antialiased`}>
-        {children}
+    <html lang="en" className="dark">
+      <body className={`${inter.variable} ${jetbrainsMono.variable} font-mono antialiased`}>
+        <QueryProvider>{children}</QueryProvider>
       </body>
     </html>
   );

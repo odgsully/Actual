@@ -17,6 +17,7 @@ import { generateAllBreakupsAnalyses } from '@/lib/processing/breakups-generator
 import { generateAllVisualizations } from '@/lib/processing/breakups-visualizer';
 import { generateUnifiedPDFReport } from '@/lib/processing/breakups-pdf-unified';
 import { packageBreakupsReport } from '@/lib/processing/breakups-packager';
+import { rateLimiters } from '@/lib/rate-limit';
 
 const LOG_PREFIX = '[ReportIt API - Upload]';
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
@@ -852,6 +853,12 @@ interface UploadResponse {
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
+  // Rate limit: 5 report generations per minute (expensive operation)
+  const rateLimitResult = await rateLimiters.expensive.check(request)
+  if (!rateLimitResult.success) {
+    return rateLimitResult.response!
+  }
+
   console.log(`${LOG_PREFIX} Received upload request`);
 
   try {

@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client';
 import { getQueueManager } from '@/lib/scraping/queue-manager';
 import { ScrapeJob, PropertySource } from '@/lib/scraping/types';
 import { getUserPreferences } from '@/lib/database/preferences';
+import { rateLimiters } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -18,6 +19,12 @@ export const maxDuration = 60;
  * Trigger immediate property scraping
  */
 export async function POST(request: NextRequest) {
+  // Rate limit: 10 scraping requests per hour per IP (additional layer on top of quota)
+  const rateLimitResult = await rateLimiters.scraping.check(request)
+  if (!rateLimitResult.success) {
+    return rateLimitResult.response
+  }
+
   try {
     const supabase = createClient();
     
