@@ -22,6 +22,7 @@ import {
   generateIdempotencyKey,
 } from '@/lib/voice/webhook-security';
 import { parseRetellWebhook } from '@/lib/voice/providers/retell/webhooks';
+import { syncRecordingFromUrl } from '@/lib/voice/recording-sync';
 
 // ============================================================================
 // SUPABASE CLIENT
@@ -326,30 +327,49 @@ async function handleCallEnded(
     }
   }
 
-  // Create recording record (to be synced later)
+  // Sync recording immediately (URLs expire in 24h!)
   if (eventData.recordingUrl) {
-    const { data: call } = await supabase
-      .from('voice_calls')
-      .select('id')
-      .eq('external_call_id', event.callId)
-      .single();
+    logWebhookEvent('info', 'Syncing recording to Supabase Storage...', {
+      url: eventData.recordingUrl?.substring(0, 60),
+    });
 
-    if (call) {
-      const { error: recordingError } = await supabase.from('voice_recordings').insert({
-        call_id: call.id,
-        recording_type: 'call',
-        original_url: eventData.recordingUrl,
-        duration_ms: eventData.recordingDurationMs,
-        sync_status: 'pending',
-        // Retell URLs expire in 24h
-        original_url_expires_at: new Date(Date.now() + 23 * 60 * 60 * 1000).toISOString(),
-      });
+    try {
+      const syncResult = await syncRecordingFromUrl(
+        event.callId,
+        eventData.recordingUrl,
+        eventData.recordingDurationMs
+      );
 
-      if (recordingError) {
-        logWebhookEvent('error', 'Failed to store recording', { error: recordingError.message });
+      if (syncResult.success) {
+        logWebhookEvent('info', 'Recording synced successfully', {
+          storagePath: syncResult.storagePath,
+          durationMs: syncResult.durationMs,
+        });
       } else {
-        logWebhookEvent('info', 'Recording record created', { url: eventData.recordingUrl?.substring(0, 50) });
+        logWebhookEvent('error', 'Recording sync failed', { error: syncResult.error });
+
+        // Fall back to storing the URL for later retry
+        const { data: call } = await supabase
+          .from('voice_calls')
+          .select('id')
+          .eq('external_call_id', event.callId)
+          .single();
+
+        if (call) {
+          await supabase.from('voice_recordings').insert({
+            call_id: call.id,
+            recording_type: 'call',
+            original_url: eventData.recordingUrl,
+            duration_ms: eventData.recordingDurationMs,
+            sync_status: 'pending',
+            original_url_expires_at: new Date(Date.now() + 23 * 60 * 60 * 1000).toISOString(),
+          });
+        }
       }
+    } catch (syncError) {
+      logWebhookEvent('error', 'Recording sync threw error', {
+        error: syncError instanceof Error ? syncError.message : 'Unknown error',
+      });
     }
   }
 

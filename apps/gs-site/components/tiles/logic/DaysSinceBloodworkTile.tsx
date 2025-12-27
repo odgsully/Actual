@@ -32,7 +32,7 @@ interface DaysSinceBloodworkTileProps {
 
 const DEFAULT_CONFIG: DaysSinceConfig = {
   startDate: new Date(),
-  warningThreshold: 365,
+  warningThreshold: 330,
   criticalThreshold: 730,
 };
 
@@ -48,9 +48,8 @@ function calculateDaysSince(startDate: Date): number {
 }
 
 function getStatusColor(days: number, warning: number, critical: number) {
-  if (days >= critical) return 'text-red-500';
-  if (days >= warning) return 'text-yellow-500';
-  return 'text-green-500';
+  if (days >= warning) return 'text-red-500';
+  return 'text-foreground';
 }
 
 function getStatusIcon(days: number, warning: number, critical: number) {
@@ -60,7 +59,6 @@ function getStatusIcon(days: number, warning: number, critical: number) {
 }
 
 function getStatusMessage(days: number, warning: number, critical: number): string {
-  if (days >= critical) return 'Overdue! Schedule bloodwork';
   if (days >= warning) return 'Time to schedule bloodwork';
   if (days < 90) return 'Recently completed';
   return 'On track';
@@ -75,7 +73,7 @@ function getStatusMessage(days: number, warning: number, critical: number): stri
  *
  * Features:
  * - Uses admin tile settings for persistence
- * - Color-coded status (green < 365 days, yellow 365-730, red > 730)
+ * - Color-coded status (neutral by default, red > 330 days)
  * - Settings accessible via admin panel or inline
  * - Pure frontend calculation
  *
@@ -168,7 +166,7 @@ export function DaysSinceBloodworkTile({
           <div className="flex items-center gap-1.5">
             <Droplets className="w-4 h-4 text-red-400" />
             <h3 className="text-xs font-medium text-foreground truncate">
-              {tile.name || 'Days Since Bloodwork'}
+              {tile.name || 'Bloodwork'}
             </h3>
           </div>
           <button
@@ -205,7 +203,7 @@ export function DaysSinceBloodworkTile({
               />
             </div>
             <p className="text-[10px] text-muted-foreground">
-              Yellow warning at {warningThreshold} days, red at {criticalThreshold} days
+              Red warning at {warningThreshold} days
             </p>
           </motion.div>
         )}

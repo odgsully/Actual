@@ -49,7 +49,7 @@ const CONFIGURABLE_TILES = [
   },
   {
     id: 'days-since-bloodwork',
-    name: 'Days since bloodwork done',
+    name: 'Bloodwork',
     setting: 'Start date',
     settingType: 'date',
     icon: Calendar,

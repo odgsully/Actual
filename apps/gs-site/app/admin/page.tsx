@@ -10,6 +10,8 @@ import {
   CheckCircle,
   Clock,
   Settings,
+  LayoutGrid,
+  Sparkles,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -269,6 +271,33 @@ export default function AdminOverviewPage() {
             className="px-4 py-2 text-sm rounded-lg border border-border hover:bg-muted transition-colors"
           >
             View Dashboard
+          </Link>
+        </div>
+      </div>
+
+      {/* Developer Resources */}
+      <div className="p-4 rounded-lg border border-border bg-card">
+        <h2 className="font-semibold mb-4">Developer Resources</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Link
+            href="/ui-libraries/cult-ui"
+            className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-muted transition-colors"
+          >
+            <LayoutGrid className="w-5 h-5 text-muted-foreground" />
+            <div>
+              <p className="font-medium text-sm">CultUI Component Library</p>
+              <p className="text-xs text-muted-foreground">49 beautiful components</p>
+            </div>
+          </Link>
+          <Link
+            href="/ui-libraries/motion-primitives"
+            className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-muted transition-colors"
+          >
+            <Sparkles className="w-5 h-5 text-muted-foreground" />
+            <div>
+              <p className="font-medium text-sm">Motion-Primitives Library</p>
+              <p className="text-xs text-muted-foreground">34 animation components</p>
+            </div>
           </Link>
         </div>
       </div>

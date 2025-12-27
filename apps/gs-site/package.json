@@ -9,7 +9,10 @@
     "start": "next start",
     "lint": "next lint",
     "sync-tiles": "npx tsx scripts/sync-notion-tiles.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "voice:status": "npx tsx scripts/setup-voice-agents.ts status",
+    "voice:create": "npx tsx scripts/setup-voice-agents.ts create",
+    "voice:list-voices": "npx tsx scripts/setup-voice-agents.ts list-voices"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

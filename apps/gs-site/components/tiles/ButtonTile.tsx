@@ -126,6 +126,22 @@ function getTileHref(tile: Tile): string | null {
 }
 
 /**
+ * Tiles that should hide their subtitle/description
+ */
+const HIDE_SUBTITLE_PATTERNS = [
+  'gs socials scheduler',
+  'daniel park',
+  'weeklies',
+  'claude code max',
+  'daily ui',
+];
+
+function shouldHideSubtitle(tile: Tile): boolean {
+  const name = tile.name.toLowerCase();
+  return HIDE_SUBTITLE_PATTERNS.some(pattern => name.includes(pattern));
+}
+
+/**
  * Category color mapping
  */
 const CATEGORY_COLORS: Record<string, string> = {
@@ -210,7 +226,7 @@ export function ButtonTile({ tile, className }: TileComponentProps) {
         <h3 className="text-sm font-medium text-foreground leading-tight line-clamp-2">
           {tile.name}
         </h3>
-        {tile.desc && (
+        {tile.desc && !shouldHideSubtitle(tile) && (
           <p className="text-xs text-muted-foreground mt-1 tracking-wide truncate">
             {tile.desc}
           </p>

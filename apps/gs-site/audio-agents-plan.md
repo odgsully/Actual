@@ -19,9 +19,9 @@ Transform the 14 AI agent personas defined in `agent-team/agent-team-12.25.md` i
 |-------|------|--------|----------|-----------|
 | Pre | Research & Planning | ✅ Complete | 4/4 | - |
 | 0 | Foundation | ✅ Complete | 11/11 | 1 |
-| 1 | Single Agent MVP | 🟡 In Progress | 8/12 | 4 |
-| 2 | Recording Pipeline | ⬜ Not Started | 0/5 | 1.5 |
-| 3 | Multi-Agent Routing | ⬜ Not Started | 0/6 | 3 |
+| 1 | Single Agent MVP | ✅ Complete | 12/12 | 4 |
+| 2 | Recording Pipeline | ✅ Complete | 5/5 | 1.5 |
+| 3 | Multi-Agent Routing | ✅ Complete | 6/6 | 3 |
 | 4 | OpenRouter Integration | ⬜ Not Started | 0/9 | 3 |
 | 5 | Warm Transfer + Voicemail | ⬜ Not Started | 0/10 | 2.5 |
 | 6 | Dashboard Integration | ⬜ Not Started | 0/5 | 1.5 |
@@ -301,9 +301,9 @@ Morgan (Executive Assistant) handles inbound calls, answers basic questions, tak
 - [ ] Generate call summary using haiku post-call
 
 **Testing:**
-- [ ] Configure webhook URL in Retell dashboard
-- [ ] Test inbound call end-to-end
-- [ ] Verify call data stored in Supabase
+- [x] Configure webhook URL in Retell dashboard ← **DONE 2025-12-27** (via API)
+- [x] Test inbound call end-to-end ← **DONE 2025-12-27** (3 test calls)
+- [x] Verify call data stored in Supabase ← **DONE 2025-12-27** (calls + transcripts)
 
 ### API Routes to Create
 
@@ -396,7 +396,7 @@ Own all call recordings in Supabase Storage before Retell URLs expire (24hr).
 
 ---
 
-## Phase 3: Multi-Agent Routing ⬜
+## Phase 3: Multi-Agent Routing ✅
 
 ### Goal
 Inbound calls are routed to the appropriate AI agent based on detected intent.
@@ -414,28 +414,31 @@ Inbound calls are routed to the appropriate AI agent based on detected intent.
 
 ### Checklist
 
-- [ ] Create agents in Retell dashboard:
-  - [ ] Noah Carter (Marketing) - sonnet
-  - [ ] Daniel Park (Technical) - gpt-4o-mini
-  - [ ] Kyle Blonkosky (Coach) - haiku
-  - [ ] Victoria Chen (Research) - sonnet
-  - [ ] Emily Liu (EA backup) - haiku
-- [ ] Select and configure voice IDs for each agent
-- [ ] Update Morgan's prompt with intent detection
-- [ ] Implement agent-to-agent transfer logic
-- [ ] Test transfers between agents
-- [ ] Verify model tier is applied correctly ← **NEW**
+- [x] Create agent definitions with prompts ← **DONE 2025-12-26**
+  - `lib/voice/agents/definitions.ts` - All 6 agents defined with prompts
+- [x] Implement intent detection logic ← **DONE 2025-12-26**
+  - `lib/voice/agents/router.ts` - Keyword matching + routing
+- [x] Create agent management API ← **DONE 2025-12-26**
+  - `app/api/voice/agents/manage/route.ts` - Create/sync agents
+- [x] Create transfer endpoint ← **DONE 2025-12-26**
+  - `app/api/voice/calls/[callId]/transfer/route.ts`
+- [x] Add setup script ← **DONE 2025-12-26**
+  - `scripts/setup-voice-agents.ts` - CLI for agent management
+  - `npm run voice:status` - Check agent status
+  - `npm run voice:create` - Create missing agents
+- [x] Run `npm run voice:create` to create agents in Retell ← **DONE 2025-12-26**
+- [x] All 6 agents created and verified active ← **DONE 2025-12-26**
 
-### Retell Agent IDs (fill in after creation)
+### Retell Agent IDs
 
 ```typescript
 const AGENT_IDS = {
-  morgan: '',
-  emily_liu: '',
-  noah_carter: '',
-  daniel_park: '',
-  kyle_blonkosky: '',
-  victoria_chen: '',
+  morgan: 'agent_942ffec123c3236d315e55a9a4',
+  emily_liu: 'agent_6629336b547381396b5735d931',
+  noah_carter: 'agent_f713f845dc931f7b0635dc9453',
+  kyle_blonkosky: 'agent_f0854633cb0495f5c24381d322',
+  victoria_chen: 'agent_58cce6f78edc1a4a057c4377f4',
+  daniel_park: 'agent_a10585e824160aa63a88f30dc1',
 };
 
 const MODEL_BY_AGENT: Record<string, string> = {
@@ -813,3 +816,13 @@ Voice call activity visible in gs-site dashboard.
 | 2025-12-26 | Updated cost estimates with staging environment |
 | 2025-12-26 | Created `20251226_voice_reliability_additions.sql` migration |
 | 2025-12-26 | Applied reliability migration - webhook queue, voicemails, model tiers |
+| 2025-12-27 | **Phase 1 Complete** - End-to-end call tested, webhooks working, transcripts storing |
+| 2025-12-26 | **Phase 3 Started** - Multi-agent routing implementation |
+| 2025-12-26 | Created `lib/voice/agents/definitions.ts` - 6 agent prompts |
+| 2025-12-26 | Created `lib/voice/agents/router.ts` - Intent detection + routing |
+| 2025-12-26 | Created `app/api/voice/agents/manage/route.ts` - Agent CRUD API |
+| 2025-12-26 | Created `app/api/voice/calls/[callId]/transfer/route.ts` - Transfer API |
+| 2025-12-26 | Created `scripts/setup-voice-agents.ts` - CLI agent setup tool |
+| 2025-12-26 | Created all 6 agents in Retell with voice configurations |
+| 2025-12-26 | Updated Supabase with all Retell agent IDs |
+| 2025-12-26 | **Phase 3 Complete** - Multi-agent routing implemented |

@@ -63,7 +63,7 @@ const TILE_META: Record<
     settingType: 'slider',
   },
   'days-since-bloodwork': {
-    name: 'Days since bloodwork done Counter',
+    name: 'Bloodwork',
     description: 'Set the date of your last bloodwork',
     icon: Calendar,
     settingType: 'date',

@@ -104,6 +104,28 @@ function calculateTimeRemaining(targetDate: Date) {
   };
 }
 
+/**
+ * Get progressive red color based on days remaining
+ * - >= 60 days: neutral (undefined, uses default foreground)
+ * - < 60 days: progressively darker red as approaching 0
+ *   - 60 days: rgb(248, 113, 113) - light red
+ *   - 0 days: rgb(127, 29, 29) - dark red
+ */
+function getUrgencyColor(days: number): string | undefined {
+  if (days >= 60) return undefined;
+
+  // Linear interpolation from light red to dark red
+  // At 60 days: (248, 113, 113) - red-400
+  // At 0 days: (127, 29, 29) - red-900
+  const progress = Math.max(0, Math.min(1, (60 - days) / 60));
+
+  const r = Math.round(248 - (248 - 127) * progress);
+  const g = Math.round(113 - (113 - 29) * progress);
+  const b = Math.round(113 - (113 - 29) * progress);
+
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
 function saveConfig(tileId: string, config: DaysTillConfig) {
   if (typeof window !== 'undefined') {
     localStorage.setItem(
@@ -246,10 +268,7 @@ export function DaysTillCounterTile({
           <div className="flex items-center gap-1.5">
             <Timer className="w-4 h-4 text-muted-foreground" />
             <h3 className="text-xs font-medium text-foreground truncate">
-              {/* Clean up tile name - extract key part after "..." or use as-is */}
-              {tile.name.includes('SpaceAd') ? 'SpaceAd' :
-               tile.name.includes('…') ? tile.name.split('…').pop()?.trim() :
-               tile.name.replace(/^\d+\.\s*/, '')}
+              SpaceAd
             </h3>
           </div>
           <button
@@ -304,10 +323,11 @@ export function DaysTillCounterTile({
             </div>
           ) : (
             <>
-              {/* Days Counter */}
+              {/* Days Counter - progressively darker red when < 60 days */}
               <motion.div
-                className="text-4xl font-bold text-foreground tabular-nums"
-                initial={{ scale: 0.8, opacity: 0 }}
+                className="text-4xl font-bold tabular-nums text-foreground"
+                style={timeRemaining.days < 60 ? { color: getUrgencyColor(timeRemaining.days) } : undefined}
+                initial={{ scale: 1, opacity: 1 }}
                 animate={{ scale: 1, opacity: 1 }}
                 key={timeRemaining.days}
               >
