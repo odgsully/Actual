@@ -1,0 +1,123 @@
+/* Base react-grid-layout styles */
+@import 'react-grid-layout/css/styles.css';
+@import 'react-resizable/css/styles.css';
+
+/* ============================================
+   GRID ITEM BASE STYLES
+   ============================================ */
+
+.react-grid-item {
+  /* Smooth transitions for position changes */
+  transition: transform 200ms ease, box-shadow 200ms ease !important;
+}
+
+.react-grid-item > div {
+  /* Ensure tile fills the grid cell */
+  width: 100%;
+  height: 100%;
+}
+
+/* Note: Removed aggressive inner div styling that was breaking Link navigation */
+
+/* ============================================
+   EDIT MODE VISUAL FEEDBACK
+   ============================================ */
+
+/* Container in edit mode */
+.edit-mode .react-grid-item {
+  cursor: grab;
+}
+
+.edit-mode .react-grid-item:active {
+  cursor: grabbing;
+}
+
+/* Dashed border on tiles in edit mode */
+.edit-mode .react-grid-item > div > div {
+  border-style: dashed !important;
+  border-color: hsl(var(--primary) / 0.4) !important;
+  transition: border-color 200ms ease, border-style 200ms ease;
+}
+
+/* Hover state in edit mode */
+.edit-mode .react-grid-item:hover > div > div {
+  border-color: hsl(var(--primary) / 0.7) !important;
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.1);
+}
+
+/* ============================================
+   DRAGGING STATE
+   ============================================ */
+
+.react-grid-item.react-draggable-dragging {
+  z-index: 100 !important;
+  cursor: grabbing !important;
+  opacity: 0.9;
+}
+
+.react-grid-item.react-draggable-dragging > div > div {
+  box-shadow:
+    0 10px 40px rgba(0, 0, 0, 0.15),
+    0 0 0 2px hsl(var(--primary) / 0.3) !important;
+  transform: scale(1.02);
+  transition: box-shadow 100ms ease, transform 100ms ease !important;
+}
+
+/* ============================================
+   PREVENT CLICKS DURING DRAG
+   ============================================ */
+
+/* When dragging, disable pointer events on tile content */
+.is-dragging .react-grid-item > div > div {
+  pointer-events: none !important;
+}
+
+/* Ensure the grid item itself can still be dragged */
+.is-dragging .react-grid-item {
+  pointer-events: auto;
+}
+
+/* ============================================
+   PLACEHOLDER (DROP TARGET)
+   ============================================ */
+
+.react-grid-placeholder {
+  background: hsl(var(--primary) / 0.1) !important;
+  border: 2px dashed hsl(var(--primary) / 0.4) !important;
+  border-radius: 0 !important; /* Match gs-site's 0px border-radius */
+  opacity: 1 !important;
+  transition: all 150ms ease;
+}
+
+/* ============================================
+   HIDE RESIZE HANDLES (user requirement)
+   ============================================ */
+
+.react-resizable-handle {
+  display: none !important;
+}
+
+/* ============================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================ */
+
+/* Smaller touch targets on mobile */
+@media (max-width: 640px) {
+  .edit-mode .react-grid-item {
+    /* Larger touch area for mobile drag */
+    touch-action: none;
+  }
+}
+
+/* ============================================
+   ANIMATION FOR LAYOUT CHANGES
+   ============================================ */
+
+.react-grid-item:not(.react-draggable-dragging) {
+  transition:
+    transform 200ms ease,
+    left 200ms ease,
+    top 200ms ease,
+    width 200ms ease,
+    height 200ms ease;
+}

@@ -60,6 +60,7 @@
     "react-calendar-heatmap": "^1.10.0",
     "react-day-picker": "^9.13.0",
     "react-dom": "^18.2.0",
+    "react-grid-layout": "^2.1.1",
     "react-hook-form": "^7.68.0",
     "react-resizable-panels": "^4.0.9",
     "react-use-measure": "^2.1.7",
