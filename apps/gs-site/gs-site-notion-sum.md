@@ -107,13 +107,13 @@
 
 ---
 
-#### 15. Forms (monthly) & printoff
-- **Status**: Not started
+#### ~~15. Forms (monthly) & printoff~~ [HIDDEN]
+- **Status**: HIDDEN - Removed from dashboard
 - **Menu**: Org
 - **Phase**: GS Site Standing
 - **Components**: Form, Logic
 - **Third Party**: Logic
-- **Description**: Monthly Make+Track KPIs. Create a pdf report with all KPI's.
+- **Description**: ~~Monthly Make+Track KPIs. Create a pdf report with all KPI's.~~
 
 ---
 
@@ -274,13 +274,13 @@
 
 ---
 
-#### Forms (quarterly) & printoff
-- **Status**: Not started
+#### ~~Forms (quarterly) & printoff~~ [HIDDEN]
+- **Status**: HIDDEN - Removed from dashboard
 - **Menu**: Org
 - **Phase**: GS Site Standing
 - **Components**: Form, Logic
 - **Third Party**: Logic
-- **Description**: Forms Quarterly Make+Track KPIs. Create a pdf report with all KPI's.
+- **Description**: ~~Forms Quarterly Make+Track KPIs. Create a pdf report with all KPI's.~~
 
 ---
 
@@ -609,8 +609,6 @@
 | Tile | Status | Backend |
 |------|--------|---------|
 | Morning Form | Not started | Notion + Supabase |
-| Forms (monthly) | Not started | PDF generation |
-| Forms (quarterly) | Not started | PDF generation |
 
 ### Logic (Complex Backend)
 | Tile | Status | Integrations |

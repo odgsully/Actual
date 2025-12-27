@@ -35,10 +35,26 @@ const EXCLUDED_TILE_IDS = new Set([
 ]);
 
 /**
- * Filter out excluded tiles
+ * Tile names to exclude (case-insensitive partial match)
+ * More robust than IDs which can change
+ */
+const EXCLUDED_TILE_NAMES = [
+  'forms (monthly) & printoff',
+  'forms (quarterly) & printoff',
+];
+
+/**
+ * Filter out excluded tiles by ID or name
  */
 function filterExcludedTiles(tiles: Tile[]): Tile[] {
-  return tiles.filter(tile => !EXCLUDED_TILE_IDS.has(tile.id));
+  return tiles.filter(tile => {
+    // Check ID exclusion
+    if (EXCLUDED_TILE_IDS.has(tile.id)) return false;
+    // Check name exclusion (case-insensitive)
+    const nameLower = tile.name.toLowerCase();
+    if (EXCLUDED_TILE_NAMES.some(excluded => nameLower.includes(excluded))) return false;
+    return true;
+  });
 }
 
 /**
