@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.gssite.print-quarterly</string>
+
+    <key>Comment</key>
+    <string>GS-Site Quarterly Print Job - Runs at 5:00 AM Arizona time on Jan/Apr/Jul/Oct 1st</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/garrettsullivan/gs-site-scheduler/scripts/quarterly-print.sh</string>
+    </array>
+
+    <!-- Quarterly: Run on 1st of Jan, Apr, Jul, Oct -->
+    <!-- launchd doesn't support month filtering, so we run monthly and check in script -->
+    <!-- Alternative: Use 4 separate plists or check month in script -->
+    <key>StartCalendarInterval</key>
+    <array>
+        <dict>
+            <key>Month</key>
+            <integer>1</integer>
+            <key>Day</key>
+            <integer>1</integer>
+            <key>Hour</key>
+            <integer>5</integer>
+            <key>Minute</key>
+            <integer>0</integer>
+        </dict>
+        <dict>
+            <key>Month</key>
+            <integer>4</integer>
+            <key>Day</key>
+            <integer>1</integer>
+            <key>Hour</key>
+            <integer>5</integer>
+            <key>Minute</key>
+            <integer>0</integer>
+        </dict>
+        <dict>
+            <key>Month</key>
+            <integer>7</integer>
+            <key>Day</key>
+            <integer>1</integer>
+            <key>Hour</key>
+            <integer>5</integer>
+            <key>Minute</key>
+            <integer>0</integer>
+        </dict>
+        <dict>
+            <key>Month</key>
+            <integer>10</integer>
+            <key>Day</key>
+            <integer>1</integer>
+            <key>Hour</key>
+            <integer>5</integer>
+            <key>Minute</key>
+            <integer>0</integer>
+        </dict>
+    </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>TZ</key>
+        <string>America/Phoenix</string>
+        <key>PATH</key>
+        <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>GS_SITE_URL</key>
+        <string>http://localhost:3003</string>
+    </dict>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/garrettsullivan/gs-site-scheduler</string>
+
+    <key>StandardOutPath</key>
+    <string>/Users/garrettsullivan/gs-site-scheduler/logs/quarterly.stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/garrettsullivan/gs-site-scheduler/logs/quarterly.stderr.log</string>
+
+    <key>RunAtLoad</key>
+    <false/>
+</dict>
+</plist>

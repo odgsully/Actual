@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { rateLimiters } from '@/lib/rate-limit'
 
 function getSupabaseAdmin() {
   // Create a Supabase client with the service role key to bypass RLS
@@ -15,7 +16,13 @@ function getSupabaseAdmin() {
   )
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  // Rate limit: 10 signup attempts per minute per IP
+  const rateLimitResult = await rateLimiters.auth.check(request)
+  if (!rateLimitResult.success) {
+    return rateLimitResult.response
+  }
+
   try {
     const supabaseAdmin = getSupabaseAdmin()
     const { userId, email, firstName, lastName, privacyAccepted, marketingOptIn } = await request.json()

@@ -55,17 +55,20 @@ export async function fetchRecentPages(limit = 10): Promise<NotionPage[]> {
 }
 
 // Fetch databases from Notion
+// Note: Notion API no longer supports filtering by 'database' in search
+// So we fetch all results and filter client-side
 export async function fetchDatabases(): Promise<NotionDatabase[]> {
   try {
     const response = await notion.search({
-      filter: {
-        property: 'object',
-        value: 'database'
-      } as any,
       page_size: 100
     });
 
-    return response.results.map((db: any) => ({
+    // Filter to only database objects client-side
+    const databases = response.results.filter(
+      (result: any) => result.object === 'database'
+    );
+
+    return databases.map((db: any) => ({
       id: db.id,
       title: db.title?.[0]?.plain_text || 'Untitled Database',
       description: db.description?.[0]?.plain_text,
@@ -93,6 +96,7 @@ export async function fetchPageContent(pageId: string) {
 }
 
 // Search Notion content
+// Note: Notion API only supports 'page' filter, not 'database'
 export async function searchNotion(query: string, filter?: 'page' | 'database') {
   try {
     const searchParams: any = {
@@ -100,14 +104,20 @@ export async function searchNotion(query: string, filter?: 'page' | 'database') 
       page_size: 20
     };
 
-    if (filter) {
+    // Only add filter for 'page' - 'database' filter not supported by API
+    if (filter === 'page') {
       searchParams.filter = {
         property: 'object',
-        value: filter
+        value: 'page'
       };
     }
 
     const response = await notion.search(searchParams);
+
+    // If database filter requested, filter client-side
+    if (filter === 'database') {
+      return response.results.filter((r: any) => r.object === 'database');
+    }
 
     return response.results;
   } catch (error) {

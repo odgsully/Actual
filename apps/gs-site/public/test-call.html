@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Voice Agent Test Call</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0a0a0a;
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 500px;
+      width: 100%;
+      text-align: center;
+    }
+    h1 { font-size: 24px; margin-bottom: 8px; }
+    .subtitle { color: #888; margin-bottom: 32px; }
+    .status {
+      padding: 16px 24px;
+      border-radius: 12px;
+      background: #1a1a1a;
+      margin-bottom: 24px;
+      font-size: 18px;
+    }
+    .status.connected { background: #0a3d0a; color: #4ade80; }
+    .status.error { background: #3d0a0a; color: #f87171; }
+    button {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 16px 32px;
+      font-size: 18px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      width: 100%;
+      max-width: 300px;
+    }
+    button:hover { background: #2563eb; transform: scale(1.02); }
+    button:disabled { background: #333; cursor: not-allowed; transform: none; }
+    button.end { background: #dc2626; }
+    button.end:hover { background: #b91c1c; }
+    .agents {
+      margin-top: 32px;
+      text-align: left;
+      background: #1a1a1a;
+      padding: 20px;
+      border-radius: 12px;
+    }
+    .agents h3 { margin: 0 0 16px 0; color: #888; font-size: 14px; text-transform: uppercase; }
+    .agent-item {
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      background: #252525;
+    }
+    .agent-item strong { color: #3b82f6; }
+    .agent-item span { color: #888; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎙️ Voice Agent Test</h1>
+    <p class="subtitle">Test call with Morgan (Reception)</p>
+
+    <div id="status" class="status">Ready to connect</div>
+
+    <button id="callBtn" onclick="startCall()">Start Test Call</button>
+
+    <div class="agents">
+      <h3>Test Routing - Say These Phrases:</h3>
+      <div class="agent-item">
+        <strong>→ Noah (Sales)</strong><br>
+        <span>"I want to buy a house in Scottsdale"</span>
+      </div>
+      <div class="agent-item">
+        <strong>→ Victoria (Research)</strong><br>
+        <span>"What's the market analysis for Phoenix?"</span>
+      </div>
+      <div class="agent-item">
+        <strong>→ Daniel (Technical)</strong><br>
+        <span>"I'm having a technical problem"</span>
+      </div>
+      <div class="agent-item">
+        <strong>→ Kyle (Coach)</strong><br>
+        <span>"I need an accountability check-in"</span>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.retellai.com/retell-client-js-sdk/1.5.1/bundle.js"></script>
+  <script>
+    let retellClient = null;
+    const statusEl = document.getElementById('status');
+    const btnEl = document.getElementById('callBtn');
+
+    async function startCall() {
+      try {
+        btnEl.disabled = true;
+        statusEl.textContent = 'Connecting...';
+        statusEl.className = 'status';
+
+        // Create a new web call
+        const response = await fetch('/api/voice/test-call', { method: 'POST' });
+        const data = await response.json();
+
+        if (!data.access_token) {
+          throw new Error('Failed to get access token');
+        }
+
+        // Initialize Retell client
+        retellClient = new window.RetellClient();
+
+        retellClient.on('audio', () => {
+          statusEl.textContent = '🎙️ Connected - Speak now!';
+          statusEl.className = 'status connected';
+          btnEl.textContent = 'End Call';
+          btnEl.className = 'end';
+          btnEl.disabled = false;
+          btnEl.onclick = endCall;
+        });
+
+        retellClient.on('disconnect', () => {
+          statusEl.textContent = 'Call ended';
+          statusEl.className = 'status';
+          btnEl.textContent = 'Start New Call';
+          btnEl.className = '';
+          btnEl.disabled = false;
+          btnEl.onclick = startCall;
+        });
+
+        retellClient.on('error', (error) => {
+          console.error('Retell error:', error);
+          statusEl.textContent = 'Error: ' + error.message;
+          statusEl.className = 'status error';
+          btnEl.disabled = false;
+        });
+
+        await retellClient.startCall({ accessToken: data.access_token });
+
+      } catch (error) {
+        console.error('Call error:', error);
+        statusEl.textContent = 'Error: ' + error.message;
+        statusEl.className = 'status error';
+        btnEl.disabled = false;
+      }
+    }
+
+    function endCall() {
+      if (retellClient) {
+        retellClient.stopCall();
+      }
+    }
+  </script>
+</body>
+</html>
