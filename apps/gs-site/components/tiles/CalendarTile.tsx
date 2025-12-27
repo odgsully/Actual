@@ -6,9 +6,17 @@ import { WarningBorderTrail } from './WarningBorderTrail';
 import type { TileComponentProps } from './TileRegistry';
 
 /**
- * Simple inline calendar display for tile preview
+ * Simple inline calendar display for tile preview with month navigation
  */
-function MiniCalendar({ selectedDate }: { selectedDate: Date }) {
+function MiniCalendar({
+  selectedDate,
+  onPrevMonth,
+  onNextMonth,
+}: {
+  selectedDate: Date;
+  onPrevMonth: () => void;
+  onNextMonth: () => void;
+}) {
   const today = new Date();
   const currentMonth = selectedDate.getMonth();
   const currentYear = selectedDate.getFullYear();
@@ -48,7 +56,7 @@ function MiniCalendar({ selectedDate }: { selectedDate: Date }) {
   }
 
   return (
-    <div className="w-full">
+    <div className="w-full flex flex-col">
       {/* Month header */}
       <div className="text-[10px] text-muted-foreground text-center mb-1">
         {selectedDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
@@ -61,6 +69,32 @@ function MiniCalendar({ selectedDate }: { selectedDate: Date }) {
           </div>
         ))}
         {days}
+      </div>
+      {/* Month navigation */}
+      <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/50">
+        <button
+          className="p-0.5 hover:bg-accent rounded text-muted-foreground hover:text-foreground transition-colors"
+          onClick={(e) => {
+            e.stopPropagation();
+            onPrevMonth();
+          }}
+          aria-label="Previous month"
+        >
+          <ChevronLeft className="w-3 h-3" />
+        </button>
+        <span className="text-[9px] font-medium text-muted-foreground">
+          {selectedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+        </span>
+        <button
+          className="p-0.5 hover:bg-accent rounded text-muted-foreground hover:text-foreground transition-colors"
+          onClick={(e) => {
+            e.stopPropagation();
+            onNextMonth();
+          }}
+          aria-label="Next month"
+        >
+          <ChevronRight className="w-3 h-3" />
+        </button>
       </div>
     </div>
   );
@@ -102,12 +136,21 @@ export function CalendarTile({ tile, className }: TileComponentProps) {
     { id: '3', title: 'Submit report', time: '5:00 PM', type: 'deadline' },
   ];
 
+  // Navigation handlers for month switching
+  const handlePrevMonth = () => {
+    setSelectedDate(new Date(selectedDate.getFullYear(), selectedDate.getMonth() - 1, 1));
+  };
+
+  const handleNextMonth = () => {
+    setSelectedDate(new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 1));
+  };
+
   const baseClasses = `
     group
     relative
     flex flex-col
     p-3
-    min-h-[7rem]
+    min-h-[11rem]
     bg-card
     border border-border
     rounded-lg
@@ -143,8 +186,12 @@ export function CalendarTile({ tile, className }: TileComponentProps) {
         </div>
 
         {/* Mini Calendar Preview */}
-        <div className="flex-1 flex items-center justify-center overflow-hidden">
-          <MiniCalendar selectedDate={selectedDate} />
+        <div className="flex-1 flex items-start justify-center">
+          <MiniCalendar
+            selectedDate={selectedDate}
+            onPrevMonth={handlePrevMonth}
+            onNextMonth={handleNextMonth}
+          />
         </div>
 
         {/* Status indicator */}

@@ -122,6 +122,12 @@ const HealthTrackerTile = dynamic(
   { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
 );
 
+// Apple Contacts tile (Phase 6)
+const RandomContactTile = dynamic(
+  () => import('./graphics/RandomContactTile').then(mod => ({ default: mod.RandomContactTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
 // Logic-only tiles (Phase 8) - lazy loaded
 const DaysTillCounterTile = dynamic(
   () => import('./logic/DaysTillCounterTile').then(mod => ({ default: mod.DaysTillCounterTile })),
@@ -176,6 +182,24 @@ const MorningFormTile = dynamic(
   { loading: () => <TileSkeleton variant="form" />, ssr: false }
 );
 
+// Jarvis Briefings tile
+const JarvisBriefingTile = dynamic(
+  () => import('./JarvisBriefingTile').then(mod => ({ default: mod.JarvisBriefingTile })),
+  { loading: () => <TileSkeleton variant="default" />, ssr: false }
+);
+
+// Codebase Learn tile (Duolingo-style codebase learning)
+const CodebaseLearnTile = dynamic(
+  () => import('./graphics/CodebaseLearnTile').then(mod => ({ default: mod.CodebaseLearnTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
+// Printoffs & KPIs tile (Phase 8 - consolidates print tiles)
+const PrintoffsKPIsTile = dynamic(
+  () => import('./printoffs/PrintoffsKPIsTile').then(mod => ({ default: mod.PrintoffsKPIsTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
 // Evening Check-In modal is imported directly by page.tsx for PhaseReminder
 // (no tile needed - modal only)
 
@@ -218,6 +242,19 @@ const SPECIALIZED_TILES: Array<{
   {
     match: (name) => name.toLowerCase() === 'morning form',
     component: MorningFormTile,
+  },
+  // Jarvis Briefings tile
+  {
+    match: (name) =>
+      name.toLowerCase().includes('jarvis') && name.toLowerCase().includes('brief'),
+    component: JarvisBriefingTile,
+  },
+  // Codebase Learn tile (Duolingo-style codebase learning)
+  {
+    match: (name) =>
+      name.toLowerCase().includes('codebase') &&
+      (name.toLowerCase().includes('duolingo') || name.toLowerCase().includes('learn')),
+    component: CodebaseLearnTile,
   },
   // Notion tiles
   {
@@ -273,6 +310,16 @@ const SPECIALIZED_TILES: Array<{
     match: (name) =>
       name.toLowerCase().includes('health') && name.toLowerCase().includes('tracker'),
     component: HealthTrackerTile,
+  },
+  // Apple Contacts tile (Phase 6)
+  {
+    match: (name) => {
+      const lower = name.toLowerCase();
+      return lower === 'contact' ||
+        lower === 'contact random' ||
+        (lower.includes('contact') && (lower.includes('random') || lower.includes('daily')));
+    },
+    component: RandomContactTile,
   },
   // GitHub tiles (Phase 3)
   {
@@ -343,15 +390,23 @@ const SPECIALIZED_TILES: Array<{
       (name.toLowerCase() === 'crm' && !name.toLowerCase().includes('tag')),
     component: WabbitLinkTile,
   },
+  // GS Socials Scheduler - External link to Buffer
+  {
+    match: (name) => name.toLowerCase().includes('socials scheduler'),
+    component: ButtonTile,
+  },
+  // Printoffs & KPIs tile - single consolidated tile
+  {
+    match: (name, tile) =>
+      tile?.id === 'local-printoffs-kpis' ||
+      name.toLowerCase() === 'printoffs & kpis',
+    component: PrintoffsKPIsTile,
+  },
   // Coming soon tiles (services not yet implemented)
   {
     match: (name, tile) =>
       tile?.thirdParty?.includes('Apple') ||
-      tile?.thirdParty?.includes('Brother Printer') ||
       tile?.thirdParty?.includes('YouTube 3rd P') ||
-      tile?.thirdParty?.includes('Scheduler 3rd P') ||
-      name.toLowerCase().includes('physically print') ||
-      name.toLowerCase().includes('socials scheduler') ||
       name.toLowerCase().includes('socials stats') ||
       (name.toLowerCase().includes('youtube') && name.toLowerCase().includes('wrapper')),
     component: ComingSoonTile,

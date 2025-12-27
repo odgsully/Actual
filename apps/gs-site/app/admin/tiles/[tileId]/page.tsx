@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import {
   useTileSettings,
   TileSettingKey,
@@ -21,9 +21,12 @@ import {
   Type,
   Check,
   AlertCircle,
+  Users,
+  Loader2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Slider } from '@/components/ui/slider';
+import ContactTierManager from '@/components/admin/ContactTierManager';
 
 // Tile metadata for display
 const TILE_META: Record<
@@ -36,19 +39,19 @@ const TILE_META: Record<
   }
 > = {
   'realtyone-events': {
-    name: '10. RealtyOne Events button',
+    name: 'RE Events',
     description: 'Configure the Notion link for RealtyOne events calendar',
     icon: LinkIcon,
     settingType: 'url',
   },
   'days-till-counter': {
-    name: '13. Panel for Days Till…',
+    name: 'SpaceAd',
     description: 'Set the target date and label for the countdown',
     icon: Calendar,
     settingType: 'date',
   },
   'eating-challenges': {
-    name: '5. Create Eating Challenges',
+    name: 'Create Eating Challenges',
     description: 'Manage your food inventory list for challenges',
     icon: List,
     settingType: 'textarea',
@@ -60,7 +63,7 @@ const TILE_META: Record<
     settingType: 'slider',
   },
   'days-since-bloodwork': {
-    name: 'Days since bloodwork done',
+    name: 'Days since bloodwork done Counter',
     description: 'Set the date of your last bloodwork',
     icon: Calendar,
     settingType: 'date',
@@ -78,13 +81,13 @@ const TILE_META: Record<
     settingType: 'color',
   },
   'random-contact': {
-    name: '2. Random Daily Contact',
+    name: 'Random Daily Contact',
     description: 'Select which CRM tags to include in random selection',
     icon: List,
     settingType: 'multiselect',
   },
   'accountability-report': {
-    name: 'Accountability Report',
+    name: 'Accountability Report send-off to Circle',
     description: 'Configure accountability circle emails and report frequency',
     icon: Mail,
     settingType: 'complex',
@@ -195,8 +198,13 @@ export default function TileSettingsPage() {
 
   const Icon = meta!.icon;
 
+  // Use wider container for accountability-report due to 3-column tier manager
+  const containerClass = tileId === 'accountability-report'
+    ? 'space-y-6 max-w-6xl'
+    : 'space-y-6 max-w-2xl';
+
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className={containerClass}>
       {/* Back link */}
       <Link
         href="/admin/tiles"
@@ -450,6 +458,30 @@ export default function TileSettingsPage() {
               <p className="text-xs text-muted-foreground">
                 One email per line. Reports will be sent to these addresses.
               </p>
+            </div>
+
+            {/* Contact Tier Management Section */}
+            <div className="border-t border-border pt-6 mt-6">
+              <div className="flex items-center gap-3 mb-4">
+                <Users className="w-5 h-5 text-primary" />
+                <div>
+                  <h3 className="text-lg font-semibold">Contact Circle Management</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Assign contacts to tiers for accountability reports. Tier I = Weekly, Tier II = Monthly, Non-circle = Never.
+                  </p>
+                </div>
+              </div>
+
+              <Suspense
+                fallback={
+                  <div className="rounded-lg border border-border bg-card p-8 flex items-center justify-center gap-3">
+                    <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                    <span className="text-muted-foreground">Loading contact manager...</span>
+                  </div>
+                }
+              >
+                <ContactTierManager />
+              </Suspense>
             </div>
           </>
         )}

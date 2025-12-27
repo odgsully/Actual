@@ -94,10 +94,11 @@ export const SERVICE_CONFIGS: Partial<Record<ThirdPartyIntegration, ServiceConfi
   },
   'Brother Printer': {
     name: 'Brother Printer',
+    healthEndpoint: '/api/printer/status',
     timeout: 3000,
     retryCount: 1,
-    errorSeverity: ErrorSeverity.LOW,
-    implementationStatus: 'coming_soon',
+    errorSeverity: ErrorSeverity.MEDIUM,
+    implementationStatus: 'implemented',
   },
   'YouTube 3rd P': {
     name: 'YouTube 3rd P',
@@ -160,14 +161,13 @@ export const SERVICE_CONFIGS: Partial<Record<ThirdPartyIntegration, ServiceConfi
 /**
  * Services that are currently implemented and can be health-checked
  */
-export const IMPLEMENTED_SERVICES: ThirdPartyIntegration[] = ['Notion', 'GitHub', 'Whoop', 'Logic', 'EXTRA LOGIC'];
+export const IMPLEMENTED_SERVICES: ThirdPartyIntegration[] = ['Notion', 'GitHub', 'Whoop', 'Brother Printer', 'Logic', 'EXTRA LOGIC'];
 
 /**
  * Services that will show "Coming Soon" status
  */
 export const COMING_SOON_SERVICES: ThirdPartyIntegration[] = [
   'Apple',
-  'Brother Printer',
   'YouTube 3rd P',
   'Scheduler 3rd P',
   'Datadog',

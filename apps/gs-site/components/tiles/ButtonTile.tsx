@@ -91,6 +91,7 @@ function isExternalLink(tile: Tile): boolean {
   return (
     name.includes('github.com') ||
     name.includes('llm arena') ||
+    name.includes('socials scheduler') ||
     tile.thirdParty.includes('GitHub') ||
     tile.thirdParty.includes('Wabbit')
   );
@@ -111,6 +112,7 @@ function getTileHref(tile: Tile): string | null {
   // External routes
   if (name.includes('llm arena')) return 'https://lmarena.ai';
   if (name.includes('odgsully') && name.includes('repo')) return 'https://github.com/odgsully';
+  if (name.includes('socials scheduler')) return 'https://publish.buffer.com';
 
   // Wabbit apps (local dev)
   if (name.includes('go to my wabbit')) return 'http://localhost:3002';

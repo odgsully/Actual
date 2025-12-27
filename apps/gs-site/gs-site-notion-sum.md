@@ -21,8 +21,8 @@
 | Metric | Count |
 |--------|-------|
 | **Total Tiles** | 47 |
-| **Not Started** | 45 |
-| **In Progress** | 2 |
+| **Not Started** | 44 |
+| **In Progress** | 3 |
 | **Done** | 0 |
 
 ### By Menu Category
@@ -151,12 +151,12 @@
 ---
 
 #### GS socials Scheduler
-- **Status**: Not started
+- **Status**: Done
 - **Menu**: Content
 - **Phase**: GS Site Standing
-- **Components**: Calendar & Date Picker, Graphic
-- **Third Party**: Scheduler 3rd P
-- **Description**: Calendar view with what posts scheduled to come out. Link with recurring Task List Notion. Graphic for missed timeslots.
+- **Components**: Button
+- **Third Party**: Buffer
+- **Description**: External link to Buffer (publish.buffer.com) for social media scheduling. Supports X, YouTube, Instagram scheduling via Buffer's UI.
 
 ---
 
@@ -233,12 +233,20 @@
 ---
 
 #### Jarvis_Briefme report
-- **Status**: Not started
+- **Status**: In progress
 - **Menu**: Learn
 - **Phase**: GS Site Standing
 - **Components**: Button
 - **Third Party**: Logic
 - **Description**: Pull in Jarvis_briefme repository & instead of having an output everyday in gmail drafts, put them in Supabase & store in gs site new pdf subpage.
+- **Implementation Notes** (Dec 25, 2025):
+  - ✅ Supabase migration created: `supabase/migrations/20251225_create_jarvis_briefings.sql`
+  - ✅ Python integration modules: `jarvis-integration/` (supabase_writer.py, pdf_generator.py)
+  - ✅ Frontend pages: `/app/jarvis/page.tsx`, `/app/jarvis/[date]/page.tsx`
+  - ✅ API routes: `/api/jarvis`, `/api/jarvis/[date]`
+  - ✅ React Query hooks: `lib/jarvis/client.ts`
+  - ✅ Dashboard tile: `JarvisBriefingTile.tsx` + TileRegistry updated
+  - ⏳ Pending: Apply migration to Supabase, integrate with Jarvis_BriefMe cron job
 
 ---
 

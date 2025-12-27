@@ -11,6 +11,24 @@
 - **Connectivity:** WiFi, Ethernet, USB
 - **Network Protocols:** IPP, AirPrint, Mopria, eSCL (AirScan), WSD, Brother iPrint&Scan
 
+### My Configuration
+
+> **Note:** There are TWO identical MFC-J6540DW printers on the network. Use the correct IP!
+
+| Printer | IP Address | CUPS Queue | Purpose |
+|---------|------------|------------|---------|
+| **GS Printer** | `192.168.1.128` | `GS_Brother_Printer` | gs-site DAILY/WEEKLIES |
+| BS Printer | `192.168.1.168` | `Brother_MFC_J6540DW` | Other use |
+
+**Environment Variable:**
+```bash
+BROTHER_PRINTER_IP=192.168.1.128
+```
+
+**Status:** ✅ IMPLEMENTED (December 2025)
+- IPP client: `lib/printer/client.ts`
+- API routes: `/api/printer/status`, `/api/printer/print`, `/api/printer/jobs`
+
 ---
 
 ## PRINTING
@@ -1104,6 +1122,13 @@ Common gphoto2 config options for a7III:
 | Device | Notes |
 |--------|-------|
 | JBL 4 Speaker | Portable Bluetooth speaker |
+
+### Smart Home
+
+| Device | Notes |
+|--------|-------|
+| Apple TV | Control4 paired, HomeKit hub |
+| Smart Light Bulbs | Connected via Control4/HomeKit |
 
 ### Health & Wellness
 
