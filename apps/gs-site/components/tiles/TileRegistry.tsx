@@ -182,6 +182,12 @@ const MorningFormTile = dynamic(
   { loading: () => <TileSkeleton variant="form" />, ssr: false }
 );
 
+// Evening Check-In tile (always visible, like Morning Form)
+const EveningCheckInTile = dynamic(
+  () => import('./forms/EveningCheckInTile').then(mod => ({ default: mod.EveningCheckInTile })),
+  { loading: () => <TileSkeleton variant="form" />, ssr: false }
+);
+
 // Jarvis Briefings tile
 const JarvisBriefingTile = dynamic(
   () => import('./JarvisBriefingTile').then(mod => ({ default: mod.JarvisBriefingTile })),
@@ -200,8 +206,25 @@ const PrintoffsKPIsTile = dynamic(
   { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
 );
 
-// Evening Check-In modal is imported directly by page.tsx for PhaseReminder
-// (no tile needed - modal only)
+// Claude Code MAX plan usage tile
+const ClaudeCodeUsageTile = dynamic(
+  () => import('./logic/ClaudeCodeUsageTile').then(mod => ({ default: mod.ClaudeCodeUsageTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
+// Audio Agent Admin tile
+const AudioAgentAdminTile = dynamic(
+  () => import('./logic/AudioAgentAdminTile').then(mod => ({ default: mod.AudioAgentAdminTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
+// Call Agent tile (with profile picture)
+const CallAgentTile = dynamic(
+  () => import('./logic/CallAgentTile').then(mod => ({ default: mod.CallAgentTile })),
+  { loading: () => <TileSkeleton variant="default" />, ssr: false }
+);
+
+// Evening Check-In: Both tile (always visible) and modal (for PhaseReminder) are available
 
 /**
  * Props passed to all tile components
@@ -242,6 +265,11 @@ const SPECIALIZED_TILES: Array<{
   {
     match: (name) => name.toLowerCase() === 'morning form',
     component: MorningFormTile,
+  },
+  // Evening Check-In tile (always visible form)
+  {
+    match: (name) => name.toLowerCase() === 'evening check-in',
+    component: EveningCheckInTile,
   },
   // Jarvis Briefings tile
   {
@@ -401,6 +429,41 @@ const SPECIALIZED_TILES: Array<{
       tile?.id === 'local-printoffs-kpis' ||
       name.toLowerCase() === 'printoffs & kpis',
     component: PrintoffsKPIsTile,
+  },
+  // Claude Code MAX plan usage tile
+  {
+    match: (name) =>
+      name.toLowerCase().includes('claude code') &&
+      (name.toLowerCase().includes('max') || name.toLowerCase().includes('usage')),
+    component: ClaudeCodeUsageTile,
+  },
+  // Audio Agent Admin tile
+  {
+    match: (name) =>
+      name.toLowerCase().includes('audio agent') ||
+      (name.toLowerCase().includes('voice') && name.toLowerCase().includes('agent') && name.toLowerCase().includes('admin')),
+    component: AudioAgentAdminTile,
+  },
+  // Call Agent tiles (with profile pictures)
+  {
+    match: (name) => {
+      const lower = name.toLowerCase();
+      return (
+        lower === 'call daniel' ||
+        lower === 'call morgan' ||
+        lower === 'call victoria' ||
+        lower === 'call emily' ||
+        lower === 'call sarah' ||
+        (lower.startsWith('call ') && (
+          lower.includes('daniel') ||
+          lower.includes('morgan') ||
+          lower.includes('victoria') ||
+          lower.includes('emily') ||
+          lower.includes('sarah')
+        ))
+      );
+    },
+    component: CallAgentTile,
   },
   // Coming soon tiles (services not yet implemented)
   {

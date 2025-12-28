@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  experimental: {
+    instrumentationHook: true,
+  },
   // Only use basePath in production for multi-app deployment
   // In development, run at root for easier local development
   ...(process.env.NODE_ENV === 'production' && {

@@ -130,7 +130,7 @@ export function DraggableGrid({
   if (USE_CSS_GRID_FALLBACK || !mounted || width === 0) {
     return (
       <div
-        ref={containerRef}
+        ref={containerRef as React.RefObject<HTMLDivElement>}
         className={cn('relative', editMode && 'edit-mode')}
       >
         {editMode && (
@@ -147,7 +147,7 @@ export function DraggableGrid({
 
   return (
     <div
-      ref={containerRef}
+      ref={containerRef as React.RefObject<HTMLDivElement>}
       className={cn(
         'relative',
         editMode && 'edit-mode',

@@ -252,7 +252,15 @@ function KPIModal({
 }) {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
 
-  // Note: useEffect is already imported at top of file
+  // Handle escape key - MUST be before any early returns (Rules of Hooks)
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [isOpen, onClose]);
 
   const handleInputChange = (key: keyof KPIInputs, value: string) => {
     const numValue = parseFloat(value) || 0;
@@ -273,17 +281,6 @@ function KPIModal({
       {label}
     </button>
   );
-
-  // Handle escape key
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    if (isOpen) {
-      window.addEventListener('keydown', handleEscape);
-      return () => window.removeEventListener('keydown', handleEscape);
-    }
-  }, [isOpen, onClose]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 lg:p-8">
