@@ -64,7 +64,7 @@ export const SERVICE_CONFIGS: Partial<Record<ThirdPartyIntegration, ServiceConfi
   },
   GitHub: {
     name: 'GitHub',
-    healthEndpoint: '/api/github/repos?limit=1',
+    healthEndpoint: '/api/github/repos?username=odgsully',
     timeout: 5000,
     retryCount: 2,
     errorSeverity: ErrorSeverity.MEDIUM,

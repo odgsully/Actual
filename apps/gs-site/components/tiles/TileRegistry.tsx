@@ -47,6 +47,11 @@ const HabitInsightsTile = dynamic(
   { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
 );
 
+const CoreHabitsTile = dynamic(
+  () => import('./graphics/CoreHabitsTile').then(mod => ({ default: mod.CoreHabitsTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
 const CaliTaskListTile = dynamic(
   () => import('./graphics/CaliTaskListTile').then(mod => ({ default: mod.CaliTaskListTile })),
   { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
@@ -302,6 +307,10 @@ const SPECIALIZED_TILES: Array<{
   {
     match: (name) => name.toLowerCase().includes('habit') && name.toLowerCase().includes('insight'),
     component: HabitInsightsTile,
+  },
+  {
+    match: (name) => name.toLowerCase() === 'core habits' || name.toLowerCase().includes('core habits'),
+    component: CoreHabitsTile,
   },
   {
     match: (name) =>
