@@ -41,6 +41,9 @@ const EXCLUDED_TILE_IDS = new Set([
 const EXCLUDED_TILE_NAMES = [
   'forms (monthly) & printoff',
   'forms (quarterly) & printoff',
+  'physically print weeklies',
+  'physically print tomorrow daily',
+  'gs site admin',
 ];
 
 /**

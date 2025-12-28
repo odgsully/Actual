@@ -19,6 +19,9 @@ export { FormsCompletedTile } from './FormsCompletedTile';
 // Gmail tiles (Phase 5)
 export { EmailsSentTile } from './EmailsSentTile';
 
+// YouTube/Socials tiles (Phase 7)
+export { SocialsStatsTile } from './SocialsStatsTile';
+
 // GitHub-connected tiles (Phase 3)
 export { GitHubSearchTile } from './GitHubSearchTile';
 export { GitHubCommitsTile } from './GitHubCommitsTile';

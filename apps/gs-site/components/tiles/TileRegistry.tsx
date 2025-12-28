@@ -111,6 +111,12 @@ const EmailsSentTile = dynamic(
   { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
 );
 
+// YouTube/Socials tiles (Phase 7)
+const SocialsStatsTile = dynamic(
+  () => import('./graphics/SocialsStatsTile').then(mod => ({ default: mod.SocialsStatsTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
 // WHOOP tiles (Phase 7)
 const WhoopInsightsTile = dynamic(
   () => import('./graphics/WhoopInsightsTile').then(mod => ({ default: mod.WhoopInsightsTile })),
@@ -465,13 +471,17 @@ const SPECIALIZED_TILES: Array<{
     },
     component: CallAgentTile,
   },
+  // Socials Stats tile (Phase 7 - YouTube + future Twitter)
+  {
+    match: (name) =>
+      name.toLowerCase().includes('socials stats') ||
+      (name.toLowerCase().includes('youtube') && name.toLowerCase().includes('wrapper')),
+    component: SocialsStatsTile,
+  },
   // Coming soon tiles (services not yet implemented)
   {
     match: (name, tile) =>
-      tile?.thirdParty?.includes('Apple') ||
-      tile?.thirdParty?.includes('YouTube 3rd P') ||
-      name.toLowerCase().includes('socials stats') ||
-      (name.toLowerCase().includes('youtube') && name.toLowerCase().includes('wrapper')),
+      Boolean(tile?.thirdParty?.includes('Apple')),
     component: ComingSoonTile,
   },
 ];
