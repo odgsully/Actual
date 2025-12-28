@@ -71,6 +71,7 @@ function getTileIcon(tile: Tile): LucideIcon {
   if (name.includes('habitat') || name.includes('pic') || name.includes('photo')) return Camera;
   if (name.includes('morning')) return Sunrise;
   if (name.includes('admin') || name.includes('setting')) return Settings;
+  if (name.includes('datadog')) return Activity;
   if (name.includes('streak') || name.includes('motion') || name.includes('cult')) return Sparkles;
   if (name.includes('epsn') || name.includes('bin') || name.includes('upload')) return Upload;
 
@@ -92,8 +93,10 @@ function isExternalLink(tile: Tile): boolean {
     name.includes('github.com') ||
     name.includes('llm arena') ||
     name.includes('socials scheduler') ||
+    name.includes('datadog') ||
     tile.thirdParty.includes('GitHub') ||
-    tile.thirdParty.includes('Wabbit')
+    tile.thirdParty.includes('Wabbit') ||
+    tile.thirdParty.includes('Datadog')
   );
 }
 
@@ -113,6 +116,7 @@ function getTileHref(tile: Tile): string | null {
   if (name.includes('llm arena')) return 'https://lmarena.ai';
   if (name.includes('odgsully') && name.includes('repo')) return 'https://github.com/odgsully';
   if (name.includes('socials scheduler')) return 'https://publish.buffer.com';
+  if (name.includes('datadog')) return 'https://us5.datadoghq.com/software?env=%2A&fromUser=true&graphType=flamegraph&shouldShowLegend=true&traceQuery=';
 
   // Wabbit apps (local dev)
   if (name.includes('go to my wabbit')) return 'http://localhost:3002';
