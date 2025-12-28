@@ -154,14 +154,39 @@ def announce_completion():
         pass
 
 
+def run_stats_collector(input_data: dict):
+    """
+    Run the stats_collector hook to parse transcript and save usage stats.
+    Called in a subprocess to not block the main stop hook.
+    """
+    try:
+        stats_script = Path(__file__).parent / "stats_collector.py"
+        if stats_script.exists():
+            # Run stats collector with the same input data
+            result = subprocess.run(
+                ["uv", "run", str(stats_script)],
+                input=json.dumps(input_data),
+                text=True,
+                capture_output=True,
+                timeout=30  # 30 second timeout
+            )
+            if result.returncode != 0 and result.stderr:
+                # Log error but don't fail
+                pass
+    except Exception:
+        # Fail silently - stats collection should not block main hook
+        pass
+
+
 def main():
     try:
         # Parse command line arguments
         parser = argparse.ArgumentParser()
         parser.add_argument('--chat', action='store_true', help='Copy transcript to chat.json')
         parser.add_argument('--notify', action='store_true', help='Enable TTS completion announcement')
+        parser.add_argument('--no-stats', action='store_true', help='Skip stats collection')
         args = parser.parse_args()
-        
+
         # Read JSON input from stdin
         input_data = json.load(sys.stdin)
 
@@ -190,7 +215,11 @@ def main():
         # Write back to file with formatting
         with open(log_path, 'w') as f:
             json.dump(log_data, f, indent=2)
-        
+
+        # Run stats collector (unless --no-stats flag is set)
+        if not args.no_stats:
+            run_stats_collector(input_data)
+
         # Handle --chat switch
         if args.chat and 'transcript_path' in input_data:
             transcript_path = input_data['transcript_path']
