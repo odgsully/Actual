@@ -251,6 +251,8 @@ async function ippRequest(
       // Buffer is valid for fetch body in Node.js, cast for TypeScript
       body: body as unknown as BodyInit,
       signal: controller.signal,
+      // Disable Next.js caching for IPP requests
+      cache: 'no-store',
     });
 
     clearTimeout(timeoutId);
