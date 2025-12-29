@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { QueryProvider } from "@/lib/query-provider";
+import { Toaster } from "sonner";
 import "./globals.css";
+import "@/styles/grid-layout.css";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -26,7 +28,10 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={`${inter.variable} ${jetbrainsMono.variable} font-mono antialiased`}>
-        <QueryProvider>{children}</QueryProvider>
+        <QueryProvider>
+          {children}
+          <Toaster position="bottom-right" richColors />
+        </QueryProvider>
       </body>
     </html>
   );

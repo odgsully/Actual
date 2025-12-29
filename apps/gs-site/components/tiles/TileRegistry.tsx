@@ -47,6 +47,11 @@ const HabitInsightsTile = dynamic(
   { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
 );
 
+const CoreHabitsTile = dynamic(
+  () => import('./graphics/CoreHabitsTile').then(mod => ({ default: mod.CoreHabitsTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
 const CaliTaskListTile = dynamic(
   () => import('./graphics/CaliTaskListTile').then(mod => ({ default: mod.CaliTaskListTile })),
   { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
@@ -111,6 +116,12 @@ const EmailsSentTile = dynamic(
   { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
 );
 
+// YouTube/Socials tiles (Phase 7)
+const SocialsStatsTile = dynamic(
+  () => import('./graphics/SocialsStatsTile').then(mod => ({ default: mod.SocialsStatsTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
 // WHOOP tiles (Phase 7)
 const WhoopInsightsTile = dynamic(
   () => import('./graphics/WhoopInsightsTile').then(mod => ({ default: mod.WhoopInsightsTile })),
@@ -119,6 +130,12 @@ const WhoopInsightsTile = dynamic(
 
 const HealthTrackerTile = dynamic(
   () => import('./graphics/HealthTrackerTile').then(mod => ({ default: mod.HealthTrackerTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
+// InBody tiles (Phase 7)
+const InBodyTile = dynamic(
+  () => import('./graphics/InBodyTile').then(mod => ({ default: mod.InBodyTile })),
   { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
 );
 
@@ -182,6 +199,12 @@ const MorningFormTile = dynamic(
   { loading: () => <TileSkeleton variant="form" />, ssr: false }
 );
 
+// Evening Check-In tile (always visible, like Morning Form)
+const EveningCheckInTile = dynamic(
+  () => import('./forms/EveningCheckInTile').then(mod => ({ default: mod.EveningCheckInTile })),
+  { loading: () => <TileSkeleton variant="form" />, ssr: false }
+);
+
 // Jarvis Briefings tile
 const JarvisBriefingTile = dynamic(
   () => import('./JarvisBriefingTile').then(mod => ({ default: mod.JarvisBriefingTile })),
@@ -200,8 +223,25 @@ const PrintoffsKPIsTile = dynamic(
   { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
 );
 
-// Evening Check-In modal is imported directly by page.tsx for PhaseReminder
-// (no tile needed - modal only)
+// Claude Code MAX plan usage tile
+const ClaudeCodeUsageTile = dynamic(
+  () => import('./logic/ClaudeCodeUsageTile').then(mod => ({ default: mod.ClaudeCodeUsageTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
+// Audio Agent Admin tile
+const AudioAgentAdminTile = dynamic(
+  () => import('./logic/AudioAgentAdminTile').then(mod => ({ default: mod.AudioAgentAdminTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
+// Call Agent tile (with profile picture)
+const CallAgentTile = dynamic(
+  () => import('./logic/CallAgentTile').then(mod => ({ default: mod.CallAgentTile })),
+  { loading: () => <TileSkeleton variant="default" />, ssr: false }
+);
+
+// Evening Check-In: Both tile (always visible) and modal (for PhaseReminder) are available
 
 /**
  * Props passed to all tile components
@@ -243,6 +283,11 @@ const SPECIALIZED_TILES: Array<{
     match: (name) => name.toLowerCase() === 'morning form',
     component: MorningFormTile,
   },
+  // Evening Check-In tile (always visible form)
+  {
+    match: (name) => name.toLowerCase() === 'evening check-in',
+    component: EveningCheckInTile,
+  },
   // Jarvis Briefings tile
   {
     match: (name) =>
@@ -268,6 +313,10 @@ const SPECIALIZED_TILES: Array<{
   {
     match: (name) => name.toLowerCase().includes('habit') && name.toLowerCase().includes('insight'),
     component: HabitInsightsTile,
+  },
+  {
+    match: (name) => name.toLowerCase() === 'core habits' || name.toLowerCase().includes('core habits'),
+    component: CoreHabitsTile,
   },
   {
     match: (name) =>
@@ -310,6 +359,13 @@ const SPECIALIZED_TILES: Array<{
     match: (name) =>
       name.toLowerCase().includes('health') && name.toLowerCase().includes('tracker'),
     component: HealthTrackerTile,
+  },
+  // InBody tiles (Phase 7)
+  {
+    match: (name) =>
+      name.toLowerCase().includes('inbody') ||
+      (name.toLowerCase().includes('body') && name.toLowerCase().includes('composition')),
+    component: InBodyTile,
   },
   // Apple Contacts tile (Phase 6)
   {
@@ -402,13 +458,52 @@ const SPECIALIZED_TILES: Array<{
       name.toLowerCase() === 'printoffs & kpis',
     component: PrintoffsKPIsTile,
   },
+  // Claude Code MAX plan usage tile
+  {
+    match: (name) =>
+      name.toLowerCase().includes('claude code') &&
+      (name.toLowerCase().includes('max') || name.toLowerCase().includes('usage')),
+    component: ClaudeCodeUsageTile,
+  },
+  // Audio Agent Admin tile
+  {
+    match: (name) =>
+      name.toLowerCase().includes('audio agent') ||
+      (name.toLowerCase().includes('voice') && name.toLowerCase().includes('agent') && name.toLowerCase().includes('admin')),
+    component: AudioAgentAdminTile,
+  },
+  // Call Agent tiles (with profile pictures)
+  {
+    match: (name) => {
+      const lower = name.toLowerCase();
+      return (
+        lower === 'call daniel' ||
+        lower === 'call morgan' ||
+        lower === 'call victoria' ||
+        lower === 'call emily' ||
+        lower === 'call sarah' ||
+        (lower.startsWith('call ') && (
+          lower.includes('daniel') ||
+          lower.includes('morgan') ||
+          lower.includes('victoria') ||
+          lower.includes('emily') ||
+          lower.includes('sarah')
+        ))
+      );
+    },
+    component: CallAgentTile,
+  },
+  // Socials Stats tile (Phase 7 - YouTube + future Twitter)
+  {
+    match: (name) =>
+      name.toLowerCase().includes('socials stats') ||
+      (name.toLowerCase().includes('youtube') && name.toLowerCase().includes('wrapper')),
+    component: SocialsStatsTile,
+  },
   // Coming soon tiles (services not yet implemented)
   {
     match: (name, tile) =>
-      tile?.thirdParty?.includes('Apple') ||
-      tile?.thirdParty?.includes('YouTube 3rd P') ||
-      name.toLowerCase().includes('socials stats') ||
-      (name.toLowerCase().includes('youtube') && name.toLowerCase().includes('wrapper')),
+      Boolean(tile?.thirdParty?.includes('Apple')),
     component: ComingSoonTile,
   },
 ];
