@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   WhoopInsights,
   WhoopRecovery,
@@ -147,6 +147,46 @@ export function useWhoopConnection() {
     error,
     connectUrl: data?.connectUrl,
   };
+}
+
+/**
+ * Hook to handle OAuth callback and invalidate cache
+ *
+ * This hook detects when the user returns from WHOOP OAuth with
+ * `whoop_connected=true` in the URL, invalidates the React Query cache,
+ * and cleans up the URL parameter.
+ */
+export function useWhoopOAuthCallback() {
+  const queryClient = useQueryClient();
+  const [justConnected, setJustConnected] = useState(false);
+
+  useEffect(() => {
+    // Check if we just returned from WHOOP OAuth
+    const params = new URLSearchParams(window.location.search);
+    const whoopConnected = params.get('whoop_connected');
+
+    if (whoopConnected === 'true') {
+      console.log('[WHOOP] OAuth callback detected, invalidating cache...');
+      setJustConnected(true);
+
+      // Invalidate all WHOOP-related queries to force refetch
+      queryClient.invalidateQueries({ queryKey: ['whoopInsights'] });
+      queryClient.invalidateQueries({ queryKey: ['whoopHistorical'] });
+
+      // Clean up URL parameters (remove whoop_connected and whoop_user_id)
+      params.delete('whoop_connected');
+      params.delete('whoop_user_id');
+
+      const newUrl = params.toString()
+        ? `${window.location.pathname}?${params.toString()}`
+        : window.location.pathname;
+
+      window.history.replaceState({}, '', newUrl);
+      console.log('[WHOOP] Cache invalidated, URL cleaned up');
+    }
+  }, [queryClient]);
+
+  return { justConnected };
 }
 
 /**

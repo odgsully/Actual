@@ -1,7 +1,7 @@
 'use client';
 
 import { Activity, AlertCircle, RefreshCw, Link2, Heart, Zap, Battery } from 'lucide-react';
-import { useWhoopInsights, useConnectWhoop } from '@/hooks/useWhoopData';
+import { useWhoopInsights, useConnectWhoop, useWhoopOAuthCallback } from '@/hooks/useWhoopData';
 import { WarningBorderTrail } from '../WarningBorderTrail';
 import type { Tile } from '@/lib/types/tiles';
 
@@ -24,6 +24,9 @@ interface WhoopInsightsTileProps {
  * Requires OAuth connection to user's WHOOP account.
  */
 export function WhoopInsightsTile({ tile, className }: WhoopInsightsTileProps) {
+  // Handle OAuth callback - invalidates cache when returning from WHOOP auth
+  useWhoopOAuthCallback();
+
   const {
     data: whoopData,
     isLoading,
