@@ -133,6 +133,12 @@ const HealthTrackerTile = dynamic(
   { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
 );
 
+// InBody tiles (Phase 7)
+const InBodyTile = dynamic(
+  () => import('./graphics/InBodyTile').then(mod => ({ default: mod.InBodyTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
 // Apple Contacts tile (Phase 6)
 const RandomContactTile = dynamic(
   () => import('./graphics/RandomContactTile').then(mod => ({ default: mod.RandomContactTile })),
@@ -353,6 +359,13 @@ const SPECIALIZED_TILES: Array<{
     match: (name) =>
       name.toLowerCase().includes('health') && name.toLowerCase().includes('tracker'),
     component: HealthTrackerTile,
+  },
+  // InBody tiles (Phase 7)
+  {
+    match: (name) =>
+      name.toLowerCase().includes('inbody') ||
+      (name.toLowerCase().includes('body') && name.toLowerCase().includes('composition')),
+    component: InBodyTile,
   },
   // Apple Contacts tile (Phase 6)
   {

@@ -86,6 +86,14 @@ export const SERVICE_CONFIGS: Partial<Record<ThirdPartyIntegration, ServiceConfi
     errorSeverity: ErrorSeverity.HIGH, // Health data is important
     implementationStatus: 'implemented',
   },
+  InBody: {
+    name: 'InBody',
+    healthEndpoint: '/api/inbody/health',
+    timeout: 5000,
+    retryCount: 1,
+    errorSeverity: ErrorSeverity.MEDIUM, // Body composition data
+    implementationStatus: 'implemented',
+  },
   Apple: {
     name: 'Apple',
     timeout: 5000,
@@ -162,7 +170,7 @@ export const SERVICE_CONFIGS: Partial<Record<ThirdPartyIntegration, ServiceConfi
 /**
  * Services that are currently implemented and can be health-checked
  */
-export const IMPLEMENTED_SERVICES: ThirdPartyIntegration[] = ['Notion', 'GitHub', 'Google', 'Whoop', 'Brother Printer', 'Logic', 'EXTRA LOGIC'];
+export const IMPLEMENTED_SERVICES: ThirdPartyIntegration[] = ['Notion', 'GitHub', 'Google', 'Whoop', 'InBody', 'Brother Printer', 'Logic', 'EXTRA LOGIC'];
 
 /**
  * Services that will show "Coming Soon" status
