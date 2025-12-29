@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "sync-tiles": "npx tsx scripts/sync-notion-tiles.ts",
+    "export-tiles": "npx tsx scripts/export-tiles-to-md.ts",
     "typecheck": "tsc --noEmit",
     "voice:status": "npx tsx scripts/setup-voice-agents.ts status",
     "voice:create": "npx tsx scripts/setup-voice-agents.ts create",

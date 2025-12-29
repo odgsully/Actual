@@ -22,6 +22,7 @@ export type ThirdPartyIntegration =
   | 'YouTube 3rd P'
   | 'Scheduler 3rd P'
   | 'Whoop'
+  | 'InBody'
   | 'Apple'
   | 'Google'
   | 'GitHub'
