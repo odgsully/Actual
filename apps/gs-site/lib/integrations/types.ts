@@ -72,14 +72,15 @@ export const SERVICE_CONFIGS: Partial<Record<ThirdPartyIntegration, ServiceConfi
   },
   Google: {
     name: 'Google',
+    healthEndpoint: '/api/google/health',
     timeout: 5000,
     retryCount: 1,
     errorSeverity: ErrorSeverity.MEDIUM,
-    implementationStatus: 'not_configured',
+    implementationStatus: 'implemented',
   },
   Whoop: {
     name: 'Whoop',
-    healthEndpoint: '/api/whoop/insights',
+    healthEndpoint: '/api/whoop/health',
     timeout: 5000,
     retryCount: 1,
     errorSeverity: ErrorSeverity.HIGH, // Health data is important
@@ -161,7 +162,7 @@ export const SERVICE_CONFIGS: Partial<Record<ThirdPartyIntegration, ServiceConfi
 /**
  * Services that are currently implemented and can be health-checked
  */
-export const IMPLEMENTED_SERVICES: ThirdPartyIntegration[] = ['Notion', 'GitHub', 'Whoop', 'Brother Printer', 'Logic', 'EXTRA LOGIC'];
+export const IMPLEMENTED_SERVICES: ThirdPartyIntegration[] = ['Notion', 'GitHub', 'Google', 'Whoop', 'Brother Printer', 'Logic', 'EXTRA LOGIC'];
 
 /**
  * Services that will show "Coming Soon" status
@@ -177,7 +178,6 @@ export const COMING_SOON_SERVICES: ThirdPartyIntegration[] = [
  * Services that need configuration (OAuth, API keys, URLs)
  */
 export const NOT_CONFIGURED_SERVICES: ThirdPartyIntegration[] = [
-  'Google',
   'Twilio',
   'Wabbit',
   'GS Site Realty',

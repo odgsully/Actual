@@ -93,17 +93,19 @@ async function fetchWhoopHistorical(days: number): Promise<WhoopHistoricalRespon
  * @returns Query result with WHOOP insights
  */
 export function useWhoopInsights(options: UseWhoopOptions = {}) {
-  const { enabled = true, refetchInterval = 15 * 60 * 1000 } = options;
+  const { enabled = true, refetchInterval = false } = options;
 
   return useQuery({
     queryKey: ['whoopInsights'],
     queryFn: fetchWhoopInsights,
     enabled,
     refetchInterval,
-    staleTime: 5 * 60 * 1000, // Consider data stale after 5 minutes
-    gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
+    // WHOOP data is low-frequency (recovery calculated once/day, strain accumulates slowly)
+    // Long cache prevents rate limiting - WHOOP has strict API limits
+    staleTime: 6 * 60 * 60 * 1000, // Consider data fresh for 6 hours
+    gcTime: 12 * 60 * 60 * 1000, // Keep in cache for 12 hours
     retry: 1, // Only retry once for auth failures
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false, // Disable to prevent rate limiting
   });
 }
 
@@ -116,17 +118,18 @@ export function useWhoopInsights(options: UseWhoopOptions = {}) {
  * @returns Query result with historical WHOOP data
  */
 export function useWhoopHistorical(days: 7 | 14 | 30 = 7, options: UseWhoopOptions = {}) {
-  const { enabled = true, refetchInterval = 30 * 60 * 1000 } = options;
+  const { enabled = true, refetchInterval = false } = options;
 
   return useQuery({
     queryKey: ['whoopHistorical', days],
     queryFn: () => fetchWhoopHistorical(days),
     enabled,
     refetchInterval,
-    staleTime: 15 * 60 * 1000, // Consider data stale after 15 minutes
-    gcTime: 60 * 60 * 1000, // Keep in cache for 1 hour
+    // Historical data changes very slowly - long cache prevents rate limiting
+    staleTime: 12 * 60 * 60 * 1000, // Consider data fresh for 12 hours
+    gcTime: 24 * 60 * 60 * 1000, // Keep in cache for 24 hours
     retry: 1,
-    refetchOnWindowFocus: false, // Historical data doesn't need frequent refresh
+    refetchOnWindowFocus: false,
   });
 }
 
