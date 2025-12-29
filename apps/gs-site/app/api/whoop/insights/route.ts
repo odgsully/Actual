@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getWhoopInsightsForUser } from '@/lib/whoop/client';
 
+// Force dynamic - DB queries must be fresh
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/whoop/insights
  *
@@ -39,8 +42,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(insights, {
       headers: {
-        // 15 minutes cache, 30 minutes stale-while-revalidate
-        'Cache-Control': 'public, s-maxage=900, stale-while-revalidate=1800',
+        // 6 hour cache, 12 hour stale-while-revalidate
+        // WHOOP data is low-frequency - prevents rate limiting
+        'Cache-Control': 'public, s-maxage=21600, stale-while-revalidate=43200',
       },
     });
   } catch (error) {

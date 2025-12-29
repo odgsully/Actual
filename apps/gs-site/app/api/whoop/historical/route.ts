@@ -63,8 +63,9 @@ export async function GET(request: NextRequest) {
       },
       {
         headers: {
-          // 30 minutes cache for historical data (doesn't change often)
-          'Cache-Control': 'public, s-maxage=1800, stale-while-revalidate=3600',
+          // 12 hour cache for historical data - prevents rate limiting
+          // WHOOP historical data only changes once per day
+          'Cache-Control': 'public, s-maxage=43200, stale-while-revalidate=86400',
         },
       }
     );
