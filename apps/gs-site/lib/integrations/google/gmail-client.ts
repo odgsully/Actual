@@ -59,6 +59,10 @@ export function getAuthorizationUrl(state?: string): string {
  * Exchange authorization code for tokens
  */
 export async function exchangeCodeForTokens(code: string): Promise<GmailToken> {
+  console.log('[Gmail Exchange] Starting token exchange...');
+  console.log('[Gmail Exchange] Client ID:', GOOGLE_CONFIG.clientId?.substring(0, 20) + '...');
+  console.log('[Gmail Exchange] Redirect URI:', GOOGLE_CONFIG.redirectUri);
+
   const response = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -73,17 +77,34 @@ export async function exchangeCodeForTokens(code: string): Promise<GmailToken> {
 
   if (!response.ok) {
     const error = await response.text();
+    console.error('[Gmail Exchange] Token exchange failed:', error);
     throw new Error(`Failed to exchange code: ${error}`);
   }
 
   const data = await response.json();
+  console.log('[Gmail Exchange] Token exchange successful');
+  console.log('[Gmail Exchange] Token preview:', data.access_token?.substring(0, 30) + '...');
+  console.log('[Gmail Exchange] Has refresh_token:', !!data.refresh_token);
+  console.log('[Gmail Exchange] Expires in:', data.expires_in, 'seconds');
+
+  // Test the token immediately with tokeninfo
+  const tokenTest = await fetch(`https://oauth2.googleapis.com/tokeninfo?access_token=${data.access_token}`);
+  const tokenInfo = await tokenTest.json();
+  console.log('[Gmail Exchange] Token validation:', tokenTest.ok ? 'VALID' : 'INVALID', tokenInfo);
 
   // Get user email
   const userInfo = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
     headers: { Authorization: `Bearer ${data.access_token}` },
   });
 
+  if (!userInfo.ok) {
+    const userError = await userInfo.text();
+    console.error('[Gmail Exchange] UserInfo failed:', userError);
+    throw new Error(`Failed to get user info: ${userError}`);
+  }
+
   const user = await userInfo.json();
+  console.log('[Gmail Exchange] User email:', user.email);
 
   return {
     access_token: data.access_token,
@@ -324,6 +345,8 @@ export async function isGmailConnected(userId: string): Promise<boolean> {
  * This validates the token against Gmail API and refreshes if needed
  */
 export async function getGmailTokensWithRefresh(userId: string): Promise<GmailToken | null> {
+  console.log('[Gmail TokensWithRefresh] Querying DB for user:', userId);
+
   const { data, error } = await supabase
     .from('user_integrations')
     .select('*')
@@ -331,9 +354,14 @@ export async function getGmailTokensWithRefresh(userId: string): Promise<GmailTo
     .eq('service', 'gmail')
     .single();
 
+  console.log('[Gmail TokensWithRefresh] DB result - error:', error?.code, 'data exists:', !!data);
+
   if (error || !data) {
+    console.log('[Gmail TokensWithRefresh] No token found, returning null');
     return null;
   }
+
+  console.log('[Gmail TokensWithRefresh] Found token for:', data.email);
 
   // Try the current token with a simple API call
   const testResponse = await fetch(
