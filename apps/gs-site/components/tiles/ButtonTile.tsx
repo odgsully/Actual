@@ -94,6 +94,8 @@ function isExternalLink(tile: Tile): boolean {
     name.includes('llm arena') ||
     name.includes('socials scheduler') ||
     name.includes('datadog') ||
+    name.includes('realtyone events') ||
+    name.includes('re events') ||
     tile.thirdParty.includes('GitHub') ||
     tile.thirdParty.includes('Wabbit') ||
     tile.thirdParty.includes('Datadog')
@@ -117,6 +119,7 @@ function getTileHref(tile: Tile): string | null {
   if (name.includes('odgsully') && name.includes('repo')) return 'https://github.com/odgsully';
   if (name.includes('socials scheduler')) return 'https://publish.buffer.com';
   if (name.includes('datadog')) return 'https://us5.datadoghq.com/software?env=%2A&fromUser=true&graphType=flamegraph&shouldShowLegend=true&traceQuery=';
+  if (name.includes('realtyone events') || name.includes('re events')) return 'https://www.notion.so/Event-257cf08f4499801cb75df3d70011657e';
 
   // Wabbit apps (local dev)
   if (name.includes('go to my wabbit')) return 'http://localhost:3002';

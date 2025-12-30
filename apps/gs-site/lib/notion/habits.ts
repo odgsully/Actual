@@ -22,6 +22,17 @@ const NOTION_API_VERSION = '2022-06-28';
 const HABITS_DATABASE_ID = process.env.NOTION_HABITS_DATABASE_ID || '';
 
 /**
+ * Format date as YYYY-MM-DD in LOCAL timezone (not UTC)
+ * This matches how Notion stores dates
+ */
+function formatLocalDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
  * List of habit checkbox column names in Notion
  * These are the actual property names from your Habits database
  */
@@ -65,6 +76,7 @@ async function notionFetch(endpoint: string, body?: object): Promise<any> {
       'Content-Type': 'application/json',
     },
     body: body ? JSON.stringify(body) : undefined,
+    cache: 'no-store', // Disable Next.js fetch caching for fresh Notion data
   });
 
   if (!response.ok) {
@@ -119,6 +131,7 @@ export interface HabitsDateRange {
  */
 function parseDailyRecord(page: any): DailyHabitRecord {
   const habits: Record<string, boolean> = {};
+  const dateStr = page.properties.Date?.date?.start || '';
 
   // Extract each habit checkbox
   for (const habitName of HABIT_COLUMNS) {
@@ -127,7 +140,7 @@ function parseDailyRecord(page: any): DailyHabitRecord {
 
   return {
     id: page.id,
-    date: page.properties.Date?.date?.start || '',
+    date: dateStr,
     weight: page.properties.Weight?.number ?? undefined,
     habits: habits as Record<HabitName, boolean>,
     totalProgress: page.properties['Total Progress']?.formula?.number ?? undefined,
@@ -246,20 +259,19 @@ export async function getCurrentStreak(habitName: string): Promise<number> {
       }
     }
 
-    // Calculate consecutive days from today
+    // Calculate consecutive days from YESTERDAY (today doesn't count toward streak)
     let streak = 0;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    for (let i = 0; i < 90; i++) {
+    for (let i = 1; i < 90; i++) {
       const checkDate = new Date(today);
       checkDate.setDate(checkDate.getDate() - i);
-      const dateStr = checkDate.toISOString().split('T')[0];
+      const dateStr = formatLocalDate(checkDate);
 
       if (completedDates.has(dateStr)) {
         streak++;
-      } else if (i > 0) {
-        // Allow today to be incomplete, but break on any other missed day
+      } else {
         break;
       }
     }
@@ -345,16 +357,16 @@ export async function getAllHabitStreaks(): Promise<HabitStreak[]> {
         }
       }
 
-      // Calculate current streak
+      // Calculate current streak from YESTERDAY (today doesn't count toward streak)
       let currentStreak = 0;
-      for (let i = 0; i < 90; i++) {
+      for (let i = 1; i < 90; i++) {
         const checkDate = new Date(today);
         checkDate.setDate(checkDate.getDate() - i);
-        const dateStr = checkDate.toISOString().split('T')[0];
+        const dateStr = formatLocalDate(checkDate);
 
         if (completedDates.has(dateStr)) {
           currentStreak++;
-        } else if (i > 0) {
+        } else {
           break;
         }
       }
@@ -393,7 +405,7 @@ export async function getAllHabitStreaks(): Promise<HabitStreak[]> {
       for (let i = 0; i < 7; i++) {
         const checkDate = new Date(today);
         checkDate.setDate(checkDate.getDate() - i);
-        const dateStr = checkDate.toISOString().split('T')[0];
+        const dateStr = formatLocalDate(checkDate);
         if (completedDates.has(dateStr)) {
           completed7++;
         }
@@ -405,7 +417,7 @@ export async function getAllHabitStreaks(): Promise<HabitStreak[]> {
       for (let i = 0; i < 30; i++) {
         const checkDate = new Date(today);
         checkDate.setDate(checkDate.getDate() - i);
-        const dateStr = checkDate.toISOString().split('T')[0];
+        const dateStr = formatLocalDate(checkDate);
         if (completedDates.has(dateStr)) {
           completed30++;
         }
@@ -497,7 +509,7 @@ export async function getTodaysRecord(date?: string): Promise<DailyHabitRecord |
     return null;
   }
 
-  const targetDate = date || new Date().toISOString().split('T')[0];
+  const targetDate = date || formatLocalDate(new Date());
 
   try {
     const response = await notionFetch(`/databases/${HABITS_DATABASE_ID}/query`, {
@@ -607,7 +619,7 @@ export async function updateTodaysHabit(
   value: boolean,
   date?: string
 ): Promise<{ success: boolean; pageId: string }> {
-  const targetDate = date || new Date().toISOString().split('T')[0];
+  const targetDate = date || formatLocalDate(new Date());
 
   // Try to get existing record
   let record = await getTodaysRecord(targetDate);

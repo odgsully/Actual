@@ -13,8 +13,6 @@ export async function register() {
       runtimeMetrics: false,
       profiling: false,
       appsec: false,
-      // Enable debug to see what's happening
-      debug: process.env.DD_TRACE_DEBUG === 'true',
     });
   }
 }

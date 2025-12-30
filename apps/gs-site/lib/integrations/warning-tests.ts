@@ -102,12 +102,16 @@ export const WARNING_TESTS: Record<string, WarningTestFn> = {
 
   // Coming soon services - always show warning
   'whoop-disconnected': async () => true,
-  'apple-disconnected': async () => true,
   'brother-disconnected': async () => true,
   'youtube-disconnected': async () => true,
-  'scheduler-disconnected': async () => true,
-  'icloud-disconnected': async () => true,
   'twilio-disconnected': async () => true,
+
+  // Link-only tiles - no warning as long as URLs are valid
+  // Used for: GS socials Scheduler, LLM Benchmarks, etc.
+  // TODO: Could add staleness check (6+ months) if content tracking exists
+  'scheduler-stale': async () => {
+    return false;
+  },
 
   // Wabbit apps health check
   'wabbit-disconnected': async () => {
@@ -151,8 +155,10 @@ export const TILE_WARNING_MAP: Record<string, string> = {
   // Frequency-based
   'EPSN3 Bin': 'frequency-not-met',
 
-  // External links
-  'LLM Arena': 'link-not-found',
+  // LLM Benchmarks - just link buttons, no warning as long as URLs work
+  'LLM Benchmarks': 'scheduler-stale',
+  '7. LLM Arena': 'scheduler-stale',
+  'LLM Arena': 'scheduler-stale',
 
   // Local model
   '11. Prev day, prev week Time Spent pie charts': 'local-model-disconnected',
@@ -161,9 +167,7 @@ export const TILE_WARNING_MAP: Record<string, string> = {
   '1. Whoop API Insights Dash': 'whoop-disconnected',
   '6. Create Health tracker chart': 'whoop-disconnected',
 
-  // Apple
-  '2. Random Daily Contact.': 'apple-disconnected',
-  'Clean iCloud folder structure graphic': 'icloud-disconnected',
+  // Apple - removed: Contact Random (just a button), Folder Health (logic works now)
 
   // Brother Printer
   'Physically print WEEKLIES workflow trigger': 'brother-disconnected',
@@ -172,15 +176,16 @@ export const TILE_WARNING_MAP: Record<string, string> = {
   // YouTube
   'YouTube wrapper/Timeline Open': 'youtube-disconnected',
 
-  // Scheduler
-  'GS socials Scheduler': 'scheduler-disconnected',
-  '3. Socials stats': 'scheduler-disconnected',
-  'Accountability Report': 'scheduler-disconnected',
+  // Scheduler - only warn if 6+ months stale (just link buttons otherwise)
+  'GS socials Scheduler': 'scheduler-stale',
+  '3. Socials stats': 'scheduler-stale',
+  'Accountability Report': 'scheduler-stale',
 
   // Custom Form tiles (Phase 5)
   'Form Streak': 'form-streak-broken',
   'Forms Streak': 'form-streak-broken',
-  'Forms completed this week': 'form-streak-broken',
+  'Forms Wk Goal': 'form-streak-broken',
+  'Forms completed this week': 'form-streak-broken', // Legacy name
 
   // Gmail tiles (Phase 5)
   'Emails sent': 'gmail-disconnected',

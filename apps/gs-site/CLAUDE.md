@@ -164,7 +164,7 @@ These tiles have content that exceeds 112px and should open popups/subpages:
 - Task List → Popup with full task view
 - Habits (heatmap) → Popup with detailed view
 - Calendar tiles → Popup with full calendar
-- This Week summary → Popup with detailed metrics
+- Forms Wk Goal → Popup with detailed metrics
 
 ### Tile Visual Rules
 - Fixed height: `h-28` (112px)

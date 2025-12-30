@@ -1,9 +1,11 @@
 # GS Site Tiles - Update Dec 28, 2025
 
 > Generated from `lib/data/tiles.ts` with new **Type II** functional categorization column.
+> **Updated Dec 29**: Added Goals tile, LLM Benchmarks (renamed from LLM Arena), Directory Health
 
 | Name | 3rd P | Action warning? | Action desc | Desc | SETTINGS | shadcn | Select | MENU | Phase | Status | Type II |
 |------|-------|-----------------|-------------|------|----------|--------|--------|------|-------|--------|---------|
+| Goals | - | | | 2026 Goals, 3-Year Goals, and Someday Goals with progress tracking | | Button, Pop-up | 1 | Org | GS Site Standing | In progress | Button |
 | Printoffs & KPIs | - | | | Dailies, weeklies, monthlies, quarterlies | | Button | 1 | Org | GS Site Standing | Not started | Button |
 | Evening Check-In | Notion | | | Daily evening reflection form | | Form | 1 | Org, Health | GS Site Standing | Not started | Form |
 | Audio Agent Admin | - | | | Voice AI agents for real estate ops | | Logic, Pop-up | 2 | Software | GS Site Standing | In progress | Logic |
@@ -24,7 +26,7 @@
 | Prev day, prev week Time Spent pie chart: | Apple | | | Have a Time Allocation dropdown where you can click to dropdown these two pie charts | | Graphic, Logic | 1 | Org | GS Site Standing | Not started | Graph |
 | YouTube wrapper/Timeline Open | YouTube 3rd P | Y | Track Screentime in MINE & Apple screentime or yt plugin | Drop URL in for Transcript analysis | | Button | 1 | Content | GS Site Standing | Not started | Button |
 | Go to my Wabbit | Wabbit | | | Link to wabbit site home | | Button | 2 | Software | GS Site Standing | Not started | Button |
-| LLM Arena | - | | | | | Button | 3 | Software | GS Site Standing | Not started | Button |
+| LLM Benchmarks | - | | | Quick access to LLM benchmark sites | | Button, Pop-up | 3 | Software | GS Site Standing | In progress | Button |
 | Codebase Form | Logic | | | new form could be Supabase backend & setup w/ whisper or audio API | | Form, Button | 2 | Org | GS Site Standing | Done | Form |
 | Random Daily Contact. | Apple | Y | Broken Link Apple Contacts | For this, we need Access to Apple contacts | | Button | 1 | Real Estate, Software, Health | GS Site Standing | Not started | Button |
 | Codebase Duolingo | GitHub, Logic | | | | | Logic | 2 | Software, Org | GS Site Standing | Not started | Logic |
@@ -36,7 +38,7 @@
 | Days since bloodwork done Counter | Logic | | | Preview Days since count of Date of 2/28/2025 | | Logic | 2 | Health | GS Site Standing | Not started | Counter |
 | Claude Code MAX plan usage | Logic | | | Is it possible to view/scrape within the Max plan automated? | | Logic | 2 | Software | GS Site Standing | Not started | Metric |
 | Annual Github Commits count | GitHub | | | For both odgsully & odgsully-agent, count across codebases all commits | | Logic | 2 | Software | GS Site Standing | In progress | Metric |
-| Forms completed this week Count | Google | | | Count all Google Forms for given week starting on Sunday AM | | Logic, Graphic | 1 | Org | GS Site Standing | Not started | Metric |
+| Forms Wk Goal | Google | | | Count all Google Forms for given week starting on Sunday AM | | Logic, Graphic | 1 | Org | GS Site Standing | Not started | Metric |
 | RE KPI's & Calc | Logic | | | Formula where you can edit Assumptions dollar amount text boxes for Annual Commission | | Graphic | 2 | Real Estate | GS Site Standing | Not started | Form |
 | Jarvis_Briefme report | Logic | | | Pull in Jarvis_briefme repository, store in gs site new pdf subpage | | Button | 1 | Learn | GS Site Standing | Not started | Button |
 | Cali Task List to do | Wabbit, Notion | | | Wabbit Rankings this week Count /out of Total or threshold of GRADES | | Button | 1 | Org | GS Site Standing | Not started | Metric |

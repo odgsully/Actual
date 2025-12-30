@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
     console.log('[INBODY MANUAL] Saved to Supabase:', supabaseData.id);
 
     // Sync to Notion if configured
-    let notionResult = { success: false, pageId: undefined as string | undefined };
+    let notionResult: { success: boolean; pageId?: string; error?: string } = { success: false };
 
     if (isNotionInBodyConfigured()) {
       notionResult = await createNotionInBodyEntry({

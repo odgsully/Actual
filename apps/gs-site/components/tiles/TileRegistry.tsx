@@ -241,6 +241,24 @@ const CallAgentTile = dynamic(
   { loading: () => <TileSkeleton variant="default" />, ssr: false }
 );
 
+// Directory Health tile (iCloud folder monitoring)
+const DirectoryHealthTile = dynamic(
+  () => import('./graphics/DirectoryHealthTile').then(mod => ({ default: mod.DirectoryHealthTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
+// LLM Benchmarks tile (multi-link popup)
+const LLMBenchmarksTile = dynamic(
+  () => import('./graphics/LLMBenchmarksTile').then(mod => ({ default: mod.LLMBenchmarksTile })),
+  { loading: () => <TileSkeleton variant="default" />, ssr: false }
+);
+
+// Goals tile (tabbed popup with checkable goals)
+const GoalsTile = dynamic(
+  () => import('./graphics/GoalsTile').then(mod => ({ default: mod.GoalsTile })),
+  { loading: () => <TileSkeleton variant="default" />, ssr: false }
+);
+
 // Evening Check-In: Both tile (always visible) and modal (for PhaseReminder) are available
 
 /**
@@ -337,9 +355,11 @@ const SPECIALIZED_TILES: Array<{
   },
   {
     match: (name) =>
+      name.toLowerCase() === 'forms wk goal' ||
+      (name.toLowerCase().includes('forms') && name.toLowerCase().includes('wk goal')) ||
       (name.toLowerCase().includes('forms') && name.toLowerCase().includes('completed')) ||
       (name.toLowerCase().includes('forms') && name.toLowerCase().includes('this week')) ||
-      name.toLowerCase() === 'forms completed this week',
+      name.toLowerCase() === 'forms completed this week', // Legacy name
     component: FormsCompletedTile,
   },
   // Gmail tiles (Phase 5 - Sprint 5)
@@ -499,6 +519,31 @@ const SPECIALIZED_TILES: Array<{
       name.toLowerCase().includes('socials stats') ||
       (name.toLowerCase().includes('youtube') && name.toLowerCase().includes('wrapper')),
     component: SocialsStatsTile,
+  },
+  // Directory Health tile (iCloud folder monitoring)
+  {
+    match: (name) =>
+      name.toLowerCase().includes('icloud') && name.toLowerCase().includes('folder') ||
+      name.toLowerCase().includes('folder') && name.toLowerCase().includes('structure') ||
+      name.toLowerCase().includes('folder health') ||
+      name.toLowerCase().includes('directory health'),
+    component: DirectoryHealthTile,
+  },
+  // LLM Benchmarks tile (multi-link popup)
+  {
+    match: (name) =>
+      name.toLowerCase() === 'llm benchmarks' ||
+      name.toLowerCase().includes('llm benchmark') ||
+      name.toLowerCase() === 'llm arena',
+    component: LLMBenchmarksTile,
+  },
+  // Goals tile (tabbed popup with checkable goals)
+  {
+    match: (name) =>
+      name.toLowerCase() === 'goals' ||
+      name.toLowerCase() === '2026 goals' ||
+      name.toLowerCase().includes('goals tracker'),
+    component: GoalsTile,
   },
   // Coming soon tiles (services not yet implemented)
   {

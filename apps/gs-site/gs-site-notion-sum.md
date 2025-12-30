@@ -12,17 +12,17 @@
 
 | Metric | Count |
 |--------|-------|
-| **Total Visible** | 48 |
+| **Total Visible** | 49 |
 | **Hidden** | 1 |
 | **Done** | 12 |
-| **In Progress** | 12 |
+| **In Progress** | 13 |
 | **Not Started** | 24 |
 
 ### By Category
 
 | Category | Count |
 |----------|-------|
-| Org | 19 |
+| Org | 20 |
 | Software | 16 |
 | Health | 12 |
 | Content | 7 |
@@ -35,6 +35,7 @@
 
 | Name | Status | Type II | Description | Pri | 3rd Party |
 |------|--------|---------|-------------|-----|-----------|
+| Goals | In progress | Button | 2026 Goals, 3-Year Goals, and Someday Goals with progress tracking | 1 | - |
 | InBody Scan | In progress | Graph, Form | Body composition from gym InBody scans. Manual entry popup. | 2 | InBody |
 | Printoffs & KPIs | In progress | Button | Dailies, weeklies, monthlies, quarterlies | 1 | - |
 | Evening Check-In | Done | Form | Daily evening reflection form | 1 | Notion |
@@ -51,7 +52,7 @@
 | Random Daily Contact. | Done | Button | For this, we need Access to Apple contacts. Use shadcn | 1 | Apple |
 | Call Daniel | In progress | Logic | - | 1 | - |
 | Datadog | Not started | Button | - | 1 | Datadog |
-| Forms completed this week Count | In progress | Metric | Count all Google Forms for given week starting on Sunday ... | 1 | Google |
+| Forms Wk Goal | In progress | Metric | Count all Google Forms for given week starting on Sunday ... | 1 | Google |
 | Jarvis_Briefme report | In progress | Button | Pull in Jarvis_briefme repository & instead of having an ... | 1 | Logic |
 | Cali Task List to do | Not started | Metric | Wabbit Rankings this week Count /out of Total or threshol... | 1 | Wabbit, Notion |
 | Clean iCloud folder structure graphic | Not started | Metric | Permissions to view & COUNT unplaced folders for main…. t... | 1 | Logic |
@@ -75,7 +76,7 @@
 | Task List Wabbed % | Done | Metric | This weeks/months (toggle) Task list percent wabbed. | 2 | Wabbit, Notion |
 | RE Events | Not started | Button | - | 3 | Notion |
 | Create Health tracker chart | Done | Graph | - | 3 | Whoop |
-| LLM Arena | Not started | Button | - | 3 | - |
+| LLM Benchmarks | In progress | Button | Quick access to LLM benchmark sites: LM Arena and Artificial Analysis | 3 | - |
 | Y-Combinator invites | Not started | Graph | Scrape YC with login permissions (Browserbase?). or Playw... | 3 | Logic |
 | Memento Morri | In progress | Button | Weeks expected to live, 50 years. Same template as printe... | 3 | Logic |
 | GS-clients Admin Dash page | Not started | Button | Link to gsrealty-client site | - | GS Site Realty |
@@ -88,10 +89,11 @@
 
 ## Implementation Details
 
-### Fully Implemented (13 tiles)
+### Fully Implemented (14 tiles)
 
 | Tile | Component | Data Hooks |
 |------|-----------|------------|
+| Goals | GoalsTile | localStorage (completed goals state) |
 | InBody Scan | InBodyTile | useManualInBodyMetrics |
 | Evening Check-In | EveningCheckInTile | fetch('/api/ |
 | Core Habits | CoreHabitsTile | useHabitsStreak |
@@ -115,7 +117,7 @@
 | SpaceAd | DaysTillCounterTile | logic/DaysTillCounterTile.tsx |
 | Forms Streak | FormStreakTile | graphics/FormStreakTile.tsx |
 | Call Daniel | CallAgentTile | logic/CallAgentTile.tsx |
-| Forms completed this week Count | FormsCompletedTile | graphics/FormsCompletedTile.tsx |
+| Forms Wk Goal | FormsCompletedTile | graphics/FormsCompletedTile.tsx |
 | Jarvis_Briefme report | JarvisBriefingTile | JarvisBriefingTile.tsx |
 | Days since bloodwork done Counter | DaysSinceBloodworkTile | logic/DaysSinceBloodworkTile.tsx |
 | Claude Code MAX plan usage | ClaudeCodeUsageTile | logic/ClaudeCodeUsageTile.tsx |
@@ -145,7 +147,7 @@
 | Call tree Launch | ButtonTile | No custom component |
 | RE KPI's & Calc | ButtonTile | No custom component |
 | RE Events | ButtonTile | No custom component |
-| LLM Arena | ButtonTile | No custom component |
+| LLM Benchmarks | LLMBenchmarksTile | Popup with LM Arena + Artificial Analysis |
 | Y-Combinator invites | ButtonTile | No custom component |
 | GS-clients Admin Dash page | ButtonTile | No custom component |
 | Audio Agent Admin | ButtonTile | No custom component |
@@ -156,6 +158,23 @@
 ## Full Tile Descriptions
 
 Detailed descriptions from Notion for each tile.
+
+### Goals
+**Status**: In progress | **Priority**: 1 | **Type**: Button
+
+2026 Goals, 3-Year Goals, and Someday Goals with progress tracking.
+
+**Features:**
+- Tabbed popup with 3 goal categories
+- Checkable goals with fade-out animation on completion
+- Progress bar showing overall completion
+- localStorage persistence for checked state
+- 36 total goals across categories
+
+**Goal Categories:**
+1. **2026 Goals** (11 items): Core habits, SpaceAd shoot, fitness milestones, professional targets
+2. **3-Year Goals** (10 items): Health achievements, travel, financial milestones, creative projects
+3. **Someday Goals** (15 items): Life aspirations, legacy goals, major achievements
 
 ### Printoffs & KPIs
 **Status**: In progress | **Priority**: 1 | **Type**: Button
@@ -235,7 +254,7 @@ For this, we need Access to Apple contacts.
   
   Use shadcn
 
-### Forms completed this week Count
+### Forms Wk Goal
 **Status**: In progress | **Priority**: 1 | **Type**: Metric
 
 Count all Google Forms for given week starting on Sunday AM. Ending Sat night.

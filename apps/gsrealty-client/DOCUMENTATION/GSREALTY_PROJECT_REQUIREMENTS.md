@@ -677,6 +677,7 @@ export async function POST(req: Request) {
   - Clients
   - Upload Files
   - MCAO Lookup
+  - PV Splittable (Map view with GIS parcel layer data for Maricopa County)
   - Analytics
   - Settings
 

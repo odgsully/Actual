@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
-  getGmailTokens,
+  getGmailTokensWithRefresh,
   getSentEmailStats,
-  isGmailConnected,
 } from '@/lib/integrations/google/gmail-client';
 
 export interface EmailsSentResponse {
@@ -25,12 +24,10 @@ export interface EmailsSentResponse {
  */
 export async function GET(request: NextRequest) {
   try {
-    // For now, use a default user ID since we don't have full auth
-    // In production, this would come from the session
     const userId = 'default-user';
 
-    // Check if Gmail is connected
-    const tokens = await getGmailTokens(userId);
+    // Get tokens (will auto-refresh if needed)
+    const tokens = await getGmailTokensWithRefresh(userId);
 
     if (!tokens) {
       return NextResponse.json<EmailsSentResponse>({

@@ -32,6 +32,8 @@ interface NotionPage {
   };
 }
 
+type TypeIICategory = 'Button' | 'Graph' | 'Metric' | 'Form' | 'Counter' | 'Calendar' | 'Dropzone' | 'Logic';
+
 interface Tile {
   id: string;
   name: string;
@@ -44,6 +46,28 @@ interface Tile {
   actionWarning: boolean;
   actionDesc: string | null;
   priority: string | null;
+  typeII: TypeIICategory | null;
+}
+
+/**
+ * Derive TypeII category from shadcn components
+ * Priority-based: more specific types take precedence
+ */
+function deriveTypeII(shadcn: string[]): TypeIICategory | null {
+  if (!shadcn || shadcn.length === 0) return null;
+
+  // Priority-based derivation (matches update-dec28-notion.md)
+  if (shadcn.includes('Dropzone')) return 'Dropzone';
+  if (shadcn.includes('Calendar & Date Picker')) return 'Calendar';
+  if (shadcn.includes('Form') || shadcn.includes('Pop-up')) return 'Form';
+  // Chart and Graphic are both visualization types
+  if (shadcn.includes('Graphic') || shadcn.includes('Chart')) {
+    // Graphic/Chart + Logic = Metric (stats, counts, etc.)
+    if (shadcn.includes('Logic')) return 'Metric';
+    return 'Graph';
+  }
+  if (shadcn.includes('Logic')) return 'Logic';
+  return 'Button'; // Default fallback
 }
 
 async function fetchNotionTiles(): Promise<NotionPage[]> {
@@ -104,18 +128,22 @@ function notionPageToTile(page: NotionPage): Tile {
     .join(' ')
     .trim();
 
+  // Extract shadcn array to derive typeII
+  const shadcnArray = (props.shadcn?.multi_select || []).map((s) => s.name);
+
   return {
     id: page.id,
     name,
     menu: (props.MENU?.multi_select || []).map((m) => m.name),
     status: props.Status?.status?.name || 'Not started',
     desc: truncatedDesc,
-    shadcn: (props.shadcn?.multi_select || []).map((s) => s.name),
+    shadcn: shadcnArray,
     phase: (props.Phase?.multi_select || []).map((p) => p.name),
     thirdParty: (props['3rd P']?.multi_select || []).map((t) => t.name),
     actionWarning,
     actionDesc: actionDescText || null,
     priority: props.Select?.select?.name || null,
+    typeII: deriveTypeII(shadcnArray),
   };
 }
 
@@ -201,6 +229,17 @@ async function main() {
 
     for (const [cat, count] of Object.entries(categoryCounts).sort((a, b) => b[1] - a[1])) {
       console.log(`  ${cat}: ${count}`);
+    }
+
+    // Count by Type II
+    console.log('\nType II breakdown:');
+    const typeIICounts: Record<string, number> = {};
+    for (const tile of tiles) {
+      const typeII = tile.typeII || 'null';
+      typeIICounts[typeII] = (typeIICounts[typeII] || 0) + 1;
+    }
+    for (const [type, count] of Object.entries(typeIICounts).sort((a, b) => b[1] - a[1])) {
+      console.log(`  ${type}: ${count}`);
     }
 
     // Count warnings

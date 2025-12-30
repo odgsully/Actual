@@ -2,11 +2,12 @@
 
 > **Purpose**: Transform the current static tile grid into a dynamic, Notion-synced dashboard with intelligent warnings, 3rd party integrations, and component-specific UI patterns.
 >
-> **Last Updated**: December 23, 2025
-> **Branch**: `gssite-dec18-per-notion`
+> **Last Updated**: December 29, 2025
+> **Branch**: `gssite-dec27-ii`
 > **Phase 0**: ✅ COMPLETE | **Phase 1**: ✅ COMPLETE | **Phase 2**: ✅ COMPLETE | **Phase 3**: ✅ COMPLETE | **Phase 4**: ✅ COMPLETE
 > **Phase 5**: ⛔ BLOCKED (no Wabbit app) | **Phase 6**: 📋 Research Done | **Phase 7**: 🚧 WHOOP OAuth Done | **Phase 8**: ✅ Logic Tiles Done
 > **Gmail Integration**: ✅ COMPLETE (Dec 23, 2025) - Emails Sent tile working with OAuth
+> **New Tiles (Dec 29)**: Goals (popup with checkable goals), LLM Benchmarks (multi-link popup), Directory Health (folder scanner)
 
 ---
 
@@ -235,7 +236,7 @@ interface ButtonTileDefinition {
 
 **Tiles using this**:
 - CRM, GS-clients Admin, Wab: Task List, New GS Wab, Go to my Wabbit
-- LLM Arena, GitHub Repos, Jarvis Briefme, Memento Morri, etc.
+- LLM Benchmarks, GitHub Repos, Jarvis Briefme, Memento Morri, etc.
 
 ---
 

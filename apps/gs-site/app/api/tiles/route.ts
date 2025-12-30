@@ -14,9 +14,10 @@ const TILE_NAME_OVERRIDES: Record<string, { name: string; desc?: string }> = {
   '10. RealtyOne Events button': { name: 'RE Events', desc: '' },
   "RealtyOne KPI's calulator": { name: "RE KPI's & Calc" },  // straight apostrophe
   "RealtyOne KPI\u2019s calulator": { name: "RE KPI's & Calc" },  // smart/curly apostrophe (from Notion)
-  // LLM Arena
-  '7. LLM Arena': { name: 'LLM Arena', desc: '' },
-  'LLM Arena link/preview?': { name: 'LLM Arena', desc: '' },
+  // LLM Benchmarks (renamed from LLM Arena)
+  '7. LLM Arena': { name: 'LLM Benchmarks', desc: '' },
+  'LLM Arena link/preview?': { name: 'LLM Benchmarks', desc: '' },
+  'LLM Arena': { name: 'LLM Benchmarks', desc: '' },
   // AI Agent → Audio Agent
   'AI Agent workforce admin board': { name: 'Audio Agent Admin', desc: '' },
   // Codebase Duolingo (keep name, clear subtitle)

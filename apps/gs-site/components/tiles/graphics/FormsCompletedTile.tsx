@@ -64,13 +64,16 @@ function ProgressRing({ completed, total, size = 48 }: { completed: number; tota
 }
 
 /**
- * FormsCompletedTile - Displays weekly form completion progress
+ * FormsCompletedTile (Forms Wk Goal) - Displays weekly form completion progress
  *
  * Shows:
- * - Forms completed this week (out of 7)
+ * - Forms completed this week out of 7-day target (X/7)
  * - Progress ring visualization
  * - Average mood and calendar grade
  * - Deep work hours average
+ *
+ * The /7 represents the weekly goal: submit the Productivity Accountability Form
+ * once per day, every day of the week.
  *
  * Data comes from the custom Productivity Accountability Form via useFormStats hook.
  */
@@ -128,7 +131,7 @@ export function FormsCompletedTile({ tile, className }: FormsCompletedTileProps)
           <div className="flex items-center gap-1.5">
             <ClipboardCheck className="w-4 h-4 text-blue-500" />
             <span className="text-xs font-medium text-foreground truncate">
-              This Week
+              Forms Wk Goal
             </span>
           </div>
           {isLoading && (

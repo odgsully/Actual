@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { User, Phone, Mail, RefreshCw, Shuffle, Building2 } from 'lucide-react';
 import { WarningBorderTrail } from '../WarningBorderTrail';
+import { useConnectionHealth } from '@/hooks/useConnectionHealth';
 import type { TileComponentProps } from '../TileRegistry';
 import type { Contact } from '@/lib/contacts/types';
 
@@ -187,6 +188,7 @@ export function RandomContactTile({ tile, className }: TileComponentProps) {
   const [error, setError] = useState<Error | null>(null);
   const [showSlotMachine, setShowSlotMachine] = useState(false);
   const [isNewContact, setIsNewContact] = useState(false);
+  const { shouldShowWarning } = useConnectionHealth(tile);
 
   // Load contacts on mount
   useEffect(() => {
@@ -299,7 +301,7 @@ export function RandomContactTile({ tile, className }: TileComponentProps) {
   `.trim();
 
   return (
-    <WarningBorderTrail active={tile.actionWarning} hoverMessage={tile.actionDesc}>
+    <WarningBorderTrail active={shouldShowWarning} hoverMessage={tile.actionDesc}>
       <div className={baseClasses}>
         {/* Header */}
         <div className="flex items-center justify-between mb-3">
