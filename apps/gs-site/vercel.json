@@ -1,0 +1,17 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    {
+      "path": "/api/cron/lifx-sunrise-tick",
+      "schedule": "* 6-8 * * *"
+    },
+    {
+      "path": "/api/cron/lifx-evening-lock",
+      "schedule": "30 20 * * *"
+    },
+    {
+      "path": "/api/cron/lifx-midnight-reset",
+      "schedule": "0 0 * * *"
+    }
+  ]
+}
