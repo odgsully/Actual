@@ -24,9 +24,14 @@ export async function GET(request: NextRequest) {
 
   try {
     const now = new Date();
-    const today = now.toISOString().split('T')[0];
-    const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
+
+    // Convert UTC to MST (UTC-7) - Arizona doesn't observe DST
+    const MST_OFFSET_HOURS = -7;
+    const mstNow = new Date(now.getTime() + MST_OFFSET_HOURS * 60 * 60 * 1000);
+
+    const today = mstNow.toISOString().split('T')[0];
+    const currentHour = mstNow.getUTCHours();
+    const currentMinute = mstNow.getUTCMinutes();
 
     // Check if morning form already submitted
     const { data: state } = await supabase

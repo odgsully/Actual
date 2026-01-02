@@ -23,7 +23,11 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const today = new Date().toISOString().split('T')[0];
+    // Convert UTC to MST (UTC-7) - Arizona doesn't observe DST
+    const MST_OFFSET_HOURS = -7;
+    const now = new Date();
+    const mstNow = new Date(now.getTime() + MST_OFFSET_HOURS * 60 * 60 * 1000);
+    const today = mstNow.toISOString().split('T')[0];
 
     // Check if evening form already submitted today
     const { data: state } = await supabase
