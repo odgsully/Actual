@@ -45,6 +45,7 @@ const EXCLUDED_TILE_NAMES = [
   'physically print weeklies',
   'physically print tomorrow daily',
   'gs site admin',
+  'youtube wrapper', // Legacy tile - use "Socials stats" instead
 ];
 
 /**

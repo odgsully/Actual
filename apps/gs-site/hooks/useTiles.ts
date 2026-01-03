@@ -95,7 +95,8 @@ export function useTiles(options: UseTilesOptions = {}) {
   // Merge API data with local tiles, or use static data alone
   // LOCAL_TILES are always prepended (they don't come from Notion)
   const apiOrStaticTiles = query.data?.tiles ?? staticTiles;
-  const tiles = query.data ? [...LOCAL_TILES, ...apiOrStaticTiles] : apiOrStaticTiles;
+  // Always include LOCAL_TILES, whether using API data or static fallback
+  const tiles = [...LOCAL_TILES, ...apiOrStaticTiles];
   const count = tiles.length;
 
   return {
@@ -136,6 +137,19 @@ export function useTiles(options: UseTilesOptions = {}) {
 }
 
 /**
+ * Tile names to exclude (case-insensitive partial match)
+ * Mirrors the API exclusion list for consistency
+ */
+const EXCLUDED_TILE_NAMES = [
+  'forms (monthly) & printoff',
+  'forms (quarterly) & printoff',
+  'physically print weeklies',
+  'physically print tomorrow daily',
+  'gs site admin',
+  'youtube wrapper', // Legacy tile - use "Socials stats" instead
+];
+
+/**
  * Filter static tiles by phase and/or warning status
  */
 function getFilteredStaticTiles(options: {
@@ -143,6 +157,12 @@ function getFilteredStaticTiles(options: {
   warningsOnly?: boolean;
 }): Tile[] {
   let tiles = [...STATIC_TILES];
+
+  // Filter out excluded tiles by name
+  tiles = tiles.filter((t) => {
+    const nameLower = t.name.toLowerCase();
+    return !EXCLUDED_TILE_NAMES.some((excluded) => nameLower.includes(excluded));
+  });
 
   if (options.phase) {
     tiles = tiles.filter((t) => t.phase.includes(options.phase!));

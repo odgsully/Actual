@@ -139,6 +139,18 @@ const InBodyTile = dynamic(
   { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
 );
 
+// MyFitnessPal tile
+const MyFitnessPalTile = dynamic(
+  () => import('./graphics/MyFitnessPalTile').then(mod => ({ default: mod.MyFitnessPalTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
+// Screen Time tile (Apple Screen Time screenshot processing)
+const ScreenTimeTile = dynamic(
+  () => import('./graphics/ScreenTimeTile').then(mod => ({ default: mod.ScreenTimeTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
 // Apple Contacts tile (Phase 6)
 const RandomContactTile = dynamic(
   () => import('./graphics/RandomContactTile').then(mod => ({ default: mod.RandomContactTile })),
@@ -256,6 +268,18 @@ const LLMBenchmarksTile = dynamic(
 // Goals tile (tabbed popup with checkable goals)
 const GoalsTile = dynamic(
   () => import('./graphics/GoalsTile').then(mod => ({ default: mod.GoalsTile })),
+  { loading: () => <TileSkeleton variant="default" />, ssr: false }
+);
+
+// LIFX Controller tile (smart lighting control)
+const LIFXControllerTile = dynamic(
+  () => import('./graphics/LIFXControllerTile').then(mod => ({ default: mod.LIFXControllerTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
+// Word of Month tile
+const WordOfMonthTile = dynamic(
+  () => import('./graphics/WordOfMonthTile').then(mod => ({ default: mod.WordOfMonthTile })),
   { loading: () => <TileSkeleton variant="default" />, ssr: false }
 );
 
@@ -387,6 +411,32 @@ const SPECIALIZED_TILES: Array<{
       (name.toLowerCase().includes('body') && name.toLowerCase().includes('composition')),
     component: InBodyTile,
   },
+  // MyFitnessPal tile
+  {
+    match: (name) => {
+      const lower = name.toLowerCase();
+      return lower.includes('myfitnesspal') ||
+        lower.includes('mfp') ||
+        (lower.includes('fitness') && lower.includes('pal')) ||
+        lower.includes('food diary') ||
+        lower.includes('calorie tracker');
+    },
+    component: MyFitnessPalTile,
+  },
+  // Screen Time tile (Apple Screen Time screenshot processing)
+  {
+    match: (name) => {
+      const lower = name.toLowerCase();
+      return (
+        lower.includes('screen time') ||
+        lower.includes('screentime') ||
+        lower.includes('prev day') ||
+        lower.includes('time spent') ||
+        (lower.includes('time') && lower.includes('pie chart'))
+      );
+    },
+    component: ScreenTimeTile,
+  },
   // Apple Contacts tile (Phase 6)
   {
     match: (name) => {
@@ -513,11 +563,10 @@ const SPECIALIZED_TILES: Array<{
     },
     component: CallAgentTile,
   },
-  // Socials Stats tile (Phase 7 - YouTube + future Twitter)
+  // Socials Stats tile (Phase 7 - YouTube + Twitter)
+  // Note: Only match "socials stats" exactly, not "youtube wrapper" (legacy tile)
   {
-    match: (name) =>
-      name.toLowerCase().includes('socials stats') ||
-      (name.toLowerCase().includes('youtube') && name.toLowerCase().includes('wrapper')),
+    match: (name) => name.toLowerCase().includes('socials stats'),
     component: SocialsStatsTile,
   },
   // Directory Health tile (iCloud folder monitoring)
@@ -544,6 +593,31 @@ const SPECIALIZED_TILES: Array<{
       name.toLowerCase() === '2026 goals' ||
       name.toLowerCase().includes('goals tracker'),
     component: GoalsTile,
+  },
+  // LIFX Controller tile (smart lighting)
+  {
+    match: (name, tile) => {
+      const lower = name.toLowerCase();
+      return (
+        lower.includes('lifx') ||
+        lower === 'lights' ||
+        lower === 'smart lights' ||
+        Boolean(tile?.thirdParty?.includes('LIFX'))
+      );
+    },
+    component: LIFXControllerTile,
+  },
+  // Word of Month tile
+  {
+    match: (name) => {
+      const lower = name.toLowerCase();
+      return (
+        lower === 'word of month' ||
+        lower.includes('word of the month') ||
+        lower.includes('monthly word')
+      );
+    },
+    component: WordOfMonthTile,
   },
   // Coming soon tiles (services not yet implemented)
   {

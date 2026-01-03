@@ -23,18 +23,34 @@ export async function GET() {
 
     // Return defaults if no config exists
     const config = data || {
+      // LIFX sunrise simulation timing
       morning_start_hour: 6,
       morning_start_minute: 0,
-      morning_end_hour: 9,
+      morning_end_hour: 8,
       morning_end_minute: 0,
       morning_color: 'kelvin:3000',
+      morning_enabled: true,
+
+      // LIFX evening lock timing
       evening_lock_hour: 20,
       evening_lock_minute: 30,
       evening_lock_color: 'purple',
       evening_lock_brightness: 0.7,
-      lifx_selector: 'all',
-      morning_enabled: true,
       evening_enabled: true,
+
+      // Morning form opacity timing
+      morning_form_start_hour: 5,
+      morning_form_start_minute: 0,
+      morning_form_end_hour: 8,
+      morning_form_end_minute: 0,
+
+      // Evening form opacity timing
+      evening_form_start_hour: 18,
+      evening_form_start_minute: 0,
+      evening_form_end_hour: 21,
+      evening_form_end_minute: 0,
+
+      lifx_selector: 'all',
     };
 
     return NextResponse.json({ success: true, config });

@@ -1,24 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Sunrise, X, Moon } from 'lucide-react';
+import {
+  useLIFXScheduleConfig,
+  calculateOpacity,
+  toMinutes,
+} from '@/hooks/useLIFXScheduleConfig';
 
 type Phase = 'morning' | 'evening' | null;
-
-function getCurrentPhase(): Phase {
-  const hour = new Date().getHours();
-
-  // Morning: 5am - 10am
-  if (hour >= 5 && hour < 10) {
-    return 'morning';
-  }
-  // Evening: 6pm - 11pm
-  if (hour >= 18 && hour < 23) {
-    return 'evening';
-  }
-
-  return null;
-}
 
 interface PhaseReminderProps {
   onCompleteClick?: (phase: Phase) => void;
@@ -27,27 +17,71 @@ interface PhaseReminderProps {
 /**
  * Soft reminder component for Morning/Evening phase completion.
  * Shows a dismissible banner when in phase window and form not completed.
- *
- * Phase times:
- * - Morning: 5am - 10am
- * - Evening: 6pm - 11pm
+ * Opacity fades in based on schedule config timing.
  */
 export function PhaseReminder({ onCompleteClick }: PhaseReminderProps) {
   const [dismissed, setDismissed] = useState(false);
   const [phaseComplete, setPhaseComplete] = useState(false);
-  const [currentPhase, setCurrentPhase] = useState<Phase>(null);
+  const [currentTime, setCurrentTime] = useState(() => new Date());
 
+  // Get schedule config for timing
+  const { config } = useLIFXScheduleConfig();
+
+  // Update current time every minute
   useEffect(() => {
-    // Check current phase on mount and every minute
-    const checkPhase = () => {
-      setCurrentPhase(getCurrentPhase());
-    };
-
-    checkPhase();
-    const interval = setInterval(checkPhase, 60000);
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000);
 
     return () => clearInterval(interval);
   }, []);
+
+  // Determine current phase and opacity based on config
+  const { currentPhase, opacity } = useMemo(() => {
+    const hour = currentTime.getHours();
+    const minute = currentTime.getMinutes();
+    const currentMinutes = toMinutes(hour, minute);
+
+    // Morning phase window
+    const morningStart = toMinutes(config.morning_form_start_hour, config.morning_form_start_minute);
+    const morningEnd = toMinutes(config.morning_form_end_hour, config.morning_form_end_minute);
+    // Extend end window by 2 hours after full visibility
+    const morningWindowEnd = morningEnd + 120;
+
+    // Evening phase window
+    const eveningStart = toMinutes(config.evening_form_start_hour, config.evening_form_start_minute);
+    const eveningEnd = toMinutes(config.evening_form_end_hour, config.evening_form_end_minute);
+    // Extend end window by 2 hours after full visibility
+    const eveningWindowEnd = eveningEnd + 120;
+
+    // Check if in morning window
+    if (currentMinutes >= morningStart && currentMinutes < morningWindowEnd) {
+      const opacity = calculateOpacity(
+        hour,
+        minute,
+        config.morning_form_start_hour,
+        config.morning_form_start_minute,
+        config.morning_form_end_hour,
+        config.morning_form_end_minute
+      );
+      return { currentPhase: 'morning' as Phase, opacity };
+    }
+
+    // Check if in evening window
+    if (currentMinutes >= eveningStart && currentMinutes < eveningWindowEnd) {
+      const opacity = calculateOpacity(
+        hour,
+        minute,
+        config.evening_form_start_hour,
+        config.evening_form_start_minute,
+        config.evening_form_end_hour,
+        config.evening_form_end_minute
+      );
+      return { currentPhase: 'evening' as Phase, opacity };
+    }
+
+    return { currentPhase: null, opacity: 0 };
+  }, [currentTime, config]);
 
   useEffect(() => {
     // TODO: Check if today's phase form is completed
@@ -62,8 +96,8 @@ export function PhaseReminder({ onCompleteClick }: PhaseReminderProps) {
     }
   }, [currentPhase]);
 
-  // Don't show if no active phase, already completed, or dismissed
-  if (!currentPhase || phaseComplete || dismissed) {
+  // Don't show if no active phase, already completed, dismissed, or opacity is 0
+  if (!currentPhase || phaseComplete || dismissed || opacity === 0) {
     return null;
   }
 
@@ -82,7 +116,8 @@ export function PhaseReminder({ onCompleteClick }: PhaseReminderProps) {
 
   return (
     <div
-      className={`${bgColor} border ${borderColor} rounded-lg p-4 mx-6 mt-4 flex items-center justify-between`}
+      className={`${bgColor} border ${borderColor} rounded-lg p-4 mx-6 mt-4 flex items-center justify-between transition-opacity duration-500`}
+      style={{ opacity }}
     >
       <div className="flex items-center gap-3">
         <Icon className={`w-5 h-5 ${iconColor}`} />

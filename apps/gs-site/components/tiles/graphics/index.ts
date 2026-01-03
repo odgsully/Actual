@@ -9,8 +9,12 @@
 export { HabitsStreakTile } from './HabitsStreakTile';
 export { TaskWabbedTile } from './TaskWabbedTile';
 export { HabitInsightsTile } from './HabitInsightsTile';
+export { HabitInsightsModal } from './HabitInsightsModal';
 export { CaliTaskListTile } from './CaliTaskListTile';
 export { CaliForwardLookTile } from './CaliForwardLookTile';
+
+// Health/WHOOP tiles
+export { HealthTrackerModal } from './HealthTrackerModal';
 
 // Custom Form tiles (Phase 5)
 export { FormStreakTile } from './FormStreakTile';
@@ -21,6 +25,11 @@ export { EmailsSentTile } from './EmailsSentTile';
 
 // YouTube/Socials tiles (Phase 7)
 export { SocialsStatsTile } from './SocialsStatsTile';
+export { SocialsModal } from './SocialsModal';
+
+// Screen Time tile (Apple Screen Time screenshot processing)
+export { ScreenTimeTile } from './ScreenTimeTile';
+export { ScreenTimeModal } from './ScreenTimeModal';
 
 // GitHub-connected tiles (Phase 3)
 export { GitHubSearchTile } from './GitHubSearchTile';

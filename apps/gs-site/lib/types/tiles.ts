@@ -31,7 +31,10 @@ export type ThirdPartyIntegration =
   | 'Logic'
   | 'Datadog'
   | 'Twilio'
-  | 'EXTRA LOGIC';
+  | 'EXTRA LOGIC'
+  | 'LIFX'
+  | 'MyFitnessPal'
+  | 'OpenAI';
 
 export type TilePriority = '1' | '2' | '3' | null;
 

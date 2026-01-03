@@ -15,6 +15,8 @@ import {
   Lock,
   Moon,
   Sunrise,
+  Clock,
+  Check,
 } from 'lucide-react';
 import { WarningBorderTrail } from '../WarningBorderTrail';
 import type { Tile } from '@/lib/types/tiles';
@@ -24,6 +26,8 @@ import {
   LIFXPresetColor,
   LIFX_PRESET_COLORS,
 } from '@/hooks/useLIFXData';
+import { useLIFXScheduleConfig } from '@/hooks/useLIFXScheduleConfig';
+import { TimeRangeSlider } from '@/components/ui/time-range-slider';
 
 interface LIFXControllerTileProps {
   tile: Tile;
@@ -156,9 +160,17 @@ function LIFXControllerModal({
   onClose: () => void;
   controller: ReturnType<typeof useLIFXController>;
 }) {
-  const [activeTab, setActiveTab] = useState<'whites' | 'colors' | 'scenes' | 'effects'>(
+  const [activeTab, setActiveTab] = useState<'whites' | 'colors' | 'scenes' | 'effects' | 'schedule'>(
     'whites'
   );
+
+  // Schedule config for timing sliders
+  const {
+    config: scheduleConfig,
+    isLoading: isConfigLoading,
+    isSaving: isConfigSaving,
+    updateConfig,
+  } = useLIFXScheduleConfig();
 
   const {
     lights,
@@ -304,6 +316,7 @@ function LIFXControllerModal({
                 { id: 'colors', icon: Palette, label: 'Colors' },
                 { id: 'scenes', icon: Lightbulb, label: 'Scenes' },
                 { id: 'effects', icon: Sparkles, label: 'Effects' },
+                { id: 'schedule', icon: Clock, label: 'Schedule' },
               ].map((tab) => {
                 const TabIcon = tab.icon;
                 return (
@@ -421,6 +434,93 @@ function LIFXControllerModal({
                     <X className="w-4 h-4" />
                     Stop Effects
                   </button>
+                </div>
+              )}
+
+              {activeTab === 'schedule' && (
+                <div className="space-y-6">
+                  {isConfigLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : (
+                    <>
+                      {/* Morning Form Timing */}
+                      <TimeRangeSlider
+                        label="Morning Form Visibility"
+                        icon={<Sunrise className="w-4 h-4 text-amber-500" />}
+                        theme="amber"
+                        startHour={scheduleConfig.morning_form_start_hour}
+                        startMinute={scheduleConfig.morning_form_start_minute}
+                        endHour={scheduleConfig.morning_form_end_hour}
+                        endMinute={scheduleConfig.morning_form_end_minute}
+                        minHour={4}
+                        maxHour={12}
+                        step={15}
+                        onStartChange={(hour, minute) =>
+                          updateConfig({
+                            morning_form_start_hour: hour,
+                            morning_form_start_minute: minute,
+                          })
+                        }
+                        onEndChange={(hour, minute) =>
+                          updateConfig({
+                            morning_form_end_hour: hour,
+                            morning_form_end_minute: minute,
+                          })
+                        }
+                        disabled={isConfigSaving}
+                      />
+
+                      {/* Divider */}
+                      <div className="border-t border-border" />
+
+                      {/* Evening Form Timing */}
+                      <TimeRangeSlider
+                        label="Evening Form Visibility"
+                        icon={<Moon className="w-4 h-4 text-indigo-400" />}
+                        theme="indigo"
+                        startHour={scheduleConfig.evening_form_start_hour}
+                        startMinute={scheduleConfig.evening_form_start_minute}
+                        endHour={scheduleConfig.evening_form_end_hour}
+                        endMinute={scheduleConfig.evening_form_end_minute}
+                        minHour={16}
+                        maxHour={24}
+                        step={15}
+                        onStartChange={(hour, minute) =>
+                          updateConfig({
+                            evening_form_start_hour: hour,
+                            evening_form_start_minute: minute,
+                          })
+                        }
+                        onEndChange={(hour, minute) =>
+                          updateConfig({
+                            evening_form_end_hour: hour,
+                            evening_form_end_minute: minute,
+                          })
+                        }
+                        disabled={isConfigSaving}
+                      />
+
+                      {/* Save indicator */}
+                      {isConfigSaving && (
+                        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Saving...
+                        </div>
+                      )}
+
+                      {/* Info */}
+                      <div className="p-3 bg-muted/30 rounded-lg border border-border">
+                        <p className="text-xs text-muted-foreground">
+                          <strong>How it works:</strong> Form tiles will gradually fade in during
+                          the time range you set. At the start time, opacity is 0% (invisible).
+                          At the end time, opacity reaches 100% (fully visible). Changes save
+                          automatically.
+                        </p>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>

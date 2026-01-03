@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { Sun, X, Check, Camera, Image, Loader2, Video, Scale } from 'lucide-react';
 import { WarningBorderTrail } from '../WarningBorderTrail';
 import type { TileComponentProps } from '../TileRegistry';
+import { useLIFXFormIntegration } from '@/hooks/useLIFXFormIntegration';
 
 /**
  * MorningFormTile - Morning Check In form
@@ -19,6 +20,9 @@ import type { TileComponentProps } from '../TileRegistry';
 export function MorningFormTile({ tile, className }: TileComponentProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // LIFX integration - turns off lights when form is submitted
+  const { onMorningFormComplete, isMorningPending } = useLIFXFormIntegration();
 
   // Weight state
   const [weight, setWeight] = useState('');
@@ -240,6 +244,9 @@ export function MorningFormTile({ tile, className }: TileComponentProps) {
         console.log('Face progress photo to upload:', facePhotoSource);
       }
 
+      // Turn off LIFX lights after morning form completion
+      onMorningFormComplete();
+
       // Close modal on success
       setIsOpen(false);
     } catch (error) {
@@ -247,7 +254,7 @@ export function MorningFormTile({ tile, className }: TileComponentProps) {
     } finally {
       setIsSubmitting(false);
     }
-  }, [weight, weightSaved, saveWeight, bodyPhotoUrl, bodyPhotoSource, facePhotoUrl, facePhotoSource]);
+  }, [weight, weightSaved, saveWeight, bodyPhotoUrl, bodyPhotoSource, facePhotoUrl, facePhotoSource, onMorningFormComplete]);
 
   const baseClasses = `
     group
@@ -692,6 +699,9 @@ export function MorningFormModal({ isOpen, onClose }: { isOpen: boolean; onClose
   const [isSavingWeight, setIsSavingWeight] = useState(false);
   const [weightSaved, setWeightSaved] = useState(false);
   const [videoRecorded, setVideoRecorded] = useState(false);
+
+  // LIFX integration - turns off lights when form is submitted
+  const { onMorningFormComplete } = useLIFXFormIntegration();
   // Body Progress Photo state
   const [bodyPhotoUrl, setBodyPhotoUrl] = useState<string | null>(null);
   const [bodyPhotoSource, setBodyPhotoSource] = useState<'library' | 'camera' | null>(null);
@@ -830,13 +840,17 @@ export function MorningFormModal({ isOpen, onClose }: { isOpen: boolean; onClose
       if (weight && !weightSaved) await saveWeight(weight);
       if (bodyPhotoUrl && bodyPhotoSource) console.log('Body progress photo to upload:', bodyPhotoSource);
       if (facePhotoUrl && facePhotoSource) console.log('Face progress photo to upload:', facePhotoSource);
+
+      // Turn off LIFX lights after morning form completion
+      onMorningFormComplete();
+
       onClose();
     } catch (error) {
       console.error('Error submitting morning check in:', error);
     } finally {
       setIsSubmitting(false);
     }
-  }, [weight, weightSaved, saveWeight, bodyPhotoUrl, bodyPhotoSource, facePhotoUrl, facePhotoSource, onClose]);
+  }, [weight, weightSaved, saveWeight, bodyPhotoUrl, bodyPhotoSource, facePhotoUrl, facePhotoSource, onClose, onMorningFormComplete]);
 
   if (!isOpen) return null;
 
