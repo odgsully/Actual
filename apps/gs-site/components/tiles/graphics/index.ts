@@ -31,6 +31,10 @@ export { SocialsModal } from './SocialsModal';
 export { ScreenTimeTile } from './ScreenTimeTile';
 export { ScreenTimeModal } from './ScreenTimeModal';
 
+// Call Log tile (Verizon/iPhone call log processing)
+export { CallLogTile } from './CallLogTile';
+export { CallLogModal } from './CallLogModal';
+
 // GitHub-connected tiles (Phase 3)
 export { GitHubSearchTile } from './GitHubSearchTile';
 export { GitHubCommitsTile } from './GitHubCommitsTile';

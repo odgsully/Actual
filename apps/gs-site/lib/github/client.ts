@@ -1,187 +1,59 @@
 /**
  * GitHub API Client
  *
- * Wrapper for GitHub REST API with caching and rate limit handling.
- * Used by GitHub-dependent tiles: Annual Commits, Repos, Search.
- *
- * Rate Limits:
- * - Authenticated: 5,000 requests/hour
- * - Unauthenticated: 60 requests/hour
- *
- * Required Environment Variable:
- * - GITHUB_PAT: Personal Access Token with `repo`, `read:user` scopes
+ * Provides functions to interact with the GitHub API
+ * for fetching user repositories and other data.
  */
 
 const GITHUB_API_BASE = 'https://api.github.com';
 
-/**
- * Get GitHub PAT from environment
- */
-function getGitHubToken(): string | null {
-  return process.env.GITHUB_PAT || null;
-}
-
-/**
- * Check if GitHub is configured
- */
-export function isGitHubConfigured(): boolean {
-  return Boolean(getGitHubToken());
-}
-
-/**
- * Make a request to GitHub API
- */
-async function githubFetch<T>(
-  endpoint: string,
-  options?: RequestInit
-): Promise<T> {
-  const token = getGitHubToken();
-
-  const headers: HeadersInit = {
-    Accept: 'application/vnd.github+json',
-    'X-GitHub-Api-Version': '2022-11-28',
-    ...(token && { Authorization: `Bearer ${token}` }),
-  };
-
-  const response = await fetch(`${GITHUB_API_BASE}${endpoint}`, {
-    ...options,
-    headers: {
-      ...headers,
-      ...options?.headers,
-    },
-  });
-
-  // Log rate limit info in development
-  if (process.env.NODE_ENV === 'development') {
-    const remaining = response.headers.get('x-ratelimit-remaining');
-    const limit = response.headers.get('x-ratelimit-limit');
-    console.log(`[GitHub] Rate limit: ${remaining}/${limit}`);
-  }
-
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`GitHub API error: ${response.status} - ${error}`);
-  }
-
-  return response.json();
-}
-
-// ============================================================
-// Types
-// ============================================================
-
-export interface GitHubRepo {
+interface GitHubRepo {
   id: number;
   name: string;
   full_name: string;
   description: string | null;
   html_url: string;
-  stargazers_count: number;
-  forks_count: number;
-  language: string | null;
+  private: boolean;
+  fork: boolean;
+  created_at: string;
   updated_at: string;
   pushed_at: string;
-  private: boolean;
-  owner: {
-    login: string;
-    avatar_url: string;
+  stargazers_count: number;
+  watchers_count: number;
+  forks_count: number;
+  language: string | null;
+  default_branch: string;
+}
+
+/**
+ * Check if GitHub API is configured
+ * Returns true if a GitHub token is available
+ */
+export function isGitHubConfigured(): boolean {
+  return !!process.env.GITHUB_PAT || !!process.env.GITHUB_TOKEN || !!process.env.GITHUB_ACCESS_TOKEN;
+}
+
+/**
+ * Get authorization headers for GitHub API
+ */
+function getAuthHeaders(): HeadersInit {
+  const token = process.env.GITHUB_PAT || process.env.GITHUB_TOKEN || process.env.GITHUB_ACCESS_TOKEN;
+
+  const headers: HeadersInit = {
+    'Accept': 'application/vnd.github+json',
+    'X-GitHub-Api-Version': '2022-11-28',
   };
-}
 
-export interface GitHubUser {
-  login: string;
-  name: string | null;
-  avatar_url: string;
-  html_url: string;
-  public_repos: number;
-  followers: number;
-  following: number;
-}
-
-export interface GitHubSearchResult {
-  total_count: number;
-  incomplete_results: boolean;
-  items: GitHubRepo[];
-}
-
-export interface CommitActivity {
-  total: number;
-  week: number; // Unix timestamp
-  days: number[]; // Sun-Sat commits
-}
-
-export interface MonthlyCommits {
-  month: string; // YYYY-MM
-  commits: number;
-}
-
-export interface GitHubCommitStats {
-  totalCommits: number;
-  monthlyBreakdown: MonthlyCommits[];
-  lastCommitDate: string | null;
-}
-
-/**
- * Extended commit stats with per-user breakdown for stacked charts
- */
-export interface UserCommitBreakdown {
-  username: string;
-  totalCommits: number;
-  monthlyBreakdown: MonthlyCommits[];
-  lastCommitDate: string | null;
-}
-
-export interface GitHubCommitStatsWithUserBreakdown extends GitHubCommitStats {
-  byUser: UserCommitBreakdown[];
-}
-
-// ============================================================
-// User & Profile
-// ============================================================
-
-/**
- * Get user profile by username
- */
-export async function getUser(username: string): Promise<GitHubUser> {
-  return githubFetch<GitHubUser>(`/users/${username}`);
-}
-
-// ============================================================
-// Repositories
-// ============================================================
-
-/**
- * Get repositories for a user
- *
- * @param username GitHub username
- * @param options Optional filters
- */
-export async function getUserRepos(
-  username: string,
-  options?: {
-    type?: 'all' | 'owner' | 'member';
-    sort?: 'created' | 'updated' | 'pushed' | 'full_name';
-    direction?: 'asc' | 'desc';
-    per_page?: number;
-    page?: number;
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
   }
-): Promise<GitHubRepo[]> {
-  const params = new URLSearchParams();
 
-  if (options?.type) params.set('type', options.type);
-  if (options?.sort) params.set('sort', options.sort);
-  if (options?.direction) params.set('direction', options.direction);
-  if (options?.per_page) params.set('per_page', String(options.per_page));
-  if (options?.page) params.set('page', String(options.page));
-
-  const queryString = params.toString();
-  const endpoint = `/users/${username}/repos${queryString ? `?${queryString}` : ''}`;
-
-  return githubFetch<GitHubRepo[]>(endpoint);
+  return headers;
 }
 
 /**
- * Get all repos for a user (handles pagination)
+ * Fetch all repositories for a GitHub user
+ * Handles pagination to get all repos
  */
 export async function getAllUserRepos(username: string): Promise<GitHubRepo[]> {
   const allRepos: GitHubRepo[] = [];
@@ -189,12 +61,28 @@ export async function getAllUserRepos(username: string): Promise<GitHubRepo[]> {
   const perPage = 100;
 
   while (true) {
-    const repos = await getUserRepos(username, {
-      sort: 'updated',
-      direction: 'desc',
-      per_page: perPage,
-      page,
+    const url = `${GITHUB_API_BASE}/users/${username}/repos?page=${page}&per_page=${perPage}&sort=updated`;
+
+    const response = await fetch(url, {
+      headers: getAuthHeaders(),
+      next: { revalidate: 600 }, // Cache for 10 minutes
     });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error(`GitHub user "${username}" not found`);
+      }
+      if (response.status === 403) {
+        throw new Error('GitHub API rate limit exceeded');
+      }
+      throw new Error(`GitHub API error: ${response.status}`);
+    }
+
+    const repos: GitHubRepo[] = await response.json();
+
+    if (repos.length === 0) {
+      break;
+    }
 
     allRepos.push(...repos);
 
@@ -203,164 +91,147 @@ export async function getAllUserRepos(username: string): Promise<GitHubRepo[]> {
     }
 
     page++;
-
-    // Safety limit
-    if (page > 10) {
-      console.warn(`[GitHub] Stopping pagination at page ${page}`);
-      break;
-    }
   }
 
   return allRepos;
 }
 
-// ============================================================
-// Search
-// ============================================================
+/**
+ * Fetch a single repository by owner and name
+ */
+export async function getRepo(owner: string, repo: string): Promise<GitHubRepo> {
+  const url = `${GITHUB_API_BASE}/repos/${owner}/${repo}`;
+
+  const response = await fetch(url, {
+    headers: getAuthHeaders(),
+    next: { revalidate: 600 },
+  });
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error(`Repository "${owner}/${repo}" not found`);
+    }
+    throw new Error(`GitHub API error: ${response.status}`);
+  }
+
+  return response.json();
+}
 
 /**
- * Search repositories
- *
- * @param query Search query
- * @param options Search options
+ * Search for code in a repository
  */
-export async function searchRepos(
-  query: string,
-  options?: {
-    location?: string;
-    language?: string;
-    sort?: 'stars' | 'forks' | 'help-wanted-issues' | 'updated';
-    order?: 'asc' | 'desc';
-    per_page?: number;
-    page?: number;
-  }
-): Promise<GitHubSearchResult> {
-  // Build query string with filters
+export async function searchCode(query: string, repo?: string): Promise<unknown> {
   let searchQuery = query;
-
-  if (options?.location) {
-    searchQuery += ` location:${options.location}`;
+  if (repo) {
+    searchQuery = `${query} repo:${repo}`;
   }
 
-  if (options?.language) {
-    searchQuery += ` language:${options.language}`;
-  }
+  const url = `${GITHUB_API_BASE}/search/code?q=${encodeURIComponent(searchQuery)}`;
 
-  const params = new URLSearchParams({
-    q: searchQuery,
-    per_page: String(options?.per_page ?? 30),
-    page: String(options?.page ?? 1),
+  const response = await fetch(url, {
+    headers: getAuthHeaders(),
+    next: { revalidate: 300 }, // Cache for 5 minutes
   });
 
-  if (options?.sort) params.set('sort', options.sort);
-  if (options?.order) params.set('order', options.order);
+  if (!response.ok) {
+    throw new Error(`GitHub search error: ${response.status}`);
+  }
 
-  return githubFetch<GitHubSearchResult>(`/search/repositories?${params.toString()}`);
+  return response.json();
 }
 
 /**
- * Search Arizona public repositories
- * Convenience method for the Github API Search tile
+ * Get recent commits for a repository
  */
-export async function searchArizonaRepos(
-  query: string,
-  options?: { per_page?: number; page?: number }
-): Promise<GitHubSearchResult> {
-  return searchRepos(query, {
-    location: 'Arizona',
-    sort: 'stars',
-    order: 'desc',
-    ...options,
-  });
-}
-
-// ============================================================
-// Commits & Statistics
-// ============================================================
-
-/**
- * Get commit activity for a repository (last year)
- */
-export async function getRepoCommitActivity(
+export async function getRepoCommits(
   owner: string,
-  repo: string
-): Promise<CommitActivity[]> {
-  return githubFetch<CommitActivity[]>(`/repos/${owner}/${repo}/stats/commit_activity`);
+  repo: string,
+  perPage = 10
+): Promise<unknown[]> {
+  const url = `${GITHUB_API_BASE}/repos/${owner}/${repo}/commits?per_page=${perPage}`;
+
+  const response = await fetch(url, {
+    headers: getAuthHeaders(),
+    next: { revalidate: 300 },
+  });
+
+  if (!response.ok) {
+    throw new Error(`GitHub API error: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+// ============================================================
+// Annual Commit Statistics
+// ============================================================
+
+interface MonthlyCommitData {
+  month: string; // "2026-01"
+  commits: number;
+}
+
+interface AnnualCommitStats {
+  totalCommits: number;
+  monthlyBreakdown: MonthlyCommitData[];
+  lastCommitDate: string | null;
+}
+
+interface UserCommitStats extends AnnualCommitStats {
+  username: string;
+}
+
+interface CombinedCommitStats extends AnnualCommitStats {
+  byUser: UserCommitStats[];
 }
 
 /**
- * Get total commits for a user across all their repos for a year
- *
- * Note: This is expensive - aggregates from participation stats.
- * Use with caching (recommended: 1 hour).
- *
- * @param username GitHub username
- * @param year Year to fetch (defaults to current year)
+ * Get annual commit statistics for a user
+ * Uses the GitHub Events API to count push events
  */
 export async function getAnnualCommits(
   username: string,
   year?: number
-): Promise<GitHubCommitStats> {
-  const targetYear = year ?? new Date().getFullYear();
-
-  // Get user's repos
+): Promise<AnnualCommitStats> {
+  const targetYear = year || new Date().getFullYear();
   const repos = await getAllUserRepos(username);
 
-  // Filter to repos the user owns
-  const ownedRepos = repos.filter((r) => r.owner.login === username);
-
-  // Get participation stats for each repo
   const monthlyMap = new Map<string, number>();
   let totalCommits = 0;
   let lastCommitDate: string | null = null;
 
-  // Process repos in batches to avoid rate limiting
-  const batchSize = 5;
-  for (let i = 0; i < ownedRepos.length; i += batchSize) {
-    const batch = ownedRepos.slice(i, i + batchSize);
+  // Initialize all months for the year
+  for (let month = 1; month <= 12; month++) {
+    const key = `${targetYear}-${month.toString().padStart(2, '0')}`;
+    monthlyMap.set(key, 0);
+  }
 
-    await Promise.all(
-      batch.map(async (repo) => {
-        try {
-          // Get commit activity (weekly data for last year)
-          const activity = await getRepoCommitActivity(username, repo.name);
+  // Fetch commits from each repo
+  for (const repo of repos) {
+    if (repo.fork) continue; // Skip forks
 
-          if (!activity || !Array.isArray(activity)) {
-            return;
+    try {
+      const commits = await getRepoCommitsForYear(username, repo.name, targetYear);
+
+      for (const commit of commits) {
+        const date = new Date(commit.date);
+        const monthKey = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+
+        if (date.getFullYear() === targetYear) {
+          monthlyMap.set(monthKey, (monthlyMap.get(monthKey) || 0) + 1);
+          totalCommits++;
+
+          if (!lastCommitDate || commit.date > lastCommitDate) {
+            lastCommitDate = commit.date;
           }
-
-          for (const week of activity) {
-            const weekDate = new Date(week.week * 1000);
-            if (weekDate.getFullYear() === targetYear) {
-              const monthKey = `${weekDate.getFullYear()}-${String(weekDate.getMonth() + 1).padStart(2, '0')}`;
-              const current = monthlyMap.get(monthKey) || 0;
-              monthlyMap.set(monthKey, current + week.total);
-              totalCommits += week.total;
-
-              // Track last commit date
-              if (week.total > 0) {
-                const weekEnd = new Date(week.week * 1000 + 6 * 24 * 60 * 60 * 1000);
-                const dateStr = weekEnd.toISOString().split('T')[0];
-                if (!lastCommitDate || dateStr > lastCommitDate) {
-                  lastCommitDate = dateStr;
-                }
-              }
-            }
-          }
-        } catch (error) {
-          // Skip repos that fail (may be empty or special repos)
-          console.warn(`[GitHub] Could not get activity for ${repo.full_name}:`, error);
         }
-      })
-    );
-
-    // Small delay between batches
-    if (i + batchSize < ownedRepos.length) {
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+    } catch {
+      // Skip repos that fail (e.g., private repos without access)
+      continue;
     }
   }
 
-  // Convert map to sorted array
   const monthlyBreakdown = Array.from(monthlyMap.entries())
     .map(([month, commits]) => ({ month, commits }))
     .sort((a, b) => a.month.localeCompare(b.month));
@@ -373,101 +244,104 @@ export async function getAnnualCommits(
 }
 
 /**
- * Get combined annual commits for multiple usernames
- *
- * @param usernames Array of GitHub usernames
- * @param year Year to fetch
+ * Get commits for a specific repository in a year
  */
-export async function getCombinedAnnualCommits(
-  usernames: string[],
-  year?: number
-): Promise<GitHubCommitStats> {
-  const results = await Promise.all(
-    usernames.map((username) => getAnnualCommits(username, year))
-  );
+async function getRepoCommitsForYear(
+  owner: string,
+  repo: string,
+  year: number
+): Promise<{ date: string; message: string }[]> {
+  const since = `${year}-01-01T00:00:00Z`;
+  const until = `${year}-12-31T23:59:59Z`;
 
-  // Merge monthly breakdowns
-  const mergedMonthly = new Map<string, number>();
-  let totalCommits = 0;
-  let lastCommitDate: string | null = null;
+  const commits: { date: string; message: string }[] = [];
+  let page = 1;
+  const perPage = 100;
 
-  for (const result of results) {
-    totalCommits += result.totalCommits;
+  while (true) {
+    const url = `${GITHUB_API_BASE}/repos/${owner}/${repo}/commits?since=${since}&until=${until}&page=${page}&per_page=${perPage}`;
 
-    if (result.lastCommitDate) {
-      if (!lastCommitDate || result.lastCommitDate > lastCommitDate) {
-        lastCommitDate = result.lastCommitDate;
+    const response = await fetch(url, {
+      headers: getAuthHeaders(),
+      next: { revalidate: 3600 }, // Cache for 1 hour
+    });
+
+    if (!response.ok) {
+      break;
+    }
+
+    const data = await response.json();
+
+    if (data.length === 0) {
+      break;
+    }
+
+    for (const item of data) {
+      if (item.commit?.author?.date) {
+        commits.push({
+          date: item.commit.author.date,
+          message: item.commit.message || '',
+        });
       }
     }
 
-    for (const { month, commits } of result.monthlyBreakdown) {
-      const current = mergedMonthly.get(month) || 0;
-      mergedMonthly.set(month, current + commits);
+    if (data.length < perPage) {
+      break;
     }
+
+    page++;
   }
 
-  const monthlyBreakdown = Array.from(mergedMonthly.entries())
-    .map(([month, commits]) => ({ month, commits }))
-    .sort((a, b) => a.month.localeCompare(b.month));
-
-  return {
-    totalCommits,
-    monthlyBreakdown,
-    lastCommitDate,
-  };
+  return commits;
 }
 
 /**
- * Get combined annual commits with per-user breakdown for stacked charts
- *
- * @param usernames Array of GitHub usernames
- * @param year Year to fetch
- * @returns Combined stats plus individual user breakdowns
+ * Get combined annual commits for multiple users with per-user breakdown
  */
 export async function getCombinedAnnualCommitsWithUserBreakdown(
   usernames: string[],
   year?: number
-): Promise<GitHubCommitStatsWithUserBreakdown> {
-  const results = await Promise.all(
-    usernames.map(async (username) => {
-      const stats = await getAnnualCommits(username, year);
-      return {
-        username,
-        ...stats,
-      };
-    })
-  );
+): Promise<CombinedCommitStats> {
+  const targetYear = year || new Date().getFullYear();
 
-  // Merge monthly breakdowns for combined totals
-  const mergedMonthly = new Map<string, number>();
+  // Fetch stats for each user in parallel
+  const userStatsPromises = usernames.map(async (username) => {
+    const stats = await getAnnualCommits(username, targetYear);
+    return {
+      username,
+      ...stats,
+    };
+  });
+
+  const userStats = await Promise.all(userStatsPromises);
+
+  // Combine monthly data
+  const combinedMonthlyMap = new Map<string, number>();
+
+  // Initialize all months
+  for (let month = 1; month <= 12; month++) {
+    const key = `${targetYear}-${month.toString().padStart(2, '0')}`;
+    combinedMonthlyMap.set(key, 0);
+  }
+
   let totalCommits = 0;
   let lastCommitDate: string | null = null;
 
-  // Build per-user breakdown array
-  const byUser: UserCommitBreakdown[] = results.map((result) => ({
-    username: result.username,
-    totalCommits: result.totalCommits,
-    monthlyBreakdown: result.monthlyBreakdown,
-    lastCommitDate: result.lastCommitDate,
-  }));
+  for (const stats of userStats) {
+    totalCommits += stats.totalCommits;
 
-  // Calculate combined totals
-  for (const result of results) {
-    totalCommits += result.totalCommits;
-
-    if (result.lastCommitDate) {
-      if (!lastCommitDate || result.lastCommitDate > lastCommitDate) {
-        lastCommitDate = result.lastCommitDate;
-      }
+    for (const { month, commits } of stats.monthlyBreakdown) {
+      combinedMonthlyMap.set(month, (combinedMonthlyMap.get(month) || 0) + commits);
     }
 
-    for (const { month, commits } of result.monthlyBreakdown) {
-      const current = mergedMonthly.get(month) || 0;
-      mergedMonthly.set(month, current + commits);
+    if (stats.lastCommitDate) {
+      if (!lastCommitDate || stats.lastCommitDate > lastCommitDate) {
+        lastCommitDate = stats.lastCommitDate;
+      }
     }
   }
 
-  const monthlyBreakdown = Array.from(mergedMonthly.entries())
+  const monthlyBreakdown = Array.from(combinedMonthlyMap.entries())
     .map(([month, commits]) => ({ month, commits }))
     .sort((a, b) => a.month.localeCompare(b.month));
 
@@ -475,25 +349,6 @@ export async function getCombinedAnnualCommitsWithUserBreakdown(
     totalCommits,
     monthlyBreakdown,
     lastCommitDate,
-    byUser,
+    byUser: userStats,
   };
 }
-
-// ============================================================
-// Convenience Exports
-// ============================================================
-
-export const github = {
-  getUser,
-  getUserRepos,
-  getAllUserRepos,
-  searchRepos,
-  searchArizonaRepos,
-  getRepoCommitActivity,
-  getAnnualCommits,
-  getCombinedAnnualCommits,
-  getCombinedAnnualCommitsWithUserBreakdown,
-  isConfigured: isGitHubConfigured,
-};
-
-export default github;

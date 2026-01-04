@@ -25,10 +25,21 @@ interface ScreenTimeTileProps {
 export function ScreenTimeTile({ tile, className }: ScreenTimeTileProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const { currentWeek, hasData, isLoading } = useScreenTime();
+  const { currentWeek, previousWeeks, hasData, isLoading } = useScreenTime();
 
-  // Determine change direction
-  const change = currentWeek?.weekOverWeekChange;
+  // Fallback to previous week if current week has no data
+  const previousWeek = previousWeeks?.[0];
+  const hasPreviousData = previousWeek?.hasData ?? false;
+
+  // Determine which week's data to display
+  const displayWeek = hasData ? currentWeek : hasPreviousData ? previousWeek : null;
+  const isShowingPreviousWeek = !hasData && hasPreviousData;
+
+  // Only show "No Data" if both current AND previous week have no data
+  const showNoData = !hasData && !hasPreviousData;
+
+  // Determine change direction (only show if displaying current week)
+  const change = hasData ? currentWeek?.weekOverWeekChange : null;
   const changeDirection =
     change != null ? (change > 0 ? 'up' : change < 0 ? 'down' : 'same') : null;
 
@@ -50,9 +61,12 @@ export function ScreenTimeTile({ tile, className }: ScreenTimeTileProps) {
             <span className="text-sm font-medium truncate">Screen Time</span>
           </div>
 
-          {/* Warning indicator if no data */}
+          {/* Warning indicator if no current week data */}
           {!hasData && !isLoading && (
-            <div className="w-2 h-2 rounded-full bg-amber-500" title="No data this week" />
+            <div
+              className="w-2 h-2 rounded-full bg-amber-500"
+              title={showNoData ? 'No data for 2+ weeks' : 'No data this week'}
+            />
           )}
         </div>
 
@@ -62,17 +76,19 @@ export function ScreenTimeTile({ tile, className }: ScreenTimeTileProps) {
             <div className="animate-pulse">
               <div className="h-6 w-16 bg-muted rounded" />
             </div>
-          ) : hasData && currentWeek ? (
+          ) : displayWeek ? (
             <>
               {/* Daily average */}
               <div>
                 <span className="text-2xl font-bold">
-                  {currentWeek.dailyAverage || 'N/A'}
+                  {displayWeek.dailyAverage || 'N/A'}
                 </span>
-                <span className="text-xs text-muted-foreground ml-1">/day</span>
+                <span className="text-xs text-muted-foreground ml-1">
+                  /day{isShowingPreviousWeek && ' (last wk)'}
+                </span>
               </div>
 
-              {/* Change indicator */}
+              {/* Change indicator - only show for current week */}
               {changeDirection && changeDirection !== 'same' && (
                 <div
                   className={cn(
@@ -101,9 +117,9 @@ export function ScreenTimeTile({ tile, className }: ScreenTimeTileProps) {
         </div>
 
         {/* Mini category indicator (just show top category color bar) */}
-        {hasData && currentWeek?.categories && currentWeek.categories.length > 0 && (
+        {displayWeek?.categories && displayWeek.categories.length > 0 && (
           <div className="absolute bottom-0 left-0 right-0 h-1 rounded-b-lg overflow-hidden flex">
-            {currentWeek.categories.slice(0, 4).map((cat, i) => (
+            {displayWeek.categories.slice(0, 4).map((cat, i) => (
               <div
                 key={i}
                 className="h-full"

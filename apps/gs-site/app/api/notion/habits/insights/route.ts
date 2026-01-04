@@ -9,7 +9,7 @@ import { NextResponse } from 'next/server';
  * - Weight tracking data (if available)
  * - Trend analysis
  *
- * Database Schema (Notion Habits - 16dcf08f-4499-813f-bde4-fd15ae2cee7f):
+ * Database Schema (Notion Habits - 16dcf08f-4499-8107-811d-000bd96cf68c):
  * - Date: date
  * - Weight: number (nullable)
  * - Heart rate UP: checkbox
@@ -20,7 +20,7 @@ import { NextResponse } from 'next/server';
  */
 
 const NOTION_API_VERSION = '2022-06-28';
-const HABITS_DATABASE_ID = process.env.NOTION_HABITS_DATABASE_ID || '16dcf08f-4499-813f-bde4-fd15ae2cee7f';
+const HABITS_DATABASE_ID = process.env.NOTION_HABITS_DATABASE_ID || '';
 
 interface HabitDay {
   date: string;
@@ -154,9 +154,9 @@ function calculateWeightTrend(weightData: Array<{ date: string; weight: number }
 
 export async function GET() {
   try {
-    if (!process.env.NOTION_API_KEY) {
+    if (!process.env.NOTION_API_KEY || !HABITS_DATABASE_ID) {
       return NextResponse.json(
-        { error: 'Notion API not configured' },
+        { error: 'Habits database not configured' },
         { status: 503 }
       );
     }

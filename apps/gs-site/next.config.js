@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   experimental: {
-    instrumentationHook: true,
+    instrumentationHook: false, // Disabled - dd-trace causes issues
   },
   // No basePath since this is the root dashboard
   // Other apps use subdirectory routing in production

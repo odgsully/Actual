@@ -151,6 +151,12 @@ const ScreenTimeTile = dynamic(
   { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
 );
 
+// Call Log tile (Verizon/iPhone call log screenshot processing)
+const CallLogTile = dynamic(
+  () => import('./graphics/CallLogTile').then(mod => ({ default: mod.CallLogTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
 // Apple Contacts tile (Phase 6)
 const RandomContactTile = dynamic(
   () => import('./graphics/RandomContactTile').then(mod => ({ default: mod.RandomContactTile })),
@@ -436,6 +442,20 @@ const SPECIALIZED_TILES: Array<{
       );
     },
     component: ScreenTimeTile,
+  },
+  // Call Log tile (Verizon/iPhone call log processing)
+  {
+    match: (name) => {
+      const lower = name.toLowerCase();
+      return (
+        lower.includes('call log') ||
+        lower.includes('calllog') ||
+        lower.includes('phone calls') ||
+        lower.includes('call history') ||
+        (lower.includes('calls') && (lower.includes('outbound') || lower.includes('inbound')))
+      );
+    },
+    component: CallLogTile,
   },
   // Apple Contacts tile (Phase 6)
   {

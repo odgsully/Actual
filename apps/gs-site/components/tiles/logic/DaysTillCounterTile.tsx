@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Settings2, Timer } from 'lucide-react';
+import { Calendar, Check, Settings2, Timer } from 'lucide-react';
 import { WarningBorderTrail } from '../WarningBorderTrail';
 import type { Tile } from '@/lib/types/tiles';
 
@@ -17,6 +17,10 @@ export interface DaysTillConfig {
   eventLabel?: string;
   /** Show hours/minutes (default: false, only shows days) */
   showTime?: boolean;
+  /** Weekly task checkbox state */
+  weeklyTaskDone?: boolean;
+  /** ISO date string of when the weekly task was completed */
+  weeklyTaskCompletedAt?: string;
 }
 
 interface DaysTillCounterTileProps {
@@ -75,6 +79,19 @@ function parseDateFromDesc(desc: string | undefined): Date | null {
 // ============================================================
 // Utility Functions
 // ============================================================
+
+/**
+ * Get the Monday of the week for a given date (for weekly reset logic)
+ * Returns ISO date string like "2026-01-06"
+ */
+function getWeekStartMonday(date: Date = new Date()): string {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust for Sunday
+  d.setDate(diff);
+  d.setHours(0, 0, 0, 0);
+  return d.toISOString().split('T')[0];
+}
 
 function calculateTimeRemaining(targetDate: Date) {
   const now = new Date();
@@ -147,16 +164,35 @@ function loadConfig(tileId: string, tile: Tile): DaysTillConfig {
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
+
+        // Check if weekly task needs to be reset (new week = new Monday)
+        let weeklyTaskDone = parsed.weeklyTaskDone || false;
+        let weeklyTaskCompletedAt = parsed.weeklyTaskCompletedAt;
+
+        if (weeklyTaskCompletedAt) {
+          const currentWeekStart = getWeekStartMonday();
+          const completedWeekStart = getWeekStartMonday(new Date(weeklyTaskCompletedAt));
+          if (completedWeekStart !== currentWeekStart) {
+            // New week - reset checkbox
+            weeklyTaskDone = false;
+            weeklyTaskCompletedAt = undefined;
+          }
+        }
+
         // If description has a date, use it (source of truth)
         if (descDate) {
           return {
             ...parsed,
             targetDate: descDate,
+            weeklyTaskDone,
+            weeklyTaskCompletedAt,
           };
         }
         return {
           ...parsed,
           targetDate: new Date(parsed.targetDate),
+          weeklyTaskDone,
+          weeklyTaskCompletedAt,
         };
       } catch {
         // Fall through to default
@@ -243,6 +279,14 @@ export function DaysTillCounterTile({
 
   const handleLabelChange = (label: string) => {
     setConfig((prev) => ({ ...prev, eventLabel: label }));
+  };
+
+  const handleWeeklyTaskToggle = () => {
+    setConfig((prev) => ({
+      ...prev,
+      weeklyTaskDone: !prev.weeklyTaskDone,
+      weeklyTaskCompletedAt: !prev.weeklyTaskDone ? new Date().toISOString() : undefined,
+    }));
   };
 
   const baseClasses = `
@@ -366,6 +410,23 @@ export function DaysTillCounterTile({
             }`}
           />
         )}
+
+        {/* Weekly Task Checkbox - bottom right */}
+        <button
+          onClick={handleWeeklyTaskToggle}
+          className="absolute bottom-2 right-2 p-1.5 rounded-md hover:bg-accent transition-colors"
+          aria-label={config.weeklyTaskDone ? 'Weekly task done' : 'Mark weekly task done'}
+        >
+          <div
+            className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+              config.weeklyTaskDone
+                ? 'bg-green-500 border-green-500'
+                : 'border-muted-foreground/50 hover:border-muted-foreground'
+            }`}
+          >
+            {config.weeklyTaskDone && <Check className="w-3.5 h-3.5 text-white" />}
+          </div>
+        </button>
       </div>
     </WarningBorderTrail>
   );

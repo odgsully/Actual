@@ -6,12 +6,26 @@
  * Or via npm: npm run sync-tiles
  *
  * Requirements:
- * - NOTION_API_KEY environment variable
+ * - NOTION_API_KEY in .env.local (auto-loaded)
  */
 
-import { writeFileSync } from 'fs';
+import { config } from 'dotenv';
+import { writeFileSync, existsSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
+
+// Load .env.local before anything else (follows symlink if present)
+const __dirnameInit = dirname(fileURLToPath(import.meta.url));
+const envPaths = [
+  resolve(__dirnameInit, '../.env.local'),
+  resolve(__dirnameInit, '../../../.env.local'), // monorepo root
+];
+for (const envPath of envPaths) {
+  if (existsSync(envPath)) {
+    config({ path: envPath });
+    break;
+  }
+}
 
 const TILES_DATABASE_ID = '28fcf08f-4499-8017-b530-ff06c9f64f97';
 const NOTION_API_VERSION = '2022-06-28';
@@ -161,6 +175,12 @@ function generateTilesFile(tiles: Tile[]): string {
 import type { Tile } from '@/lib/types/tiles';
 
 export const STATIC_TILES: Tile[] = ${JSON.stringify(tiles, null, 2)};
+
+/**
+ * Local-only tiles that don't come from Notion.
+ * Add tiles here that should always appear regardless of Notion sync.
+ */
+export const LOCAL_TILES: Tile[] = [];
 
 export default STATIC_TILES;
 

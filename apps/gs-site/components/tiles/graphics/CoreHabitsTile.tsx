@@ -39,7 +39,7 @@ export function CoreHabitsTile({ tile, className }: CoreHabitsTileProps) {
 
   // Filter to just our 3 core habits
   const coreStreaks = CORE_HABITS.map((habit) => {
-    const streak = allStreaks?.find((s) => s.habitName === habit.name);
+    const streak = allStreaks?.find((s) => s.name === habit.name);
     return {
       ...habit,
       currentStreak: streak?.currentStreak ?? 0,
