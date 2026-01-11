@@ -1,5 +1,15 @@
 #!/bin/bash
 
+# ============================================================================
+# LEGACY SCRIPT - DISCONTINUED (January 2025)
+# ============================================================================
+# This deployment script was used for Hetzner/PM2 deployment.
+# Production now runs on Vercel. This script is kept for historical reference.
+#
+# Current deployment: vercel --prod
+# See docs/deployment/VERCEL_DEPLOYMENT_STATUS.md for current procedures.
+# ============================================================================
+
 # Phase 4: Server Deployment Script for Wabbit
 # This script deploys the verified working version to the production server
 

@@ -1,5 +1,15 @@
 #!/bin/bash
 
+# ============================================================================
+# LEGACY SCRIPT - DISCONTINUED (January 2025)
+# ============================================================================
+# This deployment script was used for Hetzner/PM2 deployment.
+# Production now runs on Vercel. This script is kept for historical reference.
+#
+# Current deployment: vercel --prod
+# See docs/deployment/VERCEL_DEPLOYMENT_STATUS.md for current procedures.
+# ============================================================================
+
 # Wabbit Server Deployment Script - Run this ON THE SERVER
 # Copy this file to the server and run it as root
 

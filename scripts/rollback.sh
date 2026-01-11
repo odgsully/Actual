@@ -1,5 +1,18 @@
 #!/bin/bash
 
+# ============================================================================
+# LEGACY SCRIPT - DISCONTINUED (January 2025)
+# ============================================================================
+# This rollback script was used for Hetzner/PM2 deployment.
+# Production now runs on Vercel. This script is kept for historical reference.
+#
+# Current rollback procedure:
+#   vercel rollback [deployment-url]
+# Or via Vercel Dashboard: Deployments → Previous → Promote to Production
+#
+# See docs/RUNBOOK.md for current rollback procedures.
+# ============================================================================
+
 # GS Personal App Suite - Rollback Script
 # This script rolls back to a previous deployment on Hetzner server
 #

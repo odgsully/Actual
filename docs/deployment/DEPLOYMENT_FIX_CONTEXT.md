@@ -1,3 +1,11 @@
+> ## Historical Document (September 2024)
+>
+> **Note (January 2025)**: This document describes a specific deployment fix from September 2024 when the project was deployed on Hetzner. Production has since migrated to **Vercel**. This document is kept for historical reference to understand the repository's history.
+>
+> Current deployment: See `docs/deployment/VERCEL_DEPLOYMENT_STATUS.md`
+
+---
+
 Comprehensive Wabbit Deployment Context & Resolution Plan
 
   📋 Current Situation Summary

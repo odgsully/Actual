@@ -19,8 +19,8 @@ This is a **monorepo** containing a suite of real estate and property management
 ├─────────────────────────────────────────────────────────────────┤
 │                     SHARED INFRASTRUCTURE                       │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
-│  │   Supabase   │  │   Vercel     │  │   Hetzner    │          │
-│  │  (Database)  │  │  (Hosting)   │  │  (Backup)    │          │
+│  │   Supabase   │  │   Vercel     │  │  Cloudflare  │          │
+│  │  (Database)  │  │  (Hosting)   │  │    (DNS)     │          │
 │  └──────────────┘  └──────────────┘  └──────────────┘          │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -143,7 +143,7 @@ This is a **monorepo** containing a suite of real estate and property management
 
 | App | Development Port | Production |
 |-----|-----------------|------------|
-| gsrealty-client | 3004 | Vercel/Hetzner |
+| gsrealty-client | 3004 | Vercel |
 | wabbit-re | 3000 | Vercel |
 | wabbit | 3002 | Vercel |
 | gs-site | 3003 | Vercel |

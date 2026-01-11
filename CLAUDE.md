@@ -62,11 +62,19 @@ For detailed safety protocols, database ownership, and emergency procedures, see
 - `npm run db:update-demo` - Update demo account password
 - `npm run db:seed-data` - Seed sample property data
 
-### Deployment
-- PM2 process management: `pm2 start ecosystem.config.js`
-- Deploy script location: `deployment/deploy.sh`
-- Nginx config: `deployment/nginx.conf`
-- Server setup: `deployment/server-setup.sh`
+### Deployment (Vercel - Current)
+- Deploy to production: `vercel --prod`
+- Vercel project: `wabbit-property-scraping` (odgsullys-projects)
+- Vercel config: `vercel.json` (root and per-app)
+- Environment variables: Configured in Vercel Dashboard
+- See `docs/deployment/VERCEL_DEPLOYMENT_STATUS.md` for current status
+
+### Legacy Deployment Files (Hetzner - Discontinued)
+> **Note**: Hetzner/PM2/Nginx deployment was discontinued in favor of Vercel. These files are kept for reference only.
+- `ecosystem.config.js` - Legacy PM2 config
+- `deployment/nginx.conf` - Legacy Nginx config
+- `deployment/deploy.sh` - Legacy deploy script
+- `deployment/DEPLOYMENT_GUIDE.md` - Legacy Hetzner guide
 
 ## Architecture Overview
 
@@ -78,8 +86,8 @@ For detailed safety protocols, database ownership, and emergency procedures, see
 - **AI**: OpenAI API for location intelligence
 - **State Management**: Zustand for client state, React Query for server state
 - **Forms**: React Hook Form with Zod validation
-- **Process Management**: PM2 for production
-- **Server**: Nginx reverse proxy with Let's Encrypt SSL
+- **Hosting**: Vercel (Pro Plan) with automatic SSL
+- **Build**: Turborepo for monorepo builds
 
 ### Project Structure
 ```
@@ -175,12 +183,13 @@ The platform processes:
 - Third-party platform connections
 
 ### Critical Deployment Notes
-- **Production Server**: Hetzner CPX11 (5.78.100.116)
+- **Production Platform**: Vercel (Pro Plan - odgsullys-projects)
+- **Production URL**: https://wabbit-property-scraping.vercel.app
 - **Domain**: wabbit-rank.ai with Cloudflare DNS
-- **SSL**: Let's Encrypt via Certbot
-- **Process Manager**: PM2 with ecosystem.config.js
-- **Monitoring**: Hetzner metrics + PM2 monitoring
-- **Backups**: Weekly Hetzner snapshots
+- **SSL**: Automatic via Vercel
+- **Cron Jobs**: Configured in `vercel.json` (requires Pro plan)
+- **Monitoring**: Vercel Dashboard → Functions → Logs
+- **Env Vars**: Managed in Vercel Dashboard (not in repo)
 
 ### Known Issues & Fixes
 - **September 5, 2024**: Restored from `clean-deployment` branch corruption
