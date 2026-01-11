@@ -6,6 +6,8 @@ import {
   Apple,
   Flame,
   TrendingUp,
+  TrendingDown,
+  Minus,
   Calendar,
   Settings,
   Check,
@@ -15,6 +17,7 @@ import {
   Copy,
   Upload,
   CheckCircle2,
+  BarChart3,
 } from 'lucide-react';
 import {
   useMyFitnessPalStats,
@@ -30,7 +33,7 @@ interface MyFitnessPalModalProps {
   onClose: () => void;
 }
 
-type TabType = 'today' | 'week' | 'settings';
+type TabType = 'today' | 'week' | 'month' | 'settings';
 
 /**
  * MyFitnessPalModal - Detailed MFP data view and settings
@@ -60,7 +63,12 @@ export function MyFitnessPalModal({ isOpen, onClose }: MyFitnessPalModalProps) {
 
   const { data: weekData, isLoading: weekLoading } = useMyFitnessPalData(
     'week',
-    isOpen && activeTab === 'week'
+    isOpen && (activeTab === 'week' || activeTab === 'today')
+  );
+
+  const { data: monthData, isLoading: monthLoading } = useMyFitnessPalData(
+    'month',
+    isOpen && activeTab === 'month'
   );
 
   const connectMutation = useConnectMFP();
@@ -176,6 +184,7 @@ export function MyFitnessPalModal({ isOpen, onClose }: MyFitnessPalModalProps) {
   const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
     { id: 'today', label: 'Today', icon: <Calendar className="w-4 h-4" /> },
     { id: 'week', label: 'Week', icon: <TrendingUp className="w-4 h-4" /> },
+    { id: 'month', label: 'Month', icon: <TrendingUp className="w-4 h-4" /> },
     { id: 'settings', label: 'Settings', icon: <Settings className="w-4 h-4" /> },
   ];
 
@@ -242,6 +251,11 @@ export function MyFitnessPalModal({ isOpen, onClose }: MyFitnessPalModalProps) {
           {/* Week Tab */}
           {activeTab === 'week' && isConnected && !needsReconnect && (
             <WeekTab data={weekData} isLoading={weekLoading} />
+          )}
+
+          {/* Month Tab */}
+          {activeTab === 'month' && isConnected && !needsReconnect && (
+            <MonthTab data={monthData} isLoading={monthLoading} />
           )}
 
           {/* Settings Tab */}
@@ -613,7 +627,7 @@ function TodayTab({
   );
 }
 
-// Week Tab Component
+// Week Tab Component - Shows last 7 logged days (not calendar days)
 function WeekTab({
   data,
   isLoading,
@@ -630,56 +644,112 @@ function WeekTab({
   }
 
   const foodData = data?.food || [];
+  const extendedData = data as any; // Access rollingAverages
+  const rollingAverages = extendedData?.rollingAverages;
 
-  if (foodData.length === 0) {
+  // Filter to days with actual data and take the last 7
+  const loggedDays = foodData.filter((d) => d.calories > 0);
+
+  if (loggedDays.length === 0) {
     return (
       <div className="text-center py-12">
         <TrendingUp className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
         <h3 className="text-lg font-medium mb-2">No data this week</h3>
         <p className="text-muted-foreground">
-          Log your meals to track your weekly progress.
+          Upload your MFP export to see weekly progress.
         </p>
       </div>
     );
   }
 
-  // Sort by date ascending for display
-  const sortedData = [...foodData].sort(
-    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-  );
+  // Sort by date ascending and take last 7 logged days
+  const sortedData = [...loggedDays]
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .slice(-7);
 
   const maxCalories = Math.max(...sortedData.map((d) => d.calories), 1);
 
   return (
     <div className="space-y-6">
-      {/* Summary */}
-      {data?.summary && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="p-4 bg-muted/30 rounded-lg text-center">
-            <p className="text-xs text-muted-foreground mb-1">Avg Calories</p>
-            <p className="text-xl font-bold">{data.summary.avgCalories}</p>
-          </div>
-          <div className="p-4 bg-muted/30 rounded-lg text-center">
-            <p className="text-xs text-muted-foreground mb-1">Avg Protein</p>
-            <p className="text-xl font-bold">{data.summary.avgProtein}g</p>
-          </div>
-          <div className="p-4 bg-muted/30 rounded-lg text-center">
-            <p className="text-xs text-muted-foreground mb-1">Days Logged</p>
-            <p className="text-xl font-bold">{data.summary.daysLogged}</p>
-          </div>
-          <div className="p-4 bg-muted/30 rounded-lg text-center">
-            <p className="text-xs text-muted-foreground mb-1">Streak</p>
-            <p className="text-xl font-bold flex items-center justify-center gap-1">
-              <Flame className="w-4 h-4 text-orange-500" />
-              {data.summary.currentStreak}
-            </p>
-          </div>
-        </div>
-      )}
+      {/* Summary with rolling averages */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {rollingAverages ? (
+          <>
+            <div className="p-4 bg-muted/30 rounded-lg text-center">
+              <p className="text-xs text-muted-foreground mb-1">7-Day Avg</p>
+              <p className="text-xl font-bold">{rollingAverages.last7Days.avgCalories}</p>
+              <p className="text-[10px] text-muted-foreground">cal/day</p>
+            </div>
+            <div className="p-4 bg-muted/30 rounded-lg text-center">
+              <p className="text-xs text-muted-foreground mb-1">Avg Protein</p>
+              <p className="text-xl font-bold">{rollingAverages.last7Days.avgProtein}g</p>
+              <p className="text-[10px] text-muted-foreground">per day</p>
+            </div>
+            <div className="p-4 bg-muted/30 rounded-lg text-center">
+              <p className="text-xs text-muted-foreground mb-1">Week Change</p>
+              <div className="flex items-center justify-center gap-1">
+                {rollingAverages.weekOverWeekChange > 0 ? (
+                  <TrendingUp className="w-4 h-4 text-green-500" />
+                ) : rollingAverages.weekOverWeekChange < 0 ? (
+                  <TrendingDown className="w-4 h-4 text-red-500" />
+                ) : (
+                  <Minus className="w-4 h-4 text-muted-foreground" />
+                )}
+                <p
+                  className={`text-xl font-bold ${
+                    rollingAverages.weekOverWeekChange > 0
+                      ? 'text-green-500'
+                      : rollingAverages.weekOverWeekChange < 0
+                      ? 'text-red-500'
+                      : ''
+                  }`}
+                >
+                  {rollingAverages.weekOverWeekChange > 0 ? '+' : ''}
+                  {rollingAverages.weekOverWeekChange}%
+                </p>
+              </div>
+            </div>
+            <div className="p-4 bg-muted/30 rounded-lg text-center">
+              <p className="text-xs text-muted-foreground mb-1">Streak</p>
+              <p className="text-xl font-bold flex items-center justify-center gap-1">
+                <Flame className="w-4 h-4 text-orange-500" />
+                {data?.summary?.currentStreak || 0}
+              </p>
+            </div>
+          </>
+        ) : data?.summary ? (
+          <>
+            <div className="p-4 bg-muted/30 rounded-lg text-center">
+              <p className="text-xs text-muted-foreground mb-1">Avg Calories</p>
+              <p className="text-xl font-bold">{data.summary.avgCalories}</p>
+            </div>
+            <div className="p-4 bg-muted/30 rounded-lg text-center">
+              <p className="text-xs text-muted-foreground mb-1">Avg Protein</p>
+              <p className="text-xl font-bold">{data.summary.avgProtein}g</p>
+            </div>
+            <div className="p-4 bg-muted/30 rounded-lg text-center">
+              <p className="text-xs text-muted-foreground mb-1">Days Logged</p>
+              <p className="text-xl font-bold">{data.summary.daysLogged}</p>
+            </div>
+            <div className="p-4 bg-muted/30 rounded-lg text-center">
+              <p className="text-xs text-muted-foreground mb-1">Streak</p>
+              <p className="text-xl font-bold flex items-center justify-center gap-1">
+                <Flame className="w-4 h-4 text-orange-500" />
+                {data.summary.currentStreak}
+              </p>
+            </div>
+          </>
+        ) : null}
+      </div>
 
-      {/* Simple bar chart */}
+      {/* Daily breakdown bar chart */}
       <div className="space-y-2">
-        <h3 className="font-medium">Daily Calories</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="font-medium">Last {sortedData.length} Logged Days</h3>
+          <span className="text-xs text-muted-foreground">
+            {sortedData.length < 7 ? '(showing all logged days)' : ''}
+          </span>
+        </div>
         {sortedData.map((day) => {
           const percent = (day.calories / maxCalories) * 100;
           const date = new Date(day.date);
@@ -705,9 +775,222 @@ function WeekTab({
                   </span>
                 </div>
               </div>
+              <div className="w-12 text-xs text-muted-foreground text-right">
+                {day.protein_g}g P
+              </div>
             </div>
           );
         })}
+      </div>
+
+      {/* Macro breakdown for the week */}
+      {rollingAverages && (
+        <div className="p-4 bg-muted/30 rounded-lg">
+          <h3 className="font-medium mb-3">7-Day Macro Averages</h3>
+          <div className="grid grid-cols-4 gap-4 text-center">
+            <div>
+              <p className="text-lg font-bold text-orange-500">
+                {rollingAverages.last7Days.avgCalories}
+              </p>
+              <p className="text-xs text-muted-foreground">Calories</p>
+            </div>
+            <div>
+              <p className="text-lg font-bold text-red-500">
+                {rollingAverages.last7Days.avgProtein}g
+              </p>
+              <p className="text-xs text-muted-foreground">Protein</p>
+            </div>
+            <div>
+              <p className="text-lg font-bold text-blue-500">
+                {rollingAverages.last7Days.avgCarbs}g
+              </p>
+              <p className="text-xs text-muted-foreground">Carbs</p>
+            </div>
+            <div>
+              <p className="text-lg font-bold text-yellow-500">
+                {rollingAverages.last7Days.avgFat}g
+              </p>
+              <p className="text-xs text-muted-foreground">Fat</p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Month Tab Component - Shows monthly comparison and rolling averages
+function MonthTab({
+  data,
+  isLoading,
+}: {
+  data: ReturnType<typeof useMyFitnessPalData>['data'];
+  isLoading: boolean;
+}) {
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-48">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  const foodData = data?.food || [];
+  const extendedData = data as any; // Access rollingAverages and weeklyComparison
+  const rollingAverages = extendedData?.rollingAverages;
+  const weeklyComparison = extendedData?.weeklyComparison || [];
+
+  if (foodData.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <BarChart3 className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+        <h3 className="text-lg font-medium mb-2">No data this month</h3>
+        <p className="text-muted-foreground">
+          Upload your MFP export to see monthly trends.
+        </p>
+      </div>
+    );
+  }
+
+  // Filter to days with actual data
+  const loggedDays = foodData.filter((d) => d.calories > 0);
+
+  return (
+    <div className="space-y-6">
+      {/* Rolling Averages Comparison */}
+      {rollingAverages && (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="p-4 bg-muted/30 rounded-lg text-center">
+            <p className="text-xs text-muted-foreground mb-1">Last 7 Days</p>
+            <p className="text-2xl font-bold">{rollingAverages.last7Days.avgCalories}</p>
+            <p className="text-xs text-muted-foreground">cal/day avg</p>
+          </div>
+          <div className="p-4 bg-muted/30 rounded-lg text-center">
+            <p className="text-xs text-muted-foreground mb-1">Last 30 Days</p>
+            <p className="text-2xl font-bold">{rollingAverages.last30Days.avgCalories}</p>
+            <p className="text-xs text-muted-foreground">cal/day avg</p>
+          </div>
+          <div className="p-4 bg-muted/30 rounded-lg text-center">
+            <p className="text-xs text-muted-foreground mb-1">Week Change</p>
+            <div className="flex items-center justify-center gap-1">
+              {rollingAverages.weekOverWeekChange > 0 ? (
+                <TrendingUp className="w-5 h-5 text-green-500" />
+              ) : rollingAverages.weekOverWeekChange < 0 ? (
+                <TrendingDown className="w-5 h-5 text-red-500" />
+              ) : (
+                <Minus className="w-5 h-5 text-muted-foreground" />
+              )}
+              <p
+                className={`text-2xl font-bold ${
+                  rollingAverages.weekOverWeekChange > 0
+                    ? 'text-green-500'
+                    : rollingAverages.weekOverWeekChange < 0
+                    ? 'text-red-500'
+                    : ''
+                }`}
+              >
+                {rollingAverages.weekOverWeekChange > 0 ? '+' : ''}
+                {rollingAverages.weekOverWeekChange}%
+              </p>
+            </div>
+            <p className="text-xs text-muted-foreground">vs prev week</p>
+          </div>
+        </div>
+      )}
+
+      {/* Macro Breakdown (Last 30 Days) */}
+      {rollingAverages && (
+        <div className="p-4 bg-muted/30 rounded-lg">
+          <h3 className="font-medium mb-3">30-Day Macro Averages</h3>
+          <div className="grid grid-cols-4 gap-4 text-center">
+            <div>
+              <p className="text-lg font-bold text-orange-500">
+                {rollingAverages.last30Days.avgCalories}
+              </p>
+              <p className="text-xs text-muted-foreground">Calories</p>
+            </div>
+            <div>
+              <p className="text-lg font-bold text-red-500">
+                {rollingAverages.last30Days.avgProtein}g
+              </p>
+              <p className="text-xs text-muted-foreground">Protein</p>
+            </div>
+            <div>
+              <p className="text-lg font-bold text-blue-500">
+                {rollingAverages.last30Days.avgCarbs}g
+              </p>
+              <p className="text-xs text-muted-foreground">Carbs</p>
+            </div>
+            <div>
+              <p className="text-lg font-bold text-yellow-500">
+                {rollingAverages.last30Days.avgFat}g
+              </p>
+              <p className="text-xs text-muted-foreground">Fat</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Weekly Comparison Chart */}
+      {weeklyComparison.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="font-medium">Weekly Comparison</h3>
+          <p className="text-xs text-muted-foreground mb-3">Average calories per day by week</p>
+          {weeklyComparison.slice(0, 4).reverse().map((week: any, idx: number) => {
+            const maxCal = Math.max(...weeklyComparison.map((w: any) => w.avgCalories), 1);
+            const percent = (week.avgCalories / maxCal) * 100;
+            const weekStart = new Date(week.weekStart);
+            const weekLabel = weekStart.toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+            });
+
+            return (
+              <div key={week.weekStart} className="flex items-center gap-3">
+                <div className="w-20 text-xs text-muted-foreground">
+                  <div>{weekLabel}</div>
+                  <div className="text-[10px]">{week.daysLogged}d logged</div>
+                </div>
+                <div className="flex-1 h-8 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-primary transition-all duration-300 flex items-center justify-end pr-2"
+                    style={{ width: `${percent}%` }}
+                  >
+                    <span className="text-xs font-medium text-primary-foreground">
+                      {week.avgCalories}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Stats Summary */}
+      <div className="p-4 bg-muted/30 rounded-lg">
+        <h3 className="font-medium mb-2">Monthly Summary</h3>
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <span className="text-muted-foreground">Days Logged:</span>{' '}
+            <span className="font-medium">{loggedDays.length}</span>
+          </div>
+          {data?.summary && (
+            <>
+              <div className="flex items-center gap-1">
+                <span className="text-muted-foreground">Streak:</span>{' '}
+                <Flame className="w-3 h-3 text-orange-500" />
+                <span className="font-medium">{data.summary.currentStreak} days</span>
+              </div>
+              {data.summary.latestWeight && (
+                <div>
+                  <span className="text-muted-foreground">Latest Weight:</span>{' '}
+                  <span className="font-medium">{data.summary.latestWeight} lbs</span>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

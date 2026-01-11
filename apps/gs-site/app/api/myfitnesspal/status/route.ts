@@ -7,6 +7,9 @@ import {
   calculateStreak,
   getWeekAverageCalories,
   getLatestWeight,
+  getRollingAverages,
+  getDataCoverage,
+  getLastNLoggedDays,
 } from '@/lib/myfitnesspal/client';
 import type { MFPStatusResponse } from '@/lib/myfitnesspal/types';
 
@@ -58,11 +61,13 @@ export async function GET(): Promise<NextResponse<MFPStatusResponse>> {
       }
     }
 
-    // Calculate streak and week average
-    const [streak, weekAvgCalories, latestWeight] = await Promise.all([
+    // Calculate streak, averages, and coverage data
+    const [streak, weekAvgCalories, latestWeight, rollingAverages, dataCoverage] = await Promise.all([
       calculateStreak(),
       getWeekAverageCalories(),
       getLatestWeight(),
+      getRollingAverages(),
+      getDataCoverage(),
     ]);
 
     // Determine sync status type
@@ -71,6 +76,9 @@ export async function GET(): Promise<NextResponse<MFPStatusResponse>> {
       lastSyncStatus = 'session_expired';
     }
 
+    // Check if we have ANY historical data (for better tile display)
+    const hasHistoricalData = dataCoverage.totalDaysLogged > 0;
+
     return NextResponse.json(
       {
         connected: true,
@@ -78,6 +86,7 @@ export async function GET(): Promise<NextResponse<MFPStatusResponse>> {
         lastSyncAt: syncStatus?.last_sync_at ?? undefined,
         lastSyncStatus,
         stats: {
+          // Today/yesterday data
           todayCalories: displayEntry?.calories ?? null,
           todayGoal: displayEntry?.calorie_goal ?? 2000, // Default goal if not set
           todayProtein: displayEntry?.protein_g ? Number(displayEntry.protein_g) : null,
@@ -85,6 +94,20 @@ export async function GET(): Promise<NextResponse<MFPStatusResponse>> {
           streak,
           isYesterdayData,
           latestWeight: latestWeight.weightLbs,
+
+          // NEW: Rolling averages for weekly workflow
+          last7DaysAvg: rollingAverages.last7Days.avgCalories,
+          last7DaysProtein: rollingAverages.last7Days.avgProtein,
+          last7DaysCount: rollingAverages.last7Days.count,
+          last30DaysAvg: rollingAverages.last30Days.avgCalories,
+          weekOverWeekChange: rollingAverages.weekOverWeekChange,
+          monthOverMonthChange: rollingAverages.monthOverMonthChange,
+
+          // NEW: Data coverage info
+          lastLoggedDate: dataCoverage.latestDate,
+          daysSinceLastLog: dataCoverage.daysSinceLastLog,
+          totalDaysLogged: dataCoverage.totalDaysLogged,
+          hasHistoricalData,
         },
       },
       {

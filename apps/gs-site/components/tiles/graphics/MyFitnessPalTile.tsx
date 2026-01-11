@@ -7,6 +7,10 @@ import {
   RefreshCw,
   Flame,
   Link as LinkIcon,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  Calendar,
 } from 'lucide-react';
 import { useMyFitnessPalStats } from '@/hooks/useMyFitnessPalStats';
 import { WarningBorderTrail } from '../WarningBorderTrail';
@@ -42,6 +46,14 @@ export function MyFitnessPalTile({ tile, className }: MyFitnessPalTileProps) {
     streak,
     needsReconnect,
     isYesterdayData,
+    // New rolling average fields
+    last7DaysAvg,
+    last7DaysProtein,
+    last7DaysCount,
+    weekOverWeekChange,
+    lastLoggedDate,
+    daysSinceLastLog,
+    hasHistoricalData,
   } = useMyFitnessPalStats();
 
   const baseClasses = `
@@ -162,7 +174,7 @@ export function MyFitnessPalTile({ tile, className }: MyFitnessPalTileProps) {
 
             {!isLoading && !error && isConnected && !needsReconnect && (
               <>
-                {/* Calorie display */}
+                {/* Priority 1: Show today/yesterday data if available */}
                 {todayCalories !== null ? (
                   <>
                     <div className="flex items-baseline gap-1 mb-1">
@@ -197,10 +209,64 @@ export function MyFitnessPalTile({ tile, className }: MyFitnessPalTileProps) {
                       </span>
                     </div>
                   </>
+                ) : hasHistoricalData ? (
+                  /* Priority 2: Show rolling averages if we have ANY historical data */
+                  <>
+                    <div className="flex items-baseline gap-1 mb-1">
+                      <span className="text-lg font-bold text-foreground">
+                        {last7DaysAvg.toLocaleString()}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        cal/day avg
+                      </span>
+                    </div>
+
+                    {/* Week-over-week change */}
+                    <div className="flex items-center gap-1 mb-1.5">
+                      {weekOverWeekChange > 0 ? (
+                        <TrendingUp className="w-3 h-3 text-green-500" />
+                      ) : weekOverWeekChange < 0 ? (
+                        <TrendingDown className="w-3 h-3 text-red-500" />
+                      ) : (
+                        <Minus className="w-3 h-3 text-muted-foreground" />
+                      )}
+                      <span
+                        className={`text-xs ${
+                          weekOverWeekChange > 0
+                            ? 'text-green-500'
+                            : weekOverWeekChange < 0
+                            ? 'text-red-500'
+                            : 'text-muted-foreground'
+                        }`}
+                      >
+                        {weekOverWeekChange > 0 ? '+' : ''}
+                        {weekOverWeekChange}% vs prev week
+                      </span>
+                    </div>
+
+                    {/* Last logged + streak */}
+                    <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        <span>
+                          {daysSinceLastLog === 0
+                            ? 'Today'
+                            : daysSinceLastLog === 1
+                            ? 'Yesterday'
+                            : `${daysSinceLastLog}d ago`}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Flame className="w-3 h-3 text-orange-500" />
+                        <span>{streak}d</span>
+                      </div>
+                    </div>
+                  </>
                 ) : (
+                  /* Priority 3: No data at all - show upload prompt */
                   <div className="text-center">
-                    <p className="text-sm text-muted-foreground">No data today</p>
-                    <p className="text-xs text-muted-foreground">Log food in MFP</p>
+                    <p className="text-sm text-muted-foreground">No data yet</p>
+                    <p className="text-xs text-primary">Click to upload MFP export</p>
                   </div>
                 )}
               </>

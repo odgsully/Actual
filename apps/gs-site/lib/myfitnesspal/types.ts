@@ -157,11 +157,28 @@ export interface MFPStatusResponse {
   lastSyncAt?: string;
   lastSyncStatus?: MFPSyncStatusType;
   stats?: {
+    // Today/yesterday data
     todayCalories: number | null;
     todayGoal: number | null;
     todayProtein: number | null;
     weekAvgCalories: number;
     streak: number; // consecutive days logged
+    isYesterdayData?: boolean;
+    latestWeight?: number | null;
+
+    // Rolling averages for weekly workflow
+    last7DaysAvg: number;
+    last7DaysProtein: number;
+    last7DaysCount: number;
+    last30DaysAvg: number;
+    weekOverWeekChange: number; // percentage
+    monthOverMonthChange: number; // percentage
+
+    // Data coverage info
+    lastLoggedDate: string | null;
+    daysSinceLastLog: number;
+    totalDaysLogged: number;
+    hasHistoricalData: boolean;
   };
   error?: string;
 }

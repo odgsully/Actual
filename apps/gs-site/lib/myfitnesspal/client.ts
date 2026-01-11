@@ -687,3 +687,244 @@ export async function getLatestWeight(
 
   return { weightLbs: data.weight_lbs, date: data.date };
 }
+
+/**
+ * Get the last N days that have logged data (not calendar days)
+ * This returns actual logged days, skipping gaps
+ */
+export async function getLastNLoggedDays(
+  n: number = 7,
+  userId: string = DEFAULT_USER_ID
+): Promise<MFPFoodDiaryRow[]> {
+  const supabase = getSupabaseAdmin();
+
+  const { data: allData, error } = await supabase
+    .from('mfp_food_diary')
+    .select('*')
+    .order('date', { ascending: false });
+
+  if (error) {
+    console.error('[MFP] Error fetching last N logged days:', error);
+    return [];
+  }
+
+  // Filter to user's data with actual calories logged, then take first N
+  return (allData || [])
+    .filter(row => row.user_id === userId && row.calories && row.calories > 0)
+    .slice(0, n);
+}
+
+/**
+ * Get rolling averages for comparison periods
+ * Returns averages for last 7 logged days, last 30 logged days, and previous 30 logged days
+ */
+export async function getRollingAverages(
+  userId: string = DEFAULT_USER_ID
+): Promise<{
+  last7Days: { avgCalories: number; avgProtein: number; avgCarbs: number; avgFat: number; count: number };
+  last30Days: { avgCalories: number; avgProtein: number; avgCarbs: number; avgFat: number; count: number };
+  previous30Days: { avgCalories: number; avgProtein: number; avgCarbs: number; avgFat: number; count: number };
+  weekOverWeekChange: number;
+  monthOverMonthChange: number;
+}> {
+  const supabase = getSupabaseAdmin();
+
+  const { data: allData, error } = await supabase
+    .from('mfp_food_diary')
+    .select('*')
+    .order('date', { ascending: false });
+
+  if (error) {
+    console.error('[MFP] Error fetching rolling averages:', error);
+    return {
+      last7Days: { avgCalories: 0, avgProtein: 0, avgCarbs: 0, avgFat: 0, count: 0 },
+      last30Days: { avgCalories: 0, avgProtein: 0, avgCarbs: 0, avgFat: 0, count: 0 },
+      previous30Days: { avgCalories: 0, avgProtein: 0, avgCarbs: 0, avgFat: 0, count: 0 },
+      weekOverWeekChange: 0,
+      monthOverMonthChange: 0,
+    };
+  }
+
+  // Filter to user's data with actual calories
+  const loggedDays = (allData || [])
+    .filter(row => row.user_id === userId && row.calories && row.calories > 0);
+
+  // Calculate averages for different periods
+  const calculateAvg = (rows: typeof loggedDays) => {
+    if (rows.length === 0) {
+      return { avgCalories: 0, avgProtein: 0, avgCarbs: 0, avgFat: 0, count: 0 };
+    }
+    const totals = rows.reduce(
+      (acc, row) => ({
+        calories: acc.calories + (row.calories || 0),
+        protein: acc.protein + (Number(row.protein_g) || 0),
+        carbs: acc.carbs + (Number(row.carbs_g) || 0),
+        fat: acc.fat + (Number(row.fat_g) || 0),
+      }),
+      { calories: 0, protein: 0, carbs: 0, fat: 0 }
+    );
+    return {
+      avgCalories: Math.round(totals.calories / rows.length),
+      avgProtein: Math.round(totals.protein / rows.length),
+      avgCarbs: Math.round(totals.carbs / rows.length),
+      avgFat: Math.round(totals.fat / rows.length),
+      count: rows.length,
+    };
+  };
+
+  // Last 7 logged days
+  const last7 = loggedDays.slice(0, 7);
+  const last7Stats = calculateAvg(last7);
+
+  // Last 30 logged days
+  const last30 = loggedDays.slice(0, 30);
+  const last30Stats = calculateAvg(last30);
+
+  // Previous 30 logged days (days 31-60)
+  const previous30 = loggedDays.slice(30, 60);
+  const previous30Stats = calculateAvg(previous30);
+
+  // Week-over-week: compare last 7 to previous 7 (days 8-14)
+  const previous7 = loggedDays.slice(7, 14);
+  const previous7Stats = calculateAvg(previous7);
+  const weekOverWeekChange = previous7Stats.avgCalories > 0
+    ? Math.round(((last7Stats.avgCalories - previous7Stats.avgCalories) / previous7Stats.avgCalories) * 100)
+    : 0;
+
+  // Month-over-month
+  const monthOverMonthChange = previous30Stats.avgCalories > 0
+    ? Math.round(((last30Stats.avgCalories - previous30Stats.avgCalories) / previous30Stats.avgCalories) * 100)
+    : 0;
+
+  return {
+    last7Days: last7Stats,
+    last30Days: last30Stats,
+    previous30Days: previous30Stats,
+    weekOverWeekChange,
+    monthOverMonthChange,
+  };
+}
+
+/**
+ * Get data coverage information
+ * Returns earliest/latest dates and total days logged
+ */
+export async function getDataCoverage(
+  userId: string = DEFAULT_USER_ID
+): Promise<{
+  earliestDate: string | null;
+  latestDate: string | null;
+  totalDaysLogged: number;
+  daysSinceLastLog: number;
+}> {
+  const supabase = getSupabaseAdmin();
+
+  const { data: allData, error } = await supabase
+    .from('mfp_food_diary')
+    .select('date, calories, user_id')
+    .order('date', { ascending: false });
+
+  if (error) {
+    console.error('[MFP] Error fetching data coverage:', error);
+    return { earliestDate: null, latestDate: null, totalDaysLogged: 0, daysSinceLastLog: 0 };
+  }
+
+  // Filter to user's data with actual calories
+  const loggedDays = (allData || [])
+    .filter(row => row.user_id === userId && row.calories && row.calories > 0);
+
+  if (loggedDays.length === 0) {
+    return { earliestDate: null, latestDate: null, totalDaysLogged: 0, daysSinceLastLog: 0 };
+  }
+
+  const latestDate = loggedDays[0].date;
+  const earliestDate = loggedDays[loggedDays.length - 1].date;
+
+  // Calculate days since last log
+  const today = new Date();
+  const lastLogDate = new Date(latestDate);
+  const daysSinceLastLog = Math.floor((today.getTime() - lastLogDate.getTime()) / (1000 * 60 * 60 * 24));
+
+  return {
+    earliestDate,
+    latestDate,
+    totalDaysLogged: loggedDays.length,
+    daysSinceLastLog,
+  };
+}
+
+/**
+ * Get weekly comparison data for charts
+ * Returns data grouped by week for visualization
+ */
+export async function getWeeklyComparison(
+  weeksBack: number = 4,
+  userId: string = DEFAULT_USER_ID
+): Promise<{
+  weeks: Array<{
+    weekStart: string;
+    weekEnd: string;
+    avgCalories: number;
+    avgProtein: number;
+    daysLogged: number;
+  }>;
+}> {
+  const supabase = getSupabaseAdmin();
+
+  const { data: allData, error } = await supabase
+    .from('mfp_food_diary')
+    .select('*')
+    .order('date', { ascending: false });
+
+  if (error) {
+    console.error('[MFP] Error fetching weekly comparison:', error);
+    return { weeks: [] };
+  }
+
+  // Filter to user's data with actual calories
+  const loggedDays = (allData || [])
+    .filter(row => row.user_id === userId && row.calories && row.calories > 0);
+
+  // Group by week (Sunday-Saturday)
+  const weekMap = new Map<string, typeof loggedDays>();
+
+  for (const day of loggedDays) {
+    const date = new Date(day.date);
+    const dayOfWeek = date.getDay();
+    const weekStart = new Date(date);
+    weekStart.setDate(date.getDate() - dayOfWeek);
+    const weekKey = formatDate(weekStart);
+
+    if (!weekMap.has(weekKey)) {
+      weekMap.set(weekKey, []);
+    }
+    weekMap.get(weekKey)!.push(day);
+  }
+
+  // Convert to array and take last N weeks
+  const weeks = Array.from(weekMap.entries())
+    .sort((a, b) => b[0].localeCompare(a[0])) // Most recent first
+    .slice(0, weeksBack)
+    .map(([weekStart, days]) => {
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekEnd.getDate() + 6);
+
+      const totals = days.reduce(
+        (acc, day) => ({
+          calories: acc.calories + (day.calories || 0),
+          protein: acc.protein + (Number(day.protein_g) || 0),
+        }),
+        { calories: 0, protein: 0 }
+      );
+
+      return {
+        weekStart,
+        weekEnd: formatDate(weekEnd),
+        avgCalories: days.length > 0 ? Math.round(totals.calories / days.length) : 0,
+        avgProtein: days.length > 0 ? Math.round(totals.protein / days.length) : 0,
+        daysLogged: days.length,
+      };
+    });
+
+  return { weeks };
+}

@@ -114,11 +114,26 @@ export function useMyFitnessPalStats(options: UseMFPStatsOptions = {}) {
     todayGoal: data?.stats?.todayGoal ?? null,
     todayProtein: data?.stats?.todayProtein ?? null,
     caloriePercent,
-    isYesterdayData: (data?.stats as { isYesterdayData?: boolean })?.isYesterdayData ?? false,
+    isYesterdayData: data?.stats?.isYesterdayData ?? false,
 
     // Trends
     weekAvgCalories: data?.stats?.weekAvgCalories ?? null,
     streak: data?.stats?.streak ?? 0,
+
+    // NEW: Rolling averages for weekly workflow
+    last7DaysAvg: data?.stats?.last7DaysAvg ?? 0,
+    last7DaysProtein: data?.stats?.last7DaysProtein ?? 0,
+    last7DaysCount: data?.stats?.last7DaysCount ?? 0,
+    last30DaysAvg: data?.stats?.last30DaysAvg ?? 0,
+    weekOverWeekChange: data?.stats?.weekOverWeekChange ?? 0,
+    monthOverMonthChange: data?.stats?.monthOverMonthChange ?? 0,
+
+    // NEW: Data coverage info
+    lastLoggedDate: data?.stats?.lastLoggedDate ?? null,
+    daysSinceLastLog: data?.stats?.daysSinceLastLog ?? 0,
+    totalDaysLogged: data?.stats?.totalDaysLogged ?? 0,
+    hasHistoricalData: data?.stats?.hasHistoricalData ?? false,
+    latestWeight: data?.stats?.latestWeight ?? null,
 
     // Sync status
     lastSyncAt: data?.lastSyncAt ?? null,
