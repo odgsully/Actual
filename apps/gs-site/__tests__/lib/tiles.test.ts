@@ -56,9 +56,9 @@ describe('getTileCountsByCategory', () => {
   it('has ALL count equal to total tiles', () => {
     const counts = getTileCountsByCategory();
 
-    // CURRENT: Uses STATIC_TILES.length
-    // AFTER FIX #1: Should use LOCAL_TILES.length
-    expect(counts.ALL).toBe(STATIC_TILES.length);
+    // FIX #1 APPLIED: Now uses LOCAL_TILES.length
+    // STATIC_TILES is deprecated and empty
+    expect(counts.ALL).toBe(LOCAL_TILES.length);
   });
 
   it('has counts for each menu category', () => {
