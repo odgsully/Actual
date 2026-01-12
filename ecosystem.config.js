@@ -1,3 +1,13 @@
+// ============================================================================
+// LEGACY FILE - DISCONTINUED (January 2025)
+// ============================================================================
+// This PM2 configuration was used for Hetzner deployment.
+// Production now runs on Vercel. This file is kept for historical reference.
+//
+// Current deployment: Vercel (see vercel.json)
+// Deploy command: vercel --prod
+// ============================================================================
+
 // PM2 Configuration for GS Personal App Suite (Monorepo)
 // This file manages all Node.js processes on the server
 //

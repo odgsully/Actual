@@ -47,6 +47,11 @@ const HabitInsightsTile = dynamic(
   { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
 );
 
+const CoreHabitsTile = dynamic(
+  () => import('./graphics/CoreHabitsTile').then(mod => ({ default: mod.CoreHabitsTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
 const CaliTaskListTile = dynamic(
   () => import('./graphics/CaliTaskListTile').then(mod => ({ default: mod.CaliTaskListTile })),
   { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
@@ -111,6 +116,12 @@ const EmailsSentTile = dynamic(
   { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
 );
 
+// YouTube/Socials tiles (Phase 7)
+const SocialsStatsTile = dynamic(
+  () => import('./graphics/SocialsStatsTile').then(mod => ({ default: mod.SocialsStatsTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
 // WHOOP tiles (Phase 7)
 const WhoopInsightsTile = dynamic(
   () => import('./graphics/WhoopInsightsTile').then(mod => ({ default: mod.WhoopInsightsTile })),
@@ -119,6 +130,30 @@ const WhoopInsightsTile = dynamic(
 
 const HealthTrackerTile = dynamic(
   () => import('./graphics/HealthTrackerTile').then(mod => ({ default: mod.HealthTrackerTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
+// InBody tiles (Phase 7)
+const InBodyTile = dynamic(
+  () => import('./graphics/InBodyTile').then(mod => ({ default: mod.InBodyTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
+// MyFitnessPal tile
+const MyFitnessPalTile = dynamic(
+  () => import('./graphics/MyFitnessPalTile').then(mod => ({ default: mod.MyFitnessPalTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
+// Screen Time tile (Apple Screen Time screenshot processing)
+const ScreenTimeTile = dynamic(
+  () => import('./graphics/ScreenTimeTile').then(mod => ({ default: mod.ScreenTimeTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
+// Call Log tile (Verizon/iPhone call log screenshot processing)
+const CallLogTile = dynamic(
+  () => import('./graphics/CallLogTile').then(mod => ({ default: mod.CallLogTile })),
   { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
 );
 
@@ -182,6 +217,12 @@ const MorningFormTile = dynamic(
   { loading: () => <TileSkeleton variant="form" />, ssr: false }
 );
 
+// Evening Check-In tile (always visible, like Morning Form)
+const EveningCheckInTile = dynamic(
+  () => import('./forms/EveningCheckInTile').then(mod => ({ default: mod.EveningCheckInTile })),
+  { loading: () => <TileSkeleton variant="form" />, ssr: false }
+);
+
 // Jarvis Briefings tile
 const JarvisBriefingTile = dynamic(
   () => import('./JarvisBriefingTile').then(mod => ({ default: mod.JarvisBriefingTile })),
@@ -200,8 +241,55 @@ const PrintoffsKPIsTile = dynamic(
   { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
 );
 
-// Evening Check-In modal is imported directly by page.tsx for PhaseReminder
-// (no tile needed - modal only)
+// Claude Code MAX plan usage tile
+const ClaudeCodeUsageTile = dynamic(
+  () => import('./logic/ClaudeCodeUsageTile').then(mod => ({ default: mod.ClaudeCodeUsageTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
+// Audio Agent Admin tile
+const AudioAgentAdminTile = dynamic(
+  () => import('./logic/AudioAgentAdminTile').then(mod => ({ default: mod.AudioAgentAdminTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
+// Call Agent tile (with profile picture)
+const CallAgentTile = dynamic(
+  () => import('./logic/CallAgentTile').then(mod => ({ default: mod.CallAgentTile })),
+  { loading: () => <TileSkeleton variant="default" />, ssr: false }
+);
+
+// Directory Health tile (iCloud folder monitoring)
+const DirectoryHealthTile = dynamic(
+  () => import('./graphics/DirectoryHealthTile').then(mod => ({ default: mod.DirectoryHealthTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
+// LLM Benchmarks tile (multi-link popup)
+const LLMBenchmarksTile = dynamic(
+  () => import('./graphics/LLMBenchmarksTile').then(mod => ({ default: mod.LLMBenchmarksTile })),
+  { loading: () => <TileSkeleton variant="default" />, ssr: false }
+);
+
+// Goals tile (tabbed popup with checkable goals)
+const GoalsTile = dynamic(
+  () => import('./graphics/GoalsTile').then(mod => ({ default: mod.GoalsTile })),
+  { loading: () => <TileSkeleton variant="default" />, ssr: false }
+);
+
+// LIFX Controller tile (smart lighting control)
+const LIFXControllerTile = dynamic(
+  () => import('./graphics/LIFXControllerTile').then(mod => ({ default: mod.LIFXControllerTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
+// Word of Month tile
+const WordOfMonthTile = dynamic(
+  () => import('./graphics/WordOfMonthTile').then(mod => ({ default: mod.WordOfMonthTile })),
+  { loading: () => <TileSkeleton variant="default" />, ssr: false }
+);
+
+// Evening Check-In: Both tile (always visible) and modal (for PhaseReminder) are available
 
 /**
  * Props passed to all tile components
@@ -243,6 +331,11 @@ const SPECIALIZED_TILES: Array<{
     match: (name) => name.toLowerCase() === 'morning form',
     component: MorningFormTile,
   },
+  // Evening Check-In tile (always visible form)
+  {
+    match: (name) => name.toLowerCase() === 'evening check-in',
+    component: EveningCheckInTile,
+  },
   // Jarvis Briefings tile
   {
     match: (name) =>
@@ -270,6 +363,10 @@ const SPECIALIZED_TILES: Array<{
     component: HabitInsightsTile,
   },
   {
+    match: (name) => name.toLowerCase() === 'core habits' || name.toLowerCase().includes('core habits'),
+    component: CoreHabitsTile,
+  },
+  {
     match: (name) =>
       (name.toLowerCase().includes('cali') && name.toLowerCase().includes('task') && name.toLowerCase().includes('done')) ||
       name.toLowerCase() === 'cali task list done',
@@ -288,9 +385,11 @@ const SPECIALIZED_TILES: Array<{
   },
   {
     match: (name) =>
+      name.toLowerCase() === 'forms wk goal' ||
+      (name.toLowerCase().includes('forms') && name.toLowerCase().includes('wk goal')) ||
       (name.toLowerCase().includes('forms') && name.toLowerCase().includes('completed')) ||
       (name.toLowerCase().includes('forms') && name.toLowerCase().includes('this week')) ||
-      name.toLowerCase() === 'forms completed this week',
+      name.toLowerCase() === 'forms completed this week', // Legacy name
     component: FormsCompletedTile,
   },
   // Gmail tiles (Phase 5 - Sprint 5)
@@ -310,6 +409,53 @@ const SPECIALIZED_TILES: Array<{
     match: (name) =>
       name.toLowerCase().includes('health') && name.toLowerCase().includes('tracker'),
     component: HealthTrackerTile,
+  },
+  // InBody tiles (Phase 7)
+  {
+    match: (name) =>
+      name.toLowerCase().includes('inbody') ||
+      (name.toLowerCase().includes('body') && name.toLowerCase().includes('composition')),
+    component: InBodyTile,
+  },
+  // MyFitnessPal tile
+  {
+    match: (name) => {
+      const lower = name.toLowerCase();
+      return lower.includes('myfitnesspal') ||
+        lower.includes('mfp') ||
+        (lower.includes('fitness') && lower.includes('pal')) ||
+        lower.includes('food diary') ||
+        lower.includes('calorie tracker');
+    },
+    component: MyFitnessPalTile,
+  },
+  // Screen Time tile (Apple Screen Time screenshot processing)
+  {
+    match: (name) => {
+      const lower = name.toLowerCase();
+      return (
+        lower.includes('screen time') ||
+        lower.includes('screentime') ||
+        lower.includes('prev day') ||
+        lower.includes('time spent') ||
+        (lower.includes('time') && lower.includes('pie chart'))
+      );
+    },
+    component: ScreenTimeTile,
+  },
+  // Call Log tile (Verizon/iPhone call log processing)
+  {
+    match: (name) => {
+      const lower = name.toLowerCase();
+      return (
+        lower.includes('call log') ||
+        lower.includes('calllog') ||
+        lower.includes('phone calls') ||
+        lower.includes('call history') ||
+        (lower.includes('calls') && (lower.includes('outbound') || lower.includes('inbound')))
+      );
+    },
+    component: CallLogTile,
   },
   // Apple Contacts tile (Phase 6)
   {
@@ -402,13 +548,101 @@ const SPECIALIZED_TILES: Array<{
       name.toLowerCase() === 'printoffs & kpis',
     component: PrintoffsKPIsTile,
   },
+  // Claude Code MAX plan usage tile
+  {
+    match: (name) =>
+      name.toLowerCase().includes('claude code') &&
+      (name.toLowerCase().includes('max') || name.toLowerCase().includes('usage')),
+    component: ClaudeCodeUsageTile,
+  },
+  // Audio Agent Admin tile
+  {
+    match: (name) =>
+      name.toLowerCase().includes('audio agent') ||
+      (name.toLowerCase().includes('voice') && name.toLowerCase().includes('agent') && name.toLowerCase().includes('admin')),
+    component: AudioAgentAdminTile,
+  },
+  // Call Agent tiles (with profile pictures)
+  {
+    match: (name) => {
+      const lower = name.toLowerCase();
+      return (
+        lower === 'call daniel' ||
+        lower === 'call morgan' ||
+        lower === 'call victoria' ||
+        lower === 'call emily' ||
+        lower === 'call sarah' ||
+        (lower.startsWith('call ') && (
+          lower.includes('daniel') ||
+          lower.includes('morgan') ||
+          lower.includes('victoria') ||
+          lower.includes('emily') ||
+          lower.includes('sarah')
+        ))
+      );
+    },
+    component: CallAgentTile,
+  },
+  // Socials Stats tile (Phase 7 - YouTube + Twitter)
+  // Note: Only match "socials stats" exactly, not "youtube wrapper" (legacy tile)
+  {
+    match: (name) => name.toLowerCase().includes('socials stats'),
+    component: SocialsStatsTile,
+  },
+  // Directory Health tile (iCloud folder monitoring)
+  {
+    match: (name) =>
+      name.toLowerCase().includes('icloud') && name.toLowerCase().includes('folder') ||
+      name.toLowerCase().includes('folder') && name.toLowerCase().includes('structure') ||
+      name.toLowerCase().includes('folder health') ||
+      name.toLowerCase().includes('directory health'),
+    component: DirectoryHealthTile,
+  },
+  // LLM Benchmarks tile (multi-link popup)
+  {
+    match: (name) =>
+      name.toLowerCase() === 'llm benchmarks' ||
+      name.toLowerCase().includes('llm benchmark') ||
+      name.toLowerCase() === 'llm arena',
+    component: LLMBenchmarksTile,
+  },
+  // Goals tile (tabbed popup with checkable goals)
+  {
+    match: (name) =>
+      name.toLowerCase() === 'goals' ||
+      name.toLowerCase() === '2026 goals' ||
+      name.toLowerCase().includes('goals tracker'),
+    component: GoalsTile,
+  },
+  // LIFX Controller tile (smart lighting)
+  {
+    match: (name, tile) => {
+      const lower = name.toLowerCase();
+      return (
+        lower.includes('lifx') ||
+        lower === 'lights' ||
+        lower === 'smart lights' ||
+        Boolean(tile?.thirdParty?.includes('LIFX'))
+      );
+    },
+    component: LIFXControllerTile,
+  },
+  // Word of Month tile
+  {
+    match: (name) => {
+      const lower = name.toLowerCase();
+      return (
+        lower === 'word of month' ||
+        lower.includes('word of the month') ||
+        lower.includes('monthly word')
+      );
+    },
+    component: WordOfMonthTile,
+  },
   // Coming soon tiles (services not yet implemented)
   {
     match: (name, tile) =>
-      tile?.thirdParty?.includes('Apple') ||
-      tile?.thirdParty?.includes('YouTube 3rd P') ||
-      name.toLowerCase().includes('socials stats') ||
-      (name.toLowerCase().includes('youtube') && name.toLowerCase().includes('wrapper')),
+      Boolean(tile?.thirdParty?.includes('Apple')),
     component: ComingSoonTile,
   },
 ];

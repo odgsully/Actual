@@ -1,8 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import { Activity, AlertCircle, RefreshCw, Link2, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { useWhoopHistorical, useConnectWhoop, useWhoopConnection, type WhoopChartDataPoint } from '@/hooks/useWhoopData';
 import { WarningBorderTrail } from '../WarningBorderTrail';
+import { HealthTrackerModal } from './HealthTrackerModal';
 import type { Tile } from '@/lib/types/tiles';
 
 interface HealthTrackerTileProps {
@@ -23,6 +25,7 @@ interface HealthTrackerTileProps {
  * Requires OAuth connection to user's WHOOP account.
  */
 export function HealthTrackerTile({ tile, className }: HealthTrackerTileProps) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const { isConnected, isLoading: isCheckingConnection } = useWhoopConnection();
 
   const {
@@ -47,7 +50,7 @@ export function HealthTrackerTile({ tile, className }: HealthTrackerTileProps) {
     rounded-lg
     hover:border-muted-foreground/30
     transition-all duration-150
-    ${!isConnected ? 'cursor-pointer' : ''}
+    cursor-pointer
     ${tile.status === 'Done' ? 'opacity-60' : ''}
     ${className ?? ''}
   `.trim();
@@ -55,6 +58,8 @@ export function HealthTrackerTile({ tile, className }: HealthTrackerTileProps) {
   const handleClick = () => {
     if (!isConnected && !isConnecting) {
       connect();
+    } else if (isConnected) {
+      setIsModalOpen(true);
     }
   };
 
@@ -165,15 +170,16 @@ export function HealthTrackerTile({ tile, className }: HealthTrackerTileProps) {
   const showLoading = isLoading || isConnecting || isCheckingConnection;
 
   return (
+    <>
     <WarningBorderTrail
       active={tile.actionWarning || !isConnected}
-      hoverMessage={!isConnected ? 'Click to connect WHOOP' : tile.actionDesc}
+      hoverMessage={!isConnected ? 'Click to connect WHOOP' : 'Click to view detailed insights'}
     >
       <div
         className={baseClasses}
         onClick={handleClick}
-        role={!isConnected ? 'button' : undefined}
-        tabIndex={!isConnected ? 0 : undefined}
+        role="button"
+        tabIndex={0}
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-2">
@@ -272,6 +278,10 @@ export function HealthTrackerTile({ tile, className }: HealthTrackerTileProps) {
         )}
       </div>
     </WarningBorderTrail>
+
+    {/* Detail Modal */}
+    <HealthTrackerModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+    </>
   );
 }
 

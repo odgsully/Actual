@@ -73,3 +73,4 @@ test_data_support.csv
 .gitignore
 gbs_properties copy.pdf
 supabase/.temp/
+.git.nosync/

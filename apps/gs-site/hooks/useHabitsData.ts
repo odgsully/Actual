@@ -10,19 +10,21 @@ import { useQuery } from '@tanstack/react-query';
  */
 
 export interface HabitStreak {
-  habitName: string;
+  id: string;
+  name: string;
   currentStreak: number;
   longestStreak: number;
   lastCompletedDate: string | null;
   completionRate7Days: number;
   completionRate30Days: number;
+  emoji?: string;
 }
 
 export interface HabitsHeatmapData {
   date: string;
-  completedCount: number;
-  totalCount: number;
-  habits: Array<{ name: string; completed: boolean }>;
+  count: number;
+  total: number;
+  habits: string[];
 }
 
 export interface HabitsCompletionRate {

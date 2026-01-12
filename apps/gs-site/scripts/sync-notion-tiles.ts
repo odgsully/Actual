@@ -6,12 +6,26 @@
  * Or via npm: npm run sync-tiles
  *
  * Requirements:
- * - NOTION_API_KEY environment variable
+ * - NOTION_API_KEY in .env.local (auto-loaded)
  */
 
-import { writeFileSync } from 'fs';
+import { config } from 'dotenv';
+import { writeFileSync, existsSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
+
+// Load .env.local before anything else (follows symlink if present)
+const __dirnameInit = dirname(fileURLToPath(import.meta.url));
+const envPaths = [
+  resolve(__dirnameInit, '../.env.local'),
+  resolve(__dirnameInit, '../../../.env.local'), // monorepo root
+];
+for (const envPath of envPaths) {
+  if (existsSync(envPath)) {
+    config({ path: envPath });
+    break;
+  }
+}
 
 const TILES_DATABASE_ID = '28fcf08f-4499-8017-b530-ff06c9f64f97';
 const NOTION_API_VERSION = '2022-06-28';
@@ -32,6 +46,8 @@ interface NotionPage {
   };
 }
 
+type TypeIICategory = 'Button' | 'Graph' | 'Metric' | 'Form' | 'Counter' | 'Calendar' | 'Dropzone' | 'Logic';
+
 interface Tile {
   id: string;
   name: string;
@@ -44,6 +60,28 @@ interface Tile {
   actionWarning: boolean;
   actionDesc: string | null;
   priority: string | null;
+  typeII: TypeIICategory | null;
+}
+
+/**
+ * Derive TypeII category from shadcn components
+ * Priority-based: more specific types take precedence
+ */
+function deriveTypeII(shadcn: string[]): TypeIICategory | null {
+  if (!shadcn || shadcn.length === 0) return null;
+
+  // Priority-based derivation (matches update-dec28-notion.md)
+  if (shadcn.includes('Dropzone')) return 'Dropzone';
+  if (shadcn.includes('Calendar & Date Picker')) return 'Calendar';
+  if (shadcn.includes('Form') || shadcn.includes('Pop-up')) return 'Form';
+  // Chart and Graphic are both visualization types
+  if (shadcn.includes('Graphic') || shadcn.includes('Chart')) {
+    // Graphic/Chart + Logic = Metric (stats, counts, etc.)
+    if (shadcn.includes('Logic')) return 'Metric';
+    return 'Graph';
+  }
+  if (shadcn.includes('Logic')) return 'Logic';
+  return 'Button'; // Default fallback
 }
 
 async function fetchNotionTiles(): Promise<NotionPage[]> {
@@ -104,18 +142,22 @@ function notionPageToTile(page: NotionPage): Tile {
     .join(' ')
     .trim();
 
+  // Extract shadcn array to derive typeII
+  const shadcnArray = (props.shadcn?.multi_select || []).map((s) => s.name);
+
   return {
     id: page.id,
     name,
     menu: (props.MENU?.multi_select || []).map((m) => m.name),
     status: props.Status?.status?.name || 'Not started',
     desc: truncatedDesc,
-    shadcn: (props.shadcn?.multi_select || []).map((s) => s.name),
+    shadcn: shadcnArray,
     phase: (props.Phase?.multi_select || []).map((p) => p.name),
     thirdParty: (props['3rd P']?.multi_select || []).map((t) => t.name),
     actionWarning,
     actionDesc: actionDescText || null,
     priority: props.Select?.select?.name || null,
+    typeII: deriveTypeII(shadcnArray),
   };
 }
 
@@ -133,6 +175,12 @@ function generateTilesFile(tiles: Tile[]): string {
 import type { Tile } from '@/lib/types/tiles';
 
 export const STATIC_TILES: Tile[] = ${JSON.stringify(tiles, null, 2)};
+
+/**
+ * Local-only tiles that don't come from Notion.
+ * Add tiles here that should always appear regardless of Notion sync.
+ */
+export const LOCAL_TILES: Tile[] = [];
 
 export default STATIC_TILES;
 
@@ -201,6 +249,17 @@ async function main() {
 
     for (const [cat, count] of Object.entries(categoryCounts).sort((a, b) => b[1] - a[1])) {
       console.log(`  ${cat}: ${count}`);
+    }
+
+    // Count by Type II
+    console.log('\nType II breakdown:');
+    const typeIICounts: Record<string, number> = {};
+    for (const tile of tiles) {
+      const typeII = tile.typeII || 'null';
+      typeIICounts[typeII] = (typeIICounts[typeII] || 0) + 1;
+    }
+    for (const [type, count] of Object.entries(typeIICounts).sort((a, b) => b[1] - a[1])) {
+      console.log(`  ${type}: ${count}`);
     }
 
     // Count warnings

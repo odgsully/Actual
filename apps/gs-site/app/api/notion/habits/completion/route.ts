@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getHabitCompletionRate, isHabitsDatabaseConfigured } from '@/lib/notion/habits';
+import { getOverallCompletionRate, isHabitsDatabaseConfigured } from '@/lib/notion/habits';
 
 /**
  * GET /api/notion/habits/completion?days=7
  *
- * Returns habit completion rate over the specified number of days.
+ * Returns overall habit completion rate over the specified number of days.
+ * Response: { completed: number, total: number, rate: number }
  */
 export async function GET(request: NextRequest) {
   try {
@@ -26,7 +27,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const completionRate = await getHabitCompletionRate(days);
+    const completionRate = await getOverallCompletionRate(days);
 
     return NextResponse.json(completionRate, {
       headers: {

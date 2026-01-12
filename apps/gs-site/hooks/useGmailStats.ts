@@ -1,71 +1,66 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useState, useCallback } from 'react';
 
-export interface GmailStats {
+interface GmailStats {
+  sentToday: number;
+  sentThisWeek: number;
+  lastSentAt?: string;
+}
+
+interface GmailData {
   connected: boolean;
   email?: string;
-  stats?: {
-    sentToday: number;
-    sentThisWeek: number;
-    sentThisMonth: number;
-    lastSentAt: string | null;
-  };
-  error?: string;
+  stats?: GmailStats;
 }
 
-interface UseGmailStatsOptions {
-  enabled?: boolean;
-  refetchInterval?: number;
-}
-
-async function fetchGmailStats(): Promise<GmailStats> {
-  const response = await fetch('/api/google/emails/sent');
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch Gmail statistics');
-  }
-
-  return response.json();
+interface UseGmailStatsResult {
+  data: GmailData | null;
+  isLoading: boolean;
+  error: Error | null;
+  refetch: () => void;
 }
 
 /**
- * React Query hook for fetching Gmail sent email statistics
- *
- * @param options - Configuration options
- * @param options.enabled - Whether the query should run (default: true)
- * @param options.refetchInterval - Refetch interval in milliseconds (default: 5 minutes)
- *
- * @returns Query result with Gmail statistics
+ * Hook for fetching Gmail sent email statistics
+ * TODO: Implement actual Gmail API integration
  */
-export function useGmailStats(options: UseGmailStatsOptions = {}) {
-  const { enabled = true, refetchInterval = 5 * 60 * 1000 } = options;
+export function useGmailStats(): UseGmailStatsResult {
+  const [isLoading] = useState(false);
+  const [error] = useState<Error | null>(null);
 
-  return useQuery({
-    queryKey: ['gmailStats'],
-    queryFn: fetchGmailStats,
-    enabled,
-    refetchInterval,
-    staleTime: 60 * 1000, // Consider data stale after 1 minute
-    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
-    retry: 1, // Only retry once for auth failures
-    refetchOnWindowFocus: true,
-  });
+  // Stub: Return disconnected state until Gmail OAuth is implemented
+  const data: GmailData = {
+    connected: false,
+  };
+
+  const refetch = useCallback(() => {
+    // TODO: Implement refetch when Gmail API is connected
+    console.log('Gmail refetch requested - not yet implemented');
+  }, []);
+
+  return {
+    data,
+    isLoading,
+    error,
+    refetch,
+  };
+}
+
+interface UseConnectGmailResult {
+  connect: (returnUrl?: string) => void;
 }
 
 /**
- * Hook to initiate Gmail OAuth connection
+ * Hook for initiating Gmail OAuth connection
+ * TODO: Implement actual OAuth flow
  */
-export function useConnectGmail() {
-  const connect = (returnUrl?: string) => {
-    const url = new URL('/api/auth/google', window.location.origin);
-    if (returnUrl) {
-      url.searchParams.set('returnUrl', returnUrl);
-    }
-    window.location.href = url.toString();
-  };
+export function useConnectGmail(): UseConnectGmailResult {
+  const connect = useCallback((returnUrl?: string) => {
+    // TODO: Implement Gmail OAuth flow
+    console.log('Gmail connect requested - not yet implemented', { returnUrl });
+    alert('Gmail integration coming soon!');
+  }, []);
 
   return { connect };
 }
-
-export default useGmailStats;

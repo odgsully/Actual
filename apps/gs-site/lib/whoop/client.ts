@@ -10,9 +10,16 @@
 
 import { createClient } from '@supabase/supabase-js';
 
+// Create Supabase client with caching disabled
+// Next.js 14+ caches fetch() calls by default, which causes stale data issues
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  {
+    global: {
+      fetch: (url, options) => fetch(url, { ...options, cache: 'no-store' }),
+    },
+  }
 );
 
 // WHOOP OAuth configuration
@@ -188,6 +195,9 @@ export async function exchangeCodeForTokens(code: string): Promise<WhoopToken> {
  * Refresh an expired access token
  */
 export async function refreshAccessToken(refreshToken: string): Promise<Omit<WhoopToken, 'user_id'>> {
+  console.log('[WHOOP] Attempting token refresh...');
+  console.log('[WHOOP] Refresh token preview:', refreshToken.substring(0, 20) + '...');
+
   const response = await fetch(WHOOP_CONFIG.tokenUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -199,12 +209,32 @@ export async function refreshAccessToken(refreshToken: string): Promise<Omit<Who
     }),
   });
 
+  console.log('[WHOOP] Refresh response status:', response.status);
+
   if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Failed to refresh token: ${error}`);
+    const errorText = await response.text();
+    console.error('[WHOOP] Token refresh failed:', {
+      status: response.status,
+      statusText: response.statusText,
+      error: errorText,
+    });
+
+    // Parse error for better context
+    let errorDetail = errorText;
+    try {
+      const errorJson = JSON.parse(errorText);
+      errorDetail = errorJson.error_description || errorJson.error || errorText;
+    } catch {
+      // Keep original text
+    }
+
+    throw new Error(`WHOOP_REFRESH_FAILED: ${response.status} - ${errorDetail}`);
   }
 
   const data = await response.json();
+  console.log('[WHOOP] Token refresh successful!');
+  console.log('[WHOOP] New access_token preview:', data.access_token?.substring(0, 20) + '...');
+  console.log('[WHOOP] expires_in:', data.expires_in, 'seconds');
 
   return {
     access_token: data.access_token,
@@ -284,6 +314,8 @@ export async function storeWhoopTokens(userId: string, tokens: WhoopToken): Prom
  * Get WHOOP tokens from the database (with auto-refresh if expired)
  */
 export async function getWhoopTokens(userId: string): Promise<WhoopToken | null> {
+  console.log('[WHOOP] getWhoopTokens called for user:', userId);
+
   const { data, error } = await supabase
     .from('user_integrations')
     .select('*')
@@ -291,15 +323,40 @@ export async function getWhoopTokens(userId: string): Promise<WhoopToken | null>
     .eq('service', 'whoop')
     .single();
 
-  if (error || !data) {
+  if (error) {
+    console.error('[WHOOP] Error fetching tokens from database:', error);
     return null;
   }
 
+  if (!data) {
+    console.log('[WHOOP] No token found in database for user:', userId);
+    return null;
+  }
+
+  console.log('[WHOOP] Token found in database');
+  console.log('[WHOOP] Token preview:', data.access_token?.substring(0, 20) + '...');
+  console.log('[WHOOP] Expires at:', data.expires_at);
+  console.log('[WHOOP] WHOOP user ID from metadata:', data.metadata?.whoop_user_id);
+
   // Check if token needs refresh (refresh 1 minute before expiry)
-  if (new Date(data.expires_at).getTime() < Date.now() + 60000) {
+  const expiresAt = new Date(data.expires_at).getTime();
+  const now = Date.now();
+  const needsRefresh = expiresAt < now + 60000;
+
+  console.log('[WHOOP] Token expiry check:', {
+    expiresAt: new Date(expiresAt).toISOString(),
+    now: new Date(now).toISOString(),
+    needsRefresh,
+    minutesUntilExpiry: Math.round((expiresAt - now) / 60000),
+  });
+
+  if (needsRefresh) {
+    console.log('[WHOOP] Token expired or expiring soon, attempting refresh...');
     try {
       const newTokens = await refreshAccessToken(data.refresh_token);
-      await supabase
+
+      console.log('[WHOOP] Saving refreshed tokens to database...');
+      const { error: updateError } = await supabase
         .from('user_integrations')
         .update({
           access_token: newTokens.access_token,
@@ -310,13 +367,27 @@ export async function getWhoopTokens(userId: string): Promise<WhoopToken | null>
         .eq('user_id', userId)
         .eq('service', 'whoop');
 
+      if (updateError) {
+        console.error('[WHOOP] Failed to save refreshed tokens:', updateError);
+      } else {
+        console.log('[WHOOP] Refreshed tokens saved successfully');
+      }
+
       return {
         ...newTokens,
         user_id: data.metadata?.whoop_user_id || '',
       };
-    } catch {
-      // If refresh fails, return null to trigger re-auth
-      console.error('[WHOOP] Token refresh failed, re-auth required');
+    } catch (refreshError) {
+      // Log the actual error for debugging
+      const errorMessage = refreshError instanceof Error ? refreshError.message : String(refreshError);
+      console.error('[WHOOP] Token refresh failed:', errorMessage);
+
+      // Check if it's a refresh token expiry (usually means user needs to re-auth)
+      if (errorMessage.includes('invalid_grant') || errorMessage.includes('401')) {
+        console.error('[WHOOP] Refresh token is invalid or expired. User must re-authenticate.');
+      }
+
+      console.error('[WHOOP] Re-authentication required. Visit /api/auth/whoop to reconnect.');
       return null;
     }
   }
@@ -376,7 +447,15 @@ export async function getRecoveryData(
   });
 
   if (!response.ok) {
+    const errorBody = await response.text();
+    console.error('[WHOOP API] Recovery request failed:', {
+      status: response.status,
+      statusText: response.statusText,
+      body: errorBody,
+    });
+
     if (response.status === 401) {
+      console.error('[WHOOP API] 401 Unauthorized - token may be invalid or scopes insufficient');
       throw new Error('WHOOP_TOKEN_EXPIRED');
     }
     if (response.status === 429) {
@@ -387,8 +466,7 @@ export async function getRecoveryData(
       console.log('[WHOOP API] No recovery data found (404)');
       return { records: [], next_token: null };
     }
-    const error = await response.text();
-    throw new Error(`Failed to fetch recovery data: HTTP ${response.status} ${error}`);
+    throw new Error(`Failed to fetch recovery data: HTTP ${response.status} ${errorBody}`);
   }
 
   return await response.json();
@@ -414,7 +492,15 @@ export async function getCycleData(
   });
 
   if (!response.ok) {
+    const errorBody = await response.text();
+    console.error('[WHOOP API] Cycle request failed:', {
+      status: response.status,
+      statusText: response.statusText,
+      body: errorBody,
+    });
+
     if (response.status === 401) {
+      console.error('[WHOOP API] 401 Unauthorized - token may be invalid or scopes insufficient');
       throw new Error('WHOOP_TOKEN_EXPIRED');
     }
     if (response.status === 429) {
@@ -425,8 +511,7 @@ export async function getCycleData(
       console.log('[WHOOP API] No cycle data found (404)');
       return { records: [], next_token: null };
     }
-    const error = await response.text();
-    throw new Error(`Failed to fetch cycle data: HTTP ${response.status} ${error}`);
+    throw new Error(`Failed to fetch cycle data: HTTP ${response.status} ${errorBody}`);
   }
 
   return await response.json();
@@ -436,12 +521,20 @@ export async function getCycleData(
  * Get the latest WHOOP insights (recovery + strain)
  */
 export async function getLatestInsights(accessToken: string): Promise<WhoopInsights> {
+  console.log('[WHOOP] getLatestInsights called');
+  console.log('[WHOOP] Token preview:', accessToken.substring(0, 30) + '...');
+
   try {
     // Fetch latest recovery and cycle data in parallel
+    console.log('[WHOOP] Fetching recovery and cycle data from WHOOP API...');
     const [recoveryResponse, cycleResponse] = await Promise.all([
       getRecoveryData(accessToken, { limit: 1 }),
       getCycleData(accessToken, { limit: 1 }),
     ]);
+
+    console.log('[WHOOP] API calls succeeded!');
+    console.log('[WHOOP] Recovery records:', recoveryResponse.records.length);
+    console.log('[WHOOP] Cycle records:', cycleResponse.records.length);
 
     return {
       recovery: recoveryResponse.records[0] || null,
@@ -450,7 +543,10 @@ export async function getLatestInsights(accessToken: string): Promise<WhoopInsig
       lastUpdated: new Date().toISOString(),
     };
   } catch (error) {
-    console.error('[WHOOP] Failed to fetch insights:', error);
+    console.error('[WHOOP] Failed to fetch insights:', error instanceof Error ? error.message : error);
+    if (error instanceof Error && error.message === 'WHOOP_TOKEN_EXPIRED') {
+      console.error('[WHOOP] Token appears invalid/expired - WHOOP API returned 401');
+    }
     throw error;
   }
 }

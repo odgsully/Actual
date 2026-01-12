@@ -55,6 +55,8 @@ apps/gsrealty-client/
 │   │   │   └── page.tsx                # APN lookup interface
 │   │   ├── analytics/                  # Analytics & reports
 │   │   │   └── page.tsx
+│   │   ├── pv-splittable/              # PV Splittable map view
+│   │   │   └── page.tsx                # GIS parcel layer viewer (Maricopa County)
 │   │   └── settings/                   # Admin settings
 │   │       └── page.tsx
 │   │

@@ -13,21 +13,21 @@ interface HabitsStreakTileProps {
 /**
  * Mini heatmap grid showing habit completion
  */
-function MiniHeatmap({ data }: { data: Array<{ date: string; completedCount: number; totalCount: number }> }) {
+function MiniHeatmap({ data }: { data: Array<{ date: string; count: number; total: number }> }) {
   // Show last 28 days in a 7x4 grid
   const last28Days = data.slice(-28);
 
   // Pad with empty days if less than 28
   while (last28Days.length < 28) {
-    last28Days.unshift({ date: '', completedCount: 0, totalCount: 0 });
+    last28Days.unshift({ date: '', count: 0, total: 0 });
   }
 
   return (
     <div className="grid grid-cols-7 gap-0.5">
       {last28Days.map((day, i) => {
         const intensity =
-          day.totalCount > 0
-            ? Math.min(day.completedCount / day.totalCount, 1)
+          day.total > 0
+            ? Math.min(day.count / day.total, 1)
             : 0;
 
         return (
@@ -41,7 +41,7 @@ function MiniHeatmap({ data }: { data: Array<{ date: string; completedCount: num
               ${day.date && intensity >= 0.5 && intensity < 1 ? 'bg-green-500 dark:bg-green-600' : ''}
               ${day.date && intensity === 1 ? 'bg-green-600 dark:bg-green-500' : ''}
             `}
-            title={day.date ? `${day.date}: ${day.completedCount}/${day.totalCount}` : ''}
+            title={day.date ? `${day.date}: ${day.count}/${day.total}` : ''}
           />
         );
       })}

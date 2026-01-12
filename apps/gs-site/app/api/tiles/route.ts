@@ -14,9 +14,10 @@ const TILE_NAME_OVERRIDES: Record<string, { name: string; desc?: string }> = {
   '10. RealtyOne Events button': { name: 'RE Events', desc: '' },
   "RealtyOne KPI's calulator": { name: "RE KPI's & Calc" },  // straight apostrophe
   "RealtyOne KPI\u2019s calulator": { name: "RE KPI's & Calc" },  // smart/curly apostrophe (from Notion)
-  // LLM Arena
-  '7. LLM Arena': { name: 'LLM Arena', desc: '' },
-  'LLM Arena link/preview?': { name: 'LLM Arena', desc: '' },
+  // LLM Benchmarks (renamed from LLM Arena)
+  '7. LLM Arena': { name: 'LLM Benchmarks', desc: '' },
+  'LLM Arena link/preview?': { name: 'LLM Benchmarks', desc: '' },
+  'LLM Arena': { name: 'LLM Benchmarks', desc: '' },
   // AI Agent → Audio Agent
   'AI Agent workforce admin board': { name: 'Audio Agent Admin', desc: '' },
   // Codebase Duolingo (keep name, clear subtitle)
@@ -35,10 +36,30 @@ const EXCLUDED_TILE_IDS = new Set([
 ]);
 
 /**
- * Filter out excluded tiles
+ * Tile names to exclude (case-insensitive partial match)
+ * More robust than IDs which can change
+ */
+const EXCLUDED_TILE_NAMES = [
+  'forms (monthly) & printoff',
+  'forms (quarterly) & printoff',
+  'physically print weeklies',
+  'physically print tomorrow daily',
+  'gs site admin',
+  'youtube wrapper', // Legacy tile - use "Socials stats" instead
+];
+
+/**
+ * Filter out excluded tiles by ID or name
  */
 function filterExcludedTiles(tiles: Tile[]): Tile[] {
-  return tiles.filter(tile => !EXCLUDED_TILE_IDS.has(tile.id));
+  return tiles.filter(tile => {
+    // Check ID exclusion
+    if (EXCLUDED_TILE_IDS.has(tile.id)) return false;
+    // Check name exclusion (case-insensitive)
+    const nameLower = tile.name.toLowerCase();
+    if (EXCLUDED_TILE_NAMES.some(excluded => nameLower.includes(excluded))) return false;
+    return true;
+  });
 }
 
 /**

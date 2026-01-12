@@ -482,3 +482,164 @@ export function getAvailableTags(): string[] {
 export function isTasksDatabaseConfigured(): boolean {
   return Boolean(TASKS_DATABASE_ID && getNotionApiKey());
 }
+
+// ============================================================================
+// DATE RANGE FILTERING
+// ============================================================================
+
+/**
+ * Get the start of the current week (Sunday at midnight)
+ */
+export function getWeekStart(date: Date = new Date()): Date {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - d.getDay()); // Go back to Sunday
+  return d;
+}
+
+/**
+ * Get the end of the current week (Saturday at 23:59:59)
+ */
+export function getWeekEnd(date: Date = new Date()): Date {
+  const start = getWeekStart(date);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6);
+  end.setHours(23, 59, 59, 999);
+  return end;
+}
+
+/**
+ * Get the start of the current month (1st at midnight)
+ */
+export function getMonthStart(date: Date = new Date()): Date {
+  const d = new Date(date);
+  d.setDate(1);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+/**
+ * Get the end of the current month (last day at 23:59:59)
+ */
+export function getMonthEnd(date: Date = new Date()): Date {
+  const d = new Date(date);
+  d.setMonth(d.getMonth() + 1);
+  d.setDate(0); // Last day of previous month (which is current month)
+  d.setHours(23, 59, 59, 999);
+  return d;
+}
+
+/**
+ * Get the start of the current quarter (Q1: Jan 1, Q2: Apr 1, Q3: Jul 1, Q4: Oct 1)
+ */
+export function getQuarterStart(date: Date = new Date()): Date {
+  const d = new Date(date);
+  const month = d.getMonth();
+  const quarterStartMonth = Math.floor(month / 3) * 3; // 0, 3, 6, or 9
+  d.setMonth(quarterStartMonth);
+  d.setDate(1);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+/**
+ * Get the end of the current quarter
+ */
+export function getQuarterEnd(date: Date = new Date()): Date {
+  const start = getQuarterStart(date);
+  const end = new Date(start);
+  end.setMonth(end.getMonth() + 3);
+  end.setDate(0); // Last day of quarter
+  end.setHours(23, 59, 59, 999);
+  return end;
+}
+
+/**
+ * Get tasks within a specific date range
+ * Filters by the 'Date' field in Notion
+ */
+export async function getTasksByDateRange(
+  startDate: Date,
+  endDate: Date
+): Promise<Task[]> {
+  if (!TASKS_DATABASE_ID) {
+    console.warn('NOTION_TASKS_DATABASE_ID not configured');
+    return [];
+  }
+
+  try {
+    const startStr = startDate.toISOString().split('T')[0];
+    const endStr = endDate.toISOString().split('T')[0];
+
+    const response = await notionFetch(`/databases/${TASKS_DATABASE_ID}/query`, {
+      filter: {
+        and: [
+          {
+            property: 'Date',
+            date: {
+              on_or_after: startStr,
+            },
+          },
+          {
+            property: 'Date',
+            date: {
+              on_or_before: endStr,
+            },
+          },
+        ],
+      },
+      sorts: [
+        {
+          property: 'Priority',
+          direction: 'ascending',
+        },
+        {
+          property: 'Date',
+          direction: 'ascending',
+        },
+      ],
+      page_size: 100,
+    });
+
+    return response.results.map(parseTask);
+  } catch (error) {
+    console.error('Error fetching tasks by date range:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get tasks for the current week (Sunday to Saturday)
+ */
+export async function getTasksThisWeek(): Promise<Task[]> {
+  return getTasksByDateRange(getWeekStart(), getWeekEnd());
+}
+
+/**
+ * Get tasks for the current month
+ */
+export async function getTasksThisMonth(): Promise<Task[]> {
+  return getTasksByDateRange(getMonthStart(), getMonthEnd());
+}
+
+/**
+ * Get tasks for the current quarter
+ */
+export async function getTasksThisQuarter(): Promise<Task[]> {
+  return getTasksByDateRange(getQuarterStart(), getQuarterEnd());
+}
+
+/**
+ * Get task completion stats for a date range
+ */
+export async function getTaskStatsForDateRange(
+  startDate: Date,
+  endDate: Date
+): Promise<{ total: number; completed: number; completionPercentage: number }> {
+  const tasks = await getTasksByDateRange(startDate, endDate);
+  const total = tasks.length;
+  const completed = tasks.filter((t) => t.status === 'Done').length;
+  const completionPercentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+  return { total, completed, completionPercentage };
+}

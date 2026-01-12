@@ -10,6 +10,7 @@ export type ShadcnComponent =
   | 'Dropzone'
   | 'Calendar & Date Picker'
   | 'Graphic'
+  | 'Chart'
   | 'Form'
   | 'Logic'
   | 'Toggle List'
@@ -22,6 +23,7 @@ export type ThirdPartyIntegration =
   | 'YouTube 3rd P'
   | 'Scheduler 3rd P'
   | 'Whoop'
+  | 'InBody'
   | 'Apple'
   | 'Google'
   | 'GitHub'
@@ -29,9 +31,22 @@ export type ThirdPartyIntegration =
   | 'Logic'
   | 'Datadog'
   | 'Twilio'
-  | 'EXTRA LOGIC';
+  | 'EXTRA LOGIC'
+  | 'LIFX'
+  | 'MyFitnessPal'
+  | 'OpenAI';
 
 export type TilePriority = '1' | '2' | '3' | null;
+
+export type TypeIICategory =
+  | 'Button'
+  | 'Graph'
+  | 'Metric'
+  | 'Form'
+  | 'Counter'
+  | 'Calendar'
+  | 'Dropzone'
+  | 'Logic';
 
 export interface Tile {
   id: string;
@@ -45,6 +60,7 @@ export interface Tile {
   actionWarning: boolean;
   actionDesc: string | null;
   priority: TilePriority;
+  typeII: TypeIICategory | null;
 }
 
 export interface NotionTileProperties {
@@ -81,6 +97,27 @@ export interface NotionTileProperties {
 }
 
 /**
+ * Derive TypeII category from shadcn components
+ * Priority-based: more specific types take precedence
+ */
+export function deriveTypeII(shadcn: ShadcnComponent[]): TypeIICategory | null {
+  if (!shadcn || shadcn.length === 0) return null;
+
+  // Priority-based derivation (matches update-dec28-notion.md)
+  if (shadcn.includes('Dropzone')) return 'Dropzone';
+  if (shadcn.includes('Calendar & Date Picker')) return 'Calendar';
+  if (shadcn.includes('Form') || shadcn.includes('Pop-up')) return 'Form';
+  // Chart and Graphic are both visualization types
+  if (shadcn.includes('Graphic') || shadcn.includes('Chart')) {
+    // Graphic/Chart + Logic = Metric (stats, counts, etc.)
+    if (shadcn.includes('Logic')) return 'Metric';
+    return 'Graph';
+  }
+  if (shadcn.includes('Logic')) return 'Logic';
+  return 'Button'; // Default fallback
+}
+
+/**
  * Transform Notion API response to Tile interface
  */
 export function notionToTile(page: { id: string; properties: NotionTileProperties }): Tile {
@@ -90,17 +127,21 @@ export function notionToTile(page: { id: string; properties: NotionTilePropertie
     .join(' ')
     .trim();
 
+  // Extract shadcn array first so we can derive typeII
+  const shadcnArray = (page.properties.shadcn?.multi_select || []).map((s) => s.name) as ShadcnComponent[];
+
   return {
     id: page.id,
     name: (page.properties.Name?.title[0]?.plain_text || 'Untitled').replace(/\n/g, '').trim(),
     menu: (page.properties.MENU?.multi_select || []).map((m) => m.name) as MenuCategory[],
     status: (page.properties.Status?.status?.name || 'Not started') as TileStatus,
     desc: (page.properties.Desc?.rich_text || []).map((rt) => rt.plain_text).join(' ').trim(),
-    shadcn: (page.properties.shadcn?.multi_select || []).map((s) => s.name) as ShadcnComponent[],
+    shadcn: shadcnArray,
     phase: (page.properties.Phase?.multi_select || []).map((p) => p.name) as TilePhase[],
     thirdParty: (page.properties['3rd P']?.multi_select || []).map((t) => t.name) as ThirdPartyIntegration[],
     actionWarning: actionWarningValues.some((v) => v.name === 'Y'),
     actionDesc: actionDescText || null,
     priority: (page.properties.Select?.select?.name as TilePriority) || null,
+    typeII: deriveTypeII(shadcnArray),
   };
 }

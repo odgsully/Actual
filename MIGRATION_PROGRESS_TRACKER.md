@@ -758,7 +758,7 @@ env: {
 
 **Remaining Tasks:**
 
-- [ ] Configure Nginx reverse proxy (see `deployment/nginx.conf`)
+- [x] ~~Configure Nginx reverse proxy~~ (Superseded by Vercel - Jan 2025)
 - [ ] Test all apps at their subdirectory paths in production
 - [ ] Update all hardcoded URLs to use relative paths or env vars
 - [ ] Test navigation between apps in production-like environment
@@ -851,26 +851,29 @@ _Duration: 3-5 days_
 
 ### ✅ Deployment Configuration Complete (Dec 19, 2025)
 
-**Nginx Configuration** (`deployment/nginx.conf`):
+> **Update (Jan 2025)**: Production now runs on **Vercel** exclusively. Hetzner/PM2/Nginx configs below are kept as legacy reference only.
+
+**Vercel Configuration** (`vercel.json`) - **CURRENT**:
+- Subdirectory rewrites for all apps
+- Cron jobs for wabbit-re and gsrealty
+- Security headers
+- Production URL: https://wabbit-property-scraping.vercel.app
+
+**Legacy: Nginx Configuration** (`deployment/nginx.conf`):
 - Upstream servers for all 4 apps (ports 3000, 3002, 3003, 3004)
 - Subdirectory routing: `/wabbit-re`, `/wabbit`, `/gsrealty`, `/` (dashboard)
 - Static file caching, SSL, security headers, Cloudflare integration
 
-**PM2 Configuration** (`ecosystem.config.js`):
+**Legacy: PM2 Configuration** (`ecosystem.config.js`):
 - All 4 apps configured with proper ports
 - Common config shared across apps (memory limits, restart policies)
 - Per-app logging to `/var/log/pm2/`
 
-**Deploy Script** (`deployment/deploy.sh`):
+**Legacy: Deploy Script** (`deployment/deploy.sh`):
 - Builds all apps with Turborepo
 - Health checks all 4 apps before completing
 - Automatic rollback on failure
 - Cloudflare cache purge
-
-**Vercel Configuration** (`vercel.json`):
-- Subdirectory rewrites for all apps
-- Cron jobs for wabbit-re and gsrealty
-- Security headers
 
 **Health Endpoints**:
 - All 4 apps now have `/api/health` endpoints
@@ -912,7 +915,7 @@ _Added: December 18, 2025_
 | Script | Purpose |
 |--------|---------|
 | `scripts/verify-deployment.sh` | Comprehensive health & API checks |
-| `scripts/rollback.sh` | Interactive rollback for Hetzner |
+| `scripts/rollback.sh` | Legacy: Interactive rollback (Hetzner - discontinued) |
 
 **Verification Script Features:**
 - [x] Health checks for all 4 apps
@@ -927,9 +930,9 @@ _Added: December 18, 2025_
 **Rollback Capabilities:**
 
 - [x] `deploy.sh` - Automatic rollback on health check failure
-- [x] `scripts/rollback.sh` - Interactive rollback to any backup
+- [x] `scripts/rollback.sh` - Legacy: Interactive rollback to any backup (Hetzner)
 - [x] Pre-rollback backup created before each rollback
-- [x] PM2 restart with verification
+- [x] Legacy: PM2 restart with verification (Hetzner - discontinued)
 - [x] Keep last 5 backups (auto-cleanup)
 
 **Remaining Setup Tasks:**
@@ -1243,7 +1246,7 @@ vercel --prod
 5. [x] Add pre-commit hooks (husky + lint-staged) ✅
 6. [x] Create comprehensive RLS policies (12+ tables) ✅
 
-**Next (Phase 4 - Deployment):** 7. [x] Run RLS migration in Supabase production ✅ 8. [x] Fix basePath inconsistency across apps ✅ (Dec 19) 9. [ ] Create staging environment 10. [ ] Configure Nginx reverse proxy for subdirectory routing
+**Next (Phase 4 - Deployment):** 7. [x] Run RLS migration in Supabase production ✅ 8. [x] Fix basePath inconsistency across apps ✅ (Dec 19) 9. [ ] Create staging environment 10. [x] ~~Configure Nginx reverse proxy~~ (Superseded by Vercel - Jan 2025)
 
 **This Month (Phase 5):** 11. [ ] Enhanced deployment verification 12. [ ] Set up Sentry monitoring 13. [ ] Documentation cleanup
 

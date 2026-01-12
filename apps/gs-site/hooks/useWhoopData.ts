@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   WhoopInsights,
   WhoopRecovery,
@@ -93,17 +93,19 @@ async function fetchWhoopHistorical(days: number): Promise<WhoopHistoricalRespon
  * @returns Query result with WHOOP insights
  */
 export function useWhoopInsights(options: UseWhoopOptions = {}) {
-  const { enabled = true, refetchInterval = 15 * 60 * 1000 } = options;
+  const { enabled = true, refetchInterval = false } = options;
 
   return useQuery({
     queryKey: ['whoopInsights'],
     queryFn: fetchWhoopInsights,
     enabled,
     refetchInterval,
-    staleTime: 5 * 60 * 1000, // Consider data stale after 5 minutes
-    gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
+    // WHOOP data is low-frequency (recovery calculated once/day, strain accumulates slowly)
+    // Long cache prevents rate limiting - WHOOP has strict API limits
+    staleTime: 6 * 60 * 60 * 1000, // Consider data fresh for 6 hours
+    gcTime: 12 * 60 * 60 * 1000, // Keep in cache for 12 hours
     retry: 1, // Only retry once for auth failures
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false, // Disable to prevent rate limiting
   });
 }
 
@@ -116,17 +118,18 @@ export function useWhoopInsights(options: UseWhoopOptions = {}) {
  * @returns Query result with historical WHOOP data
  */
 export function useWhoopHistorical(days: 7 | 14 | 30 = 7, options: UseWhoopOptions = {}) {
-  const { enabled = true, refetchInterval = 30 * 60 * 1000 } = options;
+  const { enabled = true, refetchInterval = false } = options;
 
   return useQuery({
     queryKey: ['whoopHistorical', days],
     queryFn: () => fetchWhoopHistorical(days),
     enabled,
     refetchInterval,
-    staleTime: 15 * 60 * 1000, // Consider data stale after 15 minutes
-    gcTime: 60 * 60 * 1000, // Keep in cache for 1 hour
+    // Historical data changes very slowly - long cache prevents rate limiting
+    staleTime: 12 * 60 * 60 * 1000, // Consider data fresh for 12 hours
+    gcTime: 24 * 60 * 60 * 1000, // Keep in cache for 24 hours
     retry: 1,
-    refetchOnWindowFocus: false, // Historical data doesn't need frequent refresh
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -144,6 +147,46 @@ export function useWhoopConnection() {
     error,
     connectUrl: data?.connectUrl,
   };
+}
+
+/**
+ * Hook to handle OAuth callback and invalidate cache
+ *
+ * This hook detects when the user returns from WHOOP OAuth with
+ * `whoop_connected=true` in the URL, invalidates the React Query cache,
+ * and cleans up the URL parameter.
+ */
+export function useWhoopOAuthCallback() {
+  const queryClient = useQueryClient();
+  const [justConnected, setJustConnected] = useState(false);
+
+  useEffect(() => {
+    // Check if we just returned from WHOOP OAuth
+    const params = new URLSearchParams(window.location.search);
+    const whoopConnected = params.get('whoop_connected');
+
+    if (whoopConnected === 'true') {
+      console.log('[WHOOP] OAuth callback detected, invalidating cache...');
+      setJustConnected(true);
+
+      // Invalidate all WHOOP-related queries to force refetch
+      queryClient.invalidateQueries({ queryKey: ['whoopInsights'] });
+      queryClient.invalidateQueries({ queryKey: ['whoopHistorical'] });
+
+      // Clean up URL parameters (remove whoop_connected and whoop_user_id)
+      params.delete('whoop_connected');
+      params.delete('whoop_user_id');
+
+      const newUrl = params.toString()
+        ? `${window.location.pathname}?${params.toString()}`
+        : window.location.pathname;
+
+      window.history.replaceState({}, '', newUrl);
+      console.log('[WHOOP] Cache invalidated, URL cleaned up');
+    }
+  }, [queryClient]);
+
+  return { justConnected };
 }
 
 /**

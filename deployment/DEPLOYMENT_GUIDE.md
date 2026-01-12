@@ -1,5 +1,17 @@
 # Complete Wabbit Deployment Guide for Hetzner
 
+> ## ⚠️ LEGACY DOCUMENT - DISCONTINUED (January 2025)
+>
+> **This deployment method has been discontinued.** Production now runs on **Vercel**.
+>
+> - **Current Platform**: Vercel (Pro Plan)
+> - **Current Docs**: See `docs/deployment/VERCEL_DEPLOYMENT_STATUS.md`
+> - **Deploy Command**: `vercel --prod`
+>
+> This document is kept for historical reference only. Do not use for new deployments.
+
+---
+
 ## Quick Start (TL;DR)
 If you're experienced with deployments:
 1. Generate SSH key: `ssh-keygen -t ed25519 -C "wabbit-server-key" -f ~/.ssh/wabbit-hetzner`

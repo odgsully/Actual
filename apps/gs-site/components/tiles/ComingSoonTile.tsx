@@ -89,6 +89,26 @@ const SERVICE_CONFIG: Record<
     gradient: 'from-gray-500/20 to-slate-500/20',
     description: 'Coming soon',
   },
+  InBody: {
+    icon: Zap,
+    gradient: 'from-teal-500/20 to-cyan-500/20',
+    description: 'Body composition tracking',
+  },
+  LIFX: {
+    icon: Zap,
+    gradient: 'from-amber-500/20 to-orange-500/20',
+    description: 'Smart lighting control',
+  },
+  MyFitnessPal: {
+    icon: Zap,
+    gradient: 'from-green-500/20 to-emerald-500/20',
+    description: 'Food & calorie tracking',
+  },
+  OpenAI: {
+    icon: Sparkles,
+    gradient: 'from-teal-500/20 to-cyan-500/20',
+    description: 'AI-powered extraction',
+  },
 };
 
 /**

@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils"
 const outerDivVariants = cva("relative inline-block overflow-hidden ", {
   variants: {
     size: {
+      xs: "",
       sm: "",
       default: "",
       lg: "",
@@ -76,6 +77,7 @@ const buttonVariants = cva(
   {
     variants: {
       size: {
+        xs: "text-[10px] px-2.5 py-0.5",
         sm: "text-xs px-4 py-1",
         default: "text-sm px-6 py-2",
         lg: "text-base px-8 py-3",
@@ -119,7 +121,7 @@ const buttonVariants = cva(
 export interface UnifiedButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "success" | "secondary" | "destructive" | "ghost"
-  size?: "sm" | "lg" | "default"
+  size?: "xs" | "sm" | "lg" | "default"
   shadow?: "flat" | "soft" | "base" | "deep" | "deeper"
   rounded?: "full" | "xl" | "2xl" | "3xl" | "sm" | "xs" | "base"
   asChild?: boolean

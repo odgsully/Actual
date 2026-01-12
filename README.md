@@ -235,40 +235,46 @@ psql -h [your-supabase-url] -U postgres -d postgres -f database-schema.sql
 
 ## Deployment
 
-### Production Server Deployment
-The application is deployed on a Hetzner server (5.78.100.116) with PM2 process management and Nginx reverse proxy.
+### Production Deployment (Vercel)
+The application is deployed on Vercel (Pro Plan) with automatic builds, SSL, and cron job support.
 
 ```bash
 # Build for production
 npm run build
 
-# Deploy with PM2
-pm2 start ecosystem.config.js
-
-# Or use deployment script
-./deployment/deploy.sh
-```
-
-### Vercel Deployment (Alternative)
-```bash
-npm run build
+# Deploy to Vercel
 vercel --prod
+
+# Or deploy specific app
+cd apps/gs-site && vercel --prod
 ```
 
-### Environment Variables Required
-Production deployment requires these in `.env.production`:
-- `NEXT_PUBLIC_SUPABASE_URL` - Supabase project URL
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase anonymous key  
-- `SUPABASE_SERVICE_ROLE_KEY` - Supabase service role key
-- `NEXT_PUBLIC_APP_URL` - Application URL (https://wabbit-rank.ai)
-- `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` - Google Maps API key
-- `OPENAI_API_KEY` - OpenAI API key for location intelligence
+**Vercel Project**: `wabbit-property-scraping` (odgsullys-projects)
+**Production URL**: https://wabbit-property-scraping.vercel.app
 
-### Deployment Files
-- `ecosystem.config.js` - PM2 configuration
-- `deployment/nginx.conf` - Nginx configuration
-- `deployment/server-setup.sh` - Server setup script
-- `deployment/deploy.sh` - Deployment script
+### Environment Variables
+Environment variables are configured in the **Vercel Dashboard** (Settings → Environment Variables).
+
+Required variables:
+- `NEXT_PUBLIC_SUPABASE_URL` - Supabase project URL
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase anonymous key
+- `SUPABASE_SERVICE_ROLE_KEY` - Supabase service role key
+- `NEXT_PUBLIC_APP_URL` - Application URL
+- `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` - Google Maps API key
+- `OPENAI_API_KEY` - OpenAI API key
+- `CRON_SECRET` - Vercel cron authentication
+
+### Configuration Files
+- `vercel.json` - Vercel configuration (rewrites, crons, headers)
+- `apps/*/vercel.json` - Per-app Vercel configs
+
+### Legacy Deployment Files (Hetzner - Discontinued)
+> **Note**: These files are kept for historical reference only. Hetzner deployment was discontinued in favor of Vercel.
+- `ecosystem.config.js` - Legacy PM2 configuration
+- `deployment/nginx.conf` - Legacy Nginx configuration
+- `deployment/server-setup.sh` - Legacy server setup script
+- `deployment/deploy.sh` - Legacy deployment script
+- `deployment/DEPLOYMENT_GUIDE.md` - Legacy Hetzner guide
 
 ## Contributing
 

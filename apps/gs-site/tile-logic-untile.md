@@ -2,11 +2,12 @@
 
 > **Purpose**: Transform the current static tile grid into a dynamic, Notion-synced dashboard with intelligent warnings, 3rd party integrations, and component-specific UI patterns.
 >
-> **Last Updated**: December 23, 2025
-> **Branch**: `gssite-dec18-per-notion`
+> **Last Updated**: December 29, 2025
+> **Branch**: `gssite-dec27-ii`
 > **Phase 0**: ✅ COMPLETE | **Phase 1**: ✅ COMPLETE | **Phase 2**: ✅ COMPLETE | **Phase 3**: ✅ COMPLETE | **Phase 4**: ✅ COMPLETE
 > **Phase 5**: ⛔ BLOCKED (no Wabbit app) | **Phase 6**: 📋 Research Done | **Phase 7**: 🚧 WHOOP OAuth Done | **Phase 8**: ✅ Logic Tiles Done
 > **Gmail Integration**: ✅ COMPLETE (Dec 23, 2025) - Emails Sent tile working with OAuth
+> **New Tiles (Dec 29)**: Goals (popup with checkable goals), LLM Benchmarks (multi-link popup), Directory Health (folder scanner)
 
 ---
 
@@ -235,7 +236,7 @@ interface ButtonTileDefinition {
 
 **Tiles using this**:
 - CRM, GS-clients Admin, Wab: Task List, New GS Wab, Go to my Wabbit
-- LLM Arena, GitHub Repos, Jarvis Briefme, Memento Morri, etc.
+- LLM Benchmarks, GitHub Repos, Jarvis Briefme, Memento Morri, etc.
 
 ---
 
@@ -1468,31 +1469,36 @@ GOOGLE_REDIRECT_URI=http://localhost:3000/api/auth/google/callback
 
 ---
 
-#### Phase 7: Whoop & Content APIs (89 hours)
+#### Phase 7: Whoop & Content APIs
 **📋 Research complete - see `docs/PHASE_7_REQUIREMENTS.md`**
 
-**⚠️ BUDGET DECISION REQUIRED**: X API Basic tier = **$100/month**
+**Whoop Integration** ✅ CODE COMPLETE (Dec 2025):
+- [x] **7.1** Create `/lib/whoop/client.ts` - OAuth 2.0 + API wrapper
+- [x] **7.2** Create `/app/api/auth/whoop/*` - OAuth routes
+- [x] **7.3** Create `/app/api/whoop/*` - Data API routes
+- [x] **7.4** Create `hooks/useWhoopData.ts` - React Query hooks
+- [ ] **7.5** Register app at developer-dashboard.whoop.com ⏳ **NEEDS USER ACTION**
+- [ ] **7.6** Add `WHOOP_CLIENT_ID` + `WHOOP_CLIENT_SECRET` to env
 
-**Whoop Integration**:
-- [ ] **7.1** Register app at developer-dashboard.whoop.com
-- [ ] **7.2** Create `/lib/whoop/client.ts` - OAuth 2.0
-- [ ] **7.3** Create `/lib/whoop/token-manager.ts` - Token refresh
-- [ ] **7.4** Implement `Whoop Insights` tile
-- [ ] **7.5** Implement `Health Tracker` tile (multi-line chart)
-- [ ] **7.6** Implement `Bloodwork Counter` tile
+**X (Twitter) Integration** ✅ COMPLETE (Dec 28, 2025):
+- [x] **7.11** Create `/lib/twitter/client.ts` - X API v2 client
+- [x] **7.12** Create `/app/api/twitter/stats/route.ts` - With Supabase history
+- [x] **7.13** Create `hooks/useTwitterData.ts` - React Query hooks
+- [x] **7.14** Create `twitter_stats` Supabase table
+- [x] **7.15** Update `SocialsStatsTile` - Shows followers + growth
+- [ ] **7.16** Add `TWITTER_BEARER_TOKEN` to env ⏳ **NEEDS USER ACTION**
 
-**YouTube Integration**:
-- [ ] **7.7** Create Google Cloud project + enable YouTube Data API v3
-- [ ] **7.8** Generate API Key (restrict to domains)
-- [ ] **7.9** Create `/lib/youtube/client.ts`
-- [ ] **7.10** Implement `YouTube wrapper` tile
+**YouTube Integration** (needs env config):
+- [x] **7.7** Create `/lib/youtube/client.ts` - YouTube Data API v3
+- [x] **7.8** Create `hooks/useYouTubeData.ts` - React Query hooks
+- [ ] **7.9** Add `YOUTUBE_API_KEY` + `YOUTUBE_CHANNEL_ID` to env ⏳ **NEEDS USER ACTION**
 
-**X (Twitter) Integration**:
-- [ ] **7.11** Apply for X Developer Account
-- [ ] **7.12** Upgrade to Basic tier ($100/month)
-- [ ] **7.13** Generate Bearer Token
-- [ ] **7.14** Create `/lib/twitter/client.ts`
-- [ ] **7.15** Implement `Socials Stats` tile
+**Instagram Integration** ⛔ BLOCKED (Dec 28, 2025):
+- Meta Developer registration blocked by security checks
+- Instagram Business account exists (`gsull.11`) but cannot create Meta App
+- **Workaround attempted**: Multiple browsers/devices, VPN disabled, waited 48h
+- **Status**: Parked until Meta security issue resolves
+- **Alternative**: Manual entry form (future consideration)
 
 **Environment Variables Needed**:
 ```bash
@@ -1544,11 +1550,17 @@ TWITTER_USERNAME=odgsully
 | 4 | ✅ Complete | 6/6 | 0 | 0 |
 | 5 | ⛔ Blocked | 0/4 | 4 | ~20 |
 | 6 | 📋 Research | 1/5 | 4 | 31 |
-| 7 | 📋 Research | 1/6 | 5 | 89 |
+| 7 | 🚧 In Progress | 10/12 | 2 (env config) | ~5 |
 | 8 | ⏳ Partial | 1/4 | 3 | ~15 |
-| **Total** | | **40/56** | **16** | **~155** |
+| **Total** | | **49/62** | **13** | **~71** |
 
-**Overall Progress**: 71% complete (40/56 checklist items)
+**Overall Progress**: 79% complete (49/62 checklist items)
+
+**Phase 7 Breakdown (Dec 28, 2025)**:
+- ✅ WHOOP: Code complete, needs developer app registration
+- ✅ Twitter/X: Fully complete (code + DB), needs bearer token
+- ✅ YouTube: Code complete, needs API key
+- ⛔ Instagram: Blocked by Meta security checks
 
 ---
 

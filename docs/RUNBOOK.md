@@ -148,35 +148,25 @@ curl -I https://your-production-url.com
 
 **Step 2: Check deployment status**
 ```bash
-# Vercel
+# Vercel (Primary Platform)
 vercel ls
 vercel logs your-project
 
-# Hetzner (if applicable)
-ssh user@5.78.100.116 "pm2 status"
-ssh user@5.78.100.116 "pm2 logs wabbit --lines 50"
+# Check Vercel Dashboard
+# https://vercel.com/odgsullys-projects/wabbit-property-scraping
 ```
 
 **Step 3: Rollback if needed**
 
-**Vercel:**
+**Vercel (Primary):**
 ```bash
 # List deployments
 vercel ls
 
 # Rollback to previous
 vercel rollback [deployment-url]
-```
 
-**Hetzner/PM2:**
-```bash
-ssh user@5.78.100.116
-cd /var/www/wabbit
-
-# If backup exists
-mv wabbit wabbit-broken
-mv wabbit-backup-YYYYMMDD wabbit
-pm2 restart wabbit
+# Or via Dashboard: Deployments → Previous → ⋮ → Promote to Production
 ```
 
 **Step 4: Investigate root cause**
@@ -227,7 +217,7 @@ cat ~/.claude/safety_audit.jsonl | jq 'select(.timestamp > "2024-12-01")'
 
 ---
 
-## Monorepo Deployment (Updated Dec 2025)
+## Monorepo Deployment (Updated Jan 2025)
 
 ### App Configuration
 
@@ -238,32 +228,30 @@ cat ~/.claude/safety_audit.jsonl | jq 'select(.timestamp > "2024-12-01")'
 | Wabbit | 3002 | `/wabbit` | `/wabbit/api/health` |
 | GSRealty Client | 3004 | `/gsrealty` | `/gsrealty/api/health` |
 
+### Deploy to Production (Vercel - Primary)
+
+```bash
+# Deploy all apps
+vercel --prod
+
+# Deploy specific app
+cd apps/gs-site && vercel --prod
+
+# Check deployment status
+vercel ls
+
+# View logs
+vercel logs wabbit-property-scraping
+```
+
+**Vercel Dashboard**: https://vercel.com/odgsullys-projects/wabbit-property-scraping
+
 ### Deploy to Production (GitHub Actions)
 
 1. Go to GitHub → Actions → "Deploy to Production"
 2. Click "Run workflow"
 3. Type `deploy` to confirm
 4. Monitor the workflow progress
-
-### Deploy to Production (Hetzner/PM2)
-
-```bash
-# SSH to server
-ssh deploy@5.78.100.116
-
-# Run deployment script
-cd /var/www/wabbit
-./deployment/deploy.sh
-
-# This will:
-# - Backup current deployment
-# - Pull latest code
-# - Install dependencies
-# - Build all apps
-# - Restart PM2
-# - Run health checks
-# - Auto-rollback on failure
-```
 
 ### Verify Deployment
 
@@ -272,28 +260,23 @@ cd /var/www/wabbit
 ./scripts/verify-deployment.sh
 
 # Remote verification (production)
-./scripts/verify-deployment.sh https://wabbit-rank.ai
+./scripts/verify-deployment.sh https://wabbit-property-scraping.vercel.app
 
-# Remote verification (staging)
-./scripts/verify-deployment.sh https://staging.wabbit-rank.ai
+# Check cron jobs
+# Vercel Dashboard → Functions → Cron
 ```
 
-### Check All Apps Status (Hetzner)
+### Check All Apps Status (Vercel)
 
 ```bash
-ssh deploy@5.78.100.116
+# List all deployments
+vercel ls
 
-# View all apps
-pm2 status
+# View function logs
+vercel logs wabbit-property-scraping --follow
 
-# View logs for specific app
-pm2 logs gs-site --lines 50
-pm2 logs wabbit-re --lines 50
-pm2 logs wabbit --lines 50
-pm2 logs gsrealty --lines 50
-
-# Monitor all apps
-pm2 monit
+# Check via Dashboard
+# https://vercel.com/odgsullys-projects/wabbit-property-scraping/functions
 ```
 
 ### Quick Health Check
@@ -316,20 +299,7 @@ curl -s http://localhost:3004/api/health | jq
 
 ## Rollback Procedures
 
-### Interactive Rollback (Hetzner)
-
-```bash
-ssh deploy@5.78.100.116
-cd /var/www/wabbit
-
-# Interactive mode - shows available backups
-./scripts/rollback.sh
-
-# Or specify backup directly
-./scripts/rollback.sh backup_20251219_120000.tar.gz
-```
-
-### Vercel Deployment Rollback
+### Vercel Deployment Rollback (Primary)
 ```bash
 # List recent deployments
 vercel ls
@@ -364,7 +334,26 @@ git reset --hard HEAD~1
 git checkout [commit-hash] -- path/to/file
 ```
 
-### PM2/Hetzner Manual Rollback
+---
+
+## Legacy Procedures (Hetzner - Discontinued)
+
+> **Note**: Hetzner/PM2 deployment was discontinued in favor of Vercel. These procedures are kept for historical reference only.
+
+### Legacy: Interactive Rollback (Hetzner)
+
+```bash
+ssh deploy@5.78.100.116
+cd /var/www/wabbit
+
+# Interactive mode - shows available backups
+./scripts/rollback.sh
+
+# Or specify backup directly
+./scripts/rollback.sh backup_20251219_120000.tar.gz
+```
+
+### Legacy: PM2/Hetzner Manual Rollback
 ```bash
 ssh deploy@5.78.100.116
 cd /var/www/wabbit

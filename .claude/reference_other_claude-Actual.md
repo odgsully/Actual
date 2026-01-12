@@ -24,11 +24,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run db:update-demo` - Update demo account password
 - `npm run db:seed-data` - Seed sample property data
 
-### Deployment
-- PM2 process management: `pm2 start ecosystem.config.js`
-- Deploy script location: `deployment/deploy.sh`
-- Nginx config: `deployment/nginx.conf`
-- Server setup: `deployment/server-setup.sh`
+### Deployment (Vercel - Current)
+- Deploy to production: `vercel --prod`
+- Vercel project: `wabbit-property-scraping` (odgsullys-projects)
+- Vercel config: `vercel.json` (root and per-app)
+- See `docs/deployment/VERCEL_DEPLOYMENT_STATUS.md` for current status
+
+### Legacy Deployment Files (Hetzner - Discontinued)
+> **Note**: Hetzner/PM2/Nginx deployment was discontinued in favor of Vercel.
+- `ecosystem.config.js` - Legacy PM2 config
+- `deployment/nginx.conf` - Legacy Nginx config
+- `deployment/deploy.sh` - Legacy deploy script
 
 ## Architecture Overview
 
@@ -40,8 +46,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **AI**: OpenAI API for location intelligence
 - **State Management**: Zustand for client state, React Query for server state
 - **Forms**: React Hook Form with Zod validation
-- **Process Management**: PM2 for production
-- **Server**: Nginx reverse proxy with Let's Encrypt SSL
+- **Hosting**: Vercel (Pro Plan) with automatic SSL
+- **Build**: Turborepo for monorepo builds
 
 ### Project Structure
 ```
@@ -94,12 +100,12 @@ Production deployment requires these in `.env.production`:
 - Excludes: node_modules, dev_buildout, "every cc [copy] copy"
 
 ### Deployment Notes
-- Server: Hetzner CPX11 (2 vCPU, 2GB RAM, Ubuntu 24.04)
-- Domain: wabbit-rank.ai with Cloudflare DNS
-- SSL: Let's Encrypt via Certbot
-- Process Manager: PM2 with automatic restarts
-- Monitoring: Hetzner metrics + PM2 monitoring
-- Backups: Weekly Hetzner snapshots
+- **Platform**: Vercel (Pro Plan - odgsullys-projects)
+- **Production URL**: https://wabbit-property-scraping.vercel.app
+- **Domain**: wabbit-rank.ai with Cloudflare DNS
+- **SSL**: Automatic via Vercel
+- **Cron Jobs**: Configured in `vercel.json` (requires Pro plan)
+- **Monitoring**: Vercel Dashboard → Functions → Logs
 
 ### Data Processing
 The platform processes:

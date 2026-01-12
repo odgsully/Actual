@@ -15,6 +15,70 @@
     {
       "source": "/gsrealty/:path*",
       "destination": "/apps/gsrealty-client/:path*"
+    },
+    {
+      "source": "/private/gs-site/:path*",
+      "destination": "/apps/gs-site/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "growthadvisory.ai"
+        }
+      ]
+    },
+    {
+      "source": "/private/gs-site",
+      "destination": "/apps/gs-site",
+      "has": [
+        {
+          "type": "host",
+          "value": "growthadvisory.ai"
+        }
+      ]
+    },
+    {
+      "source": "/private/realty-admin/:path*",
+      "destination": "/apps/gsrealty-client/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "growthadvisory.ai"
+        }
+      ]
+    },
+    {
+      "source": "/private/realty-admin",
+      "destination": "/apps/gsrealty-client",
+      "has": [
+        {
+          "type": "host",
+          "value": "growthadvisory.ai"
+        }
+      ]
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/private/gs-site",
+      "permanent": false,
+      "has": [
+        {
+          "type": "host",
+          "value": "growthadvisory.ai"
+        }
+      ]
+    },
+    {
+      "source": "/private",
+      "destination": "/private/gs-site",
+      "permanent": false,
+      "has": [
+        {
+          "type": "host",
+          "value": "growthadvisory.ai"
+        }
+      ]
     }
   ],
   "crons": [
@@ -41,6 +105,22 @@
     {
       "path": "/gsrealty/api/cron/check-health",
       "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/lifx-sunrise-tick",
+      "schedule": "* 13-15 * * *"
+    },
+    {
+      "path": "/api/cron/lifx-evening-lock",
+      "schedule": "30 3 * * *"
+    },
+    {
+      "path": "/api/cron/lifx-midnight-reset",
+      "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/mfp-daily-sync",
+      "schedule": "0 20 * * *"
     }
   ],
   "headers": [

@@ -59,6 +59,10 @@ export function getAuthorizationUrl(state?: string): string {
  * Exchange authorization code for tokens
  */
 export async function exchangeCodeForTokens(code: string): Promise<GmailToken> {
+  console.log('[Gmail Exchange] Starting token exchange...');
+  console.log('[Gmail Exchange] Client ID:', GOOGLE_CONFIG.clientId?.substring(0, 20) + '...');
+  console.log('[Gmail Exchange] Redirect URI:', GOOGLE_CONFIG.redirectUri);
+
   const response = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -73,17 +77,34 @@ export async function exchangeCodeForTokens(code: string): Promise<GmailToken> {
 
   if (!response.ok) {
     const error = await response.text();
+    console.error('[Gmail Exchange] Token exchange failed:', error);
     throw new Error(`Failed to exchange code: ${error}`);
   }
 
   const data = await response.json();
+  console.log('[Gmail Exchange] Token exchange successful');
+  console.log('[Gmail Exchange] Token preview:', data.access_token?.substring(0, 30) + '...');
+  console.log('[Gmail Exchange] Has refresh_token:', !!data.refresh_token);
+  console.log('[Gmail Exchange] Expires in:', data.expires_in, 'seconds');
+
+  // Test the token immediately with tokeninfo
+  const tokenTest = await fetch(`https://oauth2.googleapis.com/tokeninfo?access_token=${data.access_token}`);
+  const tokenInfo = await tokenTest.json();
+  console.log('[Gmail Exchange] Token validation:', tokenTest.ok ? 'VALID' : 'INVALID', tokenInfo);
 
   // Get user email
   const userInfo = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
     headers: { Authorization: `Bearer ${data.access_token}` },
   });
 
+  if (!userInfo.ok) {
+    const userError = await userInfo.text();
+    console.error('[Gmail Exchange] UserInfo failed:', userError);
+    throw new Error(`Failed to get user info: ${userError}`);
+  }
+
   const user = await userInfo.json();
+  console.log('[Gmail Exchange] User email:', user.email);
 
   return {
     access_token: data.access_token,
@@ -197,13 +218,17 @@ export async function getGmailTokens(userId: string): Promise<GmailToken | null>
  * Fetch sent email count from Gmail API
  */
 export async function getSentEmailStats(accessToken: string): Promise<EmailStats> {
+  // Use Arizona timezone (MST = UTC-7, no DST) for date calculations
+  // This ensures "today" matches the user's local day, not server UTC
+  const arizonaOffset = -7 * 60; // -7 hours in minutes
   const now = new Date();
+  const arizonaNow = new Date(now.getTime() + (now.getTimezoneOffset() + arizonaOffset) * 60000);
 
-  // Calculate date boundaries
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  // Calculate date boundaries in Arizona time
+  const todayStart = new Date(arizonaNow.getFullYear(), arizonaNow.getMonth(), arizonaNow.getDate());
   const weekStart = new Date(todayStart);
   weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1); // Monday
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const monthStart = new Date(arizonaNow.getFullYear(), arizonaNow.getMonth(), 1);
 
   // Format dates for Gmail query (YYYY/MM/DD)
   const formatDate = (d: Date) => `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
@@ -228,11 +253,14 @@ export async function getSentEmailStats(accessToken: string): Promise<EmailStats
 
 /**
  * Fetch count of sent emails matching a query
+ *
+ * Note: We fetch up to 100 messages to get an accurate count.
+ * resultSizeEstimate is unreliable for small counts.
  */
 async function fetchSentCount(accessToken: string, query: string): Promise<number> {
   const params = new URLSearchParams({
     q: query,
-    maxResults: '1', // We only need the count
+    maxResults: '100', // Fetch actual messages for accurate count
   });
 
   const response = await fetch(
@@ -243,11 +271,23 @@ async function fetchSentCount(accessToken: string, query: string): Promise<numbe
   );
 
   if (!response.ok) {
-    console.error('Gmail API error:', await response.text());
+    const errorText = await response.text();
+    console.error('Gmail API error:', response.status, errorText);
+    // Throw on auth errors so they can be caught and token refreshed
+    if (response.status === 401) {
+      throw new Error(`401 Unauthorized: ${errorText}`);
+    }
     return 0;
   }
 
   const data = await response.json();
+
+  // Use actual messages array length for accuracy (up to 100)
+  // Fall back to resultSizeEstimate for counts > 100
+  if (data.messages && Array.isArray(data.messages)) {
+    return data.messages.length;
+  }
+
   return data.resultSizeEstimate || 0;
 }
 
@@ -298,6 +338,75 @@ async function fetchLastSentEmail(accessToken: string): Promise<string | null> {
 export async function isGmailConnected(userId: string): Promise<boolean> {
   const tokens = await getGmailTokens(userId);
   return tokens !== null;
+}
+
+/**
+ * Get Gmail tokens with automatic refresh on invalid tokens
+ * This validates the token against Gmail API and refreshes if needed
+ */
+export async function getGmailTokensWithRefresh(userId: string): Promise<GmailToken | null> {
+  console.log('[Gmail TokensWithRefresh] Querying DB for user:', userId);
+
+  const { data, error } = await supabase
+    .from('user_integrations')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('service', 'gmail')
+    .single();
+
+  console.log('[Gmail TokensWithRefresh] DB result - error:', error?.code, 'data exists:', !!data);
+
+  if (error || !data) {
+    console.log('[Gmail TokensWithRefresh] No token found, returning null');
+    return null;
+  }
+
+  console.log('[Gmail TokensWithRefresh] Found token for:', data.email);
+
+  // Try the current token with a simple API call
+  const testResponse = await fetch(
+    'https://gmail.googleapis.com/gmail/v1/users/me/profile',
+    { headers: { Authorization: `Bearer ${data.access_token}` } }
+  );
+
+  if (testResponse.ok) {
+    // Token is valid
+    return {
+      access_token: data.access_token,
+      refresh_token: data.refresh_token,
+      expires_at: new Date(data.expires_at).getTime(),
+      email: data.email,
+    };
+  }
+
+  // Token is invalid, try to refresh
+  console.log('[Gmail] Token invalid, refreshing...');
+
+  try {
+    const newTokens = await refreshAccessToken(data.refresh_token);
+
+    // Save new tokens to database
+    await supabase
+      .from('user_integrations')
+      .update({
+        access_token: newTokens.access_token,
+        refresh_token: newTokens.refresh_token,
+        expires_at: new Date(newTokens.expires_at).toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('user_id', userId)
+      .eq('service', 'gmail');
+
+    console.log('[Gmail] Token refreshed successfully');
+
+    return {
+      ...newTokens,
+      email: data.email,
+    };
+  } catch (refreshError) {
+    console.error('[Gmail] Refresh failed:', refreshError);
+    return null;
+  }
 }
 
 /**

@@ -64,13 +64,16 @@ function ProgressRing({ completed, total, size = 48 }: { completed: number; tota
 }
 
 /**
- * FormsCompletedTile - Displays weekly form completion progress
+ * FormsCompletedTile (Forms Wk Goal) - Displays weekly form completion progress
  *
  * Shows:
- * - Forms completed this week (out of 7)
+ * - Forms completed this week out of 7-day target (X/7)
  * - Progress ring visualization
  * - Average mood and calendar grade
  * - Deep work hours average
+ *
+ * The /7 represents the weekly goal: submit the Productivity Accountability Form
+ * once per day, every day of the week.
  *
  * Data comes from the custom Productivity Accountability Form via useFormStats hook.
  */
@@ -104,21 +107,38 @@ export function FormsCompletedTile({ tile, className }: FormsCompletedTileProps)
   };
 
   // Calculate if behind schedule (should have more submissions by this day of week)
-  const getDayOfWeek = () => {
-    const day = new Date().getDay();
-    // Convert to Monday-based (1=Mon, 7=Sun)
-    return day === 0 ? 7 : day;
+  // First form deadline is 12:45pm MST - before that, today's form isn't due yet
+  const calculateExpectedSubmissions = () => {
+    const now = new Date();
+
+    // Convert UTC to MST (UTC-7) - Arizona doesn't observe DST
+    const MST_OFFSET_HOURS = -7;
+    const mstNow = new Date(now.getTime() + MST_OFFSET_HOURS * 60 * 60 * 1000);
+
+    // Get day of week (Monday-based: 1=Mon, 7=Sun)
+    const utcDay = mstNow.getUTCDay();
+    const dayOfWeek = utcDay === 0 ? 7 : utcDay;
+
+    // Check if past first deadline (12:45pm MST)
+    const mstHour = mstNow.getUTCHours();
+    const mstMinute = mstNow.getUTCMinutes();
+    const isPastFirstDeadline = (mstHour > 12) || (mstHour === 12 && mstMinute >= 45);
+
+    // Before 12:45pm MST: today's form not due yet, so expected = dayOfWeek - 1
+    // After 12:45pm MST: today's form is due, so expected = dayOfWeek
+    const expectedByNow = isPastFirstDeadline ? dayOfWeek : Math.max(0, dayOfWeek - 1);
+
+    return { dayOfWeek, expectedByNow, isPastFirstDeadline };
   };
 
-  const dayOfWeek = getDayOfWeek();
-  const expectedByNow = dayOfWeek;
+  const { dayOfWeek, expectedByNow, isPastFirstDeadline } = calculateExpectedSubmissions();
   const isBehind = stats ? stats.thisWeek.completed < expectedByNow : false;
 
   return (
     <WarningBorderTrail
       active={tile.actionWarning || isBehind}
       hoverMessage={isBehind
-        ? `Behind schedule: ${stats?.thisWeek.completed || 0} of ${expectedByNow} expected by today`
+        ? `Behind schedule: ${stats?.thisWeek.completed || 0} of ${expectedByNow} expected${isPastFirstDeadline ? ' by now' : ' (before 12:45pm deadline)'}`
         : tile.actionDesc
       }
     >
@@ -128,7 +148,7 @@ export function FormsCompletedTile({ tile, className }: FormsCompletedTileProps)
           <div className="flex items-center gap-1.5">
             <ClipboardCheck className="w-4 h-4 text-blue-500" />
             <span className="text-xs font-medium text-foreground truncate">
-              This Week
+              Forms Wk Goal
             </span>
           </div>
           {isLoading && (

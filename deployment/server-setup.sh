@@ -1,5 +1,15 @@
 #!/bin/bash
 
+# ============================================================================
+# LEGACY SCRIPT - DISCONTINUED (January 2025)
+# ============================================================================
+# This server setup script was used for Hetzner deployment.
+# Production now runs on Vercel. This script is kept for historical reference.
+#
+# Current deployment: Vercel (see vercel.json)
+# See docs/deployment/VERCEL_DEPLOYMENT_STATUS.md for current procedures.
+# ============================================================================
+
 # Initial Server Setup Script for Hetzner Ubuntu 24.04
 # Run this script as root after first login to the server
 

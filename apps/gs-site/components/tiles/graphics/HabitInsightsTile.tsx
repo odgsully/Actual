@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Flame, TrendingUp, TrendingDown, Minus, AlertCircle, RefreshCw } from 'lucide-react';
 import { WarningBorderTrail } from '../WarningBorderTrail';
+import { HabitInsightsModal } from './HabitInsightsModal';
 import type { Tile } from '@/lib/types/tiles';
 
 interface HabitInsightsTileProps {
@@ -119,6 +120,8 @@ function CompletionBars({
  * Data comes from Notion Habits database via /api/notion/habits/insights
  */
 export function HabitInsightsTile({ tile, className }: HabitInsightsTileProps) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['habits', 'insights'],
     queryFn: fetchHabitsInsights,
@@ -137,17 +140,20 @@ export function HabitInsightsTile({ tile, className }: HabitInsightsTileProps) {
     border border-border
     rounded-lg
     hover:border-muted-foreground/30
+    hover:bg-muted/30
     transition-all duration-150
+    cursor-pointer
     ${tile.status === 'Done' ? 'opacity-60' : ''}
     ${className ?? ''}
   `.trim();
 
   return (
+    <>
     <WarningBorderTrail
       active={tile.actionWarning}
       hoverMessage={tile.actionDesc}
     >
-      <div className={baseClasses}>
+      <div className={baseClasses} onClick={() => setIsModalOpen(true)}>
         {/* Header */}
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-1.5">
@@ -234,6 +240,13 @@ export function HabitInsightsTile({ tile, className }: HabitInsightsTileProps) {
         )}
       </div>
     </WarningBorderTrail>
+
+    {/* Habit Insights Modal */}
+    <HabitInsightsModal
+      isOpen={isModalOpen}
+      onClose={() => setIsModalOpen(false)}
+    />
+    </>
   );
 }
 

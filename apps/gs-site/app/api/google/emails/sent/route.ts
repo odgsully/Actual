@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
-  getGmailTokens,
+  getGmailTokensWithRefresh,
   getSentEmailStats,
-  isGmailConnected,
 } from '@/lib/integrations/google/gmail-client';
 
 export interface EmailsSentResponse {
@@ -25,12 +24,12 @@ export interface EmailsSentResponse {
  */
 export async function GET(request: NextRequest) {
   try {
-    // For now, use a default user ID since we don't have full auth
-    // In production, this would come from the session
     const userId = 'default-user';
+    console.log('[Gmail API] Starting request for user:', userId);
 
-    // Check if Gmail is connected
-    const tokens = await getGmailTokens(userId);
+    // Get tokens (will auto-refresh if needed)
+    const tokens = await getGmailTokensWithRefresh(userId);
+    console.log('[Gmail API] Tokens result:', tokens ? `Found for ${tokens.email}` : 'Not found');
 
     if (!tokens) {
       return NextResponse.json<EmailsSentResponse>({
@@ -40,7 +39,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch email stats
+    console.log('[Gmail API] Fetching stats...');
     const stats = await getSentEmailStats(tokens.access_token);
+    console.log('[Gmail API] Stats:', stats);
 
     return NextResponse.json<EmailsSentResponse>({
       connected: true,
@@ -48,11 +49,12 @@ export async function GET(request: NextRequest) {
       stats,
     });
   } catch (error) {
-    console.error('Error fetching email stats:', error);
+    console.error('[Gmail API] ERROR:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return NextResponse.json<EmailsSentResponse>(
       {
         connected: false,
-        error: 'Failed to fetch email statistics',
+        error: `Failed to fetch email statistics: ${errorMessage}`,
       },
       { status: 500 }
     );

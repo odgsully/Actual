@@ -1,14 +1,33 @@
 'use client';
 
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, useEffect, Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { RefreshCw, CloudOff, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { MenuFilter } from '@/components/MenuFilter';
+import { TypeIIFilter } from '@/components/TypeIIFilter';
 import { PhaseReminder } from '@/components/PhaseReminder';
 import { TileDispatcher, TileErrorBoundary } from '@/components/tiles';
+import { EditModeToggle } from '@/components/EditModeToggle';
+import { GridErrorBoundary } from '@/components/GridErrorBoundary';
 import { useTiles } from '@/hooks/useTiles';
-import { useTileFilter } from '@/hooks/useTileFilter';
+import { useDualFilter } from '@/hooks/useDualFilter';
+import { toast } from 'sonner';
+
+// Dynamic import for DraggableGrid to avoid SSR issues
+const DraggableGrid = dynamic(
+  () => import('@/components/DraggableGrid').then((mod) => mod.DraggableGrid),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 animate-pulse">
+        {Array.from({ length: 10 }).map((_, i) => (
+          <div key={i} className="h-28 bg-muted rounded-lg" />
+        ))}
+      </div>
+    ),
+  }
+);
 
 // Dynamic imports for phase modals to avoid SSR issues
 const EveningCheckInModal = dynamic(
@@ -20,10 +39,14 @@ const MorningFormModal = dynamic(
   { ssr: false }
 );
 
-export default function Home() {
+// Inner component that uses useSearchParams via useDualFilter
+function DashboardContent() {
   // Phase form modal state
   const [showMorningModal, setShowMorningModal] = useState(false);
   const [showEveningModal, setShowEveningModal] = useState(false);
+
+  // Edit mode state for draggable grid
+  const [editMode, setEditMode] = useState(false);
 
   const handlePhaseComplete = useCallback((phase: 'morning' | 'evening' | null) => {
     if (phase === 'morning') {
@@ -32,15 +55,49 @@ export default function Home() {
       setShowEveningModal(true);
     }
   }, []);
+
+  // Toggle edit mode with toast notification
+  const handleEditModeToggle = useCallback(() => {
+    setEditMode((prev) => {
+      const newMode = !prev;
+      if (newMode) {
+        toast.info('Edit mode enabled', {
+          description: 'Drag tiles to rearrange. Press Escape or click lock to exit.',
+          duration: 3000,
+        });
+      } else {
+        toast.success('Layout locked', {
+          description: 'Tile positions saved for this session.',
+          duration: 2000,
+        });
+      }
+      return newMode;
+    });
+  }, []);
+
+  // Keyboard shortcut to exit edit mode
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && editMode) {
+        setEditMode(false);
+        toast.success('Layout locked');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [editMode]);
   // Static tiles render immediately, API enriches in background
   const { tiles, isRefreshing, isError, isStatic } = useTiles();
 
   const {
     activeCategory,
     setActiveCategory,
+    activeTypeII,
+    setActiveTypeII,
     filteredTiles,
-    tileCounts,
-  } = useTileFilter(tiles);
+    menuCounts,
+  } = useDualFilter(tiles);
 
   // Sort tiles: priority 1 first, then 2, then 3, then null
   const sortedTiles = useMemo(() => {
@@ -51,6 +108,17 @@ export default function Home() {
       return aOrder - bOrder;
     });
   }, [filteredTiles]);
+
+  // Render tiles as children (used by both grid types)
+  const tileChildren = useMemo(() => {
+    return sortedTiles.map((tile) => (
+      <div key={tile.id} className="h-full">
+        <TileErrorBoundary>
+          <TileDispatcher tile={tile} />
+        </TileErrorBoundary>
+      </div>
+    ));
+  }, [sortedTiles]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -76,6 +144,8 @@ export default function Home() {
                 <span className="text-xs hidden sm:inline">Offline</span>
               </div>
             )}
+            {/* Edit Layout Toggle */}
+            <EditModeToggle editMode={editMode} onToggle={handleEditModeToggle} />
             <Link
               href="/admin"
               className="p-2 hover:bg-accent rounded-md transition-colors"
@@ -101,11 +171,16 @@ export default function Home() {
             activeCategory={activeCategory}
             onCategoryChange={setActiveCategory}
           />
+          {/* Type II Filter - Second row with different background */}
+          <TypeIIFilter
+            activeTypeII={activeTypeII}
+            onTypeIIChange={setActiveTypeII}
+          />
           <div className="text-center pb-3 text-xs text-muted-foreground">
             Showing {sortedTiles.length} of {tiles.length} tiles
             {activeCategory !== 'ALL' && (
-              <span className="ml-2">
-                ({tileCounts[activeCategory]} in {activeCategory})
+              <span className="ml-1">
+                ({menuCounts[activeCategory]} in {activeCategory})
               </span>
             )}
           </div>
@@ -114,13 +189,15 @@ export default function Home() {
 
       {/* Main Content - Always renders tiles */}
       <main className="max-w-6xl mx-auto px-6 py-8">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {sortedTiles.map((tile) => (
-            <TileErrorBoundary key={tile.id}>
-              <TileDispatcher tile={tile} />
-            </TileErrorBoundary>
-          ))}
-        </div>
+        <GridErrorBoundary fallbackChildren={tileChildren}>
+          <DraggableGrid
+            tiles={sortedTiles}
+            editMode={editMode}
+            rowHeight={112}
+          >
+            {tileChildren}
+          </DraggableGrid>
+        </GridErrorBoundary>
 
         {sortedTiles.length === 0 && (
           <div className="text-center py-12 text-muted-foreground">
@@ -133,10 +210,40 @@ export default function Home() {
       <footer className="mt-auto border-t border-border">
         <div className="max-w-6xl mx-auto px-6 py-4">
           <p className="text-xs text-muted-foreground text-center tracking-wide">
-            GS Site 2025 {isStatic ? '• Static Data' : '• Synced with Notion'}
+            GS Site 2025
           </p>
         </div>
       </footer>
     </div>
+  );
+}
+
+// Loading fallback for Suspense
+function DashboardSkeleton() {
+  return (
+    <div className="min-h-screen bg-background">
+      <header className="border-b border-border">
+        <div className="max-w-6xl mx-auto px-6 py-4">
+          <div className="h-6 w-32 bg-muted rounded animate-pulse" />
+          <div className="h-4 w-24 bg-muted rounded animate-pulse mt-1" />
+        </div>
+      </header>
+      <main className="max-w-6xl mx-auto px-6 py-8">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 animate-pulse">
+          {Array.from({ length: 10 }).map((_, i) => (
+            <div key={i} className="h-28 bg-muted rounded-lg" />
+          ))}
+        </div>
+      </main>
+    </div>
+  );
+}
+
+// Main export wrapped in Suspense for useSearchParams compatibility
+export default function Home() {
+  return (
+    <Suspense fallback={<DashboardSkeleton />}>
+      <DashboardContent />
+    </Suspense>
   );
 }

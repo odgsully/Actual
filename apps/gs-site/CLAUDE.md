@@ -109,10 +109,75 @@ See `gs-site-notion-sum.md` for full integration matrix. Key ones:
 - **Google Gmail**: ✅ Sent email count tracking (implemented Dec 2025)
 - **Google Forms**: Forms data (not yet implemented)
 
+## Tile Sizing & Aesthetic Guidelines (Dec 2025)
+
+### Uniform Tile Sizing
+**ALL tiles must be uniform size.** Do NOT create variable-height tiles.
+
+- **Grid**: react-grid-layout with uniform `h:1` for all tiles
+- **Row Height**: 112px (configured in `app/page.tsx`)
+- **Tile Height**: `h-28` (112px) - matches row height exactly
+- **No variable heights**: Removed h:2 system due to "error perimeter" issues
+
+### Tiles as Launchers (NOT Containers)
+Tiles should be **compact launchers** that open detail views on click:
+
+| Pattern | Use Case | Implementation |
+|---------|----------|----------------|
+| **Modal/Popup** | Forms, calculators, settings | Click tile → modal overlay |
+| **Subpage** | Complex data views, dashboards | Click tile → `/tile-name` route |
+| **External Link** | Third-party services | Click tile → new tab |
+
+**DO NOT** try to fit complex content inside the tile itself. If content doesn't fit in 112px height, it should open a popup/subpage.
+
+### Navigation Patterns
+```
+Tile Click → Modal (preferred for forms/quick actions)
+Tile Click → Subpage (for complex data that needs full screen)
+Tile Click → External URL (for third-party links)
+```
+
+### Modal/Popup Sizing Guidelines
+Modals should fill majority of the viewport, not be cramped:
+- **Width**: `max-w-5xl` (fills most of screen)
+- **Height**: `h-[90vh]` (90% of viewport)
+- **Padding**: `p-6 lg:p-8` (generous spacing)
+- **Close options**: X button in header + Escape key + backdrop click
+- **Layout**: Use `max-w-3xl mx-auto` or `max-w-4xl mx-auto` for content sections
+- **Typography**: Larger text in modals (text-xl headers, text-lg inputs)
+
+Example modal structure:
+```tsx
+<div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+  <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+  <div className="relative w-full max-w-5xl h-[90vh] bg-background rounded-xl overflow-hidden flex flex-col">
+    {/* Header with close button */}
+    {/* Tab navigation (if needed) */}
+    {/* Scrollable content area */}
+  </div>
+</div>
+```
+
+### Content-Heavy Tiles (Convert to Popup Pattern)
+These tiles have content that exceeds 112px and should open popups/subpages:
+- RE KPI's & Calc → Popup calculator
+- Task List → Popup with full task view
+- Habits (heatmap) → Popup with detailed view
+- Calendar tiles → Popup with full calendar
+- Forms Wk Goal → Popup with detailed metrics
+
+### Tile Visual Rules
+- Fixed height: `h-28` (112px)
+- Consistent padding: `p-4`
+- Status indicator: top-right dot (blue=in progress, green=done)
+- Truncate long text with `line-clamp-2` or `truncate`
+- Show "preview" data only - full data in popup
+
 ## When Implementing Tiles
 
 1. Check `gs-site-notion-sum.md` for the tile's full spec
 2. Note the Priority (1 = Critical, 3 = Nice to have)
 3. Check Third Party dependencies
-4. Update the tile's status in gs-site-notion-sum.md when done
-5. Add implementation notes if the logic differs from original spec
+4. **If content exceeds 112px height → implement as popup/subpage launcher**
+5. Update the tile's status in gs-site-notion-sum.md when done
+6. Add implementation notes if the logic differs from original spec

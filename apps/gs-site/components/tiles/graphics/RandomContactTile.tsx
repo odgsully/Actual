@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { User, Phone, Mail, RefreshCw, Shuffle, Building2 } from 'lucide-react';
 import { WarningBorderTrail } from '../WarningBorderTrail';
+import { useConnectionHealth } from '@/hooks/useConnectionHealth';
 import type { TileComponentProps } from '../TileRegistry';
 import type { Contact } from '@/lib/contacts/types';
 
@@ -80,6 +81,13 @@ interface ContactDisplayProps {
 }
 
 function ContactDisplay({ contact, isNew }: ContactDisplayProps) {
+  // Open contact in Contacts app (macOS/iOS)
+  const openInContacts = () => {
+    // Try to open Contacts app - on macOS this opens the app
+    // The addressbook:// scheme opens Contacts.app
+    window.location.href = 'addressbook://';
+  };
+
   return (
     <AnimatePresence mode="wait">
       <motion.div
@@ -90,17 +98,24 @@ function ContactDisplay({ contact, isNew }: ContactDisplayProps) {
         transition={{ duration: 0.3 }}
         className="flex flex-col items-center gap-2 w-full"
       >
-        {/* Avatar circle with initials */}
-        <motion.div
-          className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center"
+        {/* Avatar circle with initials - clickable to open Contacts */}
+        <motion.button
+          onClick={(e) => {
+            e.stopPropagation();
+            openInContacts();
+          }}
+          className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-colors cursor-pointer"
           initial={isNew ? { rotate: -180, scale: 0 } : false}
           animate={{ rotate: 0, scale: 1 }}
           transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.1 }}
+          title="Open in Contacts app"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
         >
           <span className="text-lg font-bold text-primary">
             {getInitials(contact.fullName)}
           </span>
-        </motion.div>
+        </motion.button>
 
         {/* Name */}
         <motion.h4
@@ -187,6 +202,7 @@ export function RandomContactTile({ tile, className }: TileComponentProps) {
   const [error, setError] = useState<Error | null>(null);
   const [showSlotMachine, setShowSlotMachine] = useState(false);
   const [isNewContact, setIsNewContact] = useState(false);
+  const { shouldShowWarning } = useConnectionHealth(tile);
 
   // Load contacts on mount
   useEffect(() => {
@@ -299,7 +315,7 @@ export function RandomContactTile({ tile, className }: TileComponentProps) {
   `.trim();
 
   return (
-    <WarningBorderTrail active={tile.actionWarning} hoverMessage={tile.actionDesc}>
+    <WarningBorderTrail active={shouldShowWarning} hoverMessage={tile.actionDesc}>
       <div className={baseClasses}>
         {/* Header */}
         <div className="flex items-center justify-between mb-3">
