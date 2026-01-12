@@ -16,10 +16,7 @@ export {
 
 // Warning test utilities
 export {
-  WARNING_TESTS,
-  TILE_WARNING_MAP,
-  getWarningTestForTile,
   shouldShowWarning,
-  checkWarningsForTiles,
-  getTilesWithWarnings,
+  registerWarningTest,
+  unregisterWarningTest,
 } from './warning-tests';

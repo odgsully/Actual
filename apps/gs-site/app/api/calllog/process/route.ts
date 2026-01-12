@@ -109,14 +109,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Merge all extractions
-    const merged = mergeExtractions(extractions) as LLMCallLogExtraction;
+    const merged = mergeExtractions(extractions) as unknown as LLMCallLogExtraction;
 
     // Normalize and validate calls
     const validCalls: CallEntry[] = [];
     for (const call of merged.calls || []) {
-      const normalized = normalizeCallEntry(call as Record<string, unknown>);
+      const normalized = normalizeCallEntry(call as unknown as Record<string, unknown>);
       if (normalized) {
-        validCalls.push(normalized as CallEntry);
+        validCalls.push(normalized as unknown as CallEntry);
       }
     }
 
