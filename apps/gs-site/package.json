@@ -11,7 +11,6 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "sync-tiles": "npx tsx scripts/sync-notion-tiles.ts",
     "export-tiles": "npx tsx scripts/export-tiles-to-md.ts",
     "typecheck": "tsc --noEmit",
     "voice:status": "npx tsx scripts/setup-voice-agents.ts status",
