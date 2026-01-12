@@ -16,6 +16,51 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | **susin** | Spin up subagents if needed |
 | **aacqin** | Ask any clarifying questions if needed |
 
+## Previous Session Reference
+
+**Trigger phrases**: When the user mentions any of the following, proactively ask if they want to reference previous session history:
+- "previous session"
+- "last session"
+- "earlier session"
+- "previous instance of Claude Code"
+- "previous CC session"
+- "in another chat"
+- "we discussed before"
+
+**How to access session history**:
+
+Claude Code stores full conversation transcripts locally:
+
+```
+~/.claude/projects/[project-path-encoded]/[session-id].jsonl
+```
+
+**To find relevant sessions**:
+```bash
+# List recent sessions for this project
+ls -lt ~/.claude/projects/-Users-garrettsullivan-Desktop-AUTOMATE-Vibe-Code-Wabbit-clients-sullivan-realestate-Actual/*.jsonl | head -10
+
+# Search for sessions mentioning a keyword
+for f in $(ls -t ~/.claude/projects/[project-path]/*.jsonl | head -15); do
+  if grep -l -i "keyword" "$f" 2>/dev/null; then
+    echo "--- Found in: $f ---"
+    head -1 "$f" | jq -r '.summary // "no summary"'
+  fi
+done
+
+# Extract conversation from a session
+cat [session-file].jsonl | jq -r 'select(.type == "user" or .type == "assistant") | ...'
+```
+
+**Session JSONL structure**:
+- `type: "summary"` - Session title/summary
+- `type: "user"` - User messages
+- `type: "assistant"` - Claude responses (includes tool calls)
+- `type: "file-history-snapshot"` - File state tracking
+
+**Proactive question to ask**:
+> "Would you like me to look up the previous session history? I can search for sessions by keyword or list recent ones. What topic/keyword should I search for?"
+
 ## ⚠️ Critical Context (September 5, 2024)
 
 **IMPORTANT**: This is the restored working version from the `main` branch. The `clean-deployment` branch was corrupted (missing 34,199 files including authentication) and should NOT be used. See `Fix_explain_09.05.md` and `docs/deployment/DEPLOYMENT_FIX_CONTEXT.md` for restoration details.
@@ -301,16 +346,20 @@ After deploying to Vercel, verify cron jobs are active in Vercel Dashboard → F
 
 For detailed implementation status, see `SCRAPING_SYSTEM_STATUS.md`.
 
-## GS Site Dashboard (December 22, 2025)
+## GS Site Dashboard (Updated January 2026)
+
+### Architecture Note (Jan 2026)
+**Tiles are now fully local.** The `decouple-notion-tiles` branch decoupled tile definitions from Notion:
+- All 53 tile definitions are in `lib/data/tiles.ts` (LOCAL_TILES)
+- Notion is used **only for DATA** (habits values, task completion)
+- The tile sync script (`npm run sync-tiles`) has been deprecated
 
 ### Development Status
 See [`apps/gs-site/tile-logic-untile.md`](./apps/gs-site/tile-logic-untile.md) for the complete implementation plan.
 
-**Branch**: `gssite-dec18-per-notion`
-
 | Phase | Status | Description |
 |-------|--------|-------------|
-| Phase 0 | ✅ Complete | Foundation Resilience - Static tiles, sync script |
+| Phase 0 | ✅ Complete | Foundation Resilience - Static tiles |
 | Phase 1 | ✅ Complete | Core UI Components - ButtonTile, GraphicTile, CalendarTile, FormTile, DropzoneTile |
 | Phase 2 | ✅ Complete | Notion Dynamic Data - Habits streaks, task completion |
 | Phase 3 | ✅ Complete | GitHub Integration - Commits, repos, search |
@@ -344,5 +393,5 @@ WABBIT_URL=http://localhost:3002
 - GS-clients Admin → gsrealty-client
 
 ### GS Site Commands
-- `npm run dev:dashboard` - Start gs-site on port 3003
-- `npm run sync-tiles` - Sync tile definitions from Notion to `lib/data/tiles.ts`
+- `npm run dev` - Start gs-site on port 3003
+- `npm run export-tiles` - Export tile data to markdown documentation

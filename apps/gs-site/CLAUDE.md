@@ -2,53 +2,43 @@
 
 ## Source of Truth
 
-**CRITICAL**: The file `gs-site-notion-sum.md` is the PRIMARY source of truth for:
-- Tile definitions and logic
-- Implementation goals and requirements
-- Third-party integration specs
-- Priority and phase assignments
+**Tile Definitions**: All tile definitions are now stored locally in `lib/data/tiles.ts`.
+Notion is used **only for DATA** (habits values, task completion), NOT for tile definitions.
 
-**Notion is SECONDARY**. When implementing features:
-1. Read `gs-site-notion-sum.md` first
-2. Only query Notion API if you need real-time data (habits, tasks)
-3. When logic conflicts exist, this local file takes precedence
+**Documentation**: The file `gs-site-notion-sum.md` contains implementation specs and goals.
 
-## Keeping Documentation Current
+## Architecture (Updated Jan 2026)
 
-The `gs-site-notion-sum.md` file MUST be kept up to date:
+Tiles are fully decoupled from Notion:
+- **Tile definitions**: `lib/data/tiles.ts` (LOCAL_TILES array)
+- **Habits data**: Notion API via `lib/notion/habits.ts`
+- **Tasks data**: Notion API via `lib/notion/tasks.ts`
 
-| When | Action |
-|------|--------|
-| **Tile logic changes** | Update the tile's description in gs-site-notion-sum.md |
-| **New tile implemented** | Add implementation notes to the tile entry |
-| **Status changes** | Update status in gs-site-notion-sum.md (NOT just Notion) |
-| **Weekly sync** | Consider running full Notion sync to catch any additions |
-
-### Sync Commands
-```bash
-# Quick tile sync (definitions only)
-npm run sync-tiles
-
-# Full resync via Claude Code
-# Ask Claude to "sync tiles from Notion to gs-site-notion-sum.md"
-```
+The old tile sync infrastructure has been deprecated (see `scripts/archive/`).
 
 ## Key Files
 
 | File | Purpose |
 |------|---------|
-| `gs-site-notion-sum.md` | **Source of truth** - All tile logic and goals |
-| `lib/data/tiles.ts` | Runtime tile definitions (synced from Notion) |
-| `lib/notion/habits.ts` | Notion Habits database client |
-| `lib/notion/tasks.ts` | Notion Task List database client |
+| `lib/data/tiles.ts` | **Source of truth** - All tile definitions (LOCAL_TILES) |
+| `lib/notion/habits.ts` | Notion Habits database client (DATA only) |
+| `lib/notion/tasks.ts` | Notion Task List database client (DATA only) |
+| `gs-site-notion-sum.md` | Implementation specs and goals documentation |
 | `tile-logic-untile.md` | Implementation plan and phase breakdown |
 
 ## Notion Integration Status
 
+**Note**: Notion is used for DATA only (habits, tasks), NOT for tile definitions.
+
 ### Working
-- Tile sync script (`npm run sync-tiles`)
-- API route structure for habits and tasks
+- Habits API routes (`/api/notion/habits/*`)
+- Tasks API routes (`/api/notion/tasks/*`)
 - React Query hooks for data fetching
+
+### Deprecated (Jan 2026)
+- Tile sync script (archived to `scripts/archive/`)
+- Tiles API route (`/api/tiles`) - removed
+- `tiles-client.ts` (archived to `lib/notion/archive/`)
 
 ### Needs Configuration
 ```bash
@@ -59,16 +49,16 @@ NOTION_TASKS_DATABASE_ID=xxx
 ```
 
 ### Database IDs
-- **Tiles Database**: `28fcf08f-4499-8017-b530-ff06c9f64f97`
-- **GS Site Page**: `26fcf08f-4499-80e7-9514-da5905461e73`
+- **Habits Database**: Referenced in `lib/notion/habits.ts`
+- **Tasks Database**: Referenced in `lib/notion/tasks.ts`
 
 ## Development Commands
 
 ```bash
 npm run dev              # Start gs-site on port 3003 (MUST be 3003)
-npm run dev:dashboard    # Alias for dev on port 3003
-npm run sync-tiles       # Sync tile definitions from Notion
 npm run build            # Production build
+npm run typecheck        # TypeScript type checking
+npm run test             # Run Jest tests
 ```
 
 ## Google OAuth Configuration

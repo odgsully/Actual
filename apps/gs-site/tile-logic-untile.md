@@ -2,12 +2,28 @@
 
 > **Purpose**: Transform the current static tile grid into a dynamic, Notion-synced dashboard with intelligent warnings, 3rd party integrations, and component-specific UI patterns.
 >
-> **Last Updated**: December 29, 2025
-> **Branch**: `gssite-dec27-ii`
+> **Last Updated**: January 2026
 > **Phase 0**: ✅ COMPLETE | **Phase 1**: ✅ COMPLETE | **Phase 2**: ✅ COMPLETE | **Phase 3**: ✅ COMPLETE | **Phase 4**: ✅ COMPLETE
 > **Phase 5**: ⛔ BLOCKED (no Wabbit app) | **Phase 6**: 📋 Research Done | **Phase 7**: 🚧 WHOOP OAuth Done | **Phase 8**: ✅ Logic Tiles Done
 > **Gmail Integration**: ✅ COMPLETE (Dec 23, 2025) - Emails Sent tile working with OAuth
 > **New Tiles (Dec 29)**: Goals (popup with checkable goals), LLM Benchmarks (multi-link popup), Directory Health (folder scanner)
+
+## ⚠️ Architecture Update (January 2026)
+
+**Tiles are now fully decoupled from Notion.** See `decouplenotion.md` for the migration plan.
+
+| What | Before | After |
+|------|--------|-------|
+| **Tile definitions** | Synced from Notion via `npm run sync-tiles` | Local in `lib/data/tiles.ts` (LOCAL_TILES) |
+| **Habits/Tasks data** | Notion API | Notion API (unchanged) |
+| **useTiles hook** | React Query → /api/tiles → Notion | Direct import from tiles.ts |
+| **Default filter** | 'Org' | 'ALL' (show all tiles) |
+
+Key files changed:
+- `lib/data/tiles.ts` - All 53 tiles consolidated into LOCAL_TILES
+- `hooks/useTiles.ts` - Simplified to return local data
+- `hooks/useDualFilter.ts` - Default changed to 'ALL'
+- `scripts/archive/` - Deprecated sync scripts
 
 ---
 

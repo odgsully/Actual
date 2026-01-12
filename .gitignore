@@ -50,6 +50,8 @@ database-schema.sql
 # User uploads/data
 uploads/
 data/
+# Unignore code files in lib/data directories (tiles.ts, etc.)
+!**/lib/data/
 backups/
 supabase-backups-*/
 *.tar.gz
