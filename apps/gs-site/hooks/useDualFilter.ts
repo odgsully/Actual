@@ -33,6 +33,12 @@ const VALID_MENU_CATEGORIES: MenuCategory[] = [
   'Learn',
 ];
 
+/**
+ * Default menu category - changed from 'Org' to 'ALL' as part of
+ * decouple-notion-tiles migration to show all tiles by default.
+ */
+const DEFAULT_MENU: MenuCategory = 'ALL';
+
 const VALID_TYPE_II: TypeIICategory[] = [
   'ALL',
   'Button',
@@ -50,7 +56,7 @@ export function useDualFilter(
   options: UseDualFilterOptions = {}
 ): UseDualFilterReturn {
   const {
-    initialMenuCategory = 'Org',
+    initialMenuCategory = DEFAULT_MENU,
     initialTypeII = 'ALL',
     persistToUrl = true,
   } = options;
@@ -88,8 +94,8 @@ export function useDualFilter(
 
       const params = new URLSearchParams(searchParams.toString());
 
-      // Only add non-default values to URL
-      if (menu !== 'Org') {
+      // Only add non-default values to URL (default is ALL, not Org)
+      if (menu !== DEFAULT_MENU) {
         params.set('menu', menu);
       } else {
         params.delete('menu');
@@ -183,9 +189,9 @@ export function useDualFilter(
   }, [menuFilteredTiles]);
 
   const resetFilters = useCallback(() => {
-    setActiveCategoryState('Org');
+    setActiveCategoryState(DEFAULT_MENU);
     setActiveTypeIIState('ALL');
-    updateUrl('Org', 'ALL');
+    updateUrl(DEFAULT_MENU, 'ALL');
   }, [updateUrl]);
 
   return {

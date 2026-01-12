@@ -2,7 +2,7 @@
  * Tests for useDualFilter hook
  *
  * These tests verify the dual-filter (menu + typeII) behavior.
- * Important: Tests the current default of 'Org' - after FIX #2, update to expect 'ALL'.
+ * Updated: Default menu category is now 'ALL' (changed from 'Org' in Phase 3 - FIX #2).
  */
 import { renderHook, act } from '@testing-library/react';
 import { useDualFilter } from '@/hooks/useDualFilter';
@@ -88,12 +88,11 @@ describe('useDualFilter', () => {
   });
 
   describe('initial state', () => {
-    it('defaults to Org menu category (CURRENT BEHAVIOR - will change to ALL)', () => {
+    it('defaults to ALL menu category', () => {
       const { result } = renderHook(() => useDualFilter(mockTiles));
 
-      // CURRENT: defaults to 'Org'
-      // AFTER FIX #2: should default to 'ALL'
-      expect(result.current.activeCategory).toBe('Org');
+      // FIX #2 implemented: now defaults to 'ALL' (was 'Org')
+      expect(result.current.activeCategory).toBe('ALL');
     });
 
     it('defaults to ALL typeII category', () => {
@@ -122,7 +121,14 @@ describe('useDualFilter', () => {
         useDualFilter(mockTiles, { persistToUrl: false })
       );
 
-      // With default 'Org', should only show Org tiles
+      // With default 'ALL', should show all tiles initially
+      expect(result.current.filteredTiles.length).toBe(5);
+
+      // Change to Org filter
+      act(() => {
+        result.current.setActiveCategory('Org');
+      });
+
       const orgTileIds = result.current.filteredTiles.map(t => t.id);
 
       // Tiles 1, 3, 5 have 'Org' in menu
@@ -221,7 +227,7 @@ describe('useDualFilter', () => {
   });
 
   describe('resetFilters', () => {
-    it('resets to default values (CURRENT: Org, will be ALL after FIX #2)', () => {
+    it('resets to default values (ALL for menu, ALL for typeII)', () => {
       const { result } = renderHook(() =>
         useDualFilter(mockTiles, { persistToUrl: false })
       );
@@ -240,9 +246,8 @@ describe('useDualFilter', () => {
         result.current.resetFilters();
       });
 
-      // CURRENT: resets to 'Org'
-      // AFTER FIX #2: should reset to 'ALL'
-      expect(result.current.activeCategory).toBe('Org');
+      // FIX #2 implemented: now resets to 'ALL' (was 'Org')
+      expect(result.current.activeCategory).toBe('ALL');
       expect(result.current.activeTypeII).toBe('ALL');
     });
   });
@@ -279,7 +284,8 @@ describe('useDualFilter', () => {
  * The URL behavior is tested manually via the verification steps in decouplenotion.md.
  *
  * Key URL behaviors to verify manually:
- * 1. Default (Org/ALL) should NOT appear in URL
+ * 1. Default (ALL/ALL) should NOT appear in URL (clean URL)
  * 2. Non-default values should appear as ?menu=X&type=Y
  * 3. Loading a URL with params should restore filter state
+ * 4. Old bookmarks with ?menu=Org should still work
  */
