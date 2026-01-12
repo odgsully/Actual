@@ -388,7 +388,7 @@ export default function ExamplesPage() {
         {/* Header */}
         <header className="border-b border-border sticky top-0 bg-background z-50">
           <div className="max-w-7xl mx-auto px-6 py-4 flex items-center gap-4">
-            <Link href="/" className="text-muted-foreground hover:text-foreground transition-colors">
+            <Link href="/private/gs-site" className="text-muted-foreground hover:text-foreground transition-colors">
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div className="flex-1">

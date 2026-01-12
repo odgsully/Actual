@@ -25,7 +25,7 @@ export default function CodebaseLearnPage() {
       <header className="bg-zinc-900 border-b border-zinc-800">
         <div className="max-w-5xl mx-auto px-6 py-8">
           <Link
-            href="/"
+            href="/private/gs-site"
             className="inline-flex items-center gap-2 text-zinc-400 hover:text-white transition-colors mb-4"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

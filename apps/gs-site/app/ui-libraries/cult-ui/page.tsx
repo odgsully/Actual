@@ -202,7 +202,7 @@ export default function CultUIShowcase() {
         <div className="max-w-6xl mx-auto px-6 py-4">
           <div className="flex items-center gap-4">
             <Link
-              href="/"
+              href="/private/gs-site"
               className="p-2 rounded-md hover:bg-muted transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
