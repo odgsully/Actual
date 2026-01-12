@@ -97,83 +97,34 @@ const DATA_HOOK_PATTERNS = [
 // Step 1: Parse tiles.ts
 // =============================================================================
 
+/**
+ * Parse LOCAL_TILES from tiles.ts
+ * Note: As of Jan 2026, all tiles are in LOCAL_TILES (STATIC_TILES deprecated)
+ */
 function parseTilesFile(): {
-  localTiles: TileFromCode[];
-  notionTiles: TileFromCode[];
-  hiddenTileIds: Set<string>;
+  tiles: TileFromCode[];
 } {
   const tilesPath = resolve(GS_SITE_ROOT, 'lib/data/tiles.ts');
   const content = readFileSync(tilesPath, 'utf-8');
 
-  // Extract LOCAL_TILES array
+  // Extract LOCAL_TILES array - this is now the only source of tiles
   const localTilesMatch = content.match(
     /export const LOCAL_TILES:\s*Tile\[\]\s*=\s*(\[[\s\S]*?\]);/
   );
-  const localTiles: TileFromCode[] = [];
+  const tiles: TileFromCode[] = [];
   if (localTilesMatch) {
     try {
       // Parse the JSON-like array (it's valid JSON)
       const parsed = JSON.parse(localTilesMatch[1].replace(/,\s*\]/g, ']'));
       for (const tile of parsed) {
-        localTiles.push({ ...tile, source: 'local', hidden: false });
+        tiles.push({ ...tile, source: 'local', hidden: false });
       }
     } catch (e) {
       console.warn('Warning: Could not parse LOCAL_TILES as JSON, using regex fallback');
     }
   }
 
-  // Extract HIDDEN_TILE_IDS
-  const hiddenMatch = content.match(
-    /export const HIDDEN_TILE_IDS\s*=\s*new Set\(\[\s*([\s\S]*?)\]\)/
-  );
-  const hiddenTileIds = new Set<string>();
-  if (hiddenMatch) {
-    const idsString = hiddenMatch[1];
-    const idMatches = idsString.matchAll(/["']([^"']+)["']/g);
-    for (const match of idMatches) {
-      hiddenTileIds.add(match[1]);
-    }
-  }
-
-  // Extract NOTION_TILES array - find start and end more robustly
-  const notionTilesStartMatch = content.match(/const NOTION_TILES:\s*Tile\[\]\s*=\s*\[/);
-  const notionTiles: TileFromCode[] = [];
-
-  if (notionTilesStartMatch) {
-    const startIndex = notionTilesStartMatch.index! + notionTilesStartMatch[0].length - 1;
-    // Find the matching closing bracket
-    let bracketCount = 1;
-    let endIndex = startIndex + 1;
-    while (bracketCount > 0 && endIndex < content.length) {
-      if (content[endIndex] === '[') bracketCount++;
-      if (content[endIndex] === ']') bracketCount--;
-      endIndex++;
-    }
-    let arrayStr = content.slice(startIndex, endIndex);
-    try {
-      // Remove JavaScript comments (single-line // comments)
-      arrayStr = arrayStr.replace(/\/\/[^\n]*/g, '');
-      // Remove multi-line comments
-      arrayStr = arrayStr.replace(/\/\*[\s\S]*?\*\//g, '');
-      // Clean up trailing commas before parsing
-      arrayStr = arrayStr.replace(/,(\s*[\]}])/g, '$1');
-      // Remove empty lines
-      arrayStr = arrayStr.replace(/\n\s*\n/g, '\n');
-
-      const parsed = JSON.parse(arrayStr);
-      for (const tile of parsed) {
-        notionTiles.push({
-          ...tile,
-          source: 'notion',
-          hidden: hiddenTileIds.has(tile.id),
-        });
-      }
-    } catch (e) {
-      console.warn('Warning: Could not parse NOTION_TILES as JSON:', (e as Error).message);
-    }
-  }
-
-  return { localTiles, notionTiles, hiddenTileIds };
+  return { tiles };
 }
 
 // =============================================================================
@@ -640,12 +591,10 @@ async function main() {
 
   console.log('🔄 Exporting tiles from code to markdown...\n');
 
-  // Step 1: Parse tiles.ts
+  // Step 1: Parse tiles.ts (all tiles are now in LOCAL_TILES)
   console.log('📖 Reading tiles.ts...');
-  const { localTiles, notionTiles, hiddenTileIds } = parseTilesFile();
-  console.log(`   Found ${localTiles.length} LOCAL_TILES`);
-  console.log(`   Found ${notionTiles.length} NOTION_TILES`);
-  console.log(`   Found ${hiddenTileIds.size} HIDDEN_TILE_IDS`);
+  const { tiles } = parseTilesFile();
+  console.log(`   Found ${tiles.length} tiles in LOCAL_TILES`);
 
   // Step 2: Parse TileRegistry.tsx
   console.log('\n📖 Reading TileRegistry.tsx...');
@@ -656,13 +605,7 @@ async function main() {
   console.log('\n🔍 Deep scanning components for data hooks...');
   const allTiles: TileFromCode[] = [];
 
-  for (const tile of localTiles) {
-    const enriched = determineImplementationStatus(tile, specializedTiles);
-    enriched.typeII = getTypeII(enriched);
-    allTiles.push(enriched);
-  }
-
-  for (const tile of notionTiles) {
+  for (const tile of tiles) {
     const enriched = determineImplementationStatus(tile, specializedTiles);
     enriched.typeII = getTypeII(enriched);
     allTiles.push(enriched);
