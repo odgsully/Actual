@@ -84,16 +84,31 @@ export function PhaseReminder({ onCompleteClick }: PhaseReminderProps) {
   }, [currentTime, config]);
 
   useEffect(() => {
-    // TODO: Check if today's phase form is completed
-    // This would query Notion/Supabase for today's form submission
+    // Check if today's phase form is completed by querying LIFX schedule state
     const checkPhaseCompletion = async () => {
-      // Placeholder - will integrate with actual data source
-      setPhaseComplete(false);
+      if (!currentPhase) return;
+
+      try {
+        const response = await fetch('/api/lifx/schedule');
+        if (!response.ok) return;
+
+        const { state } = await response.json();
+
+        if (currentPhase === 'morning' && state?.morning_form_submitted) {
+          setPhaseComplete(true);
+        } else if (currentPhase === 'evening' && state?.evening_form_submitted) {
+          setPhaseComplete(true);
+        } else {
+          setPhaseComplete(false);
+        }
+      } catch (error) {
+        console.error('Error checking phase completion:', error);
+        // Don't show banner on error - fail silently
+        setPhaseComplete(false);
+      }
     };
 
-    if (currentPhase) {
-      checkPhaseCompletion();
-    }
+    checkPhaseCompletion();
   }, [currentPhase]);
 
   // Don't show if no active phase, already completed, dismissed, or opacity is 0

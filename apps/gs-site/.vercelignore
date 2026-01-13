@@ -1,0 +1,9 @@
+# Local development
+.DS_Store
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+
+# Claude Code stats (local only)
+data/claude-stats/*.json

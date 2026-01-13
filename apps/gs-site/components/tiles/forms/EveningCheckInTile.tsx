@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { Moon, X, Check, Loader2, ClipboardList, Star, Sparkles, Camera, Image, Home, Plus, UtensilsCrossed } from 'lucide-react';
 import { WarningBorderTrail } from '../WarningBorderTrail';
 import type { Tile } from '@/lib/types/tiles';
+import { useLIFXFormIntegration } from '@/hooks/useLIFXFormIntegration';
 
 /**
  * EveningCheckInTile - Evening check-in form
@@ -29,6 +30,9 @@ export function EveningCheckInTile({ tile, className, externalOpen, onExternalCl
   // Sync with external open state
   const modalOpen = externalOpen !== undefined ? externalOpen : isOpen;
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // LIFX integration - turn off lights on form completion
+  const { onEveningFormComplete } = useLIFXFormIntegration();
 
   // Deep Work state
   const [deepWorkHours, setDeepWorkHours] = useState('');
@@ -165,6 +169,8 @@ export function EveningCheckInTile({ tile, className, externalOpen, onExternalCl
       });
 
       if (response.ok) {
+        // Turn off lights and update schedule state
+        onEveningFormComplete();
         // Close modal on success
         setIsOpen(false);
       }
@@ -173,7 +179,7 @@ export function EveningCheckInTile({ tile, className, externalOpen, onExternalCl
     } finally {
       setIsSubmitting(false);
     }
-  }, [deepWorkHours, hoursSaved, saveDeepWorkHours, accomplishments, improvements, dayRating]);
+  }, [deepWorkHours, hoursSaved, saveDeepWorkHours, accomplishments, improvements, dayRating, onEveningFormComplete]);
 
   const baseClasses = `
     group
@@ -463,6 +469,9 @@ export function EveningCheckInModal({ isOpen, onClose }: { isOpen: boolean; onCl
   const hoursInputRef = useRef<HTMLInputElement>(null);
   const hoursDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
+  // LIFX integration - turn off lights on form completion
+  const { onEveningFormComplete } = useLIFXFormIntegration();
+
   // Food Tracked state (required)
   const [foodTracked, setFoodTracked] = useState(false);
   const [isSavingFood, setIsSavingFood] = useState(false);
@@ -636,13 +645,15 @@ export function EveningCheckInModal({ isOpen, onClose }: { isOpen: boolean; onCl
           },
         }),
       });
+      // Turn off lights and update schedule state
+      onEveningFormComplete();
       onClose();
     } catch (error) {
       console.error('Error submitting evening check-in:', error);
     } finally {
       setIsSubmitting(false);
     }
-  }, [deepWorkHours, hoursSaved, saveDeepWorkHours, foodTracked, foodSaved, saveFoodTracked, accomplishments, improvements, dayRating, habitatPhotos, onClose]);
+  }, [deepWorkHours, hoursSaved, saveDeepWorkHours, foodTracked, foodSaved, saveFoodTracked, accomplishments, improvements, dayRating, habitatPhotos, onClose, onEveningFormComplete]);
 
   if (!isOpen) return null;
 
