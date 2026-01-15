@@ -4,136 +4,619 @@
 
 ---
 
-## Project Overview
+## Overview
 
-GSRealty is a modern web application designed specifically for realtors to manage client relationships, process MLS comparable sales data, integrate with Maricopa County Assessor's Office (MCAO) property lookups, and organize client files efficiently.
+GSRealty is a production-ready web application for realtors to manage client relationships, process MLS comparable sales data, integrate with Maricopa County Assessor's Office (MCAO) property lookups, send client invitations, and organize files.
 
-**Business Owner:** Garrett Sullivan
-**Market Focus:** Maricopa County, Arizona
-**Status:** Architecture & Planning Complete - Ready for Development
-
----
-
-## Key Features
-
-### For Admin (Realtor)
-- ✅ Secure admin dashboard with client management
-- ✅ File upload system (CSV, XLSX, HTML)
-- ✅ Automated MLS data processing with ExcelJS
-- ✅ MCAO property lookup via APN integration
-- ✅ Automated client folder creation (`LastName MM.YY` format)
-- ✅ Login activity tracking and analytics
-- ✅ Template-based Excel file generation
-
-### For Clients (Sellers/Buyers)
-- ✅ Secure client dashboard
-- ✅ View property portfolios
-- ✅ Review comparable sales analysis
-- ✅ Access uploaded documents
-- ✅ Profile management
+| | |
+|---|---|
+| **Business Owner** | Garrett Sullivan |
+| **Market Focus** | Maricopa County, Arizona |
+| **Status** | Production Ready |
+| **Version** | 1.0.0 |
 
 ---
 
 ## Technology Stack
 
 ### Frontend
-- **Framework:** Next.js 14.2.33 (React 18, TypeScript)
-- **Styling:** Tailwind CSS + Radix UI
-- **File Processing:** ExcelJS 4.4.0 (secure Excel parsing)
-- **State Management:** React Query + Context API
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| Next.js | 14.2.33 | React framework with App Router |
+| React | 18 | UI library |
+| TypeScript | Strict mode | Type safety |
+| Tailwind CSS | 3.x | Utility-first styling |
+| Radix UI | Latest | Accessible component primitives |
+| Framer Motion | Latest | Animations |
+| React Hook Form | Latest | Form state management |
+| Zod | Latest | Schema validation |
 
-### Backend
-- **API:** Next.js API routes (TypeScript)
-- **Optional:** Django Ninja REST Framework (Python)
-- **Database:** Supabase (PostgreSQL with RLS)
-- **File Storage:** Local + Supabase Storage
+### Backend & Database
+| Technology | Purpose |
+|------------|---------|
+| Next.js API Routes | RESTful endpoints |
+| Supabase | PostgreSQL database + Auth + Storage |
+| Row Level Security | Database-level access control |
 
-### Integrations
-- **MCAO API:** Maricopa County Assessor property data
-- **APN Lookup:** Python-based APN validation
-- **PV Splittable MCAO-UI:** Property lookup interface
+### Key Libraries
+| Library | Purpose |
+|---------|---------|
+| ExcelJS 4.4.0 | Secure Excel file processing |
+| Resend | Transactional email delivery |
+| @googlemaps/js-api-loader | Google Maps integration |
+| OpenAI API | Location intelligence |
+| PDF-lib / PDFKit | PDF generation |
+| Archiver | ZIP file creation |
+| Playwright | E2E testing |
 
-### Hosting
-- **Platform:** Vercel
-- **Database:** Supabase Cloud
-- **Domain:** TBD (e.g., gsrealty.vercel.app)
+### Hosting & Infrastructure
+| Service | Purpose |
+|---------|---------|
+| Vercel (Pro Plan) | Application hosting |
+| Supabase Cloud | Managed PostgreSQL |
+| Cloudflare | DNS management |
 
 ---
 
-## Project Structure
+## Features
 
+### Admin Features
+- Client management (create, edit, delete)
+- Email invitation system with token-based signup
+- MLS file upload & processing (CSV, XLSX)
+- MCAO property lookup (by APN or address)
+- Bulk property lookups
+- Report-It property analysis tools
+- Activity/event tracking
+- System settings & notifications
+- Login activity monitoring
+- File download & deletion
+
+### Client Features
+- Secure portal with personal dashboard
+- View assigned properties
+- Search & filter properties
+- Favorite/bookmark properties
+- Download uploaded documents
+- View activity feed
+- Profile management
+
+### System Features
+- Role-based access control (admin/client)
+- JWT authentication via Supabase Auth
+- Row Level Security (RLS) policies
+- Email notifications
+- Excel file generation & parsing
+- PDF report generation
+- Cron jobs (hourly scrape, daily cleanup)
+- Health monitoring
+
+---
+
+## Pages & Routes
+
+### Public Routes
+
+| Route | Page | Description |
+|-------|------|-------------|
+| `/` | Landing Page | Hero section, features overview, CTA buttons |
+| `/signin` | Sign In | Email/password authentication form |
+| `/auth/forgot-password` | Forgot Password | Password reset request form |
+| `/auth/reset-password` | Reset Password | New password entry form |
+| `/setup/[token]` | Account Setup | Token-based registration for invited clients |
+
+### Admin Routes (`/admin/*`)
+
+| Route | Page | Description |
+|-------|------|-------------|
+| `/admin` | Dashboard | Stats cards, quick actions, overview |
+| `/admin/clients` | Client List | Searchable client table with actions |
+| `/admin/clients/new` | New Client | Create client form |
+| `/admin/clients/[id]` | Edit Client | Edit client details, send invite |
+| `/admin/upload` | File Upload | MLS data upload & processing interface |
+| `/admin/reportit` | Report-It | Property analysis tools |
+| `/admin/mcao` | MCAO Lookup | Property lookup by APN or address |
+| `/admin/settings` | Settings | System preferences & notifications |
+
+### Client Routes (`/client/*`)
+
+| Route | Page | Description |
+|-------|------|-------------|
+| `/client/dashboard` | Dashboard | Files, events, quick links |
+| `/client/properties` | Properties | View & favorite assigned properties |
+| `/client/files` | Files | Document library with downloads |
+| `/client/profile` | Profile | Edit personal information |
+
+---
+
+## UI Layout
+
+### Landing Page (`/`)
 ```
-apps/gsrealty-client/
-├── DOCUMENTATION/           # Comprehensive project documentation
-│   ├── GSREALTY_PROJECT_REQUIREMENTS.md  # Master requirements ✅
-│   ├── TEMPLATE_FIELDS_REFERENCE.md      # Excel template guide ✅
-│   └── PROJECT_STRUCTURE.md              # File organization ✅
-│
-├── app/                     # Next.js App Router
-│   ├── admin/               # Admin dashboard routes
-│   ├── client/              # Client dashboard routes
-│   └── api/                 # API endpoints
-│
-├── components/              # Reusable UI components
-│   ├── admin/               # Admin components
-│   ├── client/              # Client components
-│   └── shared/              # Shared components
-│
-├── lib/                     # Core library code
-│   ├── supabase/            # Database client
-│   ├── database/            # Data access layer
-│   ├── processing/          # File processing logic
-│   ├── mcao/                # MCAO API integration
-│   └── validation/          # Zod schemas
-│
-├── APN/                     # APN lookup integration
-├── templates/               # Excel templates
-├── supabase/                # Database migrations
-└── tests/                   # Test files
+┌─────────────────────────────────────────────────┐
+│  Logo                              Sign In btn  │
+├─────────────────────────────────────────────────┤
+│                                                 │
+│              HERO SECTION                       │
+│        "GSRealty Client Management"             │
+│              [Get Started]                      │
+│                                                 │
+├─────────────────────────────────────────────────┤
+│   Feature   │   Feature   │   Feature   │   Feature   │
+│    Card     │    Card     │    Card     │    Card     │
+├─────────────────────────────────────────────────┤
+│                   Footer                        │
+└─────────────────────────────────────────────────┘
 ```
 
-**Full structure:** See `PROJECT_STRUCTURE.md` for complete directory tree.
+### Admin Dashboard (`/admin`)
+```
+┌──────────┬──────────────────────────────────────┐
+│          │  Header: Page Title    [User Menu]  │
+│  SIDEBAR ├──────────────────────────────────────┤
+│          │                                      │
+│ Dashboard│  ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐    │
+│ Clients  │  │Stat │ │Stat │ │Stat │ │Stat │    │
+│ Upload   │  │Card │ │Card │ │Card │ │Card │    │
+│ MCAO     │  └─────┘ └─────┘ └─────┘ └─────┘    │
+│ Report-It│                                      │
+│ Settings │  ┌───────────┐ ┌───────────┐        │
+│          │  │  Quick    │ │  Quick    │        │
+│          │  │  Action   │ │  Action   │        │
+│          │  └───────────┘ └───────────┘        │
+│          │                                      │
+│          │  ┌───────────────────────────┐      │
+│          │  │    Feature Overview        │      │
+│          │  │    Section                 │      │
+│          │  └───────────────────────────┘      │
+└──────────┴──────────────────────────────────────┘
+```
+**Colors:** Black sidebar, white content area, red accents
+
+### Client Dashboard (`/client/dashboard`)
+```
+┌─────────────────────────────────────────────────┐
+│  Logo    Dashboard  Properties  Files  Profile  │
+├─────────────────────────────────────────────────┤
+│                                                 │
+│  Welcome, [Name]                                │
+│                                                 │
+│  ┌─────────────────┐  ┌─────────────────┐      │
+│  │   Recent Files  │  │   Upcoming      │      │
+│  │   List          │  │   Events        │      │
+│  └─────────────────┘  └─────────────────┘      │
+│                                                 │
+└─────────────────────────────────────────────────┘
+```
+
+### File Upload (`/admin/upload`)
+```
+┌──────────┬──────────────────────────────────────┐
+│          │  Upload MLS Data           [User]    │
+│  SIDEBAR ├──────────────────────────────────────┤
+│          │                                      │
+│          │  ┌───────────────────────────────┐  │
+│          │  │  Select Client: [Dropdown]    │  │
+│          │  │  Upload Type:   [Dropdown]    │  │
+│          │  │                               │  │
+│          │  │  ┌─────────────────────────┐  │  │
+│          │  │  │   DRAG & DROP ZONE      │  │  │
+│          │  │  │   or click to browse    │  │  │
+│          │  │  └─────────────────────────┘  │  │
+│          │  │                               │  │
+│          │  │  [Upload Button]              │  │
+│          │  └───────────────────────────────┘  │
+│          │                                      │
+│          │  ┌───────────────────────────────┐  │
+│          │  │  Processing Progress Bar      │  │
+│          │  └───────────────────────────────┘  │
+│          │                                      │
+│          │  ┌───────────────────────────────┐  │
+│          │  │  Upload History Table         │  │
+│          │  └───────────────────────────────┘  │
+└──────────┴──────────────────────────────────────┘
+```
 
 ---
 
-## Documentation
+## Forms & Inputs
 
-### Core Documents
+### Sign In Form
+| Field | Type | Validation | Required |
+|-------|------|------------|----------|
+| Email | email | Valid email format | Yes |
+| Password | password | Min 8 characters | Yes |
 
-| Document                              | Purpose                                           | Status |
-|---------------------------------------|---------------------------------------------------|--------|
-| `README.md`                           | Project overview (this file)                      | ✅     |
-| `GSREALTY_PROJECT_REQUIREMENTS.md`    | Complete system requirements and specifications   | ✅     |
-| `TEMPLATE_FIELDS_REFERENCE.md`        | Excel template field definitions and rules        | ✅     |
-| `PROJECT_STRUCTURE.md`                | File organization and architecture                | ✅     |
-| `API_DOCUMENTATION.md`                | API endpoint reference                            | 📝 TBD  |
-| `DEPLOYMENT_GUIDE.md`                 | Deployment instructions                           | 📝 TBD  |
-| `USER_GUIDE_ADMIN.md`                 | Admin user manual                                 | 📝 TBD  |
-| `USER_GUIDE_CLIENT.md`                | Client user manual                                | 📝 TBD  |
-| `DEVELOPMENT_SETUP.md`                | Local development setup                           | 📝 TBD  |
+**Output:** JWT session token, redirect to admin or client dashboard
+
+### Create Client Form
+| Field | Type | Validation | Required |
+|-------|------|------------|----------|
+| First Name | text | 1-50 characters | Yes |
+| Last Name | text | 1-50 characters | Yes |
+| Email | email | Valid email format | No |
+| Phone | tel | Valid phone format | No |
+| Address | text | Free text | No |
+| Notes | textarea | Free text | No |
+
+**Output:** New client record in `gsrealty_clients` table
+
+### File Upload Form
+| Field | Type | Options | Required |
+|-------|------|---------|----------|
+| Client | select | All clients from database | Yes |
+| Upload Type | select | residential_15_mile, lease_15_mile, land_15_mile, commercial_15_mile | Yes |
+| File | file | .csv, .xlsx (max 10MB) | Yes |
+
+**Output:** Processed file, database records, optional MCAO enrichment
+
+### MCAO Lookup Form
+| Field | Type | Validation | Required |
+|-------|------|------------|----------|
+| Search Type | radio | APN or Address | Yes |
+| APN | text | Format: ###-##-#### or ###-##-####A | If APN selected |
+| Address | text | Maricopa County address | If Address selected |
+
+**Output:** MCAO property data (owner, tax value, lot size, year built, etc.)
+
+### Client Profile Form
+| Field | Type | Validation | Required |
+|-------|------|------------|----------|
+| First Name | text | 1-50 characters | Yes |
+| Last Name | text | 1-50 characters | Yes |
+| Email | email | Valid format | No |
+| Phone | tel | Valid format | No |
+| Address | textarea | Free text | No |
+
+### Admin Settings
+| Setting | Type | Description |
+|---------|------|-------------|
+| Email Notifications | toggle | Enable/disable all email notifications |
+| Client Invite Notifications | toggle | Notify when client accepts invite |
+| File Upload Notifications | toggle | Notify on upload completion |
+| Auto-Archive | toggle | Auto-archive old files |
+| Email Signature | textarea | Custom email signature |
 
 ---
 
-## Current Status
+## API Endpoints
 
-### ✅ Completed
-- Database schema created (6 GSRealty tables in Supabase)
-- Supabase CLI linked to project
-- Next.js 14.2.33 upgraded (security patches)
-- ExcelJS 4.4.0 installed (secure alternative to xlsx)
-- 0 security vulnerabilities
-- Comprehensive documentation (1500+ lines)
-- Project architecture defined
+### Authentication & Invites
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/auth/signup` | Register new user (disabled) |
+| POST | `/api/admin/invites/send` | Send invitation email to client |
+| POST | `/api/admin/invites/resend` | Resend expired invitation |
+| POST | `/api/admin/invites/verify` | Verify invitation token |
+| DELETE | `/api/admin/delete-user` | Delete user account |
 
-### 🚧 In Progress
-- Clean up Wabbit RE branding
-- Create new GSRealty-branded UI
-- Implement authentication system
-- Build admin dashboard
-- Develop file upload system
+### File Management
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/admin/upload/process` | Process CSV/XLSX file |
+| POST | `/api/admin/upload/store` | Store file in Supabase Storage |
+| POST | `/api/admin/upload/generate-excel` | Generate Excel template |
+| GET | `/api/admin/upload/download/[id]` | Download processed file |
+| DELETE | `/api/admin/upload/delete/[id]` | Delete uploaded file |
 
-### 📝 Planned (Phase 1-9)
-See `GSREALTY_PROJECT_REQUIREMENTS.md` Section 13 for complete roadmap.
+### MCAO Property Lookup
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/admin/mcao/lookup` | Lookup by APN or address |
+| POST | `/api/admin/mcao/bulk` | Bulk property lookups |
+| POST | `/api/admin/mcao/arcgis-lookup` | Convert address to APN |
+| GET | `/api/admin/mcao/property/[apn]` | Get MCAO data for APN |
+| GET | `/api/admin/mcao/download` | Download MCAO results |
+| GET | `/api/admin/mcao/status` | MCAO API health check |
+
+### Report-It
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/admin/reportit/upload` | Upload Property Radar report |
+| GET | `/api/admin/reportit/download/breakups` | Download breakups report |
+| GET | `/api/admin/reportit/download/propertyradar` | Download Property Radar data |
+
+### Client Portal
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/client/files` | List client's files |
+| GET | `/api/client/files/[id]/download` | Download specific file |
+| GET | `/api/preferences/load` | Load user preferences |
+| POST | `/api/preferences/save` | Save preferences |
+
+### Events & Areas
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/events` | List all events |
+| POST | `/api/admin/events` | Create new event |
+| GET | `/api/areas/list` | List saved areas |
+| POST | `/api/areas/save` | Save new area |
+
+### System
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/health` | Health check |
+| POST | `/api/cron/hourly-scrape` | Scheduled property scraping |
+| POST | `/api/cron/daily-cleanup` | Daily database cleanup |
+| GET | `/api/admin/monitoring` | Admin monitoring dashboard |
+
+---
+
+## Authentication System
+
+### Architecture
+- **Provider:** Supabase Auth (email + password)
+- **Tokens:** JWT stored in HTTP-only cookies
+- **Roles:** `admin` | `client`
+
+### Sign In Flow
+1. User enters email/password at `/signin`
+2. Supabase Auth validates credentials
+3. System determines role (admin email check or database lookup)
+4. User redirected to `/admin` or `/client/dashboard`
+5. Login activity recorded in `gsrealty_login_activity`
+
+### Client Invitation Flow
+1. Admin creates client via `/admin/clients/new`
+2. Admin clicks "Send Invitation" from client detail page
+3. System generates UUID token with 7-day expiration
+4. Email sent via Resend with setup link: `/setup/[token]`
+5. Client clicks link, verifies token, sets password
+6. Supabase Auth user created with `role: 'client'`
+7. User linked to client record via `auth_user_id`
+
+### Admin Identification
+```typescript
+// Admin email (environment variable)
+NEXT_PUBLIC_ADMIN_EMAIL=gbsullivan@mac.com
+```
+
+### Route Protection
+| Route Pattern | Access |
+|---------------|--------|
+| `/admin/*` | Admin only |
+| `/client/*` | Client only |
+| `/signin`, `/setup/*` | Public |
+| `/` | Public |
+
+---
+
+## Database Schema
+
+### Tables Overview
+
+| Table | Records | Purpose |
+|-------|---------|---------|
+| `gsrealty_users` | User accounts | Authentication & authorization |
+| `gsrealty_clients` | Client profiles | Contact information & notes |
+| `gsrealty_properties` | Property records | Address, price, features |
+| `gsrealty_comps` | Comparable sales | Linked to properties |
+| `gsrealty_mcao_data` | MCAO API data | Tax & county info |
+| `gsrealty_uploaded_files` | File metadata | Upload tracking |
+| `gsrealty_invitations` | Client invites | Token-based signup |
+| `gsrealty_login_activity` | Activity logs | Login tracking |
+| `gsrealty_admin_settings` | App settings | System configuration |
+| `gsrealty_events` | Activity feed | Events & notifications |
+| `gsrealty_areas` | Saved areas | Geographic search zones |
+
+### Table: `gsrealty_users`
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid | Primary key |
+| auth_user_id | uuid | Supabase Auth user ID |
+| email | text | User email (unique) |
+| role | text | 'admin' or 'client' |
+| full_name | text | Display name |
+| last_login | timestamp | Last login time |
+| created_at | timestamp | Account creation |
+
+### Table: `gsrealty_clients`
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid | Primary key |
+| user_id | uuid | FK to gsrealty_users |
+| first_name | text | First name |
+| last_name | text | Last name |
+| email | text | Contact email |
+| phone | text | Phone number |
+| address | text | Physical address |
+| notes | text | Admin notes |
+| created_at | timestamp | Record creation |
+| updated_at | timestamp | Last update |
+
+### Table: `gsrealty_properties`
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid | Primary key |
+| client_id | uuid | FK to gsrealty_clients |
+| address | text | Street address |
+| city | text | City |
+| state | text | State (default: AZ) |
+| zip | text | ZIP code |
+| bedrooms | integer | Bedroom count |
+| bathrooms | decimal | Bathroom count |
+| sqft | integer | Square footage |
+| lot_size | decimal | Lot size (acres) |
+| year_built | integer | Year constructed |
+| price | decimal | Listing/sale price |
+| mls_number | text | MLS listing ID |
+| status | text | Active/Sold/Pending |
+| created_at | timestamp | Record creation |
+
+### Table: `gsrealty_comps`
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid | Primary key |
+| property_id | uuid | FK to gsrealty_properties |
+| comp_address | text | Comparable address |
+| sale_price | decimal | Sale price |
+| sale_date | date | Date sold |
+| distance | decimal | Miles from subject |
+| sqft | integer | Square footage |
+| bedrooms | integer | Bedroom count |
+| bathrooms | decimal | Bathroom count |
+| price_per_sqft | decimal | Calculated $/sqft |
+
+### Table: `gsrealty_mcao_data`
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid | Primary key |
+| property_id | uuid | FK to gsrealty_properties |
+| apn | text | Assessor Parcel Number |
+| owner_name | text | Recorded owner |
+| legal_description | text | Legal property desc |
+| lot_size | decimal | Lot size (acres) |
+| year_built | integer | Year constructed |
+| tax_value | decimal | Assessed tax value |
+| land_value | decimal | Land value |
+| improvement_value | decimal | Structure value |
+| zoning | text | Zoning classification |
+| raw_response | jsonb | Full API response |
+| fetched_at | timestamp | API call timestamp |
+
+### Table: `gsrealty_uploaded_files`
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid | Primary key |
+| client_id | uuid | FK to gsrealty_clients |
+| file_name | text | Original filename |
+| file_type | text | MIME type |
+| file_size | integer | Size in bytes |
+| storage_path | text | Supabase Storage path |
+| local_path | text | Local filesystem path |
+| upload_type | text | residential/lease/etc |
+| processed | boolean | Processing complete |
+| created_at | timestamp | Upload timestamp |
+
+### Table: `gsrealty_invitations`
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid | Primary key |
+| client_id | uuid | FK to gsrealty_clients |
+| email | text | Invitation email |
+| token | uuid | Unique invitation token |
+| expires_at | timestamp | Token expiration |
+| used_at | timestamp | When accepted (null if unused) |
+| created_at | timestamp | Invitation creation |
+
+### Table: `gsrealty_login_activity`
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid | Primary key |
+| user_id | uuid | FK to gsrealty_users |
+| ip_address | text | Client IP |
+| user_agent | text | Browser/device info |
+| success | boolean | Login successful |
+| created_at | timestamp | Attempt timestamp |
+
+### Table: `gsrealty_events`
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid | Primary key |
+| client_id | uuid | FK to gsrealty_clients (nullable) |
+| title | text | Event title |
+| body | text | Event description |
+| tags | text[] | Event tags array |
+| created_at | timestamp | Event timestamp |
+
+### Table: `gsrealty_areas`
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid | Primary key |
+| name | text | Area name |
+| coordinates | jsonb | Boundary coordinates |
+| geometry | geography | PostGIS geometry |
+| created_at | timestamp | Creation timestamp |
+
+### Relationships Diagram
+```
+gsrealty_users (1) ─┬─→ (M) gsrealty_login_activity
+                    │
+                    └─→ (M) gsrealty_clients
+                              │
+                    ┌─────────┼─────────┬─────────┐
+                    ↓         ↓         ↓         ↓
+              (M) properties  (M) files  (M) invites  (M) events
+                    │
+              ┌─────┴─────┐
+              ↓           ↓
+         (M) comps   (M) mcao_data
+```
+
+---
+
+## Environment Variables
+
+### Required Variables
+```bash
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=https://fsaluvvszosucvzaedtj.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_key
+
+# App Configuration
+NEXT_PUBLIC_APP_URL=http://localhost:3004
+NEXT_PUBLIC_APP_NAME=GSRealty
+NEXT_PUBLIC_ADMIN_EMAIL=gbsullivan@mac.com
+NODE_ENV=development
+
+# Email (Resend)
+RESEND_API_KEY=re_xxxxxxxxxxxxx
+RESEND_FROM_EMAIL=noreply@gsrealty.com
+RESEND_REPLY_TO_EMAIL=support@gsrealty.com
+
+# Google Maps
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_maps_key
+
+# OpenAI (Location Intelligence)
+OPENAI_API_KEY=sk-xxxxxxxxxxxxx
+```
+
+### Optional Variables
+```bash
+# Local file storage (macOS)
+LOCAL_STORAGE_PATH=/Users/garrettsullivan/Desktop/‼️/RE/RealtyONE/MY LISTINGS/
+
+# MCAO API
+MCAO_API_URL=https://mcaoapi.maricopa.gov
+MCAO_API_KEY=your_mcao_key
+
+# Cron Jobs (Vercel)
+CRON_SECRET=your_cron_secret
+
+# Monitoring
+DD_API_KEY=your_datadog_key
+DD_SITE=datadoghq.com
+DD_SERVICE=gsrealty-client
+DD_ENV=production
+```
+
+---
+
+## Development Commands
+
+### Core
+```bash
+npm run dev          # Start dev server (port 3004)
+npm run build        # Production build
+npm run start        # Start production server
+npm run lint         # ESLint check
+npm run typecheck    # TypeScript validation
+npm run format       # Prettier formatting
+```
+
+### Testing
+```bash
+npm test             # Jest unit tests
+npm run test:watch   # Watch mode
+npm run test:e2e     # Playwright E2E tests
+```
+
+### Database
+```bash
+npm run db:migrate   # Push migrations to Supabase
+npm run db:seed      # Seed demo data
+```
 
 ---
 
@@ -141,13 +624,10 @@ See `GSREALTY_PROJECT_REQUIREMENTS.md` Section 13 for complete roadmap.
 
 ### Prerequisites
 - Node.js 18+ (npm 9+)
-- Python 3.11+ (for APN lookup and Django backend)
 - Supabase account
 - Vercel account (for deployment)
-- macOS (for local file storage paths)
 
 ### Installation
-
 ```bash
 # Navigate to project
 cd apps/gsrealty-client
@@ -155,15 +635,10 @@ cd apps/gsrealty-client
 # Install dependencies
 npm install
 
-# Set up environment variables
+# Copy environment template
 cp .env.sample .env.local
-# Edit .env.local with your Supabase keys
 
-# Link Supabase CLI
-supabase link --project-ref fsaluvvszosucvzaedtj
-
-# Run database migrations
-npm run db:migrate
+# Configure environment variables in .env.local
 
 # Start development server
 npm run dev
@@ -171,214 +646,35 @@ npm run dev
 # Open http://localhost:3004
 ```
 
-### Environment Variables Required
-
-```bash
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=https://fsaluvvszosucvzaedtj.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_key
-
-# Admin credentials
-ADMIN_USERNAME=garrett_admin
-ADMIN_PASSWORD_HASH=your_hashed_password
-
-# Local file storage
-LOCAL_STORAGE_PATH=/Users/garrettsullivan/Desktop/‼️/RE/RealtyONE/MY LISTINGS/
-
-# MCAO API
-MCAO_API_URL=https://mcaoapi.maricopa.gov
-MCAO_API_KEY=your_mcao_api_key
-
-# App
-NEXT_PUBLIC_APP_URL=http://localhost:3004
-NODE_ENV=development
-```
-
----
-
-## Development Commands
-
-### Core Commands
-```bash
-npm run dev              # Start dev server (http://localhost:3004)
-npm run build            # Build for production
-npm run start            # Start production server
-npm run lint             # Run ESLint
-npm run typecheck        # TypeScript type checking
-npm run format           # Format code with Prettier
-```
-
-### Testing
-```bash
-npm test                 # Run Jest unit tests
-npm run test:watch       # Run tests in watch mode
-npm run test:coverage    # Generate coverage report
-npm run test:e2e         # Run Playwright E2E tests
-```
-
-### Database
-```bash
-npm run db:migrate       # Push migrations to Supabase
-npm run db:reset         # Reset database
-npm run db:seed          # Seed demo data
-```
-
-### Utilities
-```bash
-npm run mcao:test        # Test MCAO API integration
-npm run excel:test       # Test Excel processing
-npm run cleanup          # Clean up old client files
-```
-
----
-
-## Database Schema
-
-### Tables Created (Supabase)
-- **gsrealty_users** - User accounts (admin + clients)
-- **gsrealty_clients** - Client contact information
-- **gsrealty_properties** - Property records
-- **gsrealty_comps** - Comparable sales data
-- **gsrealty_mcao_data** - MCAO API response data
-- **gsrealty_uploaded_files** - File upload metadata
-- **gsrealty_login_activity** - Login tracking
-- **gsrealty_admin_settings** - Application settings
-
-### Key Relationships
-```
-gsrealty_users
-  └─> gsrealty_clients (user_id)
-      ├─> gsrealty_properties (client_id)
-      │   ├─> gsrealty_comps (property_id)
-      │   └─> gsrealty_mcao_data (property_id)
-      └─> gsrealty_uploaded_files (client_id)
-```
-
-**Details:** See migration files in `/supabase/migrations/`
-
----
-
-## Excel Template Processing
-
-### Template: `template.xlsx`
-
-**Sheets:**
-1. **comps** - Comparable sales from MLS
-2. **Full_API_call** - Complete MCAO API response
-3. **Analysis** - Market analysis summary
-4. **Calcs** - Backend calculations
-5. **Maricopa** - Maricopa County specific data
-6. **. 5mile** - Comps within 0.5 mile radius
-7. **Lot** - Lot-specific details (all cells light grey)
-
-**Critical Rules:**
-- **Column A reserved:** Always blank for manual "Notes"
-- **MLS data starts Column B:** All uploads populate from B onwards
-- **Maricopa sheet:** Rows 2-24 use B/C format, row 26+ matrix format
-- **Data sources:** MLS uploads + MCAO API calls
-
-**Full specifications:** See `TEMPLATE_FIELDS_REFERENCE.md` (700+ lines)
-
----
-
-## File Upload Workflow
-
-### 1. Admin uploads CSV/XLSX
-- Via admin dashboard
-- Select client from dropdown
-- Choose file type (Direct comps / All scopes / Half mile)
-
-### 2. Backend processes file
-- Validate format
-- Parse with ExcelJS (secure)
-- Extract property data
-- Calculate distances
-- Validate required fields
-
-### 3. MCAO API integration
-- Extract APNs from upload
-- Call MCAO API for each property
-- Retrieve official county data
-- Populate `Full_API_call` and `Maricopa` sheets
-
-### 4. Save to database
-- Insert records into `gsrealty_properties`
-- Link comparable sales to `gsrealty_comps`
-- Store MCAO data in `gsrealty_mcao_data`
-- Log upload in `gsrealty_uploaded_files`
-
-### 5. Create local folder
-- Format: `LastName MM.YY` (e.g., "Mozingo 10.25")
-- Path: `/Users/garrettsullivan/Desktop/‼️/RE/RealtyONE/MY LISTINGS/`
-- Save original upload + processed template
-
-### 6. Return success
-- Show processing summary
-- Display property count
-- Link to view properties
-
----
-
-## MCAO Integration
-
-### APN Lookup
-**Source:** `/APN/apn_lookup.py` (copied from external project)
-
-**Usage:**
-```typescript
-// app/api/admin/mcao/lookup/route.ts
-const response = await fetch('/api/admin/mcao/lookup', {
-  method: 'POST',
-  body: JSON.stringify({ apn: '123-45-678A' })
-});
-const propertyData = await response.json();
-```
-
-### MCAO-UI Integration
-**Source:** `/Users/garrettsullivan/Desktop/‼️/RE/Projects/PV Splittable/MCAO-UI`
-
-**Options:**
-1. **Port to Next.js** (recommended) - Rebuild in React/TypeScript
-2. **Iframe embed** - Embed existing Flask app
-3. **External service** - Deploy separately, link from dashboard
-
-**Current:** Flask app with `app.py` - localhost v3 HTML
+### First-Time Setup
+1. Configure Supabase project
+2. Run database migrations: `npm run db:migrate`
+3. Create admin account in Supabase Auth
+4. Add admin email to environment variables
+5. Start development server
 
 ---
 
 ## Security
 
-### Authentication
-- Supabase Auth (email + password)
-- JWT session tokens
-- Role-based access control (admin/client)
-
-### Authorization
-- Row Level Security (RLS) in Supabase
-- Clients can only access their own data
-- Admin has full access
-- Middleware route protection
-
-### Data Protection
-- HTTPS only in production
-- Encrypted environment variables
-- Password hashing (bcrypt)
-- Input validation (Zod schemas)
-- Safe Excel parsing (ExcelJS)
-
-### Security Status
-- ✅ 0 npm vulnerabilities
-- ✅ Next.js 14.2.33 (latest security patches)
-- ✅ ExcelJS (no prototype pollution)
-- ✅ Secure authentication flow
+| Feature | Implementation |
+|---------|----------------|
+| Authentication | Supabase Auth with JWT |
+| Authorization | Role-based (admin/client) |
+| Database Security | Row Level Security (RLS) |
+| Password Storage | Bcrypt hashing |
+| Input Validation | Zod schema validation |
+| Transport | HTTPS in production |
+| XSS Protection | React sanitization |
+| CSRF | Next.js built-in protection |
+| Secrets | Environment variables |
+| Activity Logging | Login tracking |
 
 ---
 
 ## Deployment
 
 ### Vercel Deployment
-
 ```bash
 # Install Vercel CLI
 npm i -g vercel
@@ -388,283 +684,143 @@ vercel login
 
 # Deploy to production
 vercel --prod
-
-# Set environment variables in Vercel Dashboard
-# Settings → Environment Variables
 ```
 
-### Environment Variables (Production)
-Add in Vercel Dashboard:
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `ADMIN_USERNAME`
-- `ADMIN_PASSWORD_HASH`
-- `MCAO_API_KEY`
-- `SUPABASE_STORAGE_BUCKET` (for file storage)
+### Vercel Cron Jobs
+Configured in `vercel.json`:
+| Schedule | Endpoint | Purpose |
+|----------|----------|---------|
+| `0 * * * *` | `/api/cron/hourly-scrape` | Property updates |
+| `0 3 * * *` | `/api/cron/daily-cleanup` | Database maintenance |
+| `*/15 * * * *` | `/api/cron/check-health` | Health monitoring |
 
-### Domain Setup
-- **Option A:** Use Vercel subdomain `gsrealty.vercel.app`
-- **Option B:** Custom domain (configure in Vercel DNS)
-
-**Guide:** See `DEPLOYMENT_GUIDE.md` (TBD)
+### Production Checklist
+- [ ] Environment variables set in Vercel Dashboard
+- [ ] Supabase RLS policies enabled
+- [ ] Admin email configured
+- [ ] Email sending tested
+- [ ] MCAO API connectivity verified
+- [ ] Health endpoint responding
 
 ---
 
-## API Endpoints
+## Project Structure
 
-### Admin Endpoints
-- `POST /api/admin/auth/signin` - Admin login
-- `GET /api/admin/clients` - List clients
-- `POST /api/admin/clients` - Create client
-- `POST /api/admin/upload/xlsx` - Upload Excel file
-- `POST /api/admin/mcao/lookup` - APN lookup
-- `GET /api/admin/analytics/logins` - Login reports
-
-### Client Endpoints
-- `POST /api/client/auth/signin` - Client login
-- `GET /api/client/dashboard` - Dashboard data
-- `GET /api/client/properties` - My properties
-- `GET /api/client/comps/:propertyId` - Comparable sales
-- `GET /api/client/documents` - Document library
-
-**Full reference:** See `API_DOCUMENTATION.md` (TBD)
+```
+apps/gsrealty-client/
+├── app/                          # Next.js App Router
+│   ├── admin/                    # Admin pages
+│   │   ├── page.tsx              # Dashboard
+│   │   ├── clients/              # Client management
+│   │   ├── upload/               # File upload
+│   │   ├── mcao/                 # MCAO lookup
+│   │   ├── reportit/             # Report-It tools
+│   │   └── settings/             # Admin settings
+│   ├── client/                   # Client portal pages
+│   │   ├── dashboard/            # Client dashboard
+│   │   ├── properties/           # Property viewing
+│   │   ├── files/                # Document library
+│   │   └── profile/              # Profile management
+│   ├── api/                      # API routes
+│   │   ├── admin/                # Admin endpoints
+│   │   ├── client/               # Client endpoints
+│   │   ├── auth/                 # Auth endpoints
+│   │   └── cron/                 # Scheduled jobs
+│   ├── signin/                   # Sign in page
+│   ├── setup/                    # Invitation setup
+│   └── auth/                     # Auth callbacks
+│
+├── components/                   # React components
+│   ├── admin/                    # Admin components
+│   │   ├── FileUploadForm.tsx
+│   │   ├── FileDropzone.tsx
+│   │   ├── InviteClientModal.tsx
+│   │   └── MCAOCategorizedData.tsx
+│   ├── client/                   # Client components
+│   │   ├── ClientNav.tsx
+│   │   ├── FileList.tsx
+│   │   └── PropertyCard.tsx
+│   ├── map/                      # Map components
+│   └── ui/                       # Shared UI components
+│
+├── lib/                          # Core libraries
+│   ├── supabase/                 # Supabase clients
+│   │   ├── client.ts             # Browser client
+│   │   ├── server.ts             # Server client
+│   │   └── auth.ts               # Auth utilities
+│   ├── database/                 # Data access layer
+│   │   ├── clients.ts
+│   │   ├── properties.ts
+│   │   ├── invitations.ts
+│   │   └── files.ts
+│   ├── processing/               # File processing
+│   │   ├── excel-processor.ts
+│   │   └── csv-processor.ts
+│   ├── validation/               # Zod schemas
+│   └── constants/                # App constants
+│       └── branding.ts
+│
+├── contexts/                     # React contexts
+│   └── AuthContext.tsx
+│
+├── hooks/                        # Custom hooks
+│   └── useAuth.ts
+│
+├── DOCUMENTATION/                # Project documentation
+├── supabase/                     # Database migrations
+├── templates/                    # Excel templates
+└── tests/                        # Test files
+```
 
 ---
 
-## Testing
+## Documentation
 
-### Unit Tests
-```bash
-npm test
-```
-- Library functions
-- API handlers
-- Components
-- Coverage target: 80%+
-
-### Integration Tests
-```bash
-npm run test:integration
-```
-- File upload workflow
-- MCAO API integration
-- Client workflow
-
-### E2E Tests
-```bash
-npm run test:e2e
-```
-- Admin: Sign in → Add client → Upload file
-- Client: Sign in → View properties → View comps
-- Tool: Playwright
-
----
-
-## Troubleshooting
-
-### Build Errors
-**Issue:** TypeScript errors in old Wabbit files
-**Solution:** Exclude `_scripts_WABBIT_RE_DO_NOT_USE` in `tsconfig.json`
-
-**Issue:** Excel parsing errors
-**Solution:** Verify template.xlsx format, check Column A reserved rule
-
-### Database Issues
-**Issue:** RLS policies blocking access
-**Solution:** Check user role, verify RLS policies in Supabase Studio
-
-**Issue:** Migration fails
-**Solution:** Check for encoding issues, run `supabase db push --dry-run`
-
-### MCAO Integration
-**Issue:** API returns 401
-**Solution:** Verify `MCAO_API_KEY` in environment variables
-
-**Issue:** APN not found
-**Solution:** Validate APN format (`###-##-####`), check Maricopa County
-
----
-
-## Contributing
-
-### Branch Strategy
-- `main` - Production-ready code
-- `develop` - Development branch
-- `feature/*` - Feature branches
-
-### Commit Convention
-```
-feat: Add MCAO lookup integration
-fix: Resolve Excel parsing error
-docs: Update API documentation
-style: Format code with Prettier
-test: Add unit tests for file processor
-chore: Update dependencies
-```
-
-### Pull Request Process
-1. Create feature branch
-2. Make changes
-3. Run tests (`npm test`, `npm run typecheck`, `npm run lint`)
-4. Commit with conventional commit message
-5. Push and create PR
-6. Request review
-7. Merge after approval
-
----
-
-## Roadmap
-
-### Phase 1: Foundation (Week 1-2) - CURRENT
-- ✅ Database schema
-- ✅ Supabase connection
-- ✅ Documentation
-- 🚧 Project structure
-- 📝 UI mockups
-
-### Phase 2: Authentication (Week 3)
-- Admin sign-in
-- Client sign-in
-- Role-based routing
-- Session management
-
-### Phase 3: Admin Dashboard (Week 4-5)
-- Client management CRUD
-- File upload system
-- Basic analytics
-
-### Phase 4: Excel Processing (Week 6-7)
-- Template parsing
-- MCAO data population
-- Local folder creation
-
-### Phase 5: MCAO Integration (Week 8)
-- APN lookup
-- MCAO-UI integration
-- Property enrichment
-
-### Phase 6: Client Dashboard (Week 9-10)
-- Property views
-- Comps analysis
-- Document library
-
-### Phase 7: Testing & Deployment (Week 11-12)
-- Comprehensive testing
-- Security audit
-- Production deployment
-
-### Phase 8: Enhancements (Future)
-- Email notifications
-- Automated MLS sync
-- PDF reports
-- Mobile app
-
-**Full roadmap:** See `GSREALTY_PROJECT_REQUIREMENTS.md` Section 13
+| Document | Location | Purpose |
+|----------|----------|---------|
+| README.md | Root | Project overview (this file) |
+| GSREALTY_PROJECT_REQUIREMENTS.md | /DOCUMENTATION | Full specifications |
+| TEMPLATE_FIELDS_REFERENCE.md | /DOCUMENTATION | Excel template guide |
+| PROJECT_STRUCTURE.md | /DOCUMENTATION | File organization |
+| MLS_FIELD_MAPPING.md | /DOCUMENTATION | MLS data mapping |
 
 ---
 
 ## FAQ
 
-**Q: Why is this separate from Wabbit RE?**
-A: GSRealty is a completely different application with a realtor-focused workflow, not a property ranking platform like Wabbit RE.
-
-**Q: Where is template.xlsx located?**
-A: TBD - User to provide or we'll create based on specifications in `TEMPLATE_FIELDS_REFERENCE.md`.
-
-**Q: Does this work for properties outside Maricopa County?**
-A: Currently no. The MCAO integration is Maricopa County-specific. Could be extended in the future.
-
-**Q: Can I use this with a different MLS provider?**
-A: Yes, as long as the CSV/XLSX export follows the column mapping defined in `TEMPLATE_FIELDS_REFERENCE.md`.
-
-**Q: Why ExcelJS instead of xlsx library?**
-A: ExcelJS is actively maintained, has no security vulnerabilities (xlsx had high-severity issues), and provides better TypeScript support.
-
-**Q: Will this work on Windows/Linux?**
-A: The Next.js app will work anywhere. Local file storage paths are currently macOS-specific. Production uses Supabase Storage (cross-platform).
-
 **Q: How do I add a new admin user?**
-A: Currently single admin (Garrett). Multi-admin support can be added by inserting into `gsrealty_users` with role='admin'.
+A: Update the `NEXT_PUBLIC_ADMIN_EMAIL` environment variable or add additional admin detection logic in `lib/supabase/auth.ts`.
+
+**Q: Why can't clients self-register?**
+A: Registration is invitation-only for security. Admins send invitations via the client management interface.
+
+**Q: Does this work outside Maricopa County?**
+A: The MCAO integration is Maricopa County-specific. Property management features work anywhere.
+
+**Q: What file formats are supported for upload?**
+A: CSV and XLSX files up to 10MB. See `/lib/validation/upload-schema.ts` for details.
 
 ---
 
 ## Support
 
-### Documentation
-- Check `/DOCUMENTATION/` folder for detailed guides
-- Read `GSREALTY_PROJECT_REQUIREMENTS.md` for specifications
-- See `TEMPLATE_FIELDS_REFERENCE.md` for Excel template questions
-
-### Issues
-- Create GitHub issue
-- Include: Steps to reproduce, expected behavior, actual behavior
-- Attach screenshots if applicable
-
 ### Contact
 - **Project Owner:** Garrett Sullivan
 - **Business:** Sullivan Real Estate, Maricopa County, AZ
+
+### Issues
+- Create GitHub issue with steps to reproduce
+- Include screenshots if applicable
 
 ---
 
 ## License
 
-**Proprietary** - © 2025 Sullivan Real Estate. All rights reserved.
-
-This software is proprietary and confidential. Unauthorized copying, distribution, or use of this software, via any medium, is strictly prohibited.
-
----
-
-## Acknowledgments
-
-- **Next.js** - React framework
-- **Supabase** - Database and authentication
-- **ExcelJS** - Excel file processing
-- **Tailwind CSS** - Styling framework
-- **Radix UI** - Component library
-- **Vercel** - Hosting platform
-
----
-
-## Project Status Summary
-
-| Component                | Status      | Notes                              |
-|--------------------------|-------------|------------------------------------|
-| Database Schema          | ✅ Complete  | 6 tables created in Supabase       |
-| Documentation            | ✅ Complete  | 1500+ lines of comprehensive docs  |
-| Project Structure        | ✅ Complete  | Architecture defined               |
-| Next.js Setup            | ✅ Complete  | v14.2.33 with security patches     |
-| ExcelJS Integration      | ✅ Complete  | v4.4.0 installed and tested        |
-| Security Audit           | ✅ Complete  | 0 vulnerabilities                  |
-| Authentication System    | 📝 Pending   | Phase 2                            |
-| Admin Dashboard          | 📝 Pending   | Phase 3                            |
-| File Upload System       | 📝 Pending   | Phase 3-4                          |
-| MCAO Integration         | 📝 Pending   | Phase 5                            |
-| Client Dashboard         | 📝 Pending   | Phase 6                            |
-| Production Deployment    | 📝 Pending   | Phase 7                            |
-
----
-
-## Next Steps
-
-1. **Review documentation:** Read all files in `/DOCUMENTATION/`
-2. **Provide template.xlsx:** Or confirm we should create from specs
-3. **Clarify questions:** Answer questions in Section 20 of requirements doc
-4. **Approve architecture:** Confirm project structure and approach
-5. **Begin Phase 1:** Start implementation
-
-**Ready to proceed when you are!** 🚀
+**Proprietary** - (c) 2025 Sullivan Real Estate. All rights reserved.
 
 ---
 
 **Project:** GSRealty Client Management System
-**Version:** 1.0.0 (Documentation Phase)
-**Last Updated:** October 15, 2025
-**Status:** Architecture Complete - Ready for Development
-
----
-
-For detailed information, see:
-- **Master Requirements:** `/DOCUMENTATION/GSREALTY_PROJECT_REQUIREMENTS.md`
-- **Template Reference:** `/DOCUMENTATION/TEMPLATE_FIELDS_REFERENCE.md`
-- **Project Structure:** `/DOCUMENTATION/PROJECT_STRUCTURE.md`
+**Version:** 1.0.0
+**Status:** Production Ready
+**Last Updated:** January 2026

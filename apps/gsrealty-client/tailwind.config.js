@@ -27,6 +27,13 @@ module.exports = {
           'gray-medium': '#6B7280',
           'gray-dark': '#111827',
         },
+        // Glassmorphism colors
+        glass: {
+          white: 'rgba(255, 255, 255, 0.1)',
+          'white-hover': 'rgba(255, 255, 255, 0.15)',
+          border: 'rgba(255, 255, 255, 0.2)',
+          'border-hover': 'rgba(255, 255, 255, 0.3)',
+        },
 
         // Existing shadcn/ui colors (keep for compatibility)
         border: "hsl(var(--border))",
@@ -67,6 +74,19 @@ module.exports = {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        '3xl': '1.5rem',
+      },
+      fontFamily: {
+        sans: ['Figtree', 'Inter', 'system-ui', 'sans-serif'],
+      },
+      transitionDuration: {
+        '700': '700ms',
+      },
+      scale: {
+        '102': '1.02',
+      },
+      backdropBlur: {
+        'xl': '24px',
       },
       keyframes: {
         "accordion-down": {

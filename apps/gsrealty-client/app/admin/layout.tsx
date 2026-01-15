@@ -2,6 +2,10 @@
 
 import { useAuth } from '@/hooks/useAuth'
 import { BRAND } from '@/lib/constants/branding'
+import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { QuickActionsPanel } from '@/components/admin/QuickActionsPanel'
+import { CreateEventModal } from '@/components/admin/CreateEventModal'
 import {
   Home,
   Upload,
@@ -11,7 +15,20 @@ import {
   Menu,
   X,
   User,
-  FileText
+  FileText,
+  HelpCircle,
+  ChevronDown,
+  ChevronRight,
+  Users,
+  TrendingUp,
+  DollarSign,
+  Calendar,
+  Target,
+  Briefcase,
+  MessageSquare,
+  Database,
+  BarChart3,
+  Zap
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -25,14 +42,79 @@ export default function AdminLayout({
   const { user, signOut } = useAuth()
   const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [reportsExpanded, setReportsExpanded] = useState(false)
+  const [isEventModalOpen, setIsEventModalOpen] = useState(false)
 
-  const navigation = [
-    { name: 'Dashboard', href: '/admin', icon: Home },
-    { name: 'Clients', href: '/admin/clients', icon: User },
-    { name: 'Upload MLS', href: '/admin/upload', icon: Upload },
+  // Main Menu navigation items
+  const mainMenuItems = [
+    { name: 'Contacts', href: '/admin/clients', icon: Users, active: true },
+    { name: 'Analytics', href: '#', icon: TrendingUp, disabled: true },
+    { name: 'Sales Pipeline', href: '#', icon: DollarSign, disabled: true },
+    { name: 'Calendar', href: '#', icon: Calendar, disabled: true },
+    { name: 'Campaigns', href: '#', icon: Target, disabled: true },
+  ]
+
+  // Reports dropdown items (nested under CRM Tools)
+  const reportsItems = [
     { name: 'ReportIt', href: '/admin/reportit', icon: FileText },
     { name: 'MCAO Lookup', href: '/admin/mcao', icon: Search },
+    { name: 'Upload MLS', href: '/admin/upload', icon: Upload },
+  ]
+
+  // Other CRM Tools (placeholders)
+  const crmToolsItems = [
+    { name: 'Deals', href: '#', icon: Briefcase, disabled: true },
+    { name: 'Messages', href: '#', icon: MessageSquare, disabled: true },
+    { name: 'Data Import', href: '#', icon: Database, disabled: true },
+    { name: 'Forecasting', href: '#', icon: BarChart3, disabled: true },
+  ]
+
+  // Administration items
+  const adminItems = [
     { name: 'Settings', href: '/admin/settings', icon: Settings },
+    { name: 'Automations', href: '#', icon: Zap, disabled: true },
+  ]
+
+  // Legacy navigation array for mobile compatibility
+  const navigation = [
+    { name: 'Dashboard', href: '/admin', icon: Home },
+    { name: 'Contacts', href: '/admin/clients', icon: Users },
+    { name: 'ReportIt', href: '/admin/reportit', icon: FileText },
+    { name: 'MCAO Lookup', href: '/admin/mcao', icon: Search },
+    { name: 'Upload MLS', href: '/admin/upload', icon: Upload },
+    { name: 'Settings', href: '/admin/settings', icon: Settings },
+  ]
+
+  // Quick actions for right sidebar (used on dashboard)
+  const quickActions = [
+    {
+      title: 'Add New Client',
+      description: 'Create a new client profile',
+      icon: User,
+      href: '/admin/clients/new',
+      color: 'bg-brand-black'
+    },
+    {
+      title: 'Upload MLS Data',
+      description: 'Process MLS comps and generate reports',
+      icon: Upload,
+      href: '/admin/upload',
+      color: 'bg-brand-red'
+    },
+    {
+      title: 'MCAO Property Search',
+      description: 'Look up Maricopa County property data',
+      icon: Search,
+      href: '/admin/mcao',
+      color: 'bg-brand-black'
+    },
+    {
+      title: 'System Settings',
+      description: 'Configure app preferences',
+      icon: Settings,
+      href: '/admin/settings',
+      color: 'bg-gray-700'
+    },
   ]
 
   const isActive = (href: string) => {
@@ -42,28 +124,41 @@ export default function AdminLayout({
     return pathname.startsWith(href)
   }
 
+  const isDashboard = pathname === '/admin'
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Background Image */}
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: 'url(/assets/crm-background.jpg)' }}
+      />
+      {/* Dark Overlay */}
+      <div className="bg-black/30 absolute inset-0" />
+
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black bg-opacity-50 z-50 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* Sidebar */}
+      {/* Mobile Sidebar (Slide-in) */}
       <aside
         className={`
-          fixed top-0 left-0 z-40 h-screen w-64 bg-brand-black text-white
-          transition-transform duration-300 ease-in-out
+          fixed top-0 left-0 z-50 h-screen w-64 bg-brand-black text-white
+          transition-transform duration-300 ease-in-out lg:hidden
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-          lg:translate-x-0
         `}
       >
-        {/* Logo */}
+        {/* Mobile Logo - Clickable to return to dashboard */}
         <div className="flex items-center justify-between p-6 border-b border-gray-700">
-          <div className="flex items-center space-x-3">
+          <Link
+            href="/admin"
+            onClick={() => setSidebarOpen(false)}
+            className="flex items-center space-x-3 hover:opacity-80 transition-opacity"
+          >
             <img
               src={BRAND.logo}
               alt={BRAND.logoAlt}
@@ -73,45 +168,172 @@ export default function AdminLayout({
               <h1 className="text-lg font-bold">{BRAND.name}</h1>
               <p className="text-xs text-gray-400">Admin Panel</p>
             </div>
-          </div>
+          </Link>
           <button
             onClick={() => setSidebarOpen(false)}
-            className="lg:hidden text-gray-400 hover:text-white"
+            className="text-gray-400 hover:text-white"
           >
             <X className="w-6 h-6" />
           </button>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 px-4 py-6 space-y-2">
-          {navigation.map((item) => {
-            const Icon = item.icon
-            const active = isActive(item.href)
+        {/* Mobile Navigation */}
+        <nav className="flex-1 px-4 py-6 space-y-4 overflow-y-auto">
+          {/* Main Menu */}
+          <div>
+            <h4 className="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2 px-4">Main Menu</h4>
+            <div className="space-y-1">
+              {mainMenuItems.map((item) => {
+                const Icon = item.icon
+                const active = isActive(item.href)
+                const isDisabled = item.disabled
 
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                onClick={() => setSidebarOpen(false)}
+                if (isDisabled) {
+                  return (
+                    <div
+                      key={item.name}
+                      className="flex items-center px-4 py-3 rounded-lg text-gray-500 cursor-not-allowed opacity-50"
+                    >
+                      <Icon className="w-5 h-5 mr-3" />
+                      <span className="font-medium">{item.name}</span>
+                    </div>
+                  )
+                }
+
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    onClick={() => setSidebarOpen(false)}
+                    className={`
+                      flex items-center px-4 py-3 rounded-lg transition-colors
+                      ${active
+                        ? 'bg-brand-red text-white'
+                        : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                      }
+                    `}
+                  >
+                    <Icon className="w-5 h-5 mr-3" />
+                    <span className="font-medium">{item.name}</span>
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* CRM Tools */}
+          <div>
+            <h4 className="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2 px-4">CRM Tools</h4>
+            <div className="space-y-1">
+              {/* Reports Dropdown */}
+              <button
+                onClick={() => setReportsExpanded(!reportsExpanded)}
                 className={`
-                  flex items-center justify-between px-4 py-3 rounded-lg
-                  transition-colors group
-                  ${active
+                  w-full flex items-center justify-between px-4 py-3 rounded-lg transition-colors
+                  ${reportsItems.some(item => isActive(item.href))
                     ? 'bg-brand-red text-white'
                     : 'text-gray-300 hover:bg-gray-800 hover:text-white'
                   }
                 `}
               >
-                <div className="flex items-center space-x-3">
-                  <Icon className="w-5 h-5" />
-                  <span className="font-medium">{item.name}</span>
+                <span className="flex items-center">
+                  <FileText className="w-5 h-5 mr-3" />
+                  <span className="font-medium">Reports</span>
+                </span>
+                {reportsExpanded ? (
+                  <ChevronDown className="w-4 h-4" />
+                ) : (
+                  <ChevronRight className="w-4 h-4" />
+                )}
+              </button>
+
+              {/* Reports Sub-items */}
+              {reportsExpanded && (
+                <div className="ml-4 space-y-1 border-l border-gray-700 pl-3">
+                  {reportsItems.map((item) => {
+                    const Icon = item.icon
+                    const active = isActive(item.href)
+                    return (
+                      <Link
+                        key={item.name}
+                        href={item.href}
+                        onClick={() => setSidebarOpen(false)}
+                        className={`
+                          flex items-center px-4 py-2 rounded-lg transition-colors text-sm
+                          ${active
+                            ? 'bg-brand-red text-white'
+                            : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                          }
+                        `}
+                      >
+                        <Icon className="w-4 h-4 mr-3" />
+                        <span className="font-medium">{item.name}</span>
+                      </Link>
+                    )
+                  })}
                 </div>
-              </Link>
-            )
-          })}
+              )}
+
+              {/* Other CRM Tools (disabled) */}
+              {crmToolsItems.map((item) => {
+                const Icon = item.icon
+                return (
+                  <div
+                    key={item.name}
+                    className="flex items-center px-4 py-3 rounded-lg text-gray-500 cursor-not-allowed opacity-50"
+                  >
+                    <Icon className="w-5 h-5 mr-3" />
+                    <span className="font-medium">{item.name}</span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Administration */}
+          <div>
+            <h4 className="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2 px-4">Administration</h4>
+            <div className="space-y-1">
+              {adminItems.map((item) => {
+                const Icon = item.icon
+                const active = isActive(item.href)
+                const isDisabled = item.disabled
+
+                if (isDisabled) {
+                  return (
+                    <div
+                      key={item.name}
+                      className="flex items-center px-4 py-3 rounded-lg text-gray-500 cursor-not-allowed opacity-50"
+                    >
+                      <Icon className="w-5 h-5 mr-3" />
+                      <span className="font-medium">{item.name}</span>
+                    </div>
+                  )
+                }
+
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    onClick={() => setSidebarOpen(false)}
+                    className={`
+                      flex items-center px-4 py-3 rounded-lg transition-colors
+                      ${active
+                        ? 'bg-brand-red text-white'
+                        : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                      }
+                    `}
+                  >
+                    <Icon className="w-5 h-5 mr-3" />
+                    <span className="font-medium">{item.name}</span>
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
         </nav>
 
-        {/* User Profile */}
+        {/* Mobile User/Logout */}
         <div className="p-4 border-t border-gray-700">
           <div className="flex items-center space-x-3 px-4 py-3 bg-gray-800 rounded-lg mb-2">
             <div className="w-10 h-10 bg-brand-red rounded-full flex items-center justify-center">
@@ -134,33 +356,229 @@ export default function AdminLayout({
         </div>
       </aside>
 
-      {/* Main Content */}
-      <div className="lg:ml-64">
-        {/* Top Bar */}
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
-          <div className="flex items-center justify-between px-6 py-4">
+      {/* Desktop 3-Column Grid */}
+      <div className="relative z-10 p-6 hidden lg:grid grid-cols-12 gap-6 min-h-screen">
+        {/* Left Sidebar - col-span-2 */}
+        <Card className="col-span-2 glass-card p-6 h-fit flex flex-col">
+          <div className="space-y-6">
+            {/* Logo - Clickable to return to dashboard */}
+            <div className="text-center">
+              <Link href="/admin" className="block hover:opacity-80 transition-opacity">
+                <img
+                  src={BRAND.logo}
+                  alt={BRAND.logoAlt}
+                  className="h-12 w-auto mx-auto mb-2"
+                />
+              </Link>
+              <Link href="/admin" className="block hover:opacity-80 transition-opacity">
+                <h1 className="text-xl font-bold text-white">{BRAND.name}</h1>
+              </Link>
+              <p className="text-white/60 text-sm">Admin Panel</p>
+            </div>
+
+            {/* Main Menu */}
+            <div>
+              <h4 className="text-white/80 text-sm font-semibold uppercase tracking-wider mb-3">Main Menu</h4>
+              <nav className="space-y-2">
+                {mainMenuItems.map((item) => {
+                  const Icon = item.icon
+                  const active = isActive(item.href)
+                  const isDisabled = item.disabled
+
+                  if (isDisabled) {
+                    return (
+                      <Button
+                        key={item.name}
+                        variant="ghost"
+                        disabled
+                        className="glass-nav-item opacity-50 cursor-not-allowed"
+                      >
+                        <Icon className="mr-3 h-5 w-5" />
+                        {item.name}
+                      </Button>
+                    )
+                  }
+
+                  return (
+                    <Button
+                      key={item.name}
+                      variant="ghost"
+                      asChild
+                      className={`glass-nav-item ${active ? 'glass-nav-active' : ''}`}
+                    >
+                      <Link href={item.href} className="inline-flex items-center w-full">
+                        <Icon className="mr-3 h-5 w-5" />
+                        {item.name}
+                      </Link>
+                    </Button>
+                  )
+                })}
+              </nav>
+            </div>
+
+            {/* CRM Tools */}
+            <div>
+              <h4 className="text-white/80 text-sm font-semibold uppercase tracking-wider mb-3">CRM Tools</h4>
+              <nav className="space-y-2">
+                {/* Reports Dropdown */}
+                <div>
+                  <Button
+                    variant="ghost"
+                    onClick={() => setReportsExpanded(!reportsExpanded)}
+                    className={`glass-nav-item justify-between ${
+                      reportsItems.some(item => isActive(item.href)) ? 'glass-nav-active' : ''
+                    }`}
+                  >
+                    <span className="flex items-center">
+                      <FileText className="mr-3 h-5 w-5" />
+                      Reports
+                    </span>
+                    {reportsExpanded ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
+                  </Button>
+
+                  {/* Reports Sub-items */}
+                  {reportsExpanded && (
+                    <div className="ml-4 mt-1 space-y-1 border-l border-white/10 pl-3">
+                      {reportsItems.map((item) => {
+                        const Icon = item.icon
+                        const active = isActive(item.href)
+                        return (
+                          <Button
+                            key={item.name}
+                            variant="ghost"
+                            asChild
+                            className={`glass-nav-item h-9 text-sm ${active ? 'glass-nav-active' : ''}`}
+                          >
+                            <Link href={item.href} className="inline-flex items-center w-full">
+                              <Icon className="mr-3 h-4 w-4" />
+                              {item.name}
+                            </Link>
+                          </Button>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Other CRM Tools (disabled placeholders) */}
+                {crmToolsItems.map((item) => {
+                  const Icon = item.icon
+                  return (
+                    <Button
+                      key={item.name}
+                      variant="ghost"
+                      disabled
+                      className="glass-nav-item opacity-50 cursor-not-allowed"
+                    >
+                      <Icon className="mr-3 h-5 w-5" />
+                      {item.name}
+                    </Button>
+                  )
+                })}
+              </nav>
+            </div>
+
+            {/* Administration */}
+            <div>
+              <h4 className="text-white/80 text-sm font-semibold uppercase tracking-wider mb-3">Administration</h4>
+              <nav className="space-y-2">
+                {adminItems.map((item) => {
+                  const Icon = item.icon
+                  const active = isActive(item.href)
+                  const isDisabled = item.disabled
+
+                  if (isDisabled) {
+                    return (
+                      <Button
+                        key={item.name}
+                        variant="ghost"
+                        disabled
+                        className="glass-nav-item opacity-50 cursor-not-allowed"
+                      >
+                        <Icon className="mr-3 h-5 w-5" />
+                        {item.name}
+                      </Button>
+                    )
+                  }
+
+                  return (
+                    <Button
+                      key={item.name}
+                      variant="ghost"
+                      asChild
+                      className={`glass-nav-item ${active ? 'glass-nav-active' : ''}`}
+                    >
+                      <Link href={item.href} className="inline-flex items-center w-full">
+                        <Icon className="mr-3 h-5 w-5" />
+                        {item.name}
+                      </Link>
+                    </Button>
+                  )
+                })}
+              </nav>
+            </div>
+          </div>
+
+          {/* Footer Actions */}
+          <div className="flex-shrink-0 space-y-2 pt-4 mt-6 border-t border-white/10">
+            <Button
+              variant="ghost"
+              className="glass-nav-item"
+            >
+              <HelpCircle className="mr-3 h-5 w-5" />
+              Contact Support
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={signOut}
+              className="glass-nav-item"
+            >
+              <LogOut className="mr-3 h-5 w-5" />
+              Sign Out
+            </Button>
+          </div>
+        </Card>
+
+        {/* Main Content - col-span-8 or col-span-10 */}
+        <div className={`${isDashboard ? 'col-span-8' : 'col-span-10'} space-y-6 overflow-y-auto max-h-screen pb-6`}>
+          {children}
+        </div>
+
+        {/* Right Sidebar - col-span-2 (Dashboard only) */}
+        {isDashboard && (
+          <Card className="col-span-2 glass-card p-6 h-fit">
+            <QuickActionsPanel
+              quickActions={quickActions}
+              onBookMeeting={() => setIsEventModalOpen(true)}
+            />
+          </Card>
+        )}
+      </div>
+
+      {/* Mobile Layout */}
+      <div className="relative z-10 lg:hidden">
+        {/* Mobile Top Bar */}
+        <header className="bg-black/50 backdrop-blur-xl border-b border-white/10 sticky top-0 z-30">
+          <div className="flex items-center justify-between px-4 py-4">
             <div className="flex items-center space-x-4">
-              {/* Mobile menu button */}
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="lg:hidden text-gray-600 hover:text-gray-900"
+                className="text-white/80 hover:text-white"
               >
                 <Menu className="w-6 h-6" />
               </button>
-
               <div>
-                <h2 className="text-xl font-bold text-brand-black">
+                <h2 className="text-lg font-bold text-white">
                   {navigation.find(item => isActive(item.href))?.name || 'Dashboard'}
                 </h2>
-                <p className="text-sm text-gray-600">
-                  {BRAND.tagline}
-                </p>
               </div>
             </div>
-
-            {/* Desktop user menu */}
-            <div className="hidden lg:flex items-center space-x-4">
-              <span className="text-sm text-gray-600">{user?.email}</span>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-white/60">{user?.email?.split('@')[0]}</span>
               <div className="w-8 h-8 bg-brand-red rounded-full flex items-center justify-center">
                 <User className="w-4 h-4 text-white" />
               </div>
@@ -168,11 +586,21 @@ export default function AdminLayout({
           </div>
         </header>
 
-        {/* Page Content */}
-        <main className="p-6">
+        {/* Mobile Page Content */}
+        <main className="p-4">
           {children}
         </main>
       </div>
+
+      {/* Event Creation Modal - Triggered by Book Meeting quick action */}
+      <CreateEventModal
+        isOpen={isEventModalOpen}
+        onClose={() => setIsEventModalOpen(false)}
+        onEventCreated={() => {
+          console.log('Event created successfully')
+          setIsEventModalOpen(false)
+        }}
+      />
     </div>
   )
 }
