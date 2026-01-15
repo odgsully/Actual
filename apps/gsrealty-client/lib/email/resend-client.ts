@@ -8,17 +8,24 @@ import { InvitationEmail } from './templates/invitation';
 import { PasswordResetEmail } from './templates/password-reset';
 import { WelcomeEmail } from './templates/welcome';
 
-// Initialize Resend client
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Lazy-initialized Resend client
+let resendClient: Resend | null = null;
 
-// Default sender email
-const DEFAULT_FROM = process.env.RESEND_FROM_EMAIL || 'no-reply@gsrealty.com';
+function getResendClient(): Resend {
+  if (!resendClient) {
+    resendClient = new Resend(process.env.RESEND_API_KEY);
+  }
+  return resendClient;
+}
 
-// Email configuration
-const EMAIL_CONFIG = {
-  from: DEFAULT_FROM,
-  replyTo: process.env.RESEND_REPLY_TO_EMAIL || DEFAULT_FROM,
-};
+// Email configuration (lazy-loaded at runtime)
+function getEmailConfig() {
+  const DEFAULT_FROM = process.env.RESEND_FROM_EMAIL || 'no-reply@gsrealty.com';
+  return {
+    from: DEFAULT_FROM,
+    replyTo: process.env.RESEND_REPLY_TO_EMAIL || DEFAULT_FROM,
+  };
+}
 
 /**
  * Interface for invitation email parameters
@@ -78,9 +85,9 @@ export async function sendInvitationEmail(
     }
 
     // Send email via Resend
-    const { data, error } = await resend.emails.send({
-      from: EMAIL_CONFIG.from,
-      replyTo: EMAIL_CONFIG.replyTo,
+    const { data, error } = await getResendClient().emails.send({
+      from: getEmailConfig().from,
+      replyTo: getEmailConfig().replyTo,
       to: params.to,
       subject: 'Welcome to GSRealty - Set Up Your Account',
       react: InvitationEmail({
@@ -132,9 +139,9 @@ export async function sendPasswordResetEmail(
     }
 
     // Send email via Resend
-    const { data, error } = await resend.emails.send({
-      from: EMAIL_CONFIG.from,
-      replyTo: EMAIL_CONFIG.replyTo,
+    const { data, error } = await getResendClient().emails.send({
+      from: getEmailConfig().from,
+      replyTo: getEmailConfig().replyTo,
       to: params.to,
       subject: 'Reset Your GSRealty Password',
       react: PasswordResetEmail({
@@ -184,9 +191,9 @@ export async function sendWelcomeEmail(
     }
 
     // Send email via Resend
-    const { data, error } = await resend.emails.send({
-      from: EMAIL_CONFIG.from,
-      replyTo: EMAIL_CONFIG.replyTo,
+    const { data, error } = await getResendClient().emails.send({
+      from: getEmailConfig().from,
+      replyTo: getEmailConfig().replyTo,
       to: params.to,
       subject: 'Welcome to GSRealty!',
       react: WelcomeEmail({

@@ -16,6 +16,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://growthadvisory.ai'),
   title: "GS Dashboard",
   description: "Personal dashboard hub",
 };

@@ -1,6 +1,22 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "globalDependencies": ["**/.env.*local"],
+  "globalEnv": [
+    "NEXT_PUBLIC_SUPABASE_URL",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+    "SUPABASE_SERVICE_ROLE_KEY",
+    "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY",
+    "OPENAI_API_KEY",
+    "RESEND_API_KEY",
+    "EMAIL_FROM",
+    "CRON_SECRET",
+    "NOTION_API_KEY",
+    "NOTION_HABITS_DATABASE_ID",
+    "NOTION_TASKS_DATABASE_ID",
+    "GITHUB_ACCESS_TOKEN",
+    "GOOGLE_CLIENT_ID",
+    "GOOGLE_CLIENT_SECRET"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

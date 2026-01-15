@@ -38,6 +38,7 @@
     "prepare": "husky"
   },
   "devDependencies": {
+    "caniuse-lite": "^1.0.30001764",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
     "prettier": "^3.0.3",
