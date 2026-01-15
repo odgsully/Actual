@@ -156,20 +156,20 @@ export default function ReportItPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">ReportIt - Complete Property Analysis</h1>
-        <p className="text-gray-600 mt-2">
+        <h1 className="text-3xl font-bold text-white">ReportIt - Complete Property Analysis</h1>
+        <p className="text-white/60 mt-2">
           Upload your Complete_*.xlsx file to generate a comprehensive analysis package
         </p>
       </div>
 
       {/* Main Upload Card */}
-      <Card className="border-2 border-blue-200 shadow-lg">
-        <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
+      <Card className="glass-card">
+        <CardHeader className="bg-white/5 rounded-t-3xl">
           <div className="flex items-center space-x-3">
-            <Package className="h-8 w-8 text-blue-600" />
+            <Package className="h-8 w-8 text-blue-400" />
             <div>
-              <CardTitle className="text-2xl">Upload Complete Property Analysis</CardTitle>
-              <CardDescription className="text-base mt-1">
+              <CardTitle className="text-2xl text-white">Upload Complete Property Analysis</CardTitle>
+              <CardDescription className="text-base mt-1 text-white/60">
                 Single upload generates everything you need: analyses, charts, PDFs, and PropertyRadar export
               </CardDescription>
             </div>
@@ -177,11 +177,11 @@ export default function ReportItPage() {
         </CardHeader>
         <CardContent className="pt-6">
           {/* Required File Info */}
-          <Alert className="mb-6 bg-blue-50 border-blue-200">
-            <FileText className="h-4 w-4" />
+          <Alert className="mb-6 bg-blue-500/10 border-blue-400/30">
+            <FileText className="h-4 w-4 text-blue-300" />
             <AlertDescription>
-              <div className="font-medium mb-2">Required: Complete_*.xlsx file with:</div>
-              <ul className="text-sm space-y-1 ml-4">
+              <div className="font-medium mb-2 text-blue-200">Required: Complete_*.xlsx file with:</div>
+              <ul className="text-sm space-y-1 ml-4 text-blue-300">
                 <li>✓ MLS-Resi-Comps sheet</li>
                 <li>✓ MLS-Lease-Comps sheet</li>
                 <li>✓ Full-MCAO-API sheet</li>
@@ -193,15 +193,15 @@ export default function ReportItPage() {
           {uploadStatus.status === 'idle' && (
             <>
               <div
-                className={`relative border-2 border-dashed rounded-lg p-12 text-center hover:border-gray-400 transition-colors
-                  ${dragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
+                className={`relative border-2 border-dashed rounded-xl p-12 text-center transition-colors
+                  ${dragActive ? 'border-white/50 bg-white/10' : 'border-white/30 hover:border-white/40 bg-white/5'}`}
                 onDragEnter={handleDrag}
                 onDragLeave={handleDrag}
                 onDragOver={handleDrag}
                 onDrop={handleDrop}
               >
-                <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                <p className="mt-2 text-sm text-gray-600">
+                <Upload className="mx-auto h-12 w-12 text-white/40" />
+                <p className="mt-2 text-sm text-white/60">
                   Drag and drop your Complete Excel file (.xlsx) here, or click to browse
                 </p>
                 <input
@@ -217,17 +217,17 @@ export default function ReportItPage() {
 
               {/* Green ribbon showing selected file */}
               {selectedFile && (
-                <div className="mt-4 bg-green-50 border-l-4 border-green-500 p-4 rounded-r-md">
+                <div className="mt-4 bg-green-500/20 border-l-4 border-green-400 p-4 rounded-r-xl">
                   <div className="flex items-start">
-                    <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                    <CheckCircle className="h-5 w-5 text-green-400 mt-0.5 flex-shrink-0" />
                     <div className="ml-3 flex-1">
-                      <p className="text-sm font-medium text-green-800">
+                      <p className="text-sm font-medium text-green-300">
                         File Selected
                       </p>
-                      <p className="text-sm text-green-700 mt-1">
+                      <p className="text-sm text-green-400 mt-1">
                         {selectedFile.name}
                       </p>
-                      <p className="text-xs text-green-600 mt-1">
+                      <p className="text-xs text-green-400/70 mt-1">
                         {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
                       </p>
                     </div>
@@ -242,6 +242,7 @@ export default function ReportItPage() {
                     <Button
                       variant="outline"
                       onClick={() => setSelectedFile(null)}
+                      className="border-white/20 text-white hover:bg-white/10"
                     >
                       Cancel
                     </Button>
@@ -254,12 +255,12 @@ export default function ReportItPage() {
           {uploadStatus.status === 'uploading' && (
             <div className="space-y-4">
               <div className="flex items-center space-x-3">
-                <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
-                <span className="text-sm text-gray-600">{uploadStatus.message}</span>
+                <Loader2 className="h-5 w-5 animate-spin text-blue-400" />
+                <span className="text-sm text-white/60">{uploadStatus.message}</span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2.5">
+              <div className="w-full bg-white/10 rounded-full h-2.5">
                 <div
-                  className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                  className="bg-blue-500 h-2.5 rounded-full transition-all duration-300"
                   style={{ width: `${uploadStatus.progress}%` }}
                 />
               </div>
@@ -269,12 +270,12 @@ export default function ReportItPage() {
           {uploadStatus.status === 'processing' && (
             <div className="space-y-4">
               <div className="flex items-center space-x-3">
-                <Loader2 className="h-5 w-5 animate-spin text-indigo-500" />
-                <span className="text-sm text-gray-600">{uploadStatus.message}</span>
+                <Loader2 className="h-5 w-5 animate-spin text-indigo-400" />
+                <span className="text-sm text-white/60">{uploadStatus.message}</span>
               </div>
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
+              <Alert className="bg-white/5 border-white/20">
+                <AlertCircle className="h-4 w-4 text-white/60" />
+                <AlertDescription className="text-white/60">
                   Processing includes: 22 break-ups analyses, 22 charts, 5 PDF reports, PropertyRadar export, and complete data package. This may take up to 30 seconds.
                 </AlertDescription>
               </Alert>
@@ -283,17 +284,17 @@ export default function ReportItPage() {
 
           {uploadStatus.status === 'complete' && (
             <div className="space-y-4">
-              <Alert className="border-green-200 bg-green-50">
-                <CheckCircle className="h-4 w-4 text-green-600" />
-                <AlertDescription className="text-green-800">
+              <Alert className="border-green-400/30 bg-green-500/20">
+                <CheckCircle className="h-4 w-4 text-green-400" />
+                <AlertDescription className="text-green-300">
                   {uploadStatus.message}
                 </AlertDescription>
               </Alert>
 
               {/* Output Includes Section */}
-              <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4">
-                <h3 className="font-semibold text-green-900 mb-3">Package Contents:</h3>
-                <ul className="space-y-2 text-sm text-green-800">
+              <div className="bg-green-500/10 border border-green-400/30 rounded-xl p-4">
+                <h3 className="font-semibold text-green-300 mb-3">Package Contents:</h3>
+                <ul className="space-y-2 text-sm text-green-400">
                   <li className="flex items-start">
                     <CheckCircle className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" />
                     <span><strong>22 Comparative Analyses</strong> - Complete property breakdowns</span>
@@ -322,7 +323,7 @@ export default function ReportItPage() {
                   <Download className="h-4 w-4" />
                   <span>Download Complete Report Package (.zip)</span>
                 </Button>
-                <Button variant="outline" onClick={resetUpload}>
+                <Button variant="outline" onClick={resetUpload} className="border-white/20 text-white hover:bg-white/10">
                   Upload Another File
                 </Button>
               </div>
@@ -331,9 +332,9 @@ export default function ReportItPage() {
 
           {uploadStatus.status === 'error' && (
             <div className="space-y-4">
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{uploadStatus.message}</AlertDescription>
+              <Alert className="bg-red-500/20 border-red-400/30">
+                <AlertCircle className="h-4 w-4 text-red-400" />
+                <AlertDescription className="text-red-300">{uploadStatus.message}</AlertDescription>
               </Alert>
               <Button onClick={resetUpload}>Try Again</Button>
             </div>
@@ -342,16 +343,16 @@ export default function ReportItPage() {
       </Card>
 
       {/* Instructions Card */}
-      <Card>
+      <Card className="glass-card">
         <CardHeader>
-          <CardTitle>What Gets Generated</CardTitle>
-          <CardDescription>Complete package contents from a single upload</CardDescription>
+          <CardTitle className="text-white">What Gets Generated</CardTitle>
+          <CardDescription className="text-white/60">Complete package contents from a single upload</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <h3 className="font-semibold text-sm">Analysis & Data:</h3>
-              <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+              <h3 className="font-semibold text-sm text-white">Analysis & Data:</h3>
+              <ul className="list-disc list-inside text-sm text-white/60 space-y-1">
                 <li>22 comparative analyses</li>
                 <li>Enhanced Excel file with all calculations</li>
                 <li>PropertyRadar export (columns AD-AO)</li>
@@ -360,8 +361,8 @@ export default function ReportItPage() {
               </ul>
             </div>
             <div className="space-y-2">
-              <h3 className="font-semibold text-sm">Visualizations & Reports:</h3>
-              <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+              <h3 className="font-semibold text-sm text-white">Visualizations & Reports:</h3>
+              <ul className="list-disc list-inside text-sm text-white/60 space-y-1">
                 <li>22 high-quality PNG charts (300 DPI)</li>
                 <li>Executive Summary PDF</li>
                 <li>Property Characteristics PDF</li>
@@ -372,10 +373,10 @@ export default function ReportItPage() {
             </div>
           </div>
 
-          <Alert>
-            <FileText className="h-4 w-4" />
-            <AlertDescription>
-              All outputs are packaged in a single ZIP file named: <code className="font-mono text-xs bg-gray-100 px-1 py-0.5 rounded">Breakups_Report_ClientName_Date.zip</code>
+          <Alert className="bg-white/5 border-white/20">
+            <FileText className="h-4 w-4 text-white/60" />
+            <AlertDescription className="text-white/60">
+              All outputs are packaged in a single ZIP file named: <code className="font-mono text-xs bg-white/10 px-1 py-0.5 rounded text-white">Breakups_Report_ClientName_Date.zip</code>
             </AlertDescription>
           </Alert>
         </CardContent>
