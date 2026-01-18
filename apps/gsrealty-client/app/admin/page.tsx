@@ -10,16 +10,20 @@ import {
   Users,
   TrendingUp,
   DollarSign,
-  Calendar,
+  Phone,
   Search,
   Plus,
   Bell,
   Filter,
   Download,
-  Settings
+  Settings,
+  Eye,
+  EyeOff
 } from 'lucide-react'
 import Link from 'next/link'
 import { getClientCount, getAllClients } from '@/lib/database/clients'
+import { getActiveDealsCount, getTotalRevenue, getClientDealValue } from '@/lib/database/deals'
+import { getCallsThisMonth, getOutreachThisMonth, getOutreachThisQuarter } from '@/lib/database/outreach'
 
 // Type for client data
 interface RecentContact {
@@ -37,11 +41,18 @@ export default function AdminDashboard() {
   const [statsLoading, setStatsLoading] = useState(true)
   const [contactsLoading, setContactsLoading] = useState(true)
   const [recentContacts, setRecentContacts] = useState<RecentContact[]>([])
+  const [revealedContacts, setRevealedContacts] = useState<Set<string>>(new Set())
   const [dashboardStats, setDashboardStats] = useState({
     totalContacts: 0,
-    activeDeals: 156,
-    revenue: '$89.2K',
-    meetings: 24
+    activeDeals: 0,
+    revenue: '$0',
+    callsPlaced: 0
+  })
+  const [salesTarget, setSalesTarget] = useState({
+    monthlyTarget: 50,
+    monthlyAchieved: 0,
+    quarterlyTarget: 150,
+    quarterlyAchieved: 0
   })
 
   // Helper to determine contact status based on created_at
@@ -55,41 +66,105 @@ export default function AdminDashboard() {
     return 'Inactive'
   }
 
-  // Generate mock value for contacts
-  const generateValue = (): string => {
-    const values = ['$12.5K', '$8.2K', '$15.7K', '$3.1K', '$9.8K', '$22.4K', '$6.9K']
-    return values[Math.floor(Math.random() * values.length)]
+  // Toggle reveal for a specific contact
+  const toggleReveal = (contactId: string, e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setRevealedContacts(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(contactId)) {
+        newSet.delete(contactId)
+      } else {
+        newSet.add(contactId)
+      }
+      return newSet
+    })
+  }
+
+  // Mask email for privacy
+  const maskEmail = (email: string | null): string => {
+    if (!email) return 'No email'
+    const [local, domain] = email.split('@')
+    if (!domain) return '•••@•••'
+    const maskedLocal = local.charAt(0) + '•••'
+    return `${maskedLocal}@${domain}`
+  }
+
+  // Mask phone for privacy
+  const maskPhone = (phone: string | null): string => {
+    if (!phone) return ''
+    // Show last 4 digits only
+    const digits = phone.replace(/\D/g, '')
+    if (digits.length < 4) return '•••-••••'
+    return `•••-•••-${digits.slice(-4)}`
   }
 
   // Fetch real data on mount
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch total contacts count
-        const { count: contactCount } = await getClientCount()
-        setDashboardStats(prev => ({
+        // Fetch all stats in parallel
+        const [
+          { count: contactCount },
+          { count: dealsCount },
+          { revenue },
+          { count: callsCount },
+          { count: monthlyOutreach },
+          { count: quarterlyOutreach },
+          { clients }
+        ] = await Promise.all([
+          getClientCount(),
+          getActiveDealsCount(),
+          getTotalRevenue(),
+          getCallsThisMonth(),
+          getOutreachThisMonth(),
+          getOutreachThisQuarter(),
+          getAllClients()
+        ])
+
+        // Format revenue for display
+        const formattedRevenue = revenue >= 1000
+          ? `$${(revenue / 1000).toFixed(1)}K`
+          : `$${revenue.toFixed(0)}`
+
+        setDashboardStats({
+          totalContacts: contactCount || 0,
+          activeDeals: dealsCount || 0,
+          revenue: formattedRevenue,
+          callsPlaced: callsCount || 0
+        })
+
+        setSalesTarget(prev => ({
           ...prev,
-          totalContacts: contactCount || 0
+          monthlyAchieved: monthlyOutreach || 0,
+          quarterlyAchieved: quarterlyOutreach || 0
         }))
 
-        // Fetch recent contacts
-        const { clients } = await getAllClients()
+        // Fetch recent contacts with real deal values
         if (clients) {
-          // Get the 5 most recent contacts
-          const recent = clients
+          const sortedClients = clients
             .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
             .slice(0, 5)
-            .map(client => ({
-              id: client.id,
-              first_name: client.first_name,
-              last_name: client.last_name,
-              email: client.email ?? null,
-              phone: client.phone ?? null,
-              created_at: client.created_at,
-              status: getContactStatus(client.created_at),
-              value: generateValue()
-            }))
-          setRecentContacts(recent)
+
+          // Fetch deal values for each client
+          const recentWithValues = await Promise.all(
+            sortedClients.map(async (client) => {
+              const { value } = await getClientDealValue(client.id)
+              return {
+                id: client.id,
+                first_name: client.first_name,
+                last_name: client.last_name,
+                email: client.email ?? null,
+                phone: client.phone ?? null,
+                created_at: client.created_at,
+                status: getContactStatus(client.created_at),
+                value: value > 0
+                  ? (value >= 1000 ? `$${(value / 1000).toFixed(1)}K` : `$${value.toFixed(0)}`)
+                  : '$0'
+              }
+            })
+          )
+          setRecentContacts(recentWithValues)
         }
       } catch (error) {
         console.error('Failed to fetch dashboard data:', error)
@@ -125,11 +200,11 @@ export default function AdminDashboard() {
       change: '+23%'
     },
     {
-      name: 'Meetings',
-      value: dashboardStats.meetings.toString(),
-      icon: Calendar,
+      name: 'Calls Placed',
+      value: dashboardStats.callsPlaced.toString(),
+      icon: Phone,
       color: 'text-purple-400',
-      change: '+5%'
+      change: '+15%'
     },
   ]
 
@@ -230,6 +305,8 @@ export default function AdminDashboard() {
               recentContacts.map((contact) => {
                 const initials = `${contact.first_name.charAt(0)}${contact.last_name.charAt(0)}`.toUpperCase()
                 const fullName = `${contact.first_name} ${contact.last_name}`
+                const isRevealed = revealedContacts.has(contact.id)
+                const hasContactInfo = contact.email || contact.phone
 
                 return (
                   <Link
@@ -247,9 +324,27 @@ export default function AdminDashboard() {
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
                             <p className="font-semibold text-white text-sm">{fullName}</p>
-                            <p className="text-xs text-white/60">
-                              {contact.email || 'No email'} {contact.phone ? `• ${contact.phone}` : ''}
-                            </p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-xs text-white/60">
+                                {isRevealed
+                                  ? `${contact.email || 'No email'}${contact.phone ? ` • ${contact.phone}` : ''}`
+                                  : `${maskEmail(contact.email)}${contact.phone ? ` • ${maskPhone(contact.phone)}` : ''}`
+                                }
+                              </p>
+                              {hasContactInfo && (
+                                <button
+                                  onClick={(e) => toggleReveal(contact.id, e)}
+                                  className="p-1 rounded-md hover:bg-white/10 transition-colors duration-200"
+                                  title={isRevealed ? 'Hide contact info' : 'Reveal contact info'}
+                                >
+                                  {isRevealed ? (
+                                    <EyeOff className="h-3.5 w-3.5 text-white/40 hover:text-white/70" />
+                                  ) : (
+                                    <Eye className="h-3.5 w-3.5 text-white/40 hover:text-white/70" />
+                                  )}
+                                </button>
+                              )}
+                            </div>
                           </div>
                           <div className="text-right ml-4">
                             <p className="font-bold text-white text-sm">{contact.value}</p>
@@ -275,10 +370,10 @@ export default function AdminDashboard() {
           </div>
         </Card>
 
-        {/* Sales Target Card - Coming in Phase 4 */}
+        {/* Sales Target Card */}
         <Card className="glass-card p-6">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-semibold text-white">Sales Target</h3>
+            <h3 className="text-xl font-semibold text-white">Outreach Target</h3>
             <Button variant="ghost" size="icon" className="text-white/80 hover:bg-white/10">
               <Settings className="h-4 w-4" />
             </Button>
@@ -287,36 +382,36 @@ export default function AdminDashboard() {
             {/* Monthly Target */}
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-white/80 text-sm">Monthly Target</span>
-                <span className="text-white font-semibold">$125K</span>
+                <span className="text-white/80 text-sm">Monthly Outreach</span>
+                <span className="text-white font-semibold">{salesTarget.monthlyTarget}</span>
               </div>
               <div className="w-full bg-white/10 rounded-full h-3">
                 <div
                   className="bg-gradient-to-r from-green-400 to-blue-500 h-3 rounded-full"
-                  style={{ width: '68%' }}
+                  style={{ width: `${Math.min((salesTarget.monthlyAchieved / salesTarget.monthlyTarget) * 100, 100)}%` }}
                 />
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-green-400">$85K achieved</span>
-                <span className="text-white/60">68%</span>
+                <span className="text-green-400">{salesTarget.monthlyAchieved} completed</span>
+                <span className="text-white/60">{Math.round((salesTarget.monthlyAchieved / salesTarget.monthlyTarget) * 100)}%</span>
               </div>
             </div>
 
             {/* Quarterly Target */}
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-white/80 text-sm">Quarterly Target</span>
-                <span className="text-white font-semibold">$375K</span>
+                <span className="text-white/80 text-sm">Quarterly Outreach</span>
+                <span className="text-white font-semibold">{salesTarget.quarterlyTarget}</span>
               </div>
               <div className="w-full bg-white/10 rounded-full h-3">
                 <div
                   className="bg-gradient-to-r from-yellow-400 to-orange-500 h-3 rounded-full"
-                  style={{ width: '45%' }}
+                  style={{ width: `${Math.min((salesTarget.quarterlyAchieved / salesTarget.quarterlyTarget) * 100, 100)}%` }}
                 />
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-yellow-400">$168K achieved</span>
-                <span className="text-white/60">45%</span>
+                <span className="text-yellow-400">{salesTarget.quarterlyAchieved} completed</span>
+                <span className="text-white/60">{Math.round((salesTarget.quarterlyAchieved / salesTarget.quarterlyTarget) * 100)}%</span>
               </div>
             </div>
 
