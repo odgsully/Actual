@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Plus, Users, Home, DollarSign, TrendingUp } from 'lucide-react'
-import { PipelineBoard } from '@/components/admin/pipeline'
-import { getPipelineStats, type DealType } from '@/lib/database/pipeline'
+import { PipelineBoard, EditDealModal } from '@/components/admin/pipeline'
+import { getPipelineStats, type DealType, type DealWithClient } from '@/lib/database/pipeline'
 import Link from 'next/link'
 
 type FilterType = 'all' | 'buyer' | 'seller'
@@ -18,19 +18,27 @@ export default function PipelinePage() {
     totalValue: 0,
     totalCommission: 0,
   })
+  const [editingDeal, setEditingDeal] = useState<DealWithClient | null>(null)
+  const [refreshKey, setRefreshKey] = useState(0)
+
+  const fetchStats = useCallback(async () => {
+    const type = filter === 'all' ? undefined : filter
+    const { stats: data } = await getPipelineStats(type)
+    setStats({
+      total: data.total,
+      totalValue: data.totalValue,
+      totalCommission: data.totalCommission,
+    })
+  }, [filter])
 
   useEffect(() => {
-    const fetchStats = async () => {
-      const type = filter === 'all' ? undefined : filter
-      const { stats: data } = await getPipelineStats(type)
-      setStats({
-        total: data.total,
-        totalValue: data.totalValue,
-        totalCommission: data.totalCommission,
-      })
-    }
     fetchStats()
-  }, [filter])
+  }, [fetchStats, refreshKey])
+
+  const handleEditSuccess = () => {
+    // Refresh stats and board
+    setRefreshKey((k) => k + 1)
+  }
 
   const formatCurrency = (value: number) => {
     if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`
@@ -135,11 +143,23 @@ export default function PipelinePage() {
 
       {/* Pipeline Board */}
       <PipelineBoard
+        key={refreshKey}
         dealType={filter}
         onDealClick={(deal) => {
-          // TODO: Open deal detail modal or navigate to deal page
-          console.log('Deal clicked:', deal)
+          // Open edit modal on card click
+          setEditingDeal(deal)
         }}
+        onEditDeal={(deal) => {
+          setEditingDeal(deal)
+        }}
+      />
+
+      {/* Edit Deal Modal */}
+      <EditDealModal
+        isOpen={!!editingDeal}
+        onClose={() => setEditingDeal(null)}
+        deal={editingDeal}
+        onSuccess={handleEditSuccess}
       />
     </div>
   )

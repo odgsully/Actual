@@ -4,15 +4,16 @@ import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { DollarSign, Home, Calendar, GripVertical } from 'lucide-react'
+import { DollarSign, Home, Calendar, GripVertical, Pencil } from 'lucide-react'
 import type { DealWithClient } from '@/lib/database/pipeline'
 
 interface DealCardProps {
   deal: DealWithClient
   onClick?: () => void
+  onEdit?: (deal: DealWithClient) => void
 }
 
-export function DealCard({ deal, onClick }: DealCardProps) {
+export function DealCard({ deal, onClick, onEdit }: DealCardProps) {
   const {
     attributes,
     listeners,
@@ -69,15 +70,29 @@ export function DealCard({ deal, onClick }: DealCardProps) {
             <h4 className="font-semibold text-white text-sm truncate">
               {clientName}
             </h4>
-            <Badge
-              className={`text-xs shrink-0 ${
-                deal.type === 'buyer'
-                  ? 'bg-blue-500/20 text-blue-400 border-blue-400/30'
-                  : 'bg-pink-500/20 text-pink-400 border-pink-400/30'
-              }`}
-            >
-              {deal.type === 'buyer' ? 'Buyer' : 'Seller'}
-            </Badge>
+            <div className="flex items-center gap-1.5 shrink-0">
+              {onEdit && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onEdit(deal)
+                  }}
+                  className="p-1 hover:bg-white/20 rounded-md transition-colors group"
+                  title="Edit deal"
+                >
+                  <Pencil className="h-3 w-3 text-white/40 group-hover:text-white/80" />
+                </button>
+              )}
+              <Badge
+                className={`text-xs ${
+                  deal.type === 'buyer'
+                    ? 'bg-blue-500/20 text-blue-400 border-blue-400/30'
+                    : 'bg-pink-500/20 text-pink-400 border-pink-400/30'
+                }`}
+              >
+                {deal.type === 'buyer' ? 'Buyer' : 'Seller'}
+              </Badge>
+            </div>
           </div>
 
           {/* Property Address */}

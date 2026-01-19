@@ -29,9 +29,10 @@ import { updateDealStage, batchUpdateDealStages } from '@/lib/actions/pipeline'
 interface PipelineBoardProps {
   dealType: DealType | 'all'
   onDealClick?: (deal: DealWithClient) => void
+  onEditDeal?: (deal: DealWithClient) => void
 }
 
-export function PipelineBoard({ dealType, onDealClick }: PipelineBoardProps) {
+export function PipelineBoard({ dealType, onDealClick, onEditDeal }: PipelineBoardProps) {
   const [dealsByStage, setDealsByStage] = useState<Record<DealStage, DealWithClient[]>>({
     on_radar: [],
     official_representation: [],
@@ -218,6 +219,7 @@ export function PipelineBoard({ dealType, onDealClick }: PipelineBoardProps) {
             config={STAGE_CONFIG[stage]}
             deals={dealsByStage[stage]}
             onDealClick={onDealClick}
+            onEditDeal={onEditDeal}
           />
         ))}
       </div>

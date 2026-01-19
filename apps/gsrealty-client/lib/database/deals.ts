@@ -214,7 +214,7 @@ export async function createDeal(input: CreateDealInput): Promise<{
         stage: input.stage,
         property_address: input.property_address || null,
         deal_value: input.deal_value || 0,
-        commission_rate: input.commission_rate || 0.03,
+        commission_rate: input.commission_rate ?? 0.03,
         representation_end_date: input.representation_end_date || null,
         notes: input.notes || null,
       })

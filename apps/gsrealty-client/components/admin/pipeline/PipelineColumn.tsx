@@ -14,9 +14,10 @@ interface PipelineColumnProps {
   config: typeof STAGE_CONFIG[DealStage]
   deals: DealWithClient[]
   onDealClick?: (deal: DealWithClient) => void
+  onEditDeal?: (deal: DealWithClient) => void
 }
 
-export function PipelineColumn({ stage, config, deals, onDealClick }: PipelineColumnProps) {
+export function PipelineColumn({ stage, config, deals, onDealClick, onEditDeal }: PipelineColumnProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: stage,
   })
@@ -68,6 +69,7 @@ export function PipelineColumn({ stage, config, deals, onDealClick }: PipelineCo
                 key={deal.id}
                 deal={deal}
                 onClick={() => onDealClick?.(deal)}
+                onEdit={onEditDeal}
               />
             ))
           )}

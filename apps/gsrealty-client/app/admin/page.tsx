@@ -13,6 +13,7 @@ import {
   Phone,
   Search,
   Plus,
+  Minus,
   Bell,
   Filter,
   Download,
@@ -23,7 +24,8 @@ import {
 import Link from 'next/link'
 import { getClientCount, getAllClients } from '@/lib/database/clients'
 import { getActiveDealsCount, getTotalRevenue, getClientDealValue } from '@/lib/database/deals'
-import { getCallsThisMonth, getOutreachThisMonth, getOutreachThisQuarter } from '@/lib/database/outreach'
+import { getCallsThisMonth } from '@/lib/database/outreach'
+import { getOutreachTargets, updateOutreachTargets } from '@/lib/database/settings'
 
 // Type for client data
 interface RecentContact {
@@ -99,27 +101,83 @@ export default function AdminDashboard() {
     return `•••-•••-${digits.slice(-4)}`
   }
 
+  // Adjust monthly target
+  const adjustMonthlyTarget = async (delta: number) => {
+    const newValue = Math.max(1, salesTarget.monthlyTarget + delta)
+
+    const newTargets = {
+      ...salesTarget,
+      monthlyTarget: newValue
+    }
+
+    setSalesTarget(newTargets)
+
+    const { error } = await updateOutreachTargets(newTargets)
+    if (error) {
+      console.error('Failed to update target:', error)
+      setSalesTarget(prev => ({ ...prev, monthlyTarget: prev.monthlyTarget - delta }))
+    }
+  }
+
+  // Adjust monthly completed (also updates quarterly)
+  const adjustMonthlyCompleted = async (delta: number) => {
+    const newMonthly = Math.max(0, salesTarget.monthlyAchieved + delta)
+    const newQuarterly = Math.max(0, salesTarget.quarterlyAchieved + delta)
+
+    const newTargets = {
+      ...salesTarget,
+      monthlyAchieved: newMonthly,
+      quarterlyAchieved: newQuarterly
+    }
+
+    setSalesTarget(newTargets)
+
+    const { error } = await updateOutreachTargets(newTargets)
+    if (error) {
+      console.error('Failed to update completed:', error)
+      setSalesTarget(prev => ({
+        ...prev,
+        monthlyAchieved: prev.monthlyAchieved - delta,
+        quarterlyAchieved: prev.quarterlyAchieved - delta
+      }))
+    }
+  }
+
+  // Reset monthly at end of month (keeps quarterly)
+  const resetMonthly = async () => {
+    const newTargets = {
+      ...salesTarget,
+      monthlyAchieved: 0
+    }
+
+    setSalesTarget(newTargets)
+
+    const { error } = await updateOutreachTargets(newTargets)
+    if (error) {
+      console.error('Failed to reset monthly:', error)
+      setSalesTarget(prev => ({ ...prev, monthlyAchieved: salesTarget.monthlyAchieved }))
+    }
+  }
+
   // Fetch real data on mount
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch all stats in parallel
+        // Fetch all stats in parallel (including targets from settings)
         const [
           { count: contactCount },
           { count: dealsCount },
           { revenue },
           { count: callsCount },
-          { count: monthlyOutreach },
-          { count: quarterlyOutreach },
-          { clients }
+          { clients },
+          { targets }
         ] = await Promise.all([
           getClientCount(),
           getActiveDealsCount(),
           getTotalRevenue(),
           getCallsThisMonth(),
-          getOutreachThisMonth(),
-          getOutreachThisQuarter(),
-          getAllClients()
+          getAllClients(),
+          getOutreachTargets()
         ])
 
         // Format revenue for display
@@ -134,11 +192,13 @@ export default function AdminDashboard() {
           callsPlaced: callsCount || 0
         })
 
-        setSalesTarget(prev => ({
-          ...prev,
-          monthlyAchieved: monthlyOutreach || 0,
-          quarterlyAchieved: quarterlyOutreach || 0
-        }))
+        // Load targets and achieved counts from settings
+        setSalesTarget({
+          monthlyTarget: targets.monthlyTarget || 50,
+          quarterlyTarget: targets.quarterlyTarget || 150,
+          monthlyAchieved: targets.monthlyAchieved || 0,
+          quarterlyAchieved: targets.quarterlyAchieved || 0
+        })
 
         // Fetch recent contacts with real deal values
         if (clients) {
@@ -374,8 +434,10 @@ export default function AdminDashboard() {
         <Card className="glass-card p-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xl font-semibold text-white">Outreach Target</h3>
-            <Button variant="ghost" size="icon" className="text-white/80 hover:bg-white/10">
-              <Settings className="h-4 w-4" />
+            <Button asChild variant="ghost" size="icon" className="text-white/80 hover:bg-white/10" title="Edit targets">
+              <Link href="/admin/settings">
+                <Settings className="h-4 w-4" />
+              </Link>
             </Button>
           </div>
           <div className="space-y-6">
@@ -383,16 +445,48 @@ export default function AdminDashboard() {
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-white/80 text-sm">Monthly Outreach</span>
-                <span className="text-white font-semibold">{salesTarget.monthlyTarget}</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => adjustMonthlyTarget(-5)}
+                    className="w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all duration-300 hover:scale-110"
+                    title="Decrease target by 5"
+                  >
+                    <Minus className="w-3 h-3 text-white/70" />
+                  </button>
+                  <span className="text-white font-semibold min-w-[2rem] text-center">{salesTarget.monthlyTarget}</span>
+                  <button
+                    onClick={() => adjustMonthlyTarget(5)}
+                    className="w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all duration-300 hover:scale-110"
+                    title="Increase target by 5"
+                  >
+                    <Plus className="w-3 h-3 text-white/70" />
+                  </button>
+                </div>
               </div>
               <div className="w-full bg-white/10 rounded-full h-3">
                 <div
-                  className="bg-gradient-to-r from-green-400 to-blue-500 h-3 rounded-full"
+                  className="bg-gradient-to-r from-green-400 to-blue-500 h-3 rounded-full transition-all duration-500"
                   style={{ width: `${Math.min((salesTarget.monthlyAchieved / salesTarget.monthlyTarget) * 100, 100)}%` }}
                 />
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-green-400">{salesTarget.monthlyAchieved} completed</span>
+              <div className="flex justify-between text-sm items-center">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => adjustMonthlyCompleted(-1)}
+                    className="w-5 h-5 rounded-full bg-green-500/20 hover:bg-green-500/30 flex items-center justify-center transition-all duration-300 hover:scale-110"
+                    title="Decrease completed"
+                  >
+                    <Minus className="w-2.5 h-2.5 text-green-400" />
+                  </button>
+                  <span className="text-green-400">{salesTarget.monthlyAchieved} completed</span>
+                  <button
+                    onClick={() => adjustMonthlyCompleted(1)}
+                    className="w-5 h-5 rounded-full bg-green-500/20 hover:bg-green-500/30 flex items-center justify-center transition-all duration-300 hover:scale-110"
+                    title="Increase completed"
+                  >
+                    <Plus className="w-2.5 h-2.5 text-green-400" />
+                  </button>
+                </div>
                 <span className="text-white/60">{Math.round((salesTarget.monthlyAchieved / salesTarget.monthlyTarget) * 100)}%</span>
               </div>
             </div>
@@ -405,7 +499,7 @@ export default function AdminDashboard() {
               </div>
               <div className="w-full bg-white/10 rounded-full h-3">
                 <div
-                  className="bg-gradient-to-r from-yellow-400 to-orange-500 h-3 rounded-full"
+                  className="bg-gradient-to-r from-yellow-400 to-orange-500 h-3 rounded-full transition-all duration-500"
                   style={{ width: `${Math.min((salesTarget.quarterlyAchieved / salesTarget.quarterlyTarget) * 100, 100)}%` }}
                 />
               </div>
@@ -415,12 +509,25 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            {/* Days Remaining */}
-            <div className="bg-white/5 rounded-xl p-4 text-center">
-              <p className="text-2xl font-bold text-white">
-                {new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate() - new Date().getDate()}
-              </p>
-              <p className="text-white/60 text-sm">Days left in month</p>
+            {/* Days Remaining + Reset */}
+            <div className="bg-white/5 rounded-xl p-4">
+              <div className="flex items-center justify-between">
+                <div className="text-center flex-1">
+                  <p className="text-2xl font-bold text-white">
+                    {new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate() - new Date().getDate()}
+                  </p>
+                  <p className="text-white/60 text-sm">Days left in month</p>
+                </div>
+                {salesTarget.monthlyAchieved > 0 && (
+                  <button
+                    onClick={resetMonthly}
+                    className="px-3 py-1.5 text-xs bg-white/10 hover:bg-white/20 border border-white/20 text-white/70 hover:text-white rounded-lg transition-all duration-300"
+                    title="Reset monthly count (keeps quarterly)"
+                  >
+                    Reset Month
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </Card>
