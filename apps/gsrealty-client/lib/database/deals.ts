@@ -294,3 +294,100 @@ export async function deleteDeal(id: string): Promise<{
     return { success: false, error: error as Error }
   }
 }
+
+/**
+ * Close a deal and auto-update the linked property status to 'closed'
+ * This maintains sync between deal stage and property status
+ */
+export async function closeDeal(id: string): Promise<{
+  deal: GSRealtyDeal | null
+  propertyUpdated: boolean
+  error: Error | null
+}> {
+  try {
+    const supabase = createSupabaseClient()
+
+    // Step 1: Update the deal stage to 'closed'
+    const { data: deal, error: dealError } = await supabase
+      .from('gsrealty_deals')
+      .update({ stage: 'closed' })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (dealError) throw dealError
+
+    // Step 2: Find and update any linked property to 'closed' status
+    const { data: linkedProperties, error: fetchError } = await supabase
+      .from('gsrealty_client_properties')
+      .select('id')
+      .eq('deal_id', id)
+
+    if (fetchError) {
+      console.warn('[GSRealty] Could not fetch linked properties:', fetchError)
+      return { deal, propertyUpdated: false, error: null }
+    }
+
+    let propertyUpdated = false
+    if (linkedProperties && linkedProperties.length > 0) {
+      const { error: updateError } = await supabase
+        .from('gsrealty_client_properties')
+        .update({
+          status: 'closed',
+          updated_at: new Date().toISOString()
+        })
+        .eq('deal_id', id)
+
+      if (updateError) {
+        console.warn('[GSRealty] Could not update linked property status:', updateError)
+      } else {
+        propertyUpdated = true
+        console.log('[GSRealty] Linked property status updated to closed')
+      }
+    }
+
+    console.log('[GSRealty] Deal closed:', id)
+    return { deal, propertyUpdated, error: null }
+  } catch (error) {
+    console.error('[GSRealty] Error closing deal:', error)
+    return { deal: null, propertyUpdated: false, error: error as Error }
+  }
+}
+
+/**
+ * Get deal by property ID (reverse lookup)
+ */
+export async function getDealByPropertyId(propertyId: string): Promise<{
+  deal: GSRealtyDeal | null
+  error: Error | null
+}> {
+  try {
+    const supabase = createSupabaseClient()
+
+    // First get the deal_id from the property
+    const { data: property, error: propertyError } = await supabase
+      .from('gsrealty_client_properties')
+      .select('deal_id')
+      .eq('id', propertyId)
+      .single()
+
+    if (propertyError) throw propertyError
+    if (!property?.deal_id) {
+      return { deal: null, error: null }
+    }
+
+    // Then fetch the deal
+    const { data: deal, error: dealError } = await supabase
+      .from('gsrealty_deals')
+      .select('*')
+      .eq('id', property.deal_id)
+      .single()
+
+    if (dealError) throw dealError
+
+    return { deal, error: null }
+  } catch (error) {
+    console.error('[GSRealty] Error fetching deal by property:', error)
+    return { deal: null, error: error as Error }
+  }
+}

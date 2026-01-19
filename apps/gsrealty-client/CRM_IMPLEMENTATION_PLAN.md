@@ -572,10 +572,41 @@ SELECT COUNT(*) as calls_this_month FROM gsrealty_outreach
 
 ---
 
-## Future Enhancements (Not Phase 1)
+## Future Enhancements
+
+### Completed (Phase 2)
+
+- [x] **Outreach logging modal** - `components/admin/LogOutreachModal.tsx`
+  - Activity types: Call, Email, Meeting, Text, Other
+  - Duration tracking with quick presets (15, 30, 45, 60 min)
+  - Outcome dropdown (Interested, Not Interested, Follow-up, etc.)
+  - Notes with character count
+  - Auto-refreshes dashboard stats on success
+
+- [x] **Activity timeline on contact profile** - `app/admin/clients/[id]/page.tsx`
+  - Shows recent outreach history with type icons
+  - Displays timestamps, outcomes, notes, duration
+  - Log Call, Log Email, Log Meeting quick action buttons
+
+- [x] **API route for outreach** - `app/api/admin/outreach/route.ts`
+  - POST: Create new outreach record
+  - GET: Fetch outreach by client
+  - DELETE: Remove outreach record
+  - Admin role verification on all endpoints
+
+- [x] **Dashboard quick actions** - `components/admin/QuickActionsPanel.tsx`
+  - "Log Call" button opens modal with call type pre-selected
+  - "Log Email" button opens modal with email type pre-selected
+
+- [x] **Clients list quick log** - `app/admin/clients/page.tsx`
+  - Activity icon in hover actions for each contact row
+  - Opens modal with client pre-selected
+
+### In Progress
+
+- [ ] Deal pipeline kanban board - `/admin/pipeline` (partially built)
+
+### Pending
 
 - [ ] Admin settings for target configuration
-- [ ] Deal pipeline kanban board
-- [ ] Outreach logging modal
-- [ ] Activity timeline on contact profile
 - [ ] Reports page with deal analytics

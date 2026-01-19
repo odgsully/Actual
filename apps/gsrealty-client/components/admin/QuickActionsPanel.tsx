@@ -22,13 +22,14 @@ interface QuickAction {
 interface QuickActionsPanelProps {
   quickActions?: QuickAction[]
   onBookMeeting?: () => void
+  onLogOutreach?: (type: 'call' | 'email' | 'meeting' | 'text' | 'other') => void
 }
 
-export function QuickActionsPanel({ quickActions, onBookMeeting }: QuickActionsPanelProps) {
+export function QuickActionsPanel({ quickActions, onBookMeeting, onLogOutreach }: QuickActionsPanelProps) {
   // Default quick actions matching template style
   const defaultActions = [
-    { icon: Phone, label: 'Schedule Call', href: '#' },
-    { icon: Mail, label: 'Send Email', href: 'mailto:' },
+    { icon: Phone, label: 'Log Call', href: '#', onClick: () => onLogOutreach?.('call') },
+    { icon: Mail, label: 'Log Email', href: '#', onClick: () => onLogOutreach?.('email') },
     { icon: Calendar, label: 'Book Meeting', href: '#', onClick: onBookMeeting },
     { icon: Plus, label: 'Add Note', href: '#' },
   ]

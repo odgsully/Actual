@@ -27,8 +27,10 @@ import {
   AlertCircle,
   Users,
   Eye,
-  EyeOff
+  EyeOff,
+  Activity
 } from 'lucide-react'
+import LogOutreachModal from '@/components/admin/LogOutreachModal'
 
 export default function ClientsPage() {
   const router = useRouter()
@@ -38,6 +40,7 @@ export default function ClientsPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [revealedContacts, setRevealedContacts] = useState<Set<string>>(new Set())
+  const [outreachClient, setOutreachClient] = useState<{ id: string; name: string } | null>(null)
 
   // Load clients on mount
   useEffect(() => {
@@ -324,6 +327,16 @@ export default function ClientsPage() {
                     {/* Actions */}
                     <div className="col-span-1 flex items-center justify-end space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                       <button
+                        onClick={() => setOutreachClient({
+                          id: client.id,
+                          name: `${client.first_name} ${client.last_name}`
+                        })}
+                        className="p-2 hover:bg-green-500/20 rounded-lg transition-colors"
+                        title="Log Activity"
+                      >
+                        <Activity className="w-4 h-4 text-green-400" />
+                      </button>
+                      <button
                         onClick={() => router.push(`/admin/clients/${client.id}`)}
                         className="p-2 hover:bg-white/10 rounded-lg transition-colors"
                         title="Edit"
@@ -369,6 +382,15 @@ export default function ClientsPage() {
                         </div>
                       </div>
                       <div className="flex items-center space-x-1">
+                        <button
+                          onClick={() => setOutreachClient({
+                            id: client.id,
+                            name: `${client.first_name} ${client.last_name}`
+                          })}
+                          className="p-2 hover:bg-green-500/20 rounded-lg transition-colors"
+                        >
+                          <Activity className="w-4 h-4 text-green-400" />
+                        </button>
                         <button
                           onClick={() => router.push(`/admin/clients/${client.id}`)}
                           className="p-2 hover:bg-white/10 rounded-lg transition-colors"
@@ -452,6 +474,17 @@ export default function ClientsPage() {
       <div className="text-center text-sm text-white/50">
         {clients.length} {clients.length === 1 ? 'contact' : 'contacts'} total
       </div>
+
+      {/* Log Outreach Modal */}
+      <LogOutreachModal
+        isOpen={!!outreachClient}
+        onClose={() => setOutreachClient(null)}
+        clientId={outreachClient?.id}
+        clientName={outreachClient?.name}
+        onSuccess={() => {
+          // Could refresh data here if needed
+        }}
+      />
     </div>
   )
 }

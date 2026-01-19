@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { QuickActionsPanel } from '@/components/admin/QuickActionsPanel'
 import { CreateEventModal } from '@/components/admin/CreateEventModal'
+import LogOutreachModal from '@/components/admin/LogOutreachModal'
 import {
   Home,
   Upload,
@@ -44,12 +45,14 @@ export default function AdminLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [reportsExpanded, setReportsExpanded] = useState(false)
   const [isEventModalOpen, setIsEventModalOpen] = useState(false)
+  const [isOutreachModalOpen, setIsOutreachModalOpen] = useState(false)
+  const [outreachDefaultType, setOutreachDefaultType] = useState<'call' | 'email' | 'meeting' | 'text' | 'other'>('call')
 
   // Main Menu navigation items
   const mainMenuItems = [
     { name: 'Contacts', href: '/admin/clients', icon: Users, active: true },
     { name: 'Analytics', href: '#', icon: TrendingUp, disabled: true },
-    { name: 'Sales Pipeline', href: '#', icon: DollarSign, disabled: true },
+    { name: 'Sales Pipeline', href: '/admin/pipeline', icon: DollarSign },
     { name: 'Calendar', href: '#', icon: Calendar, disabled: true },
     { name: 'Campaigns', href: '#', icon: Target, disabled: true },
   ]
@@ -79,6 +82,7 @@ export default function AdminLayout({
   const navigation = [
     { name: 'Dashboard', href: '/admin', icon: Home },
     { name: 'Contacts', href: '/admin/clients', icon: Users },
+    { name: 'Sales Pipeline', href: '/admin/pipeline', icon: DollarSign },
     { name: 'ReportIt', href: '/admin/reportit', icon: FileText },
     { name: 'MCAO Lookup', href: '/admin/mcao', icon: Search },
     { name: 'Upload MLS', href: '/admin/upload', icon: Upload },
@@ -116,6 +120,11 @@ export default function AdminLayout({
       color: 'bg-gray-700'
     },
   ]
+
+  const handleLogOutreach = (type: 'call' | 'email' | 'meeting' | 'text' | 'other') => {
+    setOutreachDefaultType(type)
+    setIsOutreachModalOpen(true)
+  }
 
   const isActive = (href: string) => {
     if (href === '/admin') {
@@ -554,6 +563,7 @@ export default function AdminLayout({
             <QuickActionsPanel
               quickActions={quickActions}
               onBookMeeting={() => setIsEventModalOpen(true)}
+              onLogOutreach={handleLogOutreach}
             />
           </Card>
         )}
@@ -599,6 +609,16 @@ export default function AdminLayout({
         onEventCreated={() => {
           console.log('Event created successfully')
           setIsEventModalOpen(false)
+        }}
+      />
+
+      {/* Outreach Logging Modal - Triggered by Log Call/Email quick actions */}
+      <LogOutreachModal
+        isOpen={isOutreachModalOpen}
+        onClose={() => setIsOutreachModalOpen(false)}
+        defaultType={outreachDefaultType}
+        onSuccess={() => {
+          console.log('Outreach logged successfully')
         }}
       />
     </div>
