@@ -3,6 +3,7 @@
 .env.local
 .env.production
 .env*.local
+.env.vercel
 
 # Personal/sensitive data
 CRM-Buyer-preferences.xlsx

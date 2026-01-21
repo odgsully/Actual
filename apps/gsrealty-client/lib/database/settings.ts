@@ -128,7 +128,7 @@ export async function getAllSettings(): Promise<{
     data?.forEach((row) => {
       const key = row.key as SettingKey
       if (key in settings) {
-        (settings as Record<string, unknown>)[key] = row.value
+        (settings as unknown as Record<string, unknown>)[key] = row.value
       }
     })
 

@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getFileById } from '@/lib/database/files'
 import { downloadFromSupabase, createSignedUrl } from '@/lib/storage/supabase-storage'
+import { requireAdmin } from '@/lib/api/admin-auth'
 
 /**
  * GET: Download file by ID
@@ -29,6 +30,10 @@ export async function GET(
   { params }: { params: Promise<{ fileId: string }> }
 ) {
   try {
+    // Verify admin authentication
+    const auth = await requireAdmin()
+    if (!auth.success) return auth.response
+
     const { fileId } = await params
     const searchParams = req.nextUrl.searchParams
     const mode = searchParams.get('mode') || 'download'

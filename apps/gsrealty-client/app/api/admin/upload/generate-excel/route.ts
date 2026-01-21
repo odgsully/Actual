@@ -24,6 +24,7 @@ import type {
   MLSSourceType,
   UploadGenerationMetadata
 } from '@/lib/types/mls-data'
+import { requireAdmin } from '@/lib/api/admin-auth'
 
 const LOG_PREFIX = '[Generate Excel]'
 
@@ -34,6 +35,10 @@ export async function PUT(req: NextRequest) {
   const startTime = Date.now()
 
   try {
+    // Verify admin authentication
+    const auth = await requireAdmin()
+    if (!auth.success) return auth.response
+
     const body = await req.json()
     const {
       subjectProperty,

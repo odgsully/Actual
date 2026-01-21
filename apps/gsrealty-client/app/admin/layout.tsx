@@ -24,13 +24,11 @@ import {
   TrendingUp,
   DollarSign,
   Calendar,
-  Target,
   Briefcase,
-  MessageSquare,
   Database,
   BarChart3,
-  Zap,
-  BookOpen
+  BookOpen,
+  UserPlus
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -57,7 +55,6 @@ export default function AdminLayout({
     { name: 'Sales Pipeline', href: '/admin/pipeline', icon: DollarSign },
     { name: 'Calendar', href: '/admin/calendar', icon: Calendar },
     { name: 'Learn', href: '/admin/learn', icon: BookOpen },
-    { name: 'Campaigns', href: '#', icon: Target, disabled: true },
   ]
 
   // Reports dropdown items (nested under CRM Tools)
@@ -73,17 +70,15 @@ export default function AdminLayout({
     { name: 'Campaign Spend', href: '/admin/kpis/campaign-spend', icon: DollarSign },
   ]
 
-  // Other CRM Tools (placeholders)
+  // Other CRM Tools
   const crmToolsItems = [
     { name: 'Deals', href: '/admin/deals', icon: Briefcase },
-    { name: 'Messages', href: '#', icon: MessageSquare, disabled: true },
-    { name: 'Data Import', href: '#', icon: Database, disabled: true },
+    { name: 'Contact Upload', href: '/admin/contacts/upload', icon: UserPlus },
   ]
 
   // Administration items
   const adminItems = [
     { name: 'Settings', href: '/admin/settings', icon: Settings },
-    { name: 'Automations', href: '#', icon: Zap, disabled: true },
   ]
 
   // Legacy navigation array for mobile compatibility
@@ -94,6 +89,7 @@ export default function AdminLayout({
     { name: 'Sales Pipeline', href: '/admin/pipeline', icon: DollarSign },
     { name: 'Learn', href: '/admin/learn', icon: BookOpen },
     { name: 'Deals', href: '/admin/deals', icon: Briefcase },
+    { name: 'Contact Upload', href: '/admin/contacts/upload', icon: UserPlus },
     { name: 'ReportIt', href: '/admin/reportit', icon: FileText },
     { name: 'MCAO Lookup', href: '/admin/mcao', icon: Search },
     { name: 'Upload MLS', href: '/admin/upload', icon: Upload },

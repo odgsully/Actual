@@ -355,6 +355,132 @@ export async function closeDeal(id: string): Promise<{
 }
 
 /**
+ * Deal with joined client information
+ */
+export interface DealWithClient extends GSRealtyDeal {
+  client?: {
+    id: string
+    first_name: string
+    last_name: string
+    email: string | null
+    phone: string | null
+  }
+}
+
+/**
+ * Get all closed deals with client information
+ * Used for the Deals page showing completed transactions
+ */
+export async function getClosedDeals(searchQuery?: string): Promise<{
+  deals: DealWithClient[]
+  error: Error | null
+}> {
+  try {
+    const supabase = createSupabaseClient()
+
+    let query = supabase
+      .from('gsrealty_deals')
+      .select(`
+        *,
+        client:gsrealty_clients(id, first_name, last_name, email, phone)
+      `)
+      .eq('stage', 'closed')
+      .order('updated_at', { ascending: false })
+
+    const { data, error } = await query
+
+    if (error) throw error
+
+    let deals = data ?? []
+
+    // Apply search filter if provided
+    if (searchQuery && searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      deals = deals.filter((deal) => {
+        const clientName = deal.client
+          ? `${deal.client.first_name} ${deal.client.last_name}`.toLowerCase()
+          : ''
+        const address = (deal.property_address || '').toLowerCase()
+        return clientName.includes(query) || address.includes(query)
+      })
+    }
+
+    return { deals, error: null }
+  } catch (error) {
+    console.error('[GSRealty] Error fetching closed deals:', error)
+    return { deals: [], error: error as Error }
+  }
+}
+
+/**
+ * Get top deals by commission (closed deals only)
+ * Returns the top N closed deals sorted by expected_commission
+ */
+export async function getTopClosedDeals(limit: number = 3): Promise<{
+  deals: DealWithClient[]
+  error: Error | null
+}> {
+  try {
+    const supabase = createSupabaseClient()
+
+    const { data, error } = await supabase
+      .from('gsrealty_deals')
+      .select(`
+        *,
+        client:gsrealty_clients(id, first_name, last_name, email, phone)
+      `)
+      .eq('stage', 'closed')
+      .order('expected_commission', { ascending: false })
+      .limit(limit)
+
+    if (error) throw error
+
+    return { deals: data ?? [], error: null }
+  } catch (error) {
+    console.error('[GSRealty] Error fetching top deals:', error)
+    return { deals: [], error: error as Error }
+  }
+}
+
+/**
+ * Get closed deals statistics
+ */
+export async function getClosedDealsStats(): Promise<{
+  stats: {
+    totalDeals: number
+    totalValue: number
+    totalCommission: number
+  }
+  error: Error | null
+}> {
+  try {
+    const supabase = createSupabaseClient()
+
+    const { data, error } = await supabase
+      .from('gsrealty_deals')
+      .select('deal_value, expected_commission')
+      .eq('stage', 'closed')
+
+    if (error) throw error
+
+    const totalDeals = data?.length ?? 0
+    const totalValue = data?.reduce((sum, deal) => sum + (Number(deal.deal_value) || 0), 0) ?? 0
+    const totalCommission = data?.reduce((sum, deal) => sum + (Number(deal.expected_commission) || 0), 0) ?? 0
+
+    return {
+      stats: { totalDeals, totalValue, totalCommission },
+      error: null,
+    }
+  } catch (error) {
+    console.error('[GSRealty] Error fetching closed deals stats:', error)
+    return {
+      stats: { totalDeals: 0, totalValue: 0, totalCommission: 0 },
+      error: error as Error,
+    }
+  }
+}
+
+/**
  * Get deal by property ID (reverse lookup)
  */
 export async function getDealByPropertyId(propertyId: string): Promise<{

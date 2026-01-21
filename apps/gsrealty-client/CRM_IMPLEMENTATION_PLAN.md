@@ -606,7 +606,18 @@ SELECT COUNT(*) as calls_this_month FROM gsrealty_outreach
 
 - [ ] Deal pipeline kanban board - `/admin/pipeline` (partially built)
 
+### Completed (Phase 3)
+
+- [x] **Admin settings for target configuration** - `app/admin/settings/page.tsx`
+  - New `gsrealty_settings` table with key-value JSONB storage
+  - Outreach targets: monthly and quarterly goals (editable)
+  - Notification preferences: email, client invites, file uploads
+  - System settings: auto-archive clients with configurable days
+  - Email settings: reply-to address, email signature
+  - Database functions in `lib/database/settings.ts`
+  - Dashboard loads targets dynamically from settings
+  - Settings icon in Outreach Target card links to settings page
+
 ### Pending
 
-- [ ] Admin settings for target configuration
 - [ ] Reports page with deal analytics

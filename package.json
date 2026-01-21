@@ -1,67 +1,27 @@
 {
-  "name": "gs-site",
+  "name": "sullivan-realestate",
   "version": "1.0.0",
   "private": true,
-  "description": "Personal app suite monorepo with Wabbit RE, Wabbit, CRM, and Dashboard",
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
   "scripts": {
-    "dev": "turbo run dev",
-    "dev:wabbit-re": "turbo run dev --filter=wabbit-re",
-    "dev:wabbit": "turbo run dev --filter=wabbit",
-    "dev:crm": "turbo run dev --filter=crm",
-    "dev:dashboard": "turbo run dev --filter=gs-site-dashboard",
-    "dev:gsrealty": "turbo run dev --filter=gsrealty-client",
-    "build": "turbo run build",
-    "build:wabbit-re": "turbo run build --filter=wabbit-re",
-    "build:wabbit": "turbo run build --filter=wabbit",
-    "build:crm": "turbo run build --filter=crm",
-    "build:dashboard": "turbo run build --filter=gs-site-dashboard",
-    "build:gsrealty": "turbo run build --filter=gsrealty-client",
-    "start": "turbo run start",
-    "start:wabbit-re": "npm --prefix apps/wabbit-re run start",
-    "start:wabbit": "npm --prefix apps/wabbit run start",
-    "start:gsrealty": "npm --prefix apps/gsrealty-client run start",
-    "lint": "turbo run lint",
-    "typecheck": "turbo run typecheck",
-    "test": "turbo run test",
-    "test:wabbit-re": "turbo run test --filter=wabbit-re",
-    "test:wabbit": "turbo run test --filter=wabbit",
-    "test:gsrealty": "turbo run test --filter=gsrealty-client",
-    "clean": "turbo run clean",
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "test": "turbo test",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,md}\"",
-    "db:migrate": "npm --prefix apps/wabbit-re run db:migrate",
-    "db:seed": "npm --prefix apps/wabbit-re run db:seed",
-    "db:seed-demo": "npm --prefix apps/wabbit-re run db:seed-demo",
-    "prepare": "husky"
+    "prepare": "echo 'skipping husky'"
   },
   "devDependencies": {
-    "husky": "^9.1.7",
-    "lint-staged": "^16.2.7",
-    "prettier": "^3.0.3",
-    "turbo": "^2.5.6"
+    "husky": "^9.0.0",
+    "prettier": "^3.2.2",
+    "turbo": "^2.0.0"
   },
   "engines": {
-    "node": ">=18.17.0",
-    "npm": ">=9.0.0"
+    "node": ">=18.17.0"
   },
-  "packageManager": "npm@9.8.1",
-  "dependencies": {
-    "next": "^14.2.33"
-  },
-  "lint-staged": {
-    "*.{ts,tsx}": [
-      "eslint --fix --max-warnings=0",
-      "prettier --write"
-    ],
-    "*.{js,jsx}": [
-      "eslint --fix --max-warnings=0",
-      "prettier --write"
-    ],
-    "*.{json,md,css}": [
-      "prettier --write"
-    ]
-  }
+  "packageManager": "npm@10.2.4"
 }

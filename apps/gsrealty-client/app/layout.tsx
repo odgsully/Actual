@@ -3,7 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { ThemeProvider } from '@/components/theme-provider'
 import { AuthProvider } from '@/contexts/AuthContext'
-import Footer from '@/components/footer'
+import Footer from '@/components/Footer'
 import EthereumPolyfill from './ethereum-polyfill'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -20,6 +20,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <link rel="preload" as="image" href="/logo1.png" />
+      </head>
       <body className={inter.className}>
         <ThemeProvider
           attribute="class"

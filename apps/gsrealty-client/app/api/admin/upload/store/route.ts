@@ -12,6 +12,7 @@ import { recordFileUpload, updateFileLocalPath, updateFileStatus } from '@/lib/d
 import { getClientById } from '@/lib/database/clients'
 import { generateStoragePath, generateFilename } from '@/lib/storage/config'
 import type { FileType, UploadType } from '@/lib/types/storage'
+import { requireAdmin } from '@/lib/api/admin-auth'
 
 interface StoreFileRequest {
   clientId: string
@@ -43,6 +44,10 @@ interface StoreFileRequest {
  */
 export async function POST(req: NextRequest) {
   try {
+    // Verify admin authentication
+    const auth = await requireAdmin()
+    if (!auth.success) return auth.response
+
     // Parse request body
     const body: StoreFileRequest = await req.json()
     const { clientId, fileName, fileType, uploadType, fileBuffer, contentType, uploadedBy } = body
