@@ -29,7 +29,8 @@ import {
   MessageSquare,
   Database,
   BarChart3,
-  Zap
+  Zap,
+  BookOpen
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -44,6 +45,7 @@ export default function AdminLayout({
   const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [reportsExpanded, setReportsExpanded] = useState(false)
+  const [kpisExpanded, setKpisExpanded] = useState(false)
   const [isEventModalOpen, setIsEventModalOpen] = useState(false)
   const [isOutreachModalOpen, setIsOutreachModalOpen] = useState(false)
   const [outreachDefaultType, setOutreachDefaultType] = useState<'call' | 'email' | 'meeting' | 'text' | 'other'>('call')
@@ -51,9 +53,10 @@ export default function AdminLayout({
   // Main Menu navigation items
   const mainMenuItems = [
     { name: 'Contacts', href: '/admin/clients', icon: Users, active: true },
-    { name: 'Analytics', href: '#', icon: TrendingUp, disabled: true },
+    { name: 'Analytics', href: '/admin/analytics', icon: TrendingUp },
     { name: 'Sales Pipeline', href: '/admin/pipeline', icon: DollarSign },
-    { name: 'Calendar', href: '#', icon: Calendar, disabled: true },
+    { name: 'Calendar', href: '/admin/calendar', icon: Calendar },
+    { name: 'Learn', href: '/admin/learn', icon: BookOpen },
     { name: 'Campaigns', href: '#', icon: Target, disabled: true },
   ]
 
@@ -64,12 +67,17 @@ export default function AdminLayout({
     { name: 'Upload MLS', href: '/admin/upload', icon: Upload },
   ]
 
+  // KPIs dropdown items (nested under CRM Tools)
+  const kpisItems = [
+    { name: 'Metrics', href: '/admin/kpis/metrics', icon: TrendingUp },
+    { name: 'Campaign Spend', href: '/admin/kpis/campaign-spend', icon: DollarSign },
+  ]
+
   // Other CRM Tools (placeholders)
   const crmToolsItems = [
-    { name: 'Deals', href: '#', icon: Briefcase, disabled: true },
+    { name: 'Deals', href: '/admin/deals', icon: Briefcase },
     { name: 'Messages', href: '#', icon: MessageSquare, disabled: true },
     { name: 'Data Import', href: '#', icon: Database, disabled: true },
-    { name: 'Forecasting', href: '#', icon: BarChart3, disabled: true },
   ]
 
   // Administration items
@@ -82,7 +90,10 @@ export default function AdminLayout({
   const navigation = [
     { name: 'Dashboard', href: '/admin', icon: Home },
     { name: 'Contacts', href: '/admin/clients', icon: Users },
+    { name: 'Analytics', href: '/admin/analytics', icon: TrendingUp },
     { name: 'Sales Pipeline', href: '/admin/pipeline', icon: DollarSign },
+    { name: 'Learn', href: '/admin/learn', icon: BookOpen },
+    { name: 'Deals', href: '/admin/deals', icon: Briefcase },
     { name: 'ReportIt', href: '/admin/reportit', icon: FileText },
     { name: 'MCAO Lookup', href: '/admin/mcao', icon: Search },
     { name: 'Upload MLS', href: '/admin/upload', icon: Upload },
@@ -283,17 +294,89 @@ export default function AdminLayout({
                 </div>
               )}
 
-              {/* Other CRM Tools (disabled) */}
+              {/* KPIs Dropdown */}
+              <button
+                onClick={() => setKpisExpanded(!kpisExpanded)}
+                className={`
+                  w-full flex items-center justify-between px-4 py-3 rounded-lg transition-colors
+                  ${kpisItems.some(item => isActive(item.href))
+                    ? 'bg-brand-red text-white'
+                    : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                  }
+                `}
+              >
+                <span className="flex items-center">
+                  <BarChart3 className="w-5 h-5 mr-3" />
+                  <span className="font-medium">KPIs</span>
+                </span>
+                {kpisExpanded ? (
+                  <ChevronDown className="w-4 h-4" />
+                ) : (
+                  <ChevronRight className="w-4 h-4" />
+                )}
+              </button>
+
+              {/* KPIs Sub-items */}
+              {kpisExpanded && (
+                <div className="ml-4 space-y-1 border-l border-gray-700 pl-3">
+                  {kpisItems.map((item) => {
+                    const Icon = item.icon
+                    const active = isActive(item.href)
+                    return (
+                      <Link
+                        key={item.name}
+                        href={item.href}
+                        onClick={() => setSidebarOpen(false)}
+                        className={`
+                          flex items-center px-4 py-2 rounded-lg transition-colors text-sm
+                          ${active
+                            ? 'bg-brand-red text-white'
+                            : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                          }
+                        `}
+                      >
+                        <Icon className="w-4 h-4 mr-3" />
+                        <span className="font-medium">{item.name}</span>
+                      </Link>
+                    )
+                  })}
+                </div>
+              )}
+
+              {/* Other CRM Tools */}
               {crmToolsItems.map((item) => {
                 const Icon = item.icon
+                const active = isActive(item.href)
+                const isDisabled = item.disabled
+
+                if (isDisabled) {
+                  return (
+                    <div
+                      key={item.name}
+                      className="flex items-center px-4 py-3 rounded-lg text-gray-500 cursor-not-allowed opacity-50"
+                    >
+                      <Icon className="w-5 h-5 mr-3" />
+                      <span className="font-medium">{item.name}</span>
+                    </div>
+                  )
+                }
+
                 return (
-                  <div
+                  <Link
                     key={item.name}
-                    className="flex items-center px-4 py-3 rounded-lg text-gray-500 cursor-not-allowed opacity-50"
+                    href={item.href}
+                    onClick={() => setSidebarOpen(false)}
+                    className={`
+                      flex items-center px-4 py-3 rounded-lg transition-colors
+                      ${active
+                        ? 'bg-brand-red text-white'
+                        : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                      }
+                    `}
                   >
                     <Icon className="w-5 h-5 mr-3" />
                     <span className="font-medium">{item.name}</span>
-                  </div>
+                  </Link>
                 )
               })}
             </div>
@@ -473,18 +556,81 @@ export default function AdminLayout({
                   )}
                 </div>
 
-                {/* Other CRM Tools (disabled placeholders) */}
+                {/* KPIs Dropdown */}
+                <div>
+                  <Button
+                    variant="ghost"
+                    onClick={() => setKpisExpanded(!kpisExpanded)}
+                    className={`glass-nav-item justify-between ${
+                      kpisItems.some(item => isActive(item.href)) ? 'glass-nav-active' : ''
+                    }`}
+                  >
+                    <span className="flex items-center">
+                      <BarChart3 className="mr-3 h-5 w-5" />
+                      KPIs
+                    </span>
+                    {kpisExpanded ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
+                  </Button>
+
+                  {/* KPIs Sub-items */}
+                  {kpisExpanded && (
+                    <div className="ml-4 mt-1 space-y-1 border-l border-white/10 pl-3">
+                      {kpisItems.map((item) => {
+                        const Icon = item.icon
+                        const active = isActive(item.href)
+                        return (
+                          <Button
+                            key={item.name}
+                            variant="ghost"
+                            asChild
+                            className={`glass-nav-item h-9 text-sm ${active ? 'glass-nav-active' : ''}`}
+                          >
+                            <Link href={item.href} className="inline-flex items-center w-full">
+                              <Icon className="mr-3 h-4 w-4" />
+                              {item.name}
+                            </Link>
+                          </Button>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Other CRM Tools */}
                 {crmToolsItems.map((item) => {
                   const Icon = item.icon
+                  const active = isActive(item.href)
+                  const isDisabled = item.disabled
+
+                  if (isDisabled) {
+                    return (
+                      <Button
+                        key={item.name}
+                        variant="ghost"
+                        disabled
+                        className="glass-nav-item opacity-50 cursor-not-allowed"
+                      >
+                        <Icon className="mr-3 h-5 w-5" />
+                        {item.name}
+                      </Button>
+                    )
+                  }
+
                   return (
                     <Button
                       key={item.name}
                       variant="ghost"
-                      disabled
-                      className="glass-nav-item opacity-50 cursor-not-allowed"
+                      asChild
+                      className={`glass-nav-item ${active ? 'glass-nav-active' : ''}`}
                     >
-                      <Icon className="mr-3 h-5 w-5" />
-                      {item.name}
+                      <Link href={item.href} className="inline-flex items-center w-full">
+                        <Icon className="mr-3 h-5 w-5" />
+                        {item.name}
+                      </Link>
                     </Button>
                   )
                 })}
