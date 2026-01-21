@@ -8,6 +8,7 @@ import { getQueueManager } from '@/lib/scraping/queue-manager';
 import { getErrorHandler } from '@/lib/scraping/error-handler';
 import { getPropertyManager } from '@/lib/database/property-manager';
 import { getImageOptimizer } from '@/lib/storage/image-optimizer';
+import { requireAdmin } from '@/lib/api/admin-auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -18,10 +19,10 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(request: NextRequest) {
   try {
-    // Check admin authorization (implement your auth logic)
-    const authHeader = request.headers.get('authorization');
-    // TODO: Implement proper admin auth check
-    
+    // Verify admin authentication
+    const auth = await requireAdmin();
+    if (!auth.success) return auth.response;
+
     const supabase = createClient();
     const queueManager = getQueueManager();
     const errorHandler = getErrorHandler();
@@ -260,9 +261,9 @@ function calculateErrorTrends(
  */
 export async function POST(request: NextRequest) {
   try {
-    // Check admin authorization
-    const authHeader = request.headers.get('authorization');
-    // TODO: Implement proper admin auth check
+    // Verify admin authentication
+    const auth = await requireAdmin();
+    if (!auth.success) return auth.response;
 
     const body = await request.json();
     const { resetType } = body;

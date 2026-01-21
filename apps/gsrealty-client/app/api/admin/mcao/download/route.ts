@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getMCAOClient } from '@/lib/mcao/client'
 import { formatAPN } from '@/lib/types/mcao-data'
 import ExcelJS from 'exceljs'
+import { requireAdmin } from '@/lib/api/admin-auth'
 
 interface DownloadRequest {
   apn: string
@@ -18,6 +19,10 @@ interface DownloadRequest {
  * POST: Download MCAO data as Excel
  */
 export async function POST(req: NextRequest) {
+  // Verify admin authentication
+  const auth = await requireAdmin()
+  if (!auth.success) return auth.response
+
   try {
     const body: DownloadRequest = await req.json()
     const { apn: rawAPN } = body

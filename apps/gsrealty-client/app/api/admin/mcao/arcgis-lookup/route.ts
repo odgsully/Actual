@@ -7,11 +7,16 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { lookupAPNFromAddress } from '@/lib/mcao/arcgis-lookup'
+import { requireAdmin } from '@/lib/api/admin-auth'
 
 const LOG_PREFIX = '[API: ArcGIS Lookup]'
 
 export async function POST(req: NextRequest) {
   try {
+    // Verify admin authentication
+    const auth = await requireAdmin()
+    if (!auth.success) return auth.response
+
     const body = await req.json()
     const { address } = body
 

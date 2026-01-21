@@ -8,6 +8,9 @@
 import { createClient as createSupabaseClient } from '@/lib/supabase/client'
 import type { User } from '@supabase/supabase-js'
 
+export type ClientType = 'buyer' | 'seller' | 'both'
+export type ClientStatus = 'active' | 'inactive' | 'prospect'
+
 export interface GSRealtyClient {
   id: string
   user_id?: string | null
@@ -16,7 +19,9 @@ export interface GSRealtyClient {
   phone?: string | null
   email?: string | null
   address?: string | null
-  property_address?: string | null
+  property_address?: string | null // DEPRECATED: Use gsrealty_client_properties table
+  client_type: ClientType
+  status: ClientStatus
   notes?: string | null
   created_at: string
   updated_at: string
@@ -28,7 +33,9 @@ export interface CreateClientInput {
   phone?: string
   email?: string
   address?: string
-  property_address?: string
+  property_address?: string // DEPRECATED: Use addClientProperty() instead
+  client_type?: ClientType
+  status?: ClientStatus // Defaults to 'prospect' for new clients with no properties
   notes?: string
   user_id?: string
 }
@@ -39,7 +46,9 @@ export interface UpdateClientInput {
   phone?: string
   email?: string
   address?: string
-  property_address?: string
+  property_address?: string // DEPRECATED: Use updateClientProperty() instead
+  client_type?: ClientType
+  status?: ClientStatus
   notes?: string
 }
 
@@ -135,7 +144,9 @@ export async function createClient(input: CreateClientInput): Promise<{
         phone: input.phone || null,
         email: input.email || null,
         address: input.address || null,
-        property_address: input.property_address || null,
+        property_address: input.property_address || null, // DEPRECATED
+        client_type: input.client_type || 'buyer',
+        status: input.status || 'prospect', // New clients start as prospects
         notes: input.notes || null,
         user_id: input.user_id || null,
       })
@@ -165,13 +176,15 @@ export async function updateClient(
   try {
     const supabase = createSupabaseClient()
 
-    const updateData: any = {}
+    const updateData: Record<string, unknown> = {}
     if (input.first_name !== undefined) updateData.first_name = input.first_name
     if (input.last_name !== undefined) updateData.last_name = input.last_name
     if (input.phone !== undefined) updateData.phone = input.phone || null
     if (input.email !== undefined) updateData.email = input.email || null
     if (input.address !== undefined) updateData.address = input.address || null
-    if (input.property_address !== undefined) updateData.property_address = input.property_address || null
+    if (input.property_address !== undefined) updateData.property_address = input.property_address || null // DEPRECATED
+    if (input.client_type !== undefined) updateData.client_type = input.client_type
+    if (input.status !== undefined) updateData.status = input.status
     if (input.notes !== undefined) updateData.notes = input.notes || null
 
     const { data, error } = await supabase
@@ -236,5 +249,92 @@ export async function getClientCount(): Promise<{
   } catch (error) {
     console.error('[GSRealty] Error counting clients:', error)
     return { count: 0, error: error as Error }
+  }
+}
+
+/**
+ * Refresh client status based on their properties
+ * - 'active': Has at least one active property
+ * - 'inactive': Has properties but none are active
+ * - 'prospect': Has no properties
+ *
+ * Call this after adding/removing properties or changing property status
+ */
+export async function refreshClientStatus(clientId: string): Promise<{
+  status: ClientStatus
+  error: Error | null
+}> {
+  try {
+    const supabase = createSupabaseClient()
+
+    // Count active properties for this client
+    const { count: activeCount, error: activeError } = await supabase
+      .from('gsrealty_client_properties')
+      .select('*', { count: 'exact', head: true })
+      .eq('client_id', clientId)
+      .eq('status', 'active')
+
+    if (activeError) throw activeError
+
+    // Count total properties for this client
+    const { count: totalCount, error: totalError } = await supabase
+      .from('gsrealty_client_properties')
+      .select('*', { count: 'exact', head: true })
+      .eq('client_id', clientId)
+
+    if (totalError) throw totalError
+
+    // Determine new status
+    let newStatus: ClientStatus
+    if ((activeCount ?? 0) > 0) {
+      newStatus = 'active'
+    } else if ((totalCount ?? 0) > 0) {
+      newStatus = 'inactive'
+    } else {
+      newStatus = 'prospect'
+    }
+
+    // Update the client status
+    const { error: updateError } = await supabase
+      .from('gsrealty_clients')
+      .update({ status: newStatus, updated_at: new Date().toISOString() })
+      .eq('id', clientId)
+
+    if (updateError) throw updateError
+
+    console.log('[GSRealty] Client status refreshed:', clientId, '→', newStatus)
+    return { status: newStatus, error: null }
+  } catch (error) {
+    console.error('[GSRealty] Error refreshing client status:', error)
+    return { status: 'prospect', error: error as Error }
+  }
+}
+
+/**
+ * Update client status directly
+ * Use refreshClientStatus() to auto-compute, or this for manual override
+ */
+export async function updateClientStatus(
+  clientId: string,
+  status: ClientStatus
+): Promise<{
+  success: boolean
+  error: Error | null
+}> {
+  try {
+    const supabase = createSupabaseClient()
+
+    const { error } = await supabase
+      .from('gsrealty_clients')
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq('id', clientId)
+
+    if (error) throw error
+
+    console.log('[GSRealty] Client status updated:', clientId, '→', status)
+    return { success: true, error: null }
+  } catch (error) {
+    console.error('[GSRealty] Error updating client status:', error)
+    return { success: false, error: error as Error }
   }
 }

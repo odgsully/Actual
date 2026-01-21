@@ -10,11 +10,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
+import { requireAdmin } from '@/lib/api/admin-auth';
 
 const LOG_PREFIX = '[ReportIt API - Download PropertyRadar]';
 const UPLOAD_DIR = join(process.cwd(), 'tmp', 'reportit');
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
+  // Verify admin authentication
+  const auth = await requireAdmin()
+  if (!auth.success) return auth.response
+
   console.log(`${LOG_PREFIX} Received download request`);
 
   try {

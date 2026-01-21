@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { BRAND } from '@/lib/constants/branding'
-import { User, Home, Upload, Search, Settings } from 'lucide-react'
+import { User } from 'lucide-react'
 
 export default function HomePage() {
   const { user } = useAuth()
@@ -17,7 +17,17 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Background Image - Arizona Night Cityscape */}
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: 'url(https://images.unsplash.com/photo-1444723121867-7a241cacace9?w=1920&q=80)'
+        }}
+      />
+      {/* Dark Overlay */}
+      <div className="absolute inset-0 bg-black/60" />
+
       {/* Header with Logo */}
       <header className="absolute top-0 right-0 p-6 z-20">
         <div className="flex items-center space-x-4">
@@ -40,66 +50,19 @@ export default function HomePage() {
       </header>
 
       {/* Hero Section */}
-      <main className="min-h-screen flex items-center justify-center px-4">
+      <main className="relative z-10 min-h-screen flex items-center justify-center px-4">
         <div className="text-center max-w-4xl mx-auto">
           {/* Logo & Title */}
           <div className="mb-12">
-            <h1 className="text-6xl md:text-7xl font-bold text-brand-black mb-4 tracking-tight">
+            <h1 className="text-6xl md:text-7xl font-bold text-white mb-4 tracking-tight drop-shadow-lg">
               {BRAND.name}
             </h1>
-            <p className="text-2xl text-brand-gray-medium font-light">
-              {BRAND.tagline}
+            <p className="text-2xl text-white/80 font-light">
+              Professional Client & Property Listing Management
             </p>
-            <p className="text-lg text-brand-gray-medium mt-2">
+            <p className="text-lg text-white/60 mt-2">
               {BRAND.location}
             </p>
-          </div>
-
-          {/* Feature Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto mb-12">
-            {/* Client Management */}
-            <div className="p-8 border-2 border-brand-black rounded-lg hover:bg-brand-gray-light transition-colors">
-              <div className="w-14 h-14 bg-brand-black rounded-lg flex items-center justify-center mx-auto mb-4">
-                <Home className="w-7 h-7 text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-brand-black mb-2">Client Management</h3>
-              <p className="text-brand-gray-medium">
-                Organize and track all client information in one secure location
-              </p>
-            </div>
-
-            {/* File Upload */}
-            <div className="p-8 border-2 border-brand-black rounded-lg hover:bg-brand-gray-light transition-colors">
-              <div className="w-14 h-14 bg-brand-red rounded-lg flex items-center justify-center mx-auto mb-4">
-                <Upload className="w-7 h-7 text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-brand-black mb-2">MLS Data Processing</h3>
-              <p className="text-brand-gray-medium">
-                Upload and process MLS comps with automated Excel generation
-              </p>
-            </div>
-
-            {/* MCAO Integration */}
-            <div className="p-8 border-2 border-brand-black rounded-lg hover:bg-brand-gray-light transition-colors">
-              <div className="w-14 h-14 bg-brand-black rounded-lg flex items-center justify-center mx-auto mb-4">
-                <Search className="w-7 h-7 text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-brand-black mb-2">MCAO Property Lookup</h3>
-              <p className="text-brand-gray-medium">
-                Instant access to Maricopa County Assessor property data
-              </p>
-            </div>
-
-            {/* Client Portal */}
-            <div className="p-8 border-2 border-brand-black rounded-lg hover:bg-brand-gray-light transition-colors">
-              <div className="w-14 h-14 bg-brand-red rounded-lg flex items-center justify-center mx-auto mb-4">
-                <Settings className="w-7 h-7 text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-brand-black mb-2">Client Portal</h3>
-              <p className="text-brand-gray-medium">
-                Secure portal for clients to view properties and documents
-              </p>
-            </div>
           </div>
 
           {/* CTA Button */}
@@ -116,20 +79,11 @@ export default function HomePage() {
           )}
 
           {user && (
-            <div className="mt-12 p-6 bg-brand-gray-light border-2 border-brand-black rounded-lg">
-              <p className="text-brand-gray-medium mb-4">
-                Welcome back! Choose your destination:
-              </p>
-              <div className="flex justify-center space-x-4">
-                <button
-                  onClick={() => router.push('/admin')}
-                  className="px-6 py-3 bg-brand-black text-white rounded-lg hover:bg-brand-gray-dark transition-colors font-medium"
-                >
-                  Admin Dashboard
-                </button>
+            <div className="mt-12 p-6 backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl">
+              <div className="flex justify-center">
                 <button
                   onClick={() => router.push('/client')}
-                  className="px-6 py-3 bg-brand-red text-white rounded-lg hover:bg-brand-red-hover transition-colors font-medium"
+                  className="px-8 py-4 bg-brand-red text-white text-lg rounded-lg hover:bg-brand-red-hover transition-all duration-300 font-medium"
                 >
                   Client Portal
                 </button>
@@ -140,9 +94,17 @@ export default function HomePage() {
       </main>
 
       {/* Footer */}
-      <footer className="absolute bottom-0 left-0 right-0 p-6 text-center text-brand-gray-medium text-sm">
-        <p>&copy; 2025 {BRAND.fullName}. All rights reserved.</p>
-        <p className="mt-1">{BRAND.location}</p>
+      <footer className="absolute bottom-0 left-0 right-0 p-6 text-center z-10">
+        {user && (
+          <button
+            onClick={() => router.push('/admin')}
+            className="mb-4 px-4 py-2 text-white/60 hover:text-white text-sm transition-all duration-300 hover:bg-white/10 rounded-lg"
+          >
+            Admin Dashboard
+          </button>
+        )}
+        <p className="text-white/60 text-sm">&copy; 2025 {BRAND.fullName}. All rights reserved.</p>
+        <p className="text-white/60 text-sm mt-1">{BRAND.location}</p>
       </footer>
     </div>
   )
