@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Sun, X, Check, Camera, Image, Loader2, Video, Scale } from 'lucide-react';
+import { Sun, X, Check, Camera, Image, Loader2, Video, Scale, Sparkles, Ruler } from 'lucide-react';
 import { WarningBorderTrail } from '../WarningBorderTrail';
 import type { TileComponentProps } from '../TileRegistry';
 import { useLIFXFormIntegration } from '@/hooks/useLIFXFormIntegration';
@@ -30,6 +30,27 @@ export function MorningFormTile({ tile, className }: TileComponentProps) {
   const [weightSaved, setWeightSaved] = useState(false);
   const weightInputRef = useRef<HTMLInputElement>(null);
   const weightDebounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Teeth Grind Rating state (1-5 scale)
+  const [teethGrindRating, setTeethGrindRating] = useState<number | null>(null);
+  const [isSavingGrind, setIsSavingGrind] = useState(false);
+  const [grindSaved, setGrindSaved] = useState(false);
+
+  // Retainer state (checkbox)
+  const [retainer, setRetainer] = useState(false);
+  const [isSavingRetainer, setIsSavingRetainer] = useState(false);
+  const [retainerSaved, setRetainerSaved] = useState(false);
+
+  // Body Measurements state
+  const [shoulderMeasurement, setShoulderMeasurement] = useState('');
+  const [isSavingShoulder, setIsSavingShoulder] = useState(false);
+  const [shoulderSaved, setShoulderSaved] = useState(false);
+  const shoulderDebounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  const [thighMeasurement, setThighMeasurement] = useState('');
+  const [isSavingThigh, setIsSavingThigh] = useState(false);
+  const [thighSaved, setThighSaved] = useState(false);
+  const thighDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
   // Body Progress Photo state
   const [bodyPhotoUrl, setBodyPhotoUrl] = useState<string | null>(null);
@@ -131,11 +152,162 @@ export function MorningFormTile({ tile, className }: TileComponentProps) {
     saveWeight(weight);
   }, [weight, saveWeight]);
 
+  // Save Teeth Grind Rating (1-5 scale, saves immediately on click)
+  const saveTeethGrindRating = useCallback(async (rating: number) => {
+    setIsSavingGrind(true);
+    setGrindSaved(false);
+    try {
+      const response = await fetch('/api/notion/habits/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          property: 'Teeth Grind Rating',
+          value: rating,
+          type: 'number',
+        }),
+      });
+      if (response.ok) {
+        setGrindSaved(true);
+        setTimeout(() => setGrindSaved(false), 2000);
+      }
+    } catch (error) {
+      console.error('Error saving teeth grind rating:', error);
+    } finally {
+      setIsSavingGrind(false);
+    }
+  }, []);
+
+  const handleTeethGrindClick = useCallback((rating: number) => {
+    setTeethGrindRating(rating);
+    saveTeethGrindRating(rating);
+  }, [saveTeethGrindRating]);
+
+  // Save Retainer checkbox (saves immediately on toggle)
+  const saveRetainer = useCallback(async (value: boolean) => {
+    setIsSavingRetainer(true);
+    setRetainerSaved(false);
+    try {
+      const response = await fetch('/api/notion/habits/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          property: 'Retainer',
+          value: value,
+          type: 'checkbox',
+        }),
+      });
+      if (response.ok) {
+        setRetainerSaved(true);
+        setTimeout(() => setRetainerSaved(false), 2000);
+      }
+    } catch (error) {
+      console.error('Error saving retainer:', error);
+    } finally {
+      setIsSavingRetainer(false);
+    }
+  }, []);
+
+  const handleRetainerToggle = useCallback(() => {
+    const newValue = !retainer;
+    setRetainer(newValue);
+    saveRetainer(newValue);
+  }, [retainer, saveRetainer]);
+
+  // Save Shoulder Measurement (debounced)
+  const saveShoulder = useCallback(async (value: string) => {
+    if (!value || value.trim() === '') return;
+    const numValue = parseFloat(value);
+    if (isNaN(numValue)) return;
+
+    setIsSavingShoulder(true);
+    setShoulderSaved(false);
+    try {
+      const response = await fetch('/api/notion/habits/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          property: 'Shoulder Measurement',
+          value: numValue,
+          type: 'number',
+        }),
+      });
+      if (response.ok) {
+        setShoulderSaved(true);
+        setTimeout(() => setShoulderSaved(false), 2000);
+      }
+    } catch (error) {
+      console.error('Error saving shoulder measurement:', error);
+    } finally {
+      setIsSavingShoulder(false);
+    }
+  }, []);
+
+  const handleShoulderChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setShoulderMeasurement(value);
+    setShoulderSaved(false);
+    if (shoulderDebounceRef.current) clearTimeout(shoulderDebounceRef.current);
+    shoulderDebounceRef.current = setTimeout(() => saveShoulder(value), 800);
+  }, [saveShoulder]);
+
+  const handleShoulderBlur = useCallback(() => {
+    if (shoulderDebounceRef.current) clearTimeout(shoulderDebounceRef.current);
+    saveShoulder(shoulderMeasurement);
+  }, [shoulderMeasurement, saveShoulder]);
+
+  // Save Thigh Measurement (debounced)
+  const saveThigh = useCallback(async (value: string) => {
+    if (!value || value.trim() === '') return;
+    const numValue = parseFloat(value);
+    if (isNaN(numValue)) return;
+
+    setIsSavingThigh(true);
+    setThighSaved(false);
+    try {
+      const response = await fetch('/api/notion/habits/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          property: 'Thigh Measurement',
+          value: numValue,
+          type: 'number',
+        }),
+      });
+      if (response.ok) {
+        setThighSaved(true);
+        setTimeout(() => setThighSaved(false), 2000);
+      }
+    } catch (error) {
+      console.error('Error saving thigh measurement:', error);
+    } finally {
+      setIsSavingThigh(false);
+    }
+  }, []);
+
+  const handleThighChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setThighMeasurement(value);
+    setThighSaved(false);
+    if (thighDebounceRef.current) clearTimeout(thighDebounceRef.current);
+    thighDebounceRef.current = setTimeout(() => saveThigh(value), 800);
+  }, [saveThigh]);
+
+  const handleThighBlur = useCallback(() => {
+    if (thighDebounceRef.current) clearTimeout(thighDebounceRef.current);
+    saveThigh(thighMeasurement);
+  }, [thighMeasurement, saveThigh]);
+
   // Cleanup debounce on unmount
   useEffect(() => {
     return () => {
       if (weightDebounceRef.current) {
         clearTimeout(weightDebounceRef.current);
+      }
+      if (shoulderDebounceRef.current) {
+        clearTimeout(shoulderDebounceRef.current);
+      }
+      if (thighDebounceRef.current) {
+        clearTimeout(thighDebounceRef.current);
       }
     };
   }, []);
@@ -407,7 +579,181 @@ export function MorningFormTile({ tile, className }: TileComponentProps) {
                 </p>
               </div>
 
-              {/* Field 2: Morning Video */}
+              {/* Field 2: Teeth Grind Rating (1-5 scale) */}
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <Sparkles className="w-4 h-4 text-muted-foreground" />
+                  Teeth Grind Rating
+                </label>
+                <div className="flex items-center gap-2">
+                  {[1, 2, 3, 4, 5].map((rating) => (
+                    <button
+                      key={rating}
+                      type="button"
+                      onClick={() => handleTeethGrindClick(rating)}
+                      disabled={isSavingGrind}
+                      className={`
+                        flex-1 py-2.5 rounded-lg text-sm font-medium
+                        transition-all duration-200 border
+                        ${teethGrindRating === rating
+                          ? 'bg-amber-500 text-white border-amber-500'
+                          : 'bg-background border-input hover:bg-muted hover:border-muted-foreground/30'
+                        }
+                        ${isSavingGrind ? 'opacity-50 cursor-not-allowed' : ''}
+                      `}
+                    >
+                      {rating}
+                    </button>
+                  ))}
+                  {isSavingGrind && (
+                    <Loader2 className="w-4 h-4 animate-spin text-muted-foreground ml-1" />
+                  )}
+                  {grindSaved && (
+                    <span className="text-xs text-green-500 flex items-center gap-1 animate-in fade-in-0">
+                      <Check className="w-3 h-3" />
+                    </span>
+                  )}
+                </div>
+                <div className="flex justify-between text-[10px] text-muted-foreground px-1">
+                  <span>None</span>
+                  <span>Mild</span>
+                  <span>Moderate</span>
+                  <span>Strong</span>
+                  <span>Severe</span>
+                </div>
+              </div>
+
+              {/* Field 3: Retainer */}
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <Sparkles className="w-4 h-4 text-muted-foreground" />
+                  Retainer
+                </label>
+                <button
+                  type="button"
+                  onClick={handleRetainerToggle}
+                  disabled={isSavingRetainer}
+                  className={`
+                    w-full flex items-center justify-between
+                    px-4 py-3
+                    rounded-lg border
+                    transition-all duration-200
+                    ${retainer
+                      ? 'bg-green-500/10 border-green-500/50 text-green-700 dark:text-green-400'
+                      : 'bg-background border-input hover:bg-muted hover:border-muted-foreground/30'
+                    }
+                    ${isSavingRetainer ? 'opacity-50 cursor-not-allowed' : ''}
+                  `}
+                >
+                  <span className="text-sm font-medium">
+                    {retainer ? 'Wore Retainer ✓' : 'Wore Retainer?'}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    {isSavingRetainer && (
+                      <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                    )}
+                    {retainerSaved && (
+                      <span className="text-xs text-green-500 flex items-center gap-1 animate-in fade-in-0">
+                        <Check className="w-3 h-3" />
+                        Saved
+                      </span>
+                    )}
+                    <div className={`
+                      w-5 h-5 rounded border-2 flex items-center justify-center
+                      transition-all duration-200
+                      ${retainer
+                        ? 'bg-green-500 border-green-500'
+                        : 'border-muted-foreground/30'
+                      }
+                    `}>
+                      {retainer && <Check className="w-3 h-3 text-white" />}
+                    </div>
+                  </div>
+                </button>
+              </div>
+
+              {/* Field 4: Body Measurements */}
+              <div className="space-y-3">
+                <label className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <Ruler className="w-4 h-4 text-muted-foreground" />
+                  Body Measurements
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Shoulder */}
+                  <div className="space-y-1">
+                    <label htmlFor="shoulder-input" className="text-xs text-muted-foreground">
+                      Shoulder (in)
+                    </label>
+                    <div className="relative">
+                      <input
+                        id="shoulder-input"
+                        type="number"
+                        step="0.1"
+                        placeholder="0.0"
+                        value={shoulderMeasurement}
+                        onChange={handleShoulderChange}
+                        onBlur={handleShoulderBlur}
+                        className="
+                          w-full px-3 py-2
+                          bg-background border border-input rounded-lg
+                          focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent
+                          text-sm
+                          [appearance:textfield]
+                          [&::-webkit-outer-spin-button]:appearance-none
+                          [&::-webkit-inner-spin-button]:appearance-none
+                        "
+                      />
+                      <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                        {isSavingShoulder && (
+                          <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
+                        )}
+                        {shoulderSaved && (
+                          <Check className="w-3 h-3 text-green-500" />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  {/* Thigh */}
+                  <div className="space-y-1">
+                    <label htmlFor="thigh-input" className="text-xs text-muted-foreground">
+                      Thigh (in)
+                    </label>
+                    <div className="relative">
+                      <input
+                        id="thigh-input"
+                        type="number"
+                        step="0.1"
+                        placeholder="0.0"
+                        value={thighMeasurement}
+                        onChange={handleThighChange}
+                        onBlur={handleThighBlur}
+                        className="
+                          w-full px-3 py-2
+                          bg-background border border-input rounded-lg
+                          focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent
+                          text-sm
+                          [appearance:textfield]
+                          [&::-webkit-outer-spin-button]:appearance-none
+                          [&::-webkit-inner-spin-button]:appearance-none
+                        "
+                      />
+                      <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                        {isSavingThigh && (
+                          <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
+                        )}
+                        {thighSaved && (
+                          <Check className="w-3 h-3 text-green-500" />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Saves automatically after typing
+                </p>
+              </div>
+
+              {/* Field 5: Morning Video */}
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-sm font-medium text-foreground">
                   <Video className="w-4 h-4 text-muted-foreground" />
@@ -702,6 +1048,28 @@ export function MorningFormModal({ isOpen, onClose }: { isOpen: boolean; onClose
 
   // LIFX integration - turns off lights when form is submitted
   const { onMorningFormComplete } = useLIFXFormIntegration();
+
+  // Teeth Grind Rating state (1-5 scale)
+  const [teethGrindRating, setTeethGrindRating] = useState<number | null>(null);
+  const [isSavingGrind, setIsSavingGrind] = useState(false);
+  const [grindSaved, setGrindSaved] = useState(false);
+
+  // Retainer state (checkbox)
+  const [retainer, setRetainer] = useState(false);
+  const [isSavingRetainer, setIsSavingRetainer] = useState(false);
+  const [retainerSaved, setRetainerSaved] = useState(false);
+
+  // Body Measurements state
+  const [shoulderMeasurement, setShoulderMeasurement] = useState('');
+  const [isSavingShoulder, setIsSavingShoulder] = useState(false);
+  const [shoulderSaved, setShoulderSaved] = useState(false);
+  const shoulderDebounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  const [thighMeasurement, setThighMeasurement] = useState('');
+  const [isSavingThigh, setIsSavingThigh] = useState(false);
+  const [thighSaved, setThighSaved] = useState(false);
+  const thighDebounceRef = useRef<NodeJS.Timeout | null>(null);
+
   // Body Progress Photo state
   const [bodyPhotoUrl, setBodyPhotoUrl] = useState<string | null>(null);
   const [bodyPhotoSource, setBodyPhotoSource] = useState<'library' | 'camera' | null>(null);
@@ -731,7 +1099,6 @@ export function MorningFormModal({ isOpen, onClose }: { isOpen: boolean; onClose
           property: 'Weight',
           value: numValue,
           type: 'number',
-          date: new Date().toISOString().split('T')[0],
         }),
       });
       if (response.ok) {
@@ -758,9 +1125,138 @@ export function MorningFormModal({ isOpen, onClose }: { isOpen: boolean; onClose
     saveWeight(weight);
   }, [weight, saveWeight]);
 
+  // Save Teeth Grind Rating
+  const saveTeethGrindRating = useCallback(async (rating: number) => {
+    setIsSavingGrind(true);
+    setGrindSaved(false);
+    try {
+      const response = await fetch('/api/notion/habits/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ property: 'Teeth Grind Rating', value: rating, type: 'number' }),
+      });
+      if (response.ok) {
+        setGrindSaved(true);
+        setTimeout(() => setGrindSaved(false), 2000);
+      }
+    } catch (error) {
+      console.error('Error saving teeth grind rating:', error);
+    } finally {
+      setIsSavingGrind(false);
+    }
+  }, []);
+
+  const handleTeethGrindClick = useCallback((rating: number) => {
+    setTeethGrindRating(rating);
+    saveTeethGrindRating(rating);
+  }, [saveTeethGrindRating]);
+
+  // Save Retainer checkbox
+  const saveRetainer = useCallback(async (value: boolean) => {
+    setIsSavingRetainer(true);
+    setRetainerSaved(false);
+    try {
+      const response = await fetch('/api/notion/habits/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ property: 'Retainer', value: value, type: 'checkbox' }),
+      });
+      if (response.ok) {
+        setRetainerSaved(true);
+        setTimeout(() => setRetainerSaved(false), 2000);
+      }
+    } catch (error) {
+      console.error('Error saving retainer:', error);
+    } finally {
+      setIsSavingRetainer(false);
+    }
+  }, []);
+
+  const handleRetainerToggle = useCallback(() => {
+    const newValue = !retainer;
+    setRetainer(newValue);
+    saveRetainer(newValue);
+  }, [retainer, saveRetainer]);
+
+  // Save Shoulder Measurement
+  const saveShoulder = useCallback(async (value: string) => {
+    if (!value || value.trim() === '') return;
+    const numValue = parseFloat(value);
+    if (isNaN(numValue)) return;
+    setIsSavingShoulder(true);
+    setShoulderSaved(false);
+    try {
+      const response = await fetch('/api/notion/habits/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ property: 'Shoulder Measurement', value: numValue, type: 'number' }),
+      });
+      if (response.ok) {
+        setShoulderSaved(true);
+        setTimeout(() => setShoulderSaved(false), 2000);
+      }
+    } catch (error) {
+      console.error('Error saving shoulder measurement:', error);
+    } finally {
+      setIsSavingShoulder(false);
+    }
+  }, []);
+
+  const handleShoulderChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setShoulderMeasurement(value);
+    setShoulderSaved(false);
+    if (shoulderDebounceRef.current) clearTimeout(shoulderDebounceRef.current);
+    shoulderDebounceRef.current = setTimeout(() => saveShoulder(value), 800);
+  }, [saveShoulder]);
+
+  const handleShoulderBlur = useCallback(() => {
+    if (shoulderDebounceRef.current) clearTimeout(shoulderDebounceRef.current);
+    saveShoulder(shoulderMeasurement);
+  }, [shoulderMeasurement, saveShoulder]);
+
+  // Save Thigh Measurement
+  const saveThigh = useCallback(async (value: string) => {
+    if (!value || value.trim() === '') return;
+    const numValue = parseFloat(value);
+    if (isNaN(numValue)) return;
+    setIsSavingThigh(true);
+    setThighSaved(false);
+    try {
+      const response = await fetch('/api/notion/habits/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ property: 'Thigh Measurement', value: numValue, type: 'number' }),
+      });
+      if (response.ok) {
+        setThighSaved(true);
+        setTimeout(() => setThighSaved(false), 2000);
+      }
+    } catch (error) {
+      console.error('Error saving thigh measurement:', error);
+    } finally {
+      setIsSavingThigh(false);
+    }
+  }, []);
+
+  const handleThighChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setThighMeasurement(value);
+    setThighSaved(false);
+    if (thighDebounceRef.current) clearTimeout(thighDebounceRef.current);
+    thighDebounceRef.current = setTimeout(() => saveThigh(value), 800);
+  }, [saveThigh]);
+
+  const handleThighBlur = useCallback(() => {
+    if (thighDebounceRef.current) clearTimeout(thighDebounceRef.current);
+    saveThigh(thighMeasurement);
+  }, [thighMeasurement, saveThigh]);
+
   useEffect(() => {
     return () => {
       if (weightDebounceRef.current) clearTimeout(weightDebounceRef.current);
+      if (shoulderDebounceRef.current) clearTimeout(shoulderDebounceRef.current);
+      if (thighDebounceRef.current) clearTimeout(thighDebounceRef.current);
     };
   }, []);
 
@@ -882,6 +1378,74 @@ export function MorningFormModal({ isOpen, onClose }: { isOpen: boolean; onClose
             </div>
             <p className="text-xs text-muted-foreground">Saves to Notion Habits as you type</p>
           </div>
+          {/* Teeth Grind Rating */}
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 text-sm font-medium text-foreground">
+              <Sparkles className="w-4 h-4 text-muted-foreground" />Teeth Grind Rating
+            </label>
+            <div className="flex items-center gap-2">
+              {[1, 2, 3, 4, 5].map((rating) => (
+                <button key={rating} type="button" onClick={() => handleTeethGrindClick(rating)} disabled={isSavingGrind}
+                  className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 border ${teethGrindRating === rating ? 'bg-amber-500 text-white border-amber-500' : 'bg-background border-input hover:bg-muted hover:border-muted-foreground/30'} ${isSavingGrind ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                  {rating}
+                </button>
+              ))}
+              {isSavingGrind && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground ml-1" />}
+              {grindSaved && <span className="text-xs text-green-500 flex items-center gap-1"><Check className="w-3 h-3" /></span>}
+            </div>
+            <div className="flex justify-between text-[10px] text-muted-foreground px-1">
+              <span>None</span><span>Mild</span><span>Moderate</span><span>Strong</span><span>Severe</span>
+            </div>
+          </div>
+          {/* Retainer */}
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 text-sm font-medium text-foreground">
+              <Sparkles className="w-4 h-4 text-muted-foreground" />Retainer
+            </label>
+            <button type="button" onClick={handleRetainerToggle} disabled={isSavingRetainer}
+              className={`w-full flex items-center justify-between px-4 py-3 rounded-lg border transition-all duration-200 ${retainer ? 'bg-green-500/10 border-green-500/50 text-green-700 dark:text-green-400' : 'bg-background border-input hover:bg-muted hover:border-muted-foreground/30'} ${isSavingRetainer ? 'opacity-50 cursor-not-allowed' : ''}`}>
+              <span className="text-sm font-medium">{retainer ? 'Wore Retainer ✓' : 'Wore Retainer?'}</span>
+              <div className="flex items-center gap-2">
+                {isSavingRetainer && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+                {retainerSaved && <span className="text-xs text-green-500 flex items-center gap-1"><Check className="w-3 h-3" />Saved</span>}
+                <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200 ${retainer ? 'bg-green-500 border-green-500' : 'border-muted-foreground/30'}`}>
+                  {retainer && <Check className="w-3 h-3 text-white" />}
+                </div>
+              </div>
+            </button>
+          </div>
+          {/* Body Measurements */}
+          <div className="space-y-3">
+            <label className="flex items-center gap-2 text-sm font-medium text-foreground">
+              <Ruler className="w-4 h-4 text-muted-foreground" />Body Measurements
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label htmlFor="modal-shoulder" className="text-xs text-muted-foreground">Shoulder (in)</label>
+                <div className="relative">
+                  <input id="modal-shoulder" type="number" step="0.1" placeholder="0.0" value={shoulderMeasurement} onChange={handleShoulderChange} onBlur={handleShoulderBlur}
+                    className="w-full px-3 py-2 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                    {isSavingShoulder && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
+                    {shoulderSaved && <Check className="w-3 h-3 text-green-500" />}
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label htmlFor="modal-thigh" className="text-xs text-muted-foreground">Thigh (in)</label>
+                <div className="relative">
+                  <input id="modal-thigh" type="number" step="0.1" placeholder="0.0" value={thighMeasurement} onChange={handleThighChange} onBlur={handleThighBlur}
+                    className="w-full px-3 py-2 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                    {isSavingThigh && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
+                    {thighSaved && <Check className="w-3 h-3 text-green-500" />}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">Saves automatically after typing</p>
+          </div>
+          {/* Morning Video */}
           <div className="space-y-2">
             <label className="flex items-center gap-2 text-sm font-medium text-foreground">
               <Video className="w-4 h-4 text-muted-foreground" />Morning Video

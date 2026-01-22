@@ -39,6 +39,16 @@ const MorningFormModal = dynamic(
   { ssr: false }
 );
 
+// Dynamic imports for notification banners
+const MasochistBanner = dynamic(
+  () => import('@/components/MasochistBanner').then(mod => mod.MasochistBanner),
+  { ssr: false }
+);
+const FallingOffBanner = dynamic(
+  () => import('@/components/FallingOffBanner').then(mod => mod.FallingOffBanner),
+  { ssr: false }
+);
+
 // Inner component that uses useSearchParams via useDualFilter
 function DashboardContent() {
   // Phase form modal state
@@ -147,7 +157,7 @@ function DashboardContent() {
             {/* Edit Layout Toggle */}
             <EditModeToggle editMode={editMode} onToggle={handleEditModeToggle} />
             <Link
-              href="/private/gs-site/admin"
+              href="/admin"
               className="p-2 hover:bg-accent rounded-md transition-colors"
               title="Admin Settings"
             >
@@ -159,6 +169,12 @@ function DashboardContent() {
 
       {/* Phase Reminder */}
       <PhaseReminder onCompleteClick={handlePhaseComplete} />
+
+      {/* Notification Banners - Stack below PhaseReminder */}
+      <div className="max-w-6xl mx-auto px-6 space-y-3">
+        <MasochistBanner />
+        <FallingOffBanner />
+      </div>
 
       {/* Phase Form Modals */}
       <MorningFormModal isOpen={showMorningModal} onClose={() => setShowMorningModal(false)} />

@@ -531,6 +531,76 @@ export async function updateHabitForToday(
 }
 
 /**
+ * Supported property types for updatePropertyForToday
+ */
+export type NotionPropertyType = 'checkbox' | 'number';
+
+/**
+ * Update any property for today's record
+ * Supports: checkbox (boolean), number
+ */
+export async function updatePropertyForToday(
+  propertyName: string,
+  value: boolean | number,
+  type: NotionPropertyType
+): Promise<boolean> {
+  if (!isHabitsDatabaseConfigured()) {
+    return false;
+  }
+
+  try {
+    const todayRecord = await getTodaysRecord();
+
+    if (!todayRecord) {
+      console.error('No record found for today');
+      return false;
+    }
+
+    const apiKey = getNotionApiKey();
+    if (!apiKey) return false;
+
+    // Build property value based on type
+    let propertyValue: object;
+    switch (type) {
+      case 'checkbox':
+        propertyValue = { checkbox: value as boolean };
+        break;
+      case 'number':
+        propertyValue = { number: value as number };
+        break;
+      default:
+        console.error(`Unsupported property type: ${type}`);
+        return false;
+    }
+
+    const response = await fetch(`https://api.notion.com/v1/pages/${todayRecord.id}`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Notion-Version': NOTION_API_VERSION,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        properties: {
+          [propertyName]: propertyValue,
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error(`Failed to update property ${propertyName}:`, error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error(`Error updating property ${propertyName}:`, error);
+    return false;
+  }
+}
+
+/**
  * Get list of all tracked habits
  */
 export function getTrackedHabits(): Array<{ name: string; emoji: string }> {

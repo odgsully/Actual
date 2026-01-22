@@ -174,6 +174,29 @@ const RecurringDotsTile = dynamic(
   { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
 );
 
+const FormTimingTile = dynamic(
+  () => import('./logic/FormTimingTile').then(mod => ({ default: mod.FormTimingTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
+// Habit Detail tile (Phase 4 - Complex Tiles)
+const HabitDetailTile = dynamic(
+  () => import('./graphics/HabitDetailTile').then(mod => ({ default: mod.HabitDetailTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
+// Photo Slideshow tile (Phase 4 - Complex Tiles)
+const PhotoSlideshowTile = dynamic(
+  () => import('./graphics/PhotoSlideshowTile').then(mod => ({ default: mod.PhotoSlideshowTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
+// Budget tile (Phase 4 - Complex Tiles)
+const BudgetTile = dynamic(
+  () => import('./graphics/BudgetTile').then(mod => ({ default: mod.BudgetTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
 const MementoMorriTile = dynamic(
   () => import('./logic/MementoMorriTile').then(mod => ({ default: mod.MementoMorriTile })),
   { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
@@ -492,6 +515,32 @@ const SPECIALIZED_TILES: Array<{
   {
     match: (name) => name.toLowerCase().includes('days till') || name.toLowerCase().includes('panel for days') || name.toLowerCase() === 'spacead',
     component: DaysTillCounterTile,
+  },
+  // Form Deadlines tile (days until monthly/quarterly forms)
+  {
+    match: (name) => name.toLowerCase() === 'form deadlines' ||
+                     name.toLowerCase().includes('form deadline') ||
+                     name.toLowerCase().includes('form timing'),
+    component: FormTimingTile,
+  },
+  // Habit Detail tile (per-habit streaks, 7-day dots, 2026 completion %)
+  {
+    match: (name) => name.toLowerCase() === 'habit detail' ||
+                     name.toLowerCase().includes('habit specific') ||
+                     name.toLowerCase().includes('habit detail'),
+    component: HabitDetailTile,
+  },
+  // Photo Slideshow tile (personal photo categories)
+  {
+    match: (name) => name.toLowerCase().includes('photo slideshow') ||
+                     name.toLowerCase().includes('slideshow') && name.toLowerCase().includes('photo'),
+    component: PhotoSlideshowTile,
+  },
+  // Budget tile (personal budget tracking)
+  {
+    match: (name) => name.toLowerCase() === 'budget' ||
+                     name.toLowerCase().includes('budget track'),
+    component: BudgetTile,
   },
   {
     match: (name) => name.toLowerCase().includes('recurring') && name.toLowerCase().includes('dots'),

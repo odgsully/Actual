@@ -7,6 +7,7 @@ import {
   X,
   Trophy,
   LineChart,
+  Gauge,
 } from 'lucide-react';
 import { WarningBorderTrail } from '../WarningBorderTrail';
 import { useConnectionHealth } from '@/hooks/useConnectionHealth';
@@ -33,6 +34,14 @@ const BENCHMARK_SITES = [
     icon: LineChart,
     color: 'text-blue-500',
     bgColor: 'bg-blue-500/10 hover:bg-blue-500/20',
+  },
+  {
+    name: 'Lean AI Leaderboard',
+    url: 'https://leanaileaderboard.com/',
+    description: 'Enterprise AI benchmarks focused on efficiency',
+    icon: Gauge,
+    color: 'text-green-500',
+    bgColor: 'bg-green-500/10 hover:bg-green-500/20',
   },
 ];
 
@@ -151,16 +160,19 @@ export function LLMBenchmarksTile({ tile, className }: LLMBenchmarksTileProps) {
 
           {/* Content */}
           <div className="flex-1 flex flex-col items-center justify-center gap-2">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <div className="p-1.5 rounded bg-yellow-500/10">
                 <Trophy className="w-4 h-4 text-yellow-500" />
               </div>
               <div className="p-1.5 rounded bg-blue-500/10">
                 <LineChart className="w-4 h-4 text-blue-500" />
               </div>
+              <div className="p-1.5 rounded bg-green-500/10">
+                <Gauge className="w-4 h-4 text-green-500" />
+              </div>
             </div>
             <span className="text-xs text-muted-foreground">
-              2 sites
+              3 sites
             </span>
           </div>
 

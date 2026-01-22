@@ -14,40 +14,22 @@ import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 /**
  * Get Supabase URL from environment
  */
-function getSupabaseUrl(): string {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-  if (!url) {
-    throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL environment variable');
-  }
-
-  return url;
+function getSupabaseUrl(): string | null {
+  return process.env.NEXT_PUBLIC_SUPABASE_URL || null;
 }
 
 /**
  * Get Supabase anon key from environment
  */
-function getSupabaseAnonKey(): string {
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!key) {
-    throw new Error('Missing NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable');
-  }
-
-  return key;
+function getSupabaseAnonKey(): string | null {
+  return process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || null;
 }
 
 /**
  * Get Supabase service role key from environment (server-side only)
  */
-function getSupabaseServiceRoleKey(): string {
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!key) {
-    throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY environment variable');
-  }
-
-  return key;
+function getSupabaseServiceRoleKey(): string | null {
+  return process.env.SUPABASE_SERVICE_ROLE_KEY || null;
 }
 
 /**
@@ -64,18 +46,23 @@ export function isSupabaseConfigured(): boolean {
  * Create a Supabase client for browser use
  *
  * Uses anon key for Row Level Security
+ * Returns null if environment variables are not configured
  */
 export function createBrowserClient() {
-  return createSupabaseClient(
-    getSupabaseUrl(),
-    getSupabaseAnonKey(),
-    {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-      },
-    }
-  );
+  const url = getSupabaseUrl();
+  const key = getSupabaseAnonKey();
+
+  if (!url || !key) {
+    console.warn('Supabase browser client not configured: missing environment variables');
+    return null;
+  }
+
+  return createSupabaseClient(url, key, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+    },
+  });
 }
 
 /**
@@ -83,18 +70,23 @@ export function createBrowserClient() {
  *
  * IMPORTANT: Only use in server-side code (API routes, server components)
  * Service role bypasses Row Level Security
+ * Returns null if environment variables are not configured
  */
 export function createServerClient() {
-  return createSupabaseClient(
-    getSupabaseUrl(),
-    getSupabaseServiceRoleKey(),
-    {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-      },
-    }
-  );
+  const url = getSupabaseUrl();
+  const key = getSupabaseServiceRoleKey();
+
+  if (!url || !key) {
+    console.warn('Supabase server client not configured: missing environment variables');
+    return null;
+  }
+
+  return createSupabaseClient(url, key, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
 }
 
 /**
@@ -102,10 +94,12 @@ export function createServerClient() {
  * Safe to use in client components and hooks
  */
 let browserClient: ReturnType<typeof createBrowserClient> | null = null;
+let browserClientInitialized = false;
 
 export function getSupabaseClient() {
-  if (!browserClient) {
+  if (!browserClientInitialized) {
     browserClient = createBrowserClient();
+    browserClientInitialized = true;
   }
   return browserClient;
 }

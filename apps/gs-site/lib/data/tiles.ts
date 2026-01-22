@@ -188,6 +188,98 @@ export const LOCAL_TILES: Tile[] = [
     "typeII": "Metric"
   },
   {
+    "id": "local-form-timing",
+    "name": "Form Deadlines",
+    "menu": [
+      "Org"
+    ],
+    "status": "Not started",
+    "desc": "Days until next Monthly and Quarterly form deadlines.",
+    "shadcn": [
+      "Graphic",
+      "Logic"
+    ],
+    "phase": [
+      "GS Site Standing"
+    ],
+    "thirdParty": [
+      "Logic"
+    ],
+    "actionWarning": false,
+    "actionDesc": null,
+    "priority": "1",
+    "typeII": "Metric"
+  },
+  {
+    "id": "local-habit-detail",
+    "name": "Habit Detail",
+    "menu": [
+      "Health",
+      "Org"
+    ],
+    "status": "Not started",
+    "desc": "Per-habit streak counts, 7-day dots, and 2026 completion percentage.",
+    "shadcn": [
+      "Graphic",
+      "Logic",
+      "Chart"
+    ],
+    "phase": [
+      "GS Site Standing"
+    ],
+    "thirdParty": [
+      "Notion"
+    ],
+    "actionWarning": false,
+    "actionDesc": null,
+    "priority": "1",
+    "typeII": "Metric"
+  },
+  {
+    "id": "local-photo-slideshow",
+    "name": "Photo Slideshow",
+    "menu": [
+      "Content",
+      "Org"
+    ],
+    "status": "Not started",
+    "desc": "Personal photo slideshow with category filters: Grub Villain, Family, Friends, Habitat, Dogs, Quotes, Inspo, LinkedIn.",
+    "shadcn": [
+      "Graphic",
+      "Logic"
+    ],
+    "phase": [
+      "GS Site Standing"
+    ],
+    "thirdParty": [],
+    "actionWarning": false,
+    "actionDesc": null,
+    "priority": "2",
+    "typeII": "Metric"
+  },
+  {
+    "id": "local-budget",
+    "name": "Budget",
+    "menu": [
+      "Org"
+    ],
+    "status": "Not started",
+    "desc": "Personal budget tracking - monthly spending vs budget with categories.",
+    "shadcn": [
+      "Graphic",
+      "Logic",
+      "Form"
+    ],
+    "phase": [
+      "GS Site Standing"
+    ],
+    "thirdParty": [],
+    "actionWarning": false,
+    "actionDesc": null,
+    "priority": "2",
+    "typeII": "Metric"
+  },
+  {
     "id": "local-core-habits",
     "name": "Core Habits",
     "menu": [
