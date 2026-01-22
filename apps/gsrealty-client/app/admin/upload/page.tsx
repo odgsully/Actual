@@ -246,18 +246,18 @@ export default function UploadPage() {
     <div className="space-y-6 max-w-6xl mx-auto">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-brand-black">Upload MLS Data</h1>
-        <p className="text-gray-600 mt-1">
+        <h1 className="text-3xl font-bold text-white">Upload MLS Data</h1>
+        <p className="text-white/60 mt-1">
           Upload MLS comp files and generate populated Excel template for ReportIt analysis
         </p>
       </div>
 
       {/* Client Selection */}
-      <div className="bg-white rounded-lg border-2 border-gray-200 p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">1. Select Client</h2>
+      <div className="glass-card p-6">
+        <h2 className="text-xl font-bold text-white mb-4">1. Select Client</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="relative" ref={dropdownRef}>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-white/80 mb-2">
               Client Name
             </label>
             <div className="relative">
@@ -270,32 +270,32 @@ export default function UploadPage() {
                 }}
                 onFocus={() => setShowClientDropdown(true)}
                 placeholder="Search for client or type to filter..."
-                className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-red focus:border-transparent"
+                className="w-full px-4 py-2 pr-10 bg-white/5 border border-white/20 rounded-xl text-white placeholder:text-white/40 focus:border-white/40 focus:bg-white/10 focus:outline-none transition-colors"
               />
               <ChevronDown
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 cursor-pointer"
+                className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 cursor-pointer"
                 onClick={() => setShowClientDropdown(!showClientDropdown)}
               />
             </div>
 
             {/* Dropdown */}
             {showClientDropdown && (
-              <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto">
+              <div className="absolute z-10 mt-1 w-full bg-gray-900/95 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg max-h-60 overflow-auto">
                 {filteredClients.length > 0 ? (
                   filteredClients.map((client) => (
                     <button
                       key={client.id}
                       onClick={() => handleSelectClient(client)}
-                      className="w-full px-4 py-2 text-left hover:bg-gray-50 focus:bg-gray-50 focus:outline-none"
+                      className="w-full px-4 py-2 text-left text-white hover:bg-white/10 focus:bg-white/10 focus:outline-none"
                     >
                       <div className="font-medium">{client.first_name} {client.last_name}</div>
                       {client.email && (
-                        <div className="text-xs text-gray-500">{client.email}</div>
+                        <div className="text-xs text-white/50">{client.email}</div>
                       )}
                     </button>
                   ))
                 ) : (
-                  <div className="px-4 py-3 text-sm text-gray-500">
+                  <div className="px-4 py-3 text-sm text-white/50">
                     No clients found
                   </div>
                 )}
@@ -304,7 +304,7 @@ export default function UploadPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-white/80 mb-2">
               Client Last Name (for file naming)
             </label>
             <input
@@ -312,22 +312,22 @@ export default function UploadPage() {
               value={clientName}
               onChange={(e) => setClientName(e.target.value)}
               placeholder="Enter or modify last name"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-red focus:border-transparent"
+              className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-xl text-white placeholder:text-white/40 focus:border-white/40 focus:bg-white/10 focus:outline-none transition-colors"
             />
-            <p className="text-xs text-gray-500 mt-1">This will be used in the output filename</p>
+            <p className="text-xs text-white/50 mt-1">This will be used in the output filename</p>
           </div>
         </div>
       </div>
 
       {/* Subject Property */}
-      <div className="bg-white rounded-lg border-2 border-gray-200 p-6">
+      <div className="glass-card p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-xl font-bold text-gray-900">2. Subject Property (APN) <span className="text-sm text-gray-500 font-normal">(Optional)</span></h2>
-            <p className="text-sm text-gray-600 mt-1">Fetch property data from MCAO - Optional for report generation</p>
+            <h2 className="text-xl font-bold text-white">2. Subject Property (APN) <span className="text-sm text-white/50 font-normal">(Optional)</span></h2>
+            <p className="text-sm text-white/60 mt-1">Fetch property data from MCAO - Optional for report generation</p>
           </div>
           {subjectData && (
-            <CheckCircle className="w-6 h-6 text-green-600" />
+            <CheckCircle className="w-6 h-6 text-green-400" />
           )}
         </div>
 
@@ -338,12 +338,12 @@ export default function UploadPage() {
             onChange={(e) => setSubjectAPN(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleFetchSubject()}
             placeholder="Enter APN (e.g., 123-45-678)"
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-red focus:border-transparent"
+            className="flex-1 px-4 py-2 bg-white/5 border border-white/20 rounded-xl text-white placeholder:text-white/40 focus:border-white/40 focus:bg-white/10 focus:outline-none transition-colors"
           />
           <button
             onClick={handleFetchSubject}
             disabled={loadingSubject}
-            className="px-6 py-2 bg-brand-red text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+            className="px-6 py-2 bg-brand-red text-white rounded-xl hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
           >
             <Search className="w-5 h-5" />
             <span>{loadingSubject ? 'Fetching...' : 'Fetch'}</span>
@@ -351,13 +351,13 @@ export default function UploadPage() {
         </div>
 
         {subjectError && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-            <p className="text-sm text-red-700">{subjectError}</p>
+          <div className="bg-red-500/20 border border-red-400/30 rounded-xl p-3">
+            <p className="text-sm text-red-300">{subjectError}</p>
           </div>
         )}
 
         {subjectData && (
-          <div className="bg-white border border-green-200 rounded-lg p-4 mb-4">
+          <div className="bg-green-500/10 border border-green-400/30 rounded-xl p-4 mb-4">
             {subjectData.categorizedData ? (
               <MCAOCategorizedData
                 categorizedData={subjectData.categorizedData}
@@ -365,7 +365,7 @@ export default function UploadPage() {
                 apn={subjectData.data?.apn || subjectAPN}
               />
             ) : (
-              <div className="grid grid-cols-2 gap-2 text-sm">
+              <div className="grid grid-cols-2 gap-2 text-sm text-white">
                 <div><strong>APN:</strong> {subjectData.data?.apn || subjectAPN}</div>
                 <div><strong>Address:</strong> {subjectData.data?.propertyAddress?.fullAddress}</div>
                 <div><strong>Owner:</strong> {subjectData.data?.ownerName}</div>
@@ -377,18 +377,18 @@ export default function UploadPage() {
 
         {/* Manual Inputs for Subject Property (Analysis Row 2) */}
         {subjectData && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">
+          <div className="bg-blue-500/10 border border-blue-400/30 rounded-xl p-4">
+            <h3 className="text-sm font-semibold text-white mb-3">
               Subject Property Details (for Analysis Sheet Row 2)
             </h3>
-            <p className="text-xs text-gray-600 mb-3">
+            <p className="text-xs text-white/60 mb-3">
               These values will override MCAO data for the subject property in the Analysis sheet.
               Leave blank to use MCAO data when available.
             </p>
 
             {/* Row 1: Full Address */}
             <div className="mb-3">
-              <label className="block text-xs font-medium text-gray-700 mb-1">
+              <label className="block text-xs font-medium text-white/80 mb-1">
                 Full Address (replaces "Subject Property" placeholder)
               </label>
               <input
@@ -396,14 +396,14 @@ export default function UploadPage() {
                 value={subjectFullAddress}
                 onChange={(e) => setSubjectFullAddress(e.target.value)}
                 placeholder="e.g., 1234 N Main St, Phoenix, AZ 85001"
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-red focus:border-transparent"
+                className="w-full px-3 py-2 text-sm bg-white/5 border border-white/20 rounded-xl text-white placeholder:text-white/40 focus:border-white/40 focus:bg-white/10 focus:outline-none transition-colors"
               />
             </div>
 
             {/* Row 2: Numbers */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
+                <label className="block text-xs font-medium text-white/80 mb-1">
                   Bedrooms
                 </label>
                 <input
@@ -412,11 +412,11 @@ export default function UploadPage() {
                   value={subjectBedrooms}
                   onChange={(e) => setSubjectBedrooms(e.target.value)}
                   placeholder="e.g., 3"
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-red focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm bg-white/5 border border-white/20 rounded-xl text-white placeholder:text-white/40 focus:border-white/40 focus:bg-white/10 focus:outline-none transition-colors"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
+                <label className="block text-xs font-medium text-white/80 mb-1">
                   Bathrooms
                 </label>
                 <input
@@ -425,11 +425,11 @@ export default function UploadPage() {
                   value={subjectBathrooms}
                   onChange={(e) => setSubjectBathrooms(e.target.value)}
                   placeholder="e.g., 2.5"
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-red focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm bg-white/5 border border-white/20 rounded-xl text-white placeholder:text-white/40 focus:border-white/40 focus:bg-white/10 focus:outline-none transition-colors"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
+                <label className="block text-xs font-medium text-white/80 mb-1">
                   Year Built
                 </label>
                 <input
@@ -438,17 +438,17 @@ export default function UploadPage() {
                   value={subjectYearBuilt}
                   onChange={(e) => setSubjectYearBuilt(e.target.value)}
                   placeholder="e.g., 1995"
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-red focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm bg-white/5 border border-white/20 rounded-xl text-white placeholder:text-white/40 focus:border-white/40 focus:bg-white/10 focus:outline-none transition-colors"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
+                <label className="block text-xs font-medium text-white/80 mb-1">
                   Dwelling Type
                 </label>
                 <select
                   value={subjectDwellingType}
                   onChange={(e) => setSubjectDwellingType(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-red focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm bg-white/5 border border-white/20 rounded-xl text-white focus:border-white/40 focus:bg-white/10 focus:outline-none transition-colors"
                 >
                   <option value="">Select type...</option>
                   <option value="Apartment">Apartment</option>
@@ -462,7 +462,7 @@ export default function UploadPage() {
             {/* Row 3: Coordinates */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
+                <label className="block text-xs font-medium text-white/80 mb-1">
                   Latitude
                 </label>
                 <input
@@ -471,11 +471,11 @@ export default function UploadPage() {
                   value={subjectLatitude}
                   onChange={(e) => setSubjectLatitude(e.target.value)}
                   placeholder="e.g., 33.4942"
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-red focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm bg-white/5 border border-white/20 rounded-xl text-white placeholder:text-white/40 focus:border-white/40 focus:bg-white/10 focus:outline-none transition-colors"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
+                <label className="block text-xs font-medium text-white/80 mb-1">
                   Longitude
                 </label>
                 <input
@@ -484,7 +484,7 @@ export default function UploadPage() {
                   value={subjectLongitude}
                   onChange={(e) => setSubjectLongitude(e.target.value)}
                   placeholder="e.g., -111.9261"
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-red focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm bg-white/5 border border-white/20 rounded-xl text-white placeholder:text-white/40 focus:border-white/40 focus:bg-white/10 focus:outline-none transition-colors"
                 />
               </div>
             </div>
@@ -493,21 +493,21 @@ export default function UploadPage() {
       </div>
 
       {/* 1.5 Mile Comps - Two uploads */}
-      <div className="bg-white rounded-lg border-2 border-gray-200 p-6">
+      <div className="glass-card p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-gray-900">3. 1.5 Mile Comps</h2>
+          <h2 className="text-xl font-bold text-white">3. 1.5 Mile Comps</h2>
           <div className="flex space-x-2">
-            {residential15Mile && <CheckCircle className="w-5 h-5 text-green-600" />}
-            {residentialLease15Mile && <CheckCircle className="w-5 h-5 text-green-600" />}
+            {residential15Mile && <CheckCircle className="w-5 h-5 text-green-400" />}
+            {residentialLease15Mile && <CheckCircle className="w-5 h-5 text-green-400" />}
           </div>
         </div>
 
         {/* Residential 1.5 Mile */}
         <div className="space-y-3 mb-4">
-          <h3 className="text-sm font-semibold text-gray-700">a. Residential 1.5mile-comps</h3>
-          <label className="block w-full px-4 py-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-brand-red cursor-pointer transition-colors text-center">
-            <Upload className="w-6 h-6 text-gray-400 mx-auto mb-2" />
-            <span className="text-sm text-gray-600">
+          <h3 className="text-sm font-semibold text-white/80">a. Residential 1.5mile-comps</h3>
+          <label className="block w-full px-4 py-6 border-2 border-dashed border-white/30 rounded-xl hover:border-white/50 bg-white/5 cursor-pointer transition-colors text-center">
+            <Upload className="w-6 h-6 text-white/40 mx-auto mb-2" />
+            <span className="text-sm text-white/60">
               {residential15Mile?.fileName || 'Choose CSV/Excel file for Residential 1.5 mile comps'}
             </span>
             <input
@@ -521,15 +521,15 @@ export default function UploadPage() {
               disabled={loadingRes15}
             />
           </label>
-          {loadingRes15 && <div className="text-center text-sm text-gray-600">Processing...</div>}
+          {loadingRes15 && <div className="text-center text-sm text-white/60">Processing...</div>}
           {res15Error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-              <p className="text-sm text-red-700">{res15Error}</p>
+            <div className="bg-red-500/20 border border-red-400/30 rounded-xl p-3">
+              <p className="text-sm text-red-300">{res15Error}</p>
             </div>
           )}
           {residential15Mile && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-              <p className="text-sm text-green-700">
+            <div className="bg-green-500/20 border border-green-400/30 rounded-xl p-3">
+              <p className="text-sm text-green-300">
                 ✓ Processed {residential15Mile.propertiesCount} properties
               </p>
             </div>
@@ -538,10 +538,10 @@ export default function UploadPage() {
 
         {/* Residential Lease 1.5 Mile */}
         <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-gray-700">b. Residential Lease 1.5mile-comps</h3>
-          <label className="block w-full px-4 py-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-brand-red cursor-pointer transition-colors text-center">
-            <Upload className="w-6 h-6 text-gray-400 mx-auto mb-2" />
-            <span className="text-sm text-gray-600">
+          <h3 className="text-sm font-semibold text-white/80">b. Residential Lease 1.5mile-comps</h3>
+          <label className="block w-full px-4 py-6 border-2 border-dashed border-white/30 rounded-xl hover:border-white/50 bg-white/5 cursor-pointer transition-colors text-center">
+            <Upload className="w-6 h-6 text-white/40 mx-auto mb-2" />
+            <span className="text-sm text-white/60">
               {residentialLease15Mile?.fileName || 'Choose CSV/Excel file for Residential Lease 1.5 mile comps'}
             </span>
             <input
@@ -555,15 +555,15 @@ export default function UploadPage() {
               disabled={loadingResLease15}
             />
           </label>
-          {loadingResLease15 && <div className="text-center text-sm text-gray-600">Processing...</div>}
+          {loadingResLease15 && <div className="text-center text-sm text-white/60">Processing...</div>}
           {resLease15Error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-              <p className="text-sm text-red-700">{resLease15Error}</p>
+            <div className="bg-red-500/20 border border-red-400/30 rounded-xl p-3">
+              <p className="text-sm text-red-300">{resLease15Error}</p>
             </div>
           )}
           {residentialLease15Mile && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-              <p className="text-sm text-green-700">
+            <div className="bg-green-500/20 border border-green-400/30 rounded-xl p-3">
+              <p className="text-sm text-green-300">
                 ✓ Processed {residentialLease15Mile.propertiesCount} properties
               </p>
             </div>
@@ -572,21 +572,21 @@ export default function UploadPage() {
       </div>
 
       {/* 3 Year Direct Subdivision Comps - Two uploads */}
-      <div className="bg-white rounded-lg border-2 border-gray-200 p-6">
+      <div className="glass-card p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-gray-900">4. 3 Year Direct Subdivision Comps</h2>
+          <h2 className="text-xl font-bold text-white">4. 3 Year Direct Subdivision Comps</h2>
           <div className="flex space-x-2">
-            {residential3YrDirect && <CheckCircle className="w-5 h-5 text-green-600" />}
-            {residentialLease3YrDirect && <CheckCircle className="w-5 h-5 text-green-600" />}
+            {residential3YrDirect && <CheckCircle className="w-5 h-5 text-green-400" />}
+            {residentialLease3YrDirect && <CheckCircle className="w-5 h-5 text-green-400" />}
           </div>
         </div>
 
         {/* Residential 3yr Direct */}
         <div className="space-y-3 mb-4">
-          <h3 className="text-sm font-semibold text-gray-700">a. Residential 3yr-direct-subdivision-comps</h3>
-          <label className="block w-full px-4 py-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-brand-red cursor-pointer transition-colors text-center">
-            <Upload className="w-6 h-6 text-gray-400 mx-auto mb-2" />
-            <span className="text-sm text-gray-600">
+          <h3 className="text-sm font-semibold text-white/80">a. Residential 3yr-direct-subdivision-comps</h3>
+          <label className="block w-full px-4 py-6 border-2 border-dashed border-white/30 rounded-xl hover:border-white/50 bg-white/5 cursor-pointer transition-colors text-center">
+            <Upload className="w-6 h-6 text-white/40 mx-auto mb-2" />
+            <span className="text-sm text-white/60">
               {residential3YrDirect?.fileName || 'Choose CSV/Excel file for Residential 3yr direct subdivision comps'}
             </span>
             <input
@@ -600,15 +600,15 @@ export default function UploadPage() {
               disabled={loadingRes3Yr}
             />
           </label>
-          {loadingRes3Yr && <div className="text-center text-sm text-gray-600">Processing...</div>}
+          {loadingRes3Yr && <div className="text-center text-sm text-white/60">Processing...</div>}
           {res3YrError && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-              <p className="text-sm text-red-700">{res3YrError}</p>
+            <div className="bg-red-500/20 border border-red-400/30 rounded-xl p-3">
+              <p className="text-sm text-red-300">{res3YrError}</p>
             </div>
           )}
           {residential3YrDirect && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-              <p className="text-sm text-green-700">
+            <div className="bg-green-500/20 border border-green-400/30 rounded-xl p-3">
+              <p className="text-sm text-green-300">
                 ✓ Processed {residential3YrDirect.propertiesCount} properties
               </p>
             </div>
@@ -617,10 +617,10 @@ export default function UploadPage() {
 
         {/* Residential Lease 3yr Direct */}
         <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-gray-700">b. Residential Lease 3yr-direct-subdivision-comps</h3>
-          <label className="block w-full px-4 py-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-brand-red cursor-pointer transition-colors text-center">
-            <Upload className="w-6 h-6 text-gray-400 mx-auto mb-2" />
-            <span className="text-sm text-gray-600">
+          <h3 className="text-sm font-semibold text-white/80">b. Residential Lease 3yr-direct-subdivision-comps</h3>
+          <label className="block w-full px-4 py-6 border-2 border-dashed border-white/30 rounded-xl hover:border-white/50 bg-white/5 cursor-pointer transition-colors text-center">
+            <Upload className="w-6 h-6 text-white/40 mx-auto mb-2" />
+            <span className="text-sm text-white/60">
               {residentialLease3YrDirect?.fileName || 'Choose CSV/Excel file for Residential Lease 3yr direct subdivision comps'}
             </span>
             <input
@@ -634,15 +634,15 @@ export default function UploadPage() {
               disabled={loadingResLease3Yr}
             />
           </label>
-          {loadingResLease3Yr && <div className="text-center text-sm text-gray-600">Processing...</div>}
+          {loadingResLease3Yr && <div className="text-center text-sm text-white/60">Processing...</div>}
           {resLease3YrError && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-              <p className="text-sm text-red-700">{resLease3YrError}</p>
+            <div className="bg-red-500/20 border border-red-400/30 rounded-xl p-3">
+              <p className="text-sm text-red-300">{resLease3YrError}</p>
             </div>
           )}
           {residentialLease3YrDirect && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-              <p className="text-sm text-green-700">
+            <div className="bg-green-500/20 border border-green-400/30 rounded-xl p-3">
+              <p className="text-sm text-green-300">
                 ✓ Processed {residentialLease3YrDirect.propertiesCount} properties
               </p>
             </div>
@@ -651,11 +651,11 @@ export default function UploadPage() {
       </div>
 
       {/* Generate Report Button */}
-      <div className="bg-gray-50 rounded-lg border-2 border-gray-200 p-6">
+      <div className="glass-card p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-bold text-gray-900 mb-1">5. Generate Excel Template</h2>
-            <p className="text-sm text-gray-600">
+            <h2 className="text-xl font-bold text-white mb-1">5. Generate Excel Template</h2>
+            <p className="text-sm text-white/60">
               {allDataReady
                 ? 'All 4 MLS files uploaded! Click to generate populated Excel file for ReportIt'
                 : 'Upload all 4 MLS comp files to enable report generation'}
@@ -664,10 +664,10 @@ export default function UploadPage() {
           <button
             onClick={handleGenerateReport}
             disabled={!allDataReady || generating}
-            className={`px-8 py-3 rounded-lg font-medium flex items-center space-x-2 transition-colors ${
+            className={`px-8 py-3 rounded-xl font-medium flex items-center space-x-2 transition-colors ${
               allDataReady && !generating
                 ? 'bg-brand-red text-white hover:bg-red-700'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-white/10 text-white/40 cursor-not-allowed'
             }`}
           >
             <Download className="w-5 h-5" />
@@ -676,11 +676,11 @@ export default function UploadPage() {
         </div>
 
         {allDataReady && (
-          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-blue-800">
+          <div className="mt-4 p-3 bg-blue-500/10 border border-blue-400/30 rounded-xl">
+            <p className="text-sm text-blue-300">
               <strong>Output file:</strong> Upload_{clientName || 'Client'}_{new Date().toISOString().slice(0, 10).replace(/-/g, '-')}-{String(new Date().getHours()).padStart(2, '0')}{String(new Date().getMinutes()).padStart(2, '0')}.xlsx
             </p>
-            <p className="text-sm text-blue-800 mt-1">
+            <p className="text-sm text-blue-300 mt-1">
               This file will be ready for manual RENOVATE_SCORE entry before ReportIt processing
             </p>
           </div>
@@ -688,25 +688,25 @@ export default function UploadPage() {
       </div>
 
       {/* Instructions */}
-      <div className="bg-white rounded-lg border-2 border-gray-200 p-6">
-        <h3 className="text-lg font-bold text-gray-900 mb-4">MLS Upload Instructions</h3>
-        <div className="space-y-2 text-sm text-gray-600">
-          <p><strong>Step 1:</strong> Select client from dropdown or enter client last name (used for file naming)</p>
-          <p><strong>Step 2:</strong> Enter subject property APN to fetch MCAO data (optional - if API is available)</p>
+      <div className="glass-card p-6">
+        <h3 className="text-lg font-bold text-white mb-4">MLS Upload Instructions</h3>
+        <div className="space-y-2 text-sm text-white/60">
+          <p><strong className="text-white/80">Step 1:</strong> Select client from dropdown or enter client last name (used for file naming)</p>
+          <p><strong className="text-white/80">Step 2:</strong> Enter subject property APN to fetch MCAO data (optional - if API is available)</p>
           <div className="pl-4">
-            <p><strong>Step 3: 1.5 Mile Comps</strong></p>
+            <p><strong className="text-white/80">Step 3: 1.5 Mile Comps</strong></p>
             <p className="pl-4">a. Upload Residential 1.5mile-comps (T-12 months, ±1 BR/BA, ±20% sqft/lot)</p>
             <p className="pl-4">b. Upload Residential Lease 1.5mile-comps (T-12 months, ±1 BR/BA, ±20% sqft/lot)</p>
           </div>
           <div className="pl-4">
-            <p><strong>Step 4: 3 Year Direct Subdivision Comps</strong></p>
+            <p><strong className="text-white/80">Step 4: 3 Year Direct Subdivision Comps</strong></p>
             <p className="pl-4">a. Upload Residential 3yr-direct-subdivision-comps (T-36 months, same HOA/subdivision)</p>
             <p className="pl-4">b. Upload Residential Lease 3yr-direct-subdivision-comps (T-36 months, same HOA/subdivision)</p>
           </div>
-          <p><strong>Step 5:</strong> Click Generate to download Upload_LastName_Timestamp.xlsx</p>
-          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
-            <p className="font-semibold text-yellow-800">Next Steps after Download:</p>
-            <ol className="list-decimal list-inside mt-2 text-yellow-700">
+          <p><strong className="text-white/80">Step 5:</strong> Click Generate to download Upload_LastName_Timestamp.xlsx</p>
+          <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-400/30 rounded-xl">
+            <p className="font-semibold text-yellow-300">Next Steps after Download:</p>
+            <ol className="list-decimal list-inside mt-2 text-yellow-400">
               <li>Open the Excel file and fill in RENOVATE_SCORE column (Y/N/0.5)</li>
               <li>Add Property Radar comp data if available</li>
               <li>Save as Complete_LastName_Timestamp.xlsx</li>

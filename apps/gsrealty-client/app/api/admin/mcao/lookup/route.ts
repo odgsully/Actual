@@ -17,6 +17,7 @@ import type { MCAOLookupRequest } from '@/lib/types/mcao-data'
 import { isValidAPN, formatAPN } from '@/lib/types/mcao-data'
 import { lookupAPNFromAddress } from '@/lib/mcao/arcgis-lookup'
 import { rateLimiters } from '@/lib/rate-limit'
+import { requireAdmin } from '@/lib/api/admin-auth'
 
 interface LookupRequest {
   apn?: string
@@ -45,6 +46,10 @@ interface LookupRequest {
  * - lookupMethod: Method used to find APN (if address was provided)
  */
 export async function POST(req: NextRequest) {
+  // Verify admin authentication
+  const auth = await requireAdmin()
+  if (!auth.success) return auth.response
+
   // Rate limit: 30 admin operations per minute
   const rateLimitResult = await rateLimiters.admin.check(req)
   if (!rateLimitResult.success) {

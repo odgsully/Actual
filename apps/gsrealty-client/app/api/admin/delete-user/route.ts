@@ -162,8 +162,14 @@ export async function DELETE(request: Request) {
 // GET method to check if user exists
 export async function GET(request: Request) {
   try {
+    // SECURITY: Require admin authentication
+    const adminKey = request.headers.get('X-Admin-Key')
+    if (adminKey !== process.env.ADMIN_DELETE_KEY) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const supabaseAdmin = getSupabaseAdmin()
-    
+
     const { searchParams } = new URL(request.url)
     const email = searchParams.get('email')
     

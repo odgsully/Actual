@@ -29,6 +29,7 @@ import {
   PropertyData,
   MLSRow,
 } from '@/lib/types/mls-data';
+import { requireAdmin } from '@/lib/api/admin-auth';
 
 // ============================================================================
 // Constants
@@ -90,6 +91,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   console.log(`${LOG_PREFIX} Received file processing request`);
 
   try {
+    // Verify admin authentication
+    const auth = await requireAdmin();
+    if (!auth.success) return auth.response;
+
     // Parse form data
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
@@ -302,6 +307,10 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
   console.log(`${LOG_PREFIX} Received template generation request`);
 
   try {
+    // Verify admin authentication
+    const auth = await requireAdmin();
+    if (!auth.success) return auth.response;
+
     const body = await request.json();
     const { compsData, subjectProperty, mcaoData } = body;
 

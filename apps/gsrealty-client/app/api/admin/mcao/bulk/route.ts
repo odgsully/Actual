@@ -6,6 +6,7 @@ import { ZipGenerator } from '@/lib/mcao/zip-generator'
 import { MCAOClient } from '@/lib/mcao/client'
 import { ExcelGenerator } from '@/lib/mcao/excel-generator'
 import * as XLSX from 'xlsx'
+import { requireAdmin } from '@/lib/api/admin-auth'
 
 export const maxDuration = 300 // 5 minutes (Pro plan max is 800s)
 export const dynamic = 'force-dynamic'
@@ -23,6 +24,10 @@ interface PythonMessage {
 }
 
 export async function POST(request: NextRequest) {
+  // Verify admin authentication
+  const auth = await requireAdmin()
+  if (!auth.success) return auth.response
+
   let inputFilePath: string | null = null
   let outputDir: string | null = null
 

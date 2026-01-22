@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getFileById, deleteFileRecord } from '@/lib/database/files'
 import { deleteFromSupabase } from '@/lib/storage/supabase-storage'
 import { deleteLocalFile } from '@/lib/storage/local-storage'
+import { requireAdmin } from '@/lib/api/admin-auth'
 
 /**
  * DELETE: Remove file completely
@@ -30,6 +31,10 @@ export async function DELETE(
   { params }: { params: Promise<{ fileId: string }> }
 ) {
   try {
+    // Verify admin authentication
+    const auth = await requireAdmin()
+    if (!auth.success) return auth.response
+
     const { fileId } = await params
     const searchParams = req.nextUrl.searchParams
     const includeLocal = searchParams.get('includeLocal') === 'true'

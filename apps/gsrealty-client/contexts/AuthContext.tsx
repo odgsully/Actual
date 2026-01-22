@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState, useRef } from 'react'
 import { User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
@@ -36,6 +36,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const supabase = createClient()
 
+  // Cache to prevent repeated DB queries
+  const lastUserId = useRef<string | null>(null)
+  const cachedRole = useRef<UserRole | null>(null)
+
   // Initialize auth state
   useEffect(() => {
     console.log('[GSRealty Auth] Initializing...')
@@ -45,24 +49,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('[GSRealty Auth] User:', currentUser?.email || 'None', '| Role:', currentUser?.role || 'None')
       setUser(currentUser)
       setRole(currentUser?.role || null)
+      // Cache the role
+      if (currentUser) {
+        lastUserId.current = currentUser.id
+        cachedRole.current = currentUser.role || null
+      }
       setLoading(false)
     }
 
     initializeAuth()
 
-    // Listen for auth state changes
+    // Listen for auth state changes - but ONLY query DB when user actually changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // Skip TOKEN_REFRESHED and INITIAL_SESSION events - these don't need DB queries
+      if (event === 'TOKEN_REFRESHED') {
+        console.log('[GSRealty Auth] Token refreshed (skipping DB query)')
+        return
+      }
+
+      // If same user, use cached role - no DB query needed
+      if (session?.user && session.user.id === lastUserId.current && cachedRole.current) {
+        console.log('[GSRealty Auth] Using cached role for:', session.user.email)
+        const gsUser: GSRealtyUser = { ...session.user, role: cachedRole.current }
+        setUser(gsUser)
+        setRole(cachedRole.current)
+        setLoading(false)
+        return
+      }
+
       console.log('[GSRealty Auth] State changed:', event)
 
       if (session?.user) {
+        // Only query DB if user actually changed
         const userRole = await getUserRole(session.user)
         const gsUser: GSRealtyUser = { ...session.user, role: userRole }
         setUser(gsUser)
         setRole(userRole)
+        // Update cache
+        lastUserId.current = session.user.id
+        cachedRole.current = userRole
         console.log('[GSRealty Auth] User:', gsUser.email, '| Role:', userRole)
       } else {
         setUser(null)
         setRole(null)
+        // Clear cache
+        lastUserId.current = null
+        cachedRole.current = null
         console.log('[GSRealty Auth] User signed out')
       }
 
@@ -95,9 +127,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Record login activity
       await recordLoginActivity(signedInUser.id)
 
-      // Update state
+      // Update state and cache
       setUser(signedInUser)
       setRole(signedInUser.role || 'client')
+      lastUserId.current = signedInUser.id
+      cachedRole.current = signedInUser.role || 'client'
 
       // Navigate based on role
       const redirectPath = signedInUser.role === 'admin' ? '/admin' : '/client'

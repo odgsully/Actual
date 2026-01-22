@@ -140,15 +140,15 @@ export default function MCAOLookupPage() {
     <div className="max-w-6xl mx-auto space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-brand-black">
+        <h1 className="text-3xl font-bold text-white">
           Maricopa County Assessor's Office
         </h1>
-        <p className="text-gray-600 mt-2">Property Data API Interface</p>
+        <p className="text-white/60 mt-2">Property Data API Interface</p>
       </div>
 
       {/* Single Property Lookup */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-semibold text-brand-black mb-4">
+      <div className="glass-card p-6">
+        <h2 className="text-xl font-semibold text-white mb-4">
           Single Property Lookup
         </h2>
         <div className="space-y-3">
@@ -159,26 +159,26 @@ export default function MCAOLookupPage() {
               onChange={(e) => setSearchInput(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSingleSearch()}
               placeholder="Enter address (e.g., 1234 N Main St, Phoenix, AZ) or APN (123-45-678)"
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-red focus:border-transparent"
+              className="flex-1 px-4 py-2 bg-white/5 border border-white/20 rounded-xl text-white placeholder:text-white/40 focus:border-white/40 focus:bg-white/10 focus:outline-none transition-colors"
             />
             <button
               onClick={handleSingleSearch}
               disabled={loading}
-              className="px-6 py-2 bg-brand-red text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              className="px-6 py-2 bg-brand-red text-white rounded-xl hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
             >
               <Search className="w-5 h-5" />
               <span>GO</span>
             </button>
           </div>
-          <p className="text-sm text-gray-600">
-            💡 <strong>Note:</strong> You can now search by full address only - no APN needed!
+          <p className="text-sm text-white/60">
+            💡 <strong className="text-white/80">Note:</strong> You can now search by full address only - no APN needed!
             The system will automatically look up the APN using the same logic as the MLS Upload page.
           </p>
         </div>
         {results && (
           <button
             onClick={handleDownloadSingle}
-            className="mt-4 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center space-x-2"
+            className="mt-4 px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 flex items-center space-x-2"
           >
             <Download className="w-4 h-4" />
             <span>Download as Excel</span>
@@ -187,17 +187,17 @@ export default function MCAOLookupPage() {
       </div>
 
       {/* Bulk Upload */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-semibold text-brand-black mb-4">
+      <div className="glass-card p-6">
+        <h2 className="text-xl font-semibold text-white mb-4">
           Bulk Address → APN → MCAO Lookup
         </h2>
         <div className="space-y-4">
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className="block w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-brand-red cursor-pointer transition-colors">
+              <label className="block w-full px-4 py-2 border-2 border-dashed border-white/30 rounded-xl hover:border-white/50 bg-white/5 cursor-pointer transition-colors">
                 <div className="flex items-center space-x-2">
-                  <Upload className="w-5 h-5 text-gray-400" />
-                  <span className="text-gray-600">
+                  <Upload className="w-5 h-5 text-white/40" />
+                  <span className="text-white/60">
                     {file ? file.name : 'Choose Excel or CSV file...'}
                   </span>
                 </div>
@@ -212,15 +212,15 @@ export default function MCAOLookupPage() {
             <button
               onClick={handleBulkUpload}
               disabled={!file || loading}
-              className="px-6 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-2 bg-white/10 border border-white/20 text-white rounded-xl hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               Process File
             </button>
           </div>
-          <div className="text-sm text-gray-600 space-y-1">
-            <p>📋 <strong>Required:</strong> A column with addresses (accepted headers: Address, FULL_ADDRESS, Property Address, etc.)</p>
-            <p>📦 <strong>Output:</strong> ZIP file containing:</p>
-            <ul className="ml-5 text-gray-500">
+          <div className="text-sm text-white/60 space-y-1">
+            <p>📋 <strong className="text-white/80">Required:</strong> A column with addresses (accepted headers: Address, FULL_ADDRESS, Property Address, etc.)</p>
+            <p>📦 <strong className="text-white/80">Output:</strong> ZIP file containing:</p>
+            <ul className="ml-5 text-white/50">
               <li>• APN_Grab_*.xlsx - Address to APN mapping</li>
               <li>• MCAO_*.xlsx - Full MCAO data (559+ fields)</li>
               <li>• Your original input file</li>
@@ -231,23 +231,23 @@ export default function MCAOLookupPage() {
 
       {/* Loading */}
       {loading && (
-        <div className="bg-white rounded-lg shadow p-8 text-center">
+        <div className="glass-card p-8 text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-red mx-auto mb-4" />
-          <p className="text-gray-600">Processing...</p>
+          <p className="text-white/60">Processing...</p>
         </div>
       )}
 
       {/* Results */}
       {results && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold text-brand-black mb-4">
+        <div className="glass-card p-6">
+          <h2 className="text-xl font-semibold text-white mb-4">
             Property Details
           </h2>
 
           {/* Show APN lookup info if address was used */}
           {results.lookupMethod && (
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-800">
+            <div className="mb-4 p-3 bg-blue-500/10 border border-blue-400/30 rounded-xl">
+              <p className="text-sm text-blue-300">
                 ✓ Found APN: <strong>{results.apn}</strong> via {results.lookupMethod}
                 (confidence: {Math.round((results.lookupConfidence || 0) * 100)}%)
               </p>
@@ -264,19 +264,19 @@ export default function MCAOLookupPage() {
           ) : (
             /* Fallback to basic display if categorized data not available */
             <div className="space-y-4">
-              <div className="border-b pb-3">
-                <h3 className="text-lg font-medium text-gray-900">
+              <div className="border-b border-white/10 pb-3">
+                <h3 className="text-lg font-medium text-white">
                   APN: {results.data?.apn || results.apn}
                 </h3>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-white/50">
                   {results.data ? Object.keys(results.data).length : 0} fields retrieved
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 {results.data && Object.entries(results.data).map(([key, value]: [string, any]) => (
-                  <div key={key} className="border rounded-lg p-3">
-                    <dt className="text-sm font-medium text-gray-500">{key}</dt>
-                    <dd className="mt-1 text-sm text-gray-900">
+                  <div key={key} className="border border-white/10 rounded-xl p-3 bg-white/5">
+                    <dt className="text-sm font-medium text-white/50">{key}</dt>
+                    <dd className="mt-1 text-sm text-white">
                       {value !== null && value !== undefined ? String(value) : 'N/A'}
                     </dd>
                   </div>
@@ -289,12 +289,12 @@ export default function MCAOLookupPage() {
 
       {/* Bulk Status */}
       {bulkStatus && bulkStatus.success && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold text-brand-black mb-4">
+        <div className="glass-card p-6">
+          <h2 className="text-xl font-semibold text-white mb-4">
             Bulk Processing Complete
           </h2>
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <p className="text-green-700 font-medium flex items-center">
+          <div className="bg-green-500/20 border border-green-400/30 rounded-xl p-4">
+            <p className="text-green-300 font-medium flex items-center">
               <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
@@ -306,12 +306,12 @@ export default function MCAOLookupPage() {
 
       {/* Error */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+        <div className="bg-red-500/20 border border-red-400/30 rounded-xl p-6">
           <div className="flex items-start space-x-3">
-            <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
+            <AlertCircle className="w-5 h-5 text-red-400 mt-0.5" />
             <div>
-              <h3 className="text-lg font-semibold text-red-900 mb-2">Error</h3>
-              <p className="text-red-700">{error}</p>
+              <h3 className="text-lg font-semibold text-red-300 mb-2">Error</h3>
+              <p className="text-red-400">{error}</p>
             </div>
           </div>
         </div>

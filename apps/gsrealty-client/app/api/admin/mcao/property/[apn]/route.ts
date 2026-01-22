@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getMCAODataByAPN, deleteMCAOData } from '@/lib/database/mcao'
 import { isValidAPN, formatAPN, parseToSummary } from '@/lib/types/mcao-data'
+import { requireAdmin } from '@/lib/api/admin-auth'
 
 interface RouteParams {
   params: Promise<{
@@ -30,6 +31,10 @@ interface RouteParams {
  * - record: Database record metadata
  */
 export async function GET(req: NextRequest, { params }: RouteParams) {
+  // Verify admin authentication
+  const auth = await requireAdmin()
+  if (!auth.success) return auth.response
+
   try {
     const { apn: rawAPN } = await params
 
@@ -119,6 +124,10 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
  * Requires admin authentication
  */
 export async function DELETE(req: NextRequest, { params }: RouteParams) {
+  // Verify admin authentication
+  const auth = await requireAdmin()
+  if (!auth.success) return auth.response
+
   try {
     const { apn: rawAPN } = await params
 
@@ -183,6 +192,10 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
  * Links MCAO data to a property record in gsrealty_properties table
  */
 export async function PATCH(req: NextRequest, { params }: RouteParams) {
+  // Verify admin authentication
+  const auth = await requireAdmin()
+  if (!auth.success) return auth.response
+
   try {
     const { apn: rawAPN } = await params
     const body = await req.json()

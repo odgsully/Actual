@@ -11,6 +11,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getMCAOClient } from '@/lib/mcao/client'
 import { getMCAOStats } from '@/lib/database/mcao'
+import { requireAdmin } from '@/lib/api/admin-auth'
 
 /**
  * GET: Check MCAO system status
@@ -22,6 +23,10 @@ import { getMCAOStats } from '@/lib/database/mcao'
  * - system: Overall system health
  */
 export async function GET(req: NextRequest) {
+  // Verify admin authentication
+  const auth = await requireAdmin()
+  if (!auth.success) return auth.response
+
   try {
     console.log('[MCAO Status API] Checking system status')
 
