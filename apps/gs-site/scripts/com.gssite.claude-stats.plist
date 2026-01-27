@@ -10,7 +10,7 @@
         <string>/usr/bin/python3</string>
         <string>/Users/garrettsullivan/Desktop/AUTOMATE/Vibe Code/Wabbit/clients/sullivan_realestate/Actual-tiles/apps/gs-site/scripts/claude-stats-collector.py</string>
         <string>--days</string>
-        <string>30</string>
+        <string>365</string>
     </array>
 
     <key>StartInterval</key>

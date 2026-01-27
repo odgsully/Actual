@@ -10,7 +10,7 @@ Output files (written to apps/gs-site/data/claude-stats/):
   - sessions-YYYY-MM-DD.json: Individual session records for each day
 
 Usage:
-  python claude-stats-collector.py [--days 7] [--output /path/to/data]
+  python claude-stats-collector.py [--days 365] [--output /path/to/data]
 
 Requirements:
   - Python 3.8+
@@ -28,13 +28,26 @@ from typing import TypedDict, Optional
 import hashlib
 
 
-# Token pricing (USD per 1M tokens) - matches lib/config/claude-code.ts
+# Token pricing (USD per 1M tokens) - API equivalent pricing
+# Note: MAX subscription pricing differs - this shows what it WOULD cost at API rates
 TOKEN_PRICING = {
     "input": 15.0,
     "output": 75.0,
     "cache_read": 1.5,
     "cache_creation": 18.75,
 }
+
+
+def get_official_stats_cache() -> Optional[dict]:
+    """Read Anthropic's official stats-cache.json for comparison."""
+    cache_path = Path.home() / ".claude" / "stats-cache.json"
+    if cache_path.exists():
+        try:
+            with open(cache_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except (json.JSONDecodeError, IOError):
+            return None
+    return None
 
 
 class SessionStats(TypedDict):
@@ -353,7 +366,7 @@ def get_week_start(date: datetime) -> datetime:
 
 def main():
     parser = argparse.ArgumentParser(description="Collect Claude Code usage statistics")
-    parser.add_argument("--days", type=int, default=30, help="Number of days to scan (default: 30)")
+    parser.add_argument("--days", type=int, default=365, help="Number of days to scan (default: 365, use 9999 for all)")
     parser.add_argument(
         "--output",
         type=str,
@@ -416,6 +429,37 @@ def main():
         all_sessions.extend(sessions)
     all_time_agg = aggregate_sessions(all_sessions, "all_time")
 
+    # Get official stats for comparison
+    official_stats = get_official_stats_cache()
+    official_comparison = None
+    if official_stats:
+        # Sum across all models in modelUsage
+        model_usage = official_stats.get("modelUsage", {})
+        total_input = 0
+        total_output = 0
+        total_cache_read = 0
+        total_cache_creation = 0
+
+        for model_name, usage in model_usage.items():
+            total_input += usage.get("inputTokens", 0)
+            total_output += usage.get("outputTokens", 0)
+            total_cache_read += usage.get("cacheReadInputTokens", 0)
+            total_cache_creation += usage.get("cacheCreationInputTokens", 0)
+
+        official_comparison = {
+            "source": "~/.claude/stats-cache.json",
+            "last_computed": official_stats.get("lastComputedDate"),
+            "first_session": official_stats.get("firstSessionDate"),
+            "total_sessions": official_stats.get("totalSessions", 0),
+            "total_messages": official_stats.get("totalMessages", 0),
+            "total_tokens": total_input + total_output + total_cache_read + total_cache_creation,
+            "input_tokens": total_input,
+            "output_tokens": total_output,
+            "cache_read_tokens": total_cache_read,
+            "cache_creation_tokens": total_cache_creation,
+            "models": list(model_usage.keys()),
+        }
+
     # Build aggregates file
     aggregates = {
         "today": today_agg,
@@ -423,6 +467,9 @@ def main():
         "all_time": all_time_agg,
         "last_updated": datetime.now().isoformat(),
         "max_plan": args.plan,
+        "scan_window_days": args.days,
+        "cost_note": "API equivalent pricing - MAX subscription cost differs",
+        "official_stats": official_comparison,
     }
 
     # Write aggregates
@@ -432,10 +479,10 @@ def main():
 
     if args.verbose:
         print(f"\nAggregates written to {aggregates_file}")
-        print(f"\n=== Summary ===")
+        print(f"\n=== Summary (API Equivalent Costs) ===")
         print(f"Today: {today_agg['session_count']} sessions, {today_agg['total_tokens']:,} tokens, ${today_agg['estimated_cost_usd']:.2f}")
         print(f"This Week: {week_agg['session_count']} sessions, {week_agg['total_tokens']:,} tokens, ${week_agg['estimated_cost_usd']:.2f}")
-        print(f"All Time ({args.days} days): {all_time_agg['session_count']} sessions, {all_time_agg['total_tokens']:,} tokens, ${all_time_agg['estimated_cost_usd']:.2f}")
+        print(f"Collected ({args.days} days): {all_time_agg['session_count']} sessions, {all_time_agg['total_tokens']:,} tokens, ${all_time_agg['estimated_cost_usd']:.2f}")
 
         if all_time_agg['opus_tokens'] + all_time_agg['sonnet_tokens'] > 0:
             opus_pct = all_time_agg['opus_tokens'] / (all_time_agg['opus_tokens'] + all_time_agg['sonnet_tokens']) * 100
@@ -444,11 +491,24 @@ def main():
         if all_time_agg['input_tokens'] + all_time_agg['cache_read_tokens'] > 0:
             cache_rate = all_time_agg['cache_read_tokens'] / (all_time_agg['input_tokens'] + all_time_agg['cache_read_tokens']) * 100
             print(f"Cache Hit Rate: {cache_rate:.1f}%")
-            print(f"Cache Savings: ${all_time_agg['cache_savings_usd']:.2f}")
+            print(f"Cache Savings: ${all_time_agg['cache_savings_usd']:.2f} (vs API pricing)")
+
+        # Show official stats comparison
+        if official_comparison:
+            print(f"\n=== Official Stats Comparison ===")
+            print(f"Source: {official_comparison['source']}")
+            print(f"Official history: {official_comparison.get('first_session', 'unknown')[:10]} to {official_comparison['last_computed']}")
+            print(f"Official sessions: {official_comparison['total_sessions']:,} | Collected: {all_time_agg['session_count']:,}")
+            print(f"Official tokens: {official_comparison['total_tokens']:,}")
+            print(f"Collected tokens: {all_time_agg['total_tokens']:,}")
+            diff = all_time_agg['total_tokens'] - official_comparison['total_tokens']
+            diff_pct = (diff / official_comparison['total_tokens'] * 100) if official_comparison['total_tokens'] > 0 else 0
+            if diff < 0:
+                print(f"Note: {abs(diff):,} tokens ({abs(diff_pct):.1f}%) from deleted session files")
     else:
         # Non-verbose: just print key stats
-        print(f"Today: {today_agg['total_tokens']:,} tokens (${today_agg['estimated_cost_usd']:.2f})")
-        print(f"Week: {week_agg['total_tokens']:,} tokens (${week_agg['estimated_cost_usd']:.2f})")
+        print(f"Today: {today_agg['total_tokens']:,} tokens (${today_agg['estimated_cost_usd']:.2f} API equiv)")
+        print(f"Week: {week_agg['total_tokens']:,} tokens (${week_agg['estimated_cost_usd']:.2f} API equiv)")
         print(f"Wrote aggregates to {aggregates_file}")
 
 

@@ -240,7 +240,7 @@ function ClaudeCodeModal({
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <MetricCard
                   icon={DollarSign}
-                  label="Est. Cost"
+                  label="API Equiv."
                   value={formatCost(current?.estimated_cost_usd || 0)}
                   subtext={`Saved ${formatCost(current?.cache_savings_usd || 0)}`}
                   color="emerald"
