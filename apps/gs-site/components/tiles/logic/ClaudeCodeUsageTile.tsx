@@ -45,9 +45,11 @@ export function ClaudeCodeUsageTile({ tile }: ClaudeCodeUsageTileProps) {
   const today = data?.aggregates.today;
   const plan = data?.plan || '20x';
 
-  // Calculate usage percentages
-  const weeklyTokens = data?.aggregates.this_week.total_tokens || 0;
-  const planUsage = calculateMaxPlanUsage(weeklyTokens, plan);
+  // Calculate usage percentages (use NEW tokens only, not cached)
+  const weeklyNewTokens = (data?.aggregates.this_week.input_tokens || 0) +
+                          (data?.aggregates.this_week.output_tokens || 0) +
+                          (data?.aggregates.this_week.cache_creation_tokens || 0);
+  const planUsage = calculateMaxPlanUsage(weeklyNewTokens, plan);
   const opusBudget = calculateOpusBudget(
     data?.aggregates.this_week.opus_tokens || 0,
     plan
@@ -101,17 +103,17 @@ export function ClaudeCodeUsageTile({ tile }: ClaudeCodeUsageTileProps) {
         ) : (
           <>
             <div className="text-lg font-semibold text-violet-100 mb-0.5">
-              {formatTokens(today?.total_tokens || 0)}
+              {formatCost(today?.estimated_cost_usd || 0)}
               <span className="text-xs font-normal text-violet-400/60 ml-1">today</span>
             </div>
             <div className="flex items-center gap-3 text-[10px] text-violet-400/60">
               <span className="flex items-center gap-1">
-                <Sparkles className="w-3 h-3" />
-                {Math.round((today?.insights.opusPercentage || 0) * 100)}% Opus
+                <Zap className="w-3 h-3" />
+                {formatTokens((today?.input_tokens || 0) + (today?.output_tokens || 0))} new
               </span>
               <span className="flex items-center gap-1">
                 <Database className="w-3 h-3" />
-                {Math.round((today?.insights.cacheHitRate || 0) * 100)}% cache
+                {formatTokens(today?.cache_read_tokens || 0)} cached
               </span>
             </div>
           </>
@@ -158,9 +160,11 @@ function ClaudeCodeModal({
 
   const current = periodData[activeTab];
 
-  // Calculate usage metrics
-  const weeklyTokens = data?.aggregates.this_week.total_tokens || 0;
-  const planUsage = calculateMaxPlanUsage(weeklyTokens, plan);
+  // Calculate usage metrics (use NEW tokens only, not cached)
+  const weeklyNewTokens = (data?.aggregates.this_week.input_tokens || 0) +
+                          (data?.aggregates.this_week.output_tokens || 0) +
+                          (data?.aggregates.this_week.cache_creation_tokens || 0);
+  const planUsage = calculateMaxPlanUsage(weeklyNewTokens, plan);
   const opusBudget = calculateOpusBudget(
     data?.aggregates.this_week.opus_tokens || 0,
     plan
@@ -235,18 +239,18 @@ function ClaudeCodeModal({
               {/* Key Metrics */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <MetricCard
-                  icon={Zap}
-                  label="Total Tokens"
-                  value={formatTokens(current?.total_tokens || 0)}
-                  subtext={`${current?.session_count || 0} sessions`}
-                  color="violet"
-                />
-                <MetricCard
                   icon={DollarSign}
                   label="Est. Cost"
                   value={formatCost(current?.estimated_cost_usd || 0)}
                   subtext={`Saved ${formatCost(current?.cache_savings_usd || 0)}`}
                   color="emerald"
+                />
+                <MetricCard
+                  icon={Zap}
+                  label="New Tokens"
+                  value={formatTokens((current?.input_tokens || 0) + (current?.output_tokens || 0))}
+                  subtext={`${current?.session_count || 0} sessions`}
+                  color="violet"
                 />
                 <MetricCard
                   icon={Clock}
@@ -292,7 +296,7 @@ function ClaudeCodeModal({
                       />
                     </div>
                     <div className="flex justify-between text-xs text-zinc-500">
-                      <span>{formatTokens(weeklyTokens)} used</span>
+                      <span>{formatTokens(weeklyNewTokens)} new tokens</span>
                       <span>{Math.round(planUsage.percentage * 100)}% of est. limit</span>
                     </div>
                   </div>
@@ -371,36 +375,42 @@ function ClaudeCodeModal({
                 </div>
               </div>
 
-              {/* Cache Efficiency */}
+              {/* Token Breakdown */}
               <div className="bg-zinc-800/50 rounded-xl p-5 border border-zinc-700/50">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-medium text-zinc-300">Cache Efficiency</h3>
+                  <h3 className="text-sm font-medium text-zinc-300">Token Breakdown</h3>
                   <span className={`text-xs font-medium ${
                     (current?.insights.cacheHitRate || 0) > 0.7 ? 'text-emerald-400' :
                     (current?.insights.cacheHitRate || 0) > 0.4 ? 'text-blue-400' :
                     'text-amber-400'
                   }`}>
-                    {Math.round((current?.insights.cacheHitRate || 0) * 100)}% hit rate
+                    {Math.round((current?.insights.cacheHitRate || 0) * 100)}% cache hit rate
                   </span>
                 </div>
-                <div className="grid grid-cols-3 gap-4 text-center">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                   <div>
                     <div className="text-lg font-semibold text-violet-300">
+                      {formatTokens(current?.input_tokens || 0)}
+                    </div>
+                    <div className="text-xs text-zinc-500">New Input</div>
+                  </div>
+                  <div>
+                    <div className="text-lg font-semibold text-purple-300">
+                      {formatTokens(current?.output_tokens || 0)}
+                    </div>
+                    <div className="text-xs text-zinc-500">Output</div>
+                  </div>
+                  <div>
+                    <div className="text-lg font-semibold text-blue-300">
                       {formatTokens(current?.cache_read_tokens || 0)}
                     </div>
-                    <div className="text-xs text-zinc-500">Cache Reads</div>
+                    <div className="text-xs text-zinc-500">Cached (reused)</div>
                   </div>
                   <div>
                     <div className="text-lg font-semibold text-emerald-300">
                       {formatCost(current?.cache_savings_usd || 0)}
                     </div>
-                    <div className="text-xs text-zinc-500">Saved</div>
-                  </div>
-                  <div>
-                    <div className="text-lg font-semibold text-blue-300">
-                      {formatTokens(current?.cache_creation_tokens || 0)}
-                    </div>
-                    <div className="text-xs text-zinc-500">Cache Created</div>
+                    <div className="text-xs text-zinc-500">Cache Savings</div>
                   </div>
                 </div>
               </div>
@@ -428,10 +438,10 @@ function ClaudeCodeModal({
                         </div>
                         <div className="text-right">
                           <div className="text-sm text-zinc-300">
-                            {formatTokens(session.total_tokens)}
+                            {formatCost(session.estimated_cost_usd)}
                           </div>
                           <div className="text-xs text-zinc-500">
-                            {formatCost(session.estimated_cost_usd)}
+                            {formatTokens(session.input_tokens + session.output_tokens)} new
                           </div>
                         </div>
                       </div>

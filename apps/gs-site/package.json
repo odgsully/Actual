@@ -15,7 +15,12 @@
     "typecheck": "tsc --noEmit",
     "voice:status": "npx tsx scripts/setup-voice-agents.ts status",
     "voice:create": "npx tsx scripts/setup-voice-agents.ts create",
-    "voice:list-voices": "npx tsx scripts/setup-voice-agents.ts list-voices"
+    "voice:list-voices": "npx tsx scripts/setup-voice-agents.ts list-voices",
+    "claude-stats": "python3 scripts/claude-stats-collector.py --verbose",
+    "claude-stats:quick": "python3 scripts/claude-stats-collector.py --days 7",
+    "claude-stats:install": "bash scripts/setup-claude-stats-cron.sh install",
+    "claude-stats:uninstall": "bash scripts/setup-claude-stats-cron.sh uninstall",
+    "claude-stats:status": "bash scripts/setup-claude-stats-cron.sh status"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
