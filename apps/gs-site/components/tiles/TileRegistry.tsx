@@ -516,10 +516,10 @@ const SPECIALIZED_TILES: Array<{
     match: (name) => name.toLowerCase().includes('days till') || name.toLowerCase().includes('panel for days') || name.toLowerCase() === 'spacead',
     component: DaysTillCounterTile,
   },
-  // Form Deadlines tile (days until monthly/quarterly forms)
+  // Days Left tile (days until monthly/quarterly forms)
   {
-    match: (name) => name.toLowerCase() === 'form deadlines' ||
-                     name.toLowerCase().includes('form deadline') ||
+    match: (name) => name.toLowerCase() === 'days left' ||
+                     name.toLowerCase().includes('days left') ||
                      name.toLowerCase().includes('form timing'),
     component: FormTimingTile,
   },

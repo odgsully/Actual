@@ -189,7 +189,7 @@ export const LOCAL_TILES: Tile[] = [
   },
   {
     "id": "local-form-timing",
-    "name": "Form Deadlines",
+    "name": "Days Left",
     "menu": [
       "Org"
     ],

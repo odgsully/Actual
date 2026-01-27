@@ -172,7 +172,7 @@ export function FormTimingTile({ tile, className }: FormTimingTileProps) {
           <div className="flex items-center gap-1.5">
             <CalendarDays className="w-4 h-4 text-muted-foreground" />
             <h3 className="text-xs font-medium text-foreground truncate">
-              Form Deadlines
+              Days Left
             </h3>
           </div>
         </div>
