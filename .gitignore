@@ -14,6 +14,7 @@ MLS_Image_scrape_*/
 
 # Build outputs
 .next/
+.next.backup*/
 out/
 dist/
 build/
@@ -40,7 +41,6 @@ Thumbs.db
 
 # Database
 *.sql
-database-schema.sql
 *.db
 
 # API keys/credentials
@@ -64,16 +64,18 @@ cache/
 
 # Claude Code session data
 .claude/data/sessions/
-__tests__/spatial/api-endpoints.test.ts
-__tests__/spatial/geometry-utils.test.ts
-__tests__/spatial/map-context.test.tsx
-__tests__/spatial/property-map.test.tsx
+
+# Vercel
 .vercel
+
+# Misc generated files
 gbs_properties.csv
 gbs_properties.pdf
-.gitignore
-test_data_support.csv
-.gitignore
 gbs_properties copy.pdf
+test_data_support.csv
+
+# Supabase temp
 supabase/.temp/
+
+# Git internal
 .git.nosync/
