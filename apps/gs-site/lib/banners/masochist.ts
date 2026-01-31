@@ -132,6 +132,9 @@ function isWithinAllowedHours(): boolean {
 async function getAppearancesThisMonth(): Promise<BannerAppearance[]> {
   try {
     const supabase = createServerClient();
+    if (!supabase) {
+      return [];
+    }
     const now = new Date();
     const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const firstOfMonthStr = firstOfMonth.toISOString().split('T')[0];
@@ -161,6 +164,9 @@ async function getAppearancesThisMonth(): Promise<BannerAppearance[]> {
 async function getLastAppearanceDate(): Promise<Date | null> {
   try {
     const supabase = createServerClient();
+    if (!supabase) {
+      return null;
+    }
 
     const { data, error } = await supabase
       .from('banner_appearances')
@@ -244,6 +250,9 @@ export function getRandomChallenge(): MasochistChallenge {
 export async function recordBannerAppearance(challengeId: string): Promise<boolean> {
   try {
     const supabase = createServerClient();
+    if (!supabase) {
+      return false;
+    }
     const now = new Date();
 
     const { error } = await supabase.from('banner_appearances').insert({
@@ -271,6 +280,9 @@ export async function recordBannerAppearance(challengeId: string): Promise<boole
 export async function recordBannerDismissal(appearanceId: number): Promise<boolean> {
   try {
     const supabase = createServerClient();
+    if (!supabase) {
+      return false;
+    }
 
     const { error } = await supabase
       .from('banner_appearances')
@@ -298,6 +310,9 @@ export async function recordBannerDismissal(appearanceId: number): Promise<boole
 export async function recordBannerCompletion(appearanceId: number): Promise<boolean> {
   try {
     const supabase = createServerClient();
+    if (!supabase) {
+      return false;
+    }
 
     const { error } = await supabase
       .from('banner_appearances')

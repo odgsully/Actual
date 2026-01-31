@@ -19,6 +19,12 @@ export async function GET() {
     }
 
     const supabase = createServerClient();
+    if (!supabase) {
+      return NextResponse.json(
+        { error: 'Database connection failed' },
+        { status: 503 }
+      );
+    }
 
     const { data, error } = await supabase
       .from('budget_categories')
@@ -68,6 +74,12 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = createServerClient();
+    if (!supabase) {
+      return NextResponse.json(
+        { error: 'Database connection failed' },
+        { status: 503 }
+      );
+    }
     const body: CreateCategoryPayload = await request.json();
 
     const { name, monthlyLimit, icon, color } = body;

@@ -25,6 +25,12 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     const { photoId } = await params;
     const supabase = createServerClient();
+    if (!supabase) {
+      return NextResponse.json(
+        { error: 'Database connection failed' },
+        { status: 503 }
+      );
+    }
     const body = await request.json();
 
     const { category, caption, dateTaken } = body;
@@ -103,6 +109,12 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     const { photoId } = await params;
     const supabase = createServerClient();
+    if (!supabase) {
+      return NextResponse.json(
+        { error: 'Database connection failed' },
+        { status: 503 }
+      );
+    }
 
     // First, get the photo to find the storage path
     const { data: photo, error: fetchError } = await supabase

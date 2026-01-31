@@ -130,7 +130,7 @@ export function CaliForwardLookTile({ tile, className }: CaliForwardLookTileProp
 
   return (
     <WarningBorderTrail
-      active={tile.actionWarning}
+      active={false}
       hoverMessage={tile.actionDesc}
     >
       <div className={baseClasses}>

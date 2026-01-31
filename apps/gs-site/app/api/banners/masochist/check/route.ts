@@ -26,6 +26,14 @@ export async function GET() {
 
     // Record the appearance and get the ID
     const supabase = createServerClient();
+    if (!supabase) {
+      // Still show the banner even if database fails
+      return NextResponse.json({
+        show: true,
+        challenge,
+        appearanceId: null,
+      });
+    }
     const now = new Date();
 
     const { data, error } = await supabase

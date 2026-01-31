@@ -372,34 +372,6 @@ export const LOCAL_TILES: Tile[] = [
     "typeII": "Metric"
   },
   {
-    "id": "28fcf08f-4499-8013-93e6-ed503c0af7d3",
-    "name": "Natural SQL language query UI for all databases toggle",
-    "menu": [
-      "Real Estate",
-      "Software",
-      "Org",
-      "Content",
-      "Health"
-    ],
-    "status": "Not started",
-    "desc": "Supabase Setup for all Projects to be able to query in natural language\n\nMake a copy from tac-8 from...",
-    "shadcn": [
-      "Logic"
-    ],
-    "phase": [
-      "GS Site Standing"
-    ],
-    "thirdParty": [
-      "Logic",
-      "GitHub",
-      "EXTRA LOGIC"
-    ],
-    "actionWarning": false,
-    "actionDesc": null,
-    "priority": "1",
-    "typeII": "Logic"
-  },
-  {
     "id": "28fcf08f-4499-8020-9e93-fdc05c3f858b",
     "name": "Forms (monthly) & printoff",
     "menu": [
@@ -1341,6 +1313,31 @@ export const LOCAL_TILES: Tile[] = [
     "actionDesc": "Notion disconnected",
     "priority": null,
     "typeII": "Graph"
+  },
+  {
+    "id": "local-data-qa",
+    "name": "Data Q&A",
+    "menu": [
+      "Org",
+      "Software"
+    ],
+    "status": "In progress",
+    "desc": "Ask natural language questions about your data. Converts to SQL and displays results from Supabase.",
+    "shadcn": [
+      "Logic",
+      "Graphic"
+    ],
+    "phase": [
+      "GS Site Standing"
+    ],
+    "thirdParty": [
+      "OpenAI",
+      "Logic"
+    ],
+    "actionWarning": false,
+    "actionDesc": null,
+    "priority": "1",
+    "typeII": "Logic"
   }
 ];
 

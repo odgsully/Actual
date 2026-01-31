@@ -197,6 +197,12 @@ const BudgetTile = dynamic(
   { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
 );
 
+// Data Q&A tile (NLQ to SQL)
+const DataQATile = dynamic(
+  () => import('./graphics/DataQATile').then(mod => ({ default: mod.DataQATile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
 const MementoMorriTile = dynamic(
   () => import('./logic/MementoMorriTile').then(mod => ({ default: mod.MementoMorriTile })),
   { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
@@ -541,6 +547,11 @@ const SPECIALIZED_TILES: Array<{
     match: (name) => name.toLowerCase() === 'budget' ||
                      name.toLowerCase().includes('budget track'),
     component: BudgetTile,
+  },
+  // Data Q&A tile (natural language to SQL)
+  {
+    match: (name) => name.toLowerCase() === 'data q&a',
+    component: DataQATile,
   },
   {
     match: (name) => name.toLowerCase().includes('recurring') && name.toLowerCase().includes('dots'),

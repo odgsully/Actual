@@ -1,6 +1,7 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRef, useCallback } from 'react';
 
 /**
  * Schedule configuration for LIFX and form timing
@@ -69,32 +70,48 @@ const DEFAULT_CONFIG: LIFXScheduleConfig = {
   lifx_selector: 'all',
 };
 
+const STORAGE_KEY = 'lifx-schedule-config';
+
 /**
- * Fetch schedule config from API
+ * Fetch schedule config from localStorage
  */
 async function fetchConfig(): Promise<LIFXScheduleConfig> {
-  const response = await fetch('/api/lifx/schedule/config');
-  if (!response.ok) {
-    throw new Error('Failed to fetch schedule config');
+  if (typeof window === 'undefined') {
+    return DEFAULT_CONFIG;
   }
-  const data = await response.json();
-  return { ...DEFAULT_CONFIG, ...data.config };
+
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      return { ...DEFAULT_CONFIG, ...parsed };
+    }
+  } catch (error) {
+    console.error('Failed to load schedule config:', error);
+  }
+
+  return DEFAULT_CONFIG;
 }
 
 /**
- * Save schedule config to API
+ * Save schedule config to localStorage
  */
 async function saveConfig(config: Partial<LIFXScheduleConfig>): Promise<LIFXScheduleConfig> {
-  const response = await fetch('/api/lifx/schedule/config', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(config),
-  });
-  if (!response.ok) {
+  if (typeof window === 'undefined') {
+    return { ...DEFAULT_CONFIG, ...config };
+  }
+
+  try {
+    // Get existing config
+    const existing = await fetchConfig();
+    const updated = { ...existing, ...config };
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    return updated;
+  } catch (error) {
+    console.error('Failed to save schedule config:', error);
     throw new Error('Failed to save schedule config');
   }
-  const data = await response.json();
-  return data.config;
 }
 
 /**
@@ -158,9 +175,12 @@ export function calculateOpacity(
 
 /**
  * Hook for fetching and updating LIFX schedule configuration
+ * Includes debouncing and optimistic updates to prevent UI freezing
  */
 export function useLIFXScheduleConfig() {
   const queryClient = useQueryClient();
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingUpdatesRef = useRef<Partial<LIFXScheduleConfig>>({});
 
   const {
     data: config,
@@ -175,14 +195,59 @@ export function useLIFXScheduleConfig() {
 
   const mutation = useMutation({
     mutationFn: saveConfig,
+    onMutate: async (updates) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['lifx', 'schedule', 'config'] });
+
+      // Snapshot the previous value
+      const previousConfig = queryClient.getQueryData<LIFXScheduleConfig>(['lifx', 'schedule', 'config']);
+
+      // Optimistically update to the new value
+      queryClient.setQueryData(['lifx', 'schedule', 'config'], (old: LIFXScheduleConfig | undefined) =>
+        old ? { ...old, ...updates } : { ...DEFAULT_CONFIG, ...updates }
+      );
+
+      return { previousConfig };
+    },
+    onError: (err, updates, context) => {
+      // Rollback to previous value on error
+      if (context?.previousConfig) {
+        queryClient.setQueryData(['lifx', 'schedule', 'config'], context.previousConfig);
+      }
+      console.error('Failed to save schedule config:', err);
+    },
     onSuccess: (newConfig) => {
       queryClient.setQueryData(['lifx', 'schedule', 'config'], newConfig);
     },
+    onSettled: () => {
+      // Clear pending updates after mutation completes
+      pendingUpdatesRef.current = {};
+    },
   });
 
-  const updateConfig = (updates: Partial<LIFXScheduleConfig>) => {
-    mutation.mutate(updates);
-  };
+  // Debounced update function - collects updates and saves after 800ms of inactivity
+  const updateConfig = useCallback((updates: Partial<LIFXScheduleConfig>) => {
+    // Merge with any pending updates
+    pendingUpdatesRef.current = { ...pendingUpdatesRef.current, ...updates };
+
+    // Immediately update the UI (optimistic)
+    queryClient.setQueryData(['lifx', 'schedule', 'config'], (old: LIFXScheduleConfig | undefined) =>
+      old ? { ...old, ...updates } : { ...DEFAULT_CONFIG, ...updates }
+    );
+
+    // Clear any existing timeout
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+
+    // Set new timeout to actually save
+    debounceTimeoutRef.current = setTimeout(() => {
+      // Only mutate if we have pending updates and no mutation in progress
+      if (Object.keys(pendingUpdatesRef.current).length > 0 && !mutation.isPending) {
+        mutation.mutate(pendingUpdatesRef.current);
+      }
+    }, 800); // 800ms debounce
+  }, [queryClient, mutation]);
 
   return {
     config: config || DEFAULT_CONFIG,

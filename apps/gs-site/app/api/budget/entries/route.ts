@@ -23,6 +23,12 @@ export async function GET(request: NextRequest) {
     }
 
     const supabase = createServerClient();
+    if (!supabase) {
+      return NextResponse.json(
+        { error: 'Database connection failed' },
+        { status: 503 }
+      );
+    }
     const { searchParams } = new URL(request.url);
 
     // Default to current month
@@ -98,6 +104,12 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = createServerClient();
+    if (!supabase) {
+      return NextResponse.json(
+        { error: 'Database connection failed' },
+        { status: 503 }
+      );
+    }
     const body: CreateEntryPayload = await request.json();
 
     const { categoryId, amount, description, date } = body;

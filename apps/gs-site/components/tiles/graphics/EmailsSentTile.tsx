@@ -59,8 +59,8 @@ export function EmailsSentTile({ tile, className }: EmailsSentTileProps) {
 
   return (
     <WarningBorderTrail
-      active={tile.actionWarning || !isConnected}
-      hoverMessage={!isConnected ? 'Click to connect Gmail' : tile.actionDesc}
+      active={false}
+      hoverMessage={tile.actionDesc}
     >
       <div
         className={baseClasses}

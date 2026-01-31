@@ -28,6 +28,12 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = createServerClient();
+    if (!supabase) {
+      return NextResponse.json(
+        { error: 'Database connection failed' },
+        { status: 503 }
+      );
+    }
     const formData = await request.formData();
 
     const file = formData.get('file') as File | null;

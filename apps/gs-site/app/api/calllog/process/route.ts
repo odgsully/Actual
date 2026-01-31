@@ -39,6 +39,12 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = createServerClient();
+    if (!supabase) {
+      return NextResponse.json(
+        { success: false, error: 'Database connection failed' },
+        { status: 503 }
+      );
+    }
 
     // Get unprocessed uploads if storagePaths not provided
     let pathsToProcess = storagePaths;
@@ -178,7 +184,7 @@ export async function POST(request: NextRequest) {
  * Update weekly aggregate from daily records
  */
 async function updateWeeklyAggregate(
-  supabase: ReturnType<typeof createServerClient>,
+  supabase: NonNullable<ReturnType<typeof createServerClient>>,
   userId: string,
   weekStart: string
 ) {
@@ -282,6 +288,12 @@ export async function GET(request: NextRequest) {
     }
 
     const supabase = createServerClient();
+    if (!supabase) {
+      return NextResponse.json(
+        { success: false, error: 'Database connection failed' },
+        { status: 503 }
+      );
+    }
 
     // Get upload status
     const { data: uploads } = await supabase

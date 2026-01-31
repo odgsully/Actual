@@ -43,6 +43,9 @@ const CONFIG = {
 async function getLastBannerShown(): Promise<Date | null> {
   try {
     const supabase = createServerClient();
+    if (!supabase) {
+      return null;
+    }
 
     const { data, error } = await supabase
       .from('banner_appearances')
@@ -187,6 +190,9 @@ export async function shouldShowFallingOffBanner(): Promise<FallingOffData | nul
 export async function recordFallingOffAppearance(data: FallingOffData): Promise<number | null> {
   try {
     const supabase = createServerClient();
+    if (!supabase) {
+      return null;
+    }
     const now = new Date();
 
     const { data: insertedData, error } = await supabase
@@ -222,6 +228,9 @@ export async function recordFallingOffAppearance(data: FallingOffData): Promise<
 export async function recordFallingOffDismissal(appearanceId: number): Promise<boolean> {
   try {
     const supabase = createServerClient();
+    if (!supabase) {
+      return false;
+    }
 
     const { error } = await supabase
       .from('banner_appearances')

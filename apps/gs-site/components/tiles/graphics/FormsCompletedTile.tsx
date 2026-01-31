@@ -136,11 +136,8 @@ export function FormsCompletedTile({ tile, className }: FormsCompletedTileProps)
 
   return (
     <WarningBorderTrail
-      active={tile.actionWarning || isBehind}
-      hoverMessage={isBehind
-        ? `Behind schedule: ${stats?.thisWeek.completed || 0} of ${expectedByNow} expected${isPastFirstDeadline ? ' by now' : ' (before 12:45pm deadline)'}`
-        : tile.actionDesc
-      }
+      active={false}
+      hoverMessage={tile.actionDesc}
     >
       <div className={baseClasses} onClick={handleClick} role="button" tabIndex={0}>
         {/* Header */}

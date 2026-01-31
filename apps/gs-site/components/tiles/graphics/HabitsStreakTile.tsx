@@ -96,7 +96,7 @@ export function HabitsStreakTile({ tile, className }: HabitsStreakTileProps) {
 
   return (
     <WarningBorderTrail
-      active={tile.actionWarning}
+      active={false}
       hoverMessage={tile.actionDesc}
     >
       <div className={baseClasses}>

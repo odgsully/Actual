@@ -38,6 +38,12 @@ export async function GET(
     }
 
     const supabase = getSupabaseClient();
+    if (!supabase) {
+      return NextResponse.json(
+        { error: 'Database connection failed' },
+        { status: 503 }
+      );
+    }
 
     const { data, error } = await supabase
       .from('jarvis_briefings')

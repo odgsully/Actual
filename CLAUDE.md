@@ -446,6 +446,21 @@ WABBIT_URL=http://localhost:3002
 - `npm run dev` - Start gs-site on port 3003
 - `npm run export-tiles` - Export tile data to markdown documentation
 
+### GS Site Skills
+
+See [`.claude/commands/gs-site.md`](./.claude/commands/gs-site.md) for comprehensive GS site development skills:
+
+| Skill | Purpose |
+|-------|---------|
+| `/gs-prime` | Load context for new session |
+| `/add-tile` | Scaffold new tile with boilerplate |
+| `/health-check` | Check all integration statuses |
+| `/tile-debug` | Debug tile rendering issues |
+| `/why-tile-missing` | Quick check for missing tiles |
+| `/integration-status` | Show 3rd party integration states |
+| `/phase-tiles` | List tiles by phase |
+| `/add-integration` | Add new 3rd party service |
+
 ## GSRealty CRM UI Design System (January 2026)
 
 ### Glassmorphism Design Language

@@ -852,10 +852,15 @@ function ImportTab() {
 function AccountsTab() {
   const { accounts, isLoading, addAccount, isAddingAccount } = useBudgetAccounts();
   const [showAddForm, setShowAddForm] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string;
+    institution: 'discover' | 'firstbank';
+    accountType: 'credit' | 'checking' | 'savings';
+    lastFour: string;
+  }>({
     name: '',
-    institution: 'discover' as const,
-    accountType: 'credit' as const,
+    institution: 'discover',
+    accountType: 'credit',
     lastFour: '',
   });
 

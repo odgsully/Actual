@@ -150,7 +150,7 @@ export function HabitInsightsTile({ tile, className }: HabitInsightsTileProps) {
   return (
     <>
     <WarningBorderTrail
-      active={tile.actionWarning}
+      active={false}
       hoverMessage={tile.actionDesc}
     >
       <div className={baseClasses} onClick={() => setIsModalOpen(true)}>
