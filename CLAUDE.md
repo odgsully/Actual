@@ -308,6 +308,80 @@ Before deployment, verify:
 - Google Maps doesn't work on Vercel preview deployments (wildcard pattern not supported)
 - Pro plan required for hourly cron jobs
 
+## Domain & App Deployment Matrix (January 2026)
+
+### Overview
+
+The monorepo contains multiple apps, each deployed to separate domains via Vercel.
+
+### Domain Mapping
+
+| Domain | App | Vercel Project | Status | DNS Provider |
+|--------|-----|----------------|--------|--------------|
+| `pickleballisapsyop.com` | `apps/gs-site` | gs-site | 🚧 In Progress | GoDaddy |
+| `growthadvisory.ai` | `apps/growthadvisory` | growthadvisory (NEW) | 🚧 Needs Vercel Project | Cloudflare |
+| `wabbit-rank.ai` | `apps/wabbit-re` | wabbit-property-scraping | ✅ Deployed | Cloudflare |
+
+### App Details
+
+#### `apps/gs-site` → pickleballisapsyop.com
+- **Purpose**: Personal dashboard hub with tiles, integrations, admin
+- **Port (local)**: 3003
+- **Deployment Status**: 🚧 DNS configured, needs redeploy
+- **OAuth Callbacks**:
+  - Google: `https://pickleballisapsyop.com/api/auth/google/callback`
+  - WHOOP: `https://pickleballisapsyop.com/api/auth/whoop/callback`
+- **Notes**: Dashboard now at root `/` (moved from `/private/gs-site`)
+
+#### `apps/growthadvisory` → growthadvisory.ai
+- **Purpose**: Marketing landing page for Growth Advisory consulting
+- **Port (local)**: 3005
+- **Deployment Status**: 🚧 Code committed, needs NEW Vercel project
+- **OAuth Callbacks**: None (static marketing site)
+- **Notes**: Standalone marketing site, no backend dependencies
+
+#### `apps/wabbit-re` → wabbit-rank.ai
+- **Purpose**: Property ranking platform for real estate
+- **Port (local)**: 3000
+- **Deployment Status**: ✅ Deployed and working
+- **Notes**: Primary Wabbit application
+
+### Deployment Checklist (gs-site split - Jan 2026)
+
+**Completed:**
+- [x] Create `apps/growthadvisory` with marketing components
+- [x] Update `apps/gs-site` to serve dashboard at root
+- [x] Remove basePath logic from gs-site
+- [x] Update all `/private/gs-site` links to `/`
+- [x] Configure DNS for pickleballisapsyop.com (GoDaddy → Vercel)
+- [x] Commit changes to `tile-dialed` branch
+
+**In Progress:**
+- [ ] Fix CRON_SECRET whitespace in gs-site Vercel env vars
+- [ ] Remove growthadvisory.ai domain from gs-site Vercel project
+- [ ] Create NEW Vercel project for growthadvisory app
+- [ ] Add growthadvisory.ai domain to new Vercel project
+- [ ] Redeploy gs-site to pickleballisapsyop.com
+
+**Post-Migration:**
+- [ ] Re-authenticate Google OAuth (tokens are domain-bound)
+- [ ] Re-authenticate WHOOP OAuth (tokens are domain-bound)
+- [ ] Remove old `/private/gs-site` directory from gs-site
+- [ ] Remove marketing components from gs-site (cleanup)
+- [ ] Update Google Cloud Console: remove old redirect URI
+- [ ] Update WHOOP Dashboard: remove old redirect URI
+
+### External Service Configuration
+
+| Service | Config Location | gs-site Callback URL |
+|---------|-----------------|---------------------|
+| Google OAuth | Google Cloud Console → APIs & Services → Credentials | `https://pickleballisapsyop.com/api/auth/google/callback` |
+| WHOOP OAuth | WHOOP Developer Dashboard → App Settings | `https://pickleballisapsyop.com/api/auth/whoop/callback` |
+| Retell AI | Retell Dashboard → Agent Settings | Update webhook URL if using |
+| Notion | API token only | No domain dependency |
+| GitHub | API token only | No domain dependency |
+| LIFX | API token only | No domain dependency |
+
 ## Property Scraping System (January 9, 2025)
 
 ### Overview
