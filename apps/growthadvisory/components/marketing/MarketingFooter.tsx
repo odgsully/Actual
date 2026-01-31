@@ -84,14 +84,6 @@ export function MarketingFooter() {
             <p className="text-xs text-muted-foreground">
               &copy; {currentYear} {companyInfo.name}. All rights reserved.
             </p>
-
-            {/* Dashboard link - points to root now */}
-            <Link
-              href="/"
-              className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors"
-            >
-              Dashboard
-            </Link>
           </div>
         </div>
       </div>

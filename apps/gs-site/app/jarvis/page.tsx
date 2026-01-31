@@ -190,7 +190,7 @@ export default function JarvisBriefingsPage() {
       <footer className="border-t border-border mt-auto">
         <div className="max-w-4xl mx-auto px-6 py-4">
           <p className="text-xs text-muted-foreground text-center">
-            <Link href="/private/gs-site" className="hover:text-foreground transition-colors">
+            <Link href="/" className="hover:text-foreground transition-colors">
               ← Back to Dashboard
             </Link>
           </p>

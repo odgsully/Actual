@@ -267,7 +267,7 @@ export default function AdminOverviewPage() {
             Configure Tiles
           </Link>
           <Link
-            href="/private/gs-site"
+            href="/"
             className="px-4 py-2 text-sm rounded-lg border border-border hover:bg-muted transition-colors"
           >
             View Dashboard

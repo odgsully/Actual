@@ -11,7 +11,7 @@ jest.mock('next/navigation', () => ({
     get: jest.fn(() => null),
     toString: jest.fn(() => ''),
   }),
-  usePathname: () => '/private/gs-site',
+  usePathname: () => '/',
 }));
 
 // Mock @tanstack/react-query

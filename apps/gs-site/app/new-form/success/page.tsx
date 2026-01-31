@@ -32,7 +32,7 @@ export default function FormSuccessPage() {
               Thank you for submitting your productivity accountability form.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href="/private/gs-site">
+              <Link href="/">
                 <Button className="bg-[#673ab7] text-white hover:bg-[#5e35a1]">
                   <Home className="w-4 h-4 mr-2" />
                   Return to Dashboard
