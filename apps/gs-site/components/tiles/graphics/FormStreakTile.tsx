@@ -58,10 +58,10 @@ export function FormStreakTile({ tile, className }: FormStreakTileProps) {
 
   return (
     <WarningBorderTrail
-      active={tile.actionWarning || (isAtRisk && currentStreak > 0)}
-      hoverMessage={isAtRisk && currentStreak > 0
-        ? `Submit form within ${hoursUntilStreakBreaks}h to keep your ${currentStreak}-day streak!`
-        : tile.actionDesc
+      active={tile.actionWarning && currentStreak === 0}
+      hoverMessage={currentStreak === 0
+        ? tile.actionDesc || 'Start a new streak!'
+        : undefined
       }
     >
       <div className={baseClasses} onClick={handleClick} role="button" tabIndex={0}>

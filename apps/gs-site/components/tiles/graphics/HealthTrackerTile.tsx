@@ -172,8 +172,8 @@ export function HealthTrackerTile({ tile, className }: HealthTrackerTileProps) {
   return (
     <>
     <WarningBorderTrail
-      active={tile.actionWarning || !isConnected}
-      hoverMessage={!isConnected ? 'Click to connect WHOOP' : 'Click to view detailed insights'}
+      active={false}
+      hoverMessage={tile.actionDesc}
     >
       <div
         className={baseClasses}

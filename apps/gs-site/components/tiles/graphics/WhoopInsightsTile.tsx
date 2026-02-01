@@ -78,8 +78,8 @@ export function WhoopInsightsTile({ tile, className }: WhoopInsightsTileProps) {
 
   return (
     <WarningBorderTrail
-      active={tile.actionWarning || !isConnected}
-      hoverMessage={!isConnected ? 'Click to connect WHOOP' : tile.actionDesc}
+      active={false}
+      hoverMessage={tile.actionDesc}
     >
       <div
         className={baseClasses}

@@ -157,8 +157,8 @@ export function DaysSinceBloodworkTile({
 
   return (
     <WarningBorderTrail
-      active={shouldShowWarning}
-      hoverMessage={daysSince >= warningThreshold ? statusMessage : tile.actionDesc}
+      active={false}
+      hoverMessage={tile.actionDesc}
     >
       <div className={baseClasses}>
         {/* Header */}

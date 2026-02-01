@@ -29,6 +29,12 @@ export async function GET(request: NextRequest) {
     const userId = 'default-user';
 
     const supabase = createServerClient();
+    if (!supabase) {
+      return NextResponse.json(
+        { success: false, error: 'Database connection failed' },
+        { status: 503 }
+      );
+    }
 
     // Calculate week boundaries
     const currentWeekStart = getWeekStart();

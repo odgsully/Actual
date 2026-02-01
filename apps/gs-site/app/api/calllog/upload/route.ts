@@ -71,6 +71,12 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = createServerClient();
+    if (!supabase) {
+      return NextResponse.json(
+        { success: false, error: 'Database connection failed' },
+        { status: 503 }
+      );
+    }
     const userId = 'default-user';
     const uploadIds: string[] = [];
     const storagePaths: string[] = [];
@@ -177,6 +183,12 @@ export async function GET(request: NextRequest) {
     const userId = 'default-user';
 
     const supabase = createServerClient();
+    if (!supabase) {
+      return NextResponse.json(
+        { success: false, error: 'Database connection failed' },
+        { status: 503 }
+      );
+    }
 
     const { data, error } = await supabase
       .from('call_log_uploads')

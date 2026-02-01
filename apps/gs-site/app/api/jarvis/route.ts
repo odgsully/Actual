@@ -38,6 +38,12 @@ export async function GET(request: NextRequest) {
     }
 
     const supabase = getSupabaseClient();
+    if (!supabase) {
+      return NextResponse.json(
+        { error: 'Database connection failed' },
+        { status: 503 }
+      );
+    }
 
     // Get total count
     const { count, error: countError } = await supabase

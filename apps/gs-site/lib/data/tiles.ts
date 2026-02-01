@@ -188,6 +188,98 @@ export const LOCAL_TILES: Tile[] = [
     "typeII": "Metric"
   },
   {
+    "id": "local-form-timing",
+    "name": "Days Left",
+    "menu": [
+      "Org"
+    ],
+    "status": "Not started",
+    "desc": "Days until next Monthly and Quarterly form deadlines.",
+    "shadcn": [
+      "Graphic",
+      "Logic"
+    ],
+    "phase": [
+      "GS Site Standing"
+    ],
+    "thirdParty": [
+      "Logic"
+    ],
+    "actionWarning": false,
+    "actionDesc": null,
+    "priority": "1",
+    "typeII": "Metric"
+  },
+  {
+    "id": "local-habit-detail",
+    "name": "Habit Detail",
+    "menu": [
+      "Health",
+      "Org"
+    ],
+    "status": "Not started",
+    "desc": "Per-habit streak counts, 7-day dots, and 2026 completion percentage.",
+    "shadcn": [
+      "Graphic",
+      "Logic",
+      "Chart"
+    ],
+    "phase": [
+      "GS Site Standing"
+    ],
+    "thirdParty": [
+      "Notion"
+    ],
+    "actionWarning": false,
+    "actionDesc": null,
+    "priority": "1",
+    "typeII": "Metric"
+  },
+  {
+    "id": "local-photo-slideshow",
+    "name": "Photo Slideshow",
+    "menu": [
+      "Content",
+      "Org"
+    ],
+    "status": "Not started",
+    "desc": "Personal photo slideshow with category filters: Grub Villain, Family, Friends, Habitat, Dogs, Quotes, Inspo, LinkedIn.",
+    "shadcn": [
+      "Graphic",
+      "Logic"
+    ],
+    "phase": [
+      "GS Site Standing"
+    ],
+    "thirdParty": [],
+    "actionWarning": false,
+    "actionDesc": null,
+    "priority": "2",
+    "typeII": "Metric"
+  },
+  {
+    "id": "local-budget",
+    "name": "Budget",
+    "menu": [
+      "Org"
+    ],
+    "status": "Not started",
+    "desc": "Personal budget tracking - monthly spending vs budget with categories.",
+    "shadcn": [
+      "Graphic",
+      "Logic",
+      "Form"
+    ],
+    "phase": [
+      "GS Site Standing"
+    ],
+    "thirdParty": [],
+    "actionWarning": false,
+    "actionDesc": null,
+    "priority": "2",
+    "typeII": "Metric"
+  },
+  {
     "id": "local-core-habits",
     "name": "Core Habits",
     "menu": [
@@ -278,34 +370,6 @@ export const LOCAL_TILES: Tile[] = [
     "actionDesc": null,
     "priority": "1",
     "typeII": "Metric"
-  },
-  {
-    "id": "28fcf08f-4499-8013-93e6-ed503c0af7d3",
-    "name": "Natural SQL language query UI for all databases toggle",
-    "menu": [
-      "Real Estate",
-      "Software",
-      "Org",
-      "Content",
-      "Health"
-    ],
-    "status": "Not started",
-    "desc": "Supabase Setup for all Projects to be able to query in natural language\n\nMake a copy from tac-8 from...",
-    "shadcn": [
-      "Logic"
-    ],
-    "phase": [
-      "GS Site Standing"
-    ],
-    "thirdParty": [
-      "Logic",
-      "GitHub",
-      "EXTRA LOGIC"
-    ],
-    "actionWarning": false,
-    "actionDesc": null,
-    "priority": "1",
-    "typeII": "Logic"
   },
   {
     "id": "28fcf08f-4499-8020-9e93-fdc05c3f858b",
@@ -1249,6 +1313,31 @@ export const LOCAL_TILES: Tile[] = [
     "actionDesc": "Notion disconnected",
     "priority": null,
     "typeII": "Graph"
+  },
+  {
+    "id": "local-data-qa",
+    "name": "Data Q&A",
+    "menu": [
+      "Org",
+      "Software"
+    ],
+    "status": "In progress",
+    "desc": "Ask natural language questions about your data. Converts to SQL and displays results from Supabase.",
+    "shadcn": [
+      "Logic",
+      "Graphic"
+    ],
+    "phase": [
+      "GS Site Standing"
+    ],
+    "thirdParty": [
+      "OpenAI",
+      "Logic"
+    ],
+    "actionWarning": false,
+    "actionDesc": null,
+    "priority": "1",
+    "typeII": "Logic"
   }
 ];
 

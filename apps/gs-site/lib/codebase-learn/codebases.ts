@@ -2,7 +2,9 @@
 // All public repos from odgsully GitHub
 
 import type { Codebase } from './types';
-import { adhsWorkingSections } from './data/adhs-working';
+
+// TODO: Create ./data/adhs-working.ts with lesson content
+// import { adhsWorkingSections } from './data/adhs-working';
 
 export const codebases: Codebase[] = [
   {
@@ -12,8 +14,8 @@ export const codebases: Codebase[] = [
     language: 'Python',
     githubUrl: 'https://github.com/odgsully/adhs-working',
     techStack: ['Python 3.11', 'Poetry', 'Pandas', 'Typer CLI', 'Selenium', 'RapidFuzz'],
-    sections: adhsWorkingSections,
-    isImplemented: true,
+    sections: [], // TODO: Add adhsWorkingSections when data file is created
+    isImplemented: false, // Set to true once lesson content is added
   },
   {
     id: 'actual',

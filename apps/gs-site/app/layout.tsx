@@ -16,6 +16,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://pickleballisapsyop.com'),
   title: "GS Dashboard",
   description: "Personal dashboard hub",
 };

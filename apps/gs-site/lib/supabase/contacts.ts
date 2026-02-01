@@ -54,6 +54,9 @@ function dbToContact(row: DbContact): ContactWithTier {
  */
 export async function getAllContacts(): Promise<ContactWithTier[]> {
   const supabase = createServerClient();
+  if (!supabase) {
+    throw new Error('Database connection failed');
+  }
 
   const { data, error } = await supabase
     .from('gs_contacts')
@@ -86,6 +89,9 @@ export async function getContactsGroupedByTier(): Promise<GroupedContacts> {
  */
 export async function getContactsByTier(tier: ContactTier): Promise<ContactWithTier[]> {
   const supabase = createServerClient();
+  if (!supabase) {
+    throw new Error('Database connection failed');
+  }
 
   const { data, error } = await supabase
     .from('gs_contacts')
@@ -109,6 +115,9 @@ export async function searchContacts(
   tier?: ContactTier
 ): Promise<ContactWithTier[]> {
   const supabase = createServerClient();
+  if (!supabase) {
+    throw new Error('Database connection failed');
+  }
 
   let dbQuery = supabase
     .from('gs_contacts')
@@ -143,6 +152,9 @@ export async function updateContactTiers(
   }
 
   const supabase = createServerClient();
+  if (!supabase) {
+    throw new Error('Database connection failed');
+  }
 
   const { data, error } = await supabase
     .from('gs_contacts')
@@ -182,6 +194,9 @@ export async function getTierStats(): Promise<{
   total: number;
 }> {
   const supabase = createServerClient();
+  if (!supabase) {
+    throw new Error('Database connection failed');
+  }
 
   const { data, error } = await supabase
     .from('gs_contacts')
@@ -219,6 +234,9 @@ export async function importContacts(
   }>
 ): Promise<{ imported: number; skipped: number; errors: string[] }> {
   const supabase = createServerClient();
+  if (!supabase) {
+    return { imported: 0, skipped: contacts.length, errors: ['Database connection failed'] };
+  }
   const batchSize = 100;
   let imported = 0;
   let skipped = 0;
@@ -287,6 +305,9 @@ export async function getAccountabilityRecipients(
  */
 export async function hasImportedContacts(): Promise<boolean> {
   const supabase = createServerClient();
+  if (!supabase) {
+    return false;
+  }
 
   const { count, error } = await supabase
     .from('gs_contacts')

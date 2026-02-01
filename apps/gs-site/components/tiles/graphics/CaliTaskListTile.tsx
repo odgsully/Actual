@@ -145,7 +145,7 @@ export function CaliTaskListTile({ tile, className }: CaliTaskListTileProps) {
 
   return (
     <WarningBorderTrail
-      active={tile.actionWarning}
+      active={false}
       hoverMessage={tile.actionDesc}
     >
       <div className={baseClasses}>

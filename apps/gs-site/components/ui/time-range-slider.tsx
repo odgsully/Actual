@@ -179,7 +179,7 @@ export function TimeRangeSlider({
   }
 
   return (
-    <div className={`space-y-3 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
+    <div className={`space-y-3 ${disabled ? 'opacity-50' : ''}`}>
       {/* Header */}
       {(label || icon) && (
         <div className="flex items-center justify-between">
@@ -211,13 +211,14 @@ export function TimeRangeSlider({
 
           {/* Start thumb */}
           <div
-            className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-5 h-5 rounded-full border-2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-110 ${colors.thumb} ${colors.thumbHover}`}
+            className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-5 h-5 rounded-full border-2 shadow-lg transition-transform ${disabled ? 'cursor-not-allowed' : 'cursor-grab active:cursor-grabbing hover:scale-110'} ${colors.thumb} ${!disabled && colors.thumbHover}`}
             style={{ left: `${startPercent}%` }}
             onMouseDown={(e) => {
+              if (disabled) return;
               e.preventDefault();
               setIsDragging('start');
             }}
-            onTouchStart={() => setIsDragging('start')}
+            onTouchStart={() => !disabled && setIsDragging('start')}
             role="slider"
             aria-label="Start time"
             aria-valuenow={startValue}
@@ -232,13 +233,14 @@ export function TimeRangeSlider({
 
           {/* End thumb */}
           <div
-            className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-5 h-5 rounded-full border-2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-110 ${colors.thumb} ${colors.thumbHover}`}
+            className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-5 h-5 rounded-full border-2 shadow-lg transition-transform ${disabled ? 'cursor-not-allowed' : 'cursor-grab active:cursor-grabbing hover:scale-110'} ${colors.thumb} ${!disabled && colors.thumbHover}`}
             style={{ left: `${endPercent}%` }}
             onMouseDown={(e) => {
+              if (disabled) return;
               e.preventDefault();
               setIsDragging('end');
             }}
-            onTouchStart={() => setIsDragging('end')}
+            onTouchStart={() => !disabled && setIsDragging('end')}
             role="slider"
             aria-label="End time"
             aria-valuenow={endValue}
@@ -263,6 +265,51 @@ export function TimeRangeSlider({
               {hour % 12 || 12}{hour >= 12 ? 'p' : 'a'}
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Manual time inputs */}
+      <div className="flex items-center gap-3 pt-1">
+        <div className="flex items-center gap-2">
+          <label className="text-xs text-muted-foreground">Start:</label>
+          <input
+            type="time"
+            value={`${String(startHour).padStart(2, '0')}:${String(startMinute).padStart(2, '0')}`}
+            onChange={(e) => {
+              if (disabled) return;
+              const [h, m] = e.target.value.split(':').map(Number);
+              if (!isNaN(h) && !isNaN(m)) {
+                // Validate within bounds and before end
+                const newMinutes = h * 60 + m;
+                if (newMinutes >= minValue && newMinutes < endValue - step) {
+                  onStartChange(h, m);
+                }
+              }
+            }}
+            disabled={disabled}
+            className={`px-2 py-1 text-sm rounded border bg-background ${colors.text} border-border focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50`}
+          />
+        </div>
+        <span className="text-muted-foreground">→</span>
+        <div className="flex items-center gap-2">
+          <label className="text-xs text-muted-foreground">End:</label>
+          <input
+            type="time"
+            value={`${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`}
+            onChange={(e) => {
+              if (disabled) return;
+              const [h, m] = e.target.value.split(':').map(Number);
+              if (!isNaN(h) && !isNaN(m)) {
+                // Validate within bounds and after start
+                const newMinutes = h * 60 + m;
+                if (newMinutes <= maxValue && newMinutes > startValue + step) {
+                  onEndChange(h, m);
+                }
+              }
+            }}
+            disabled={disabled}
+            className={`px-2 py-1 text-sm rounded border bg-background ${colors.text} border-border focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50`}
+          />
         </div>
       </div>
 

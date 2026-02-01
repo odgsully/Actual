@@ -58,7 +58,45 @@
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+
+    /* Marketing gradients */
+    --gradient-gold: 45 93% 58%;
+    --gradient-purple: 280 65% 60%;
+    --gradient-teal: 173 58% 39%;
+
+    /* Marketing backgrounds */
+    --marketing-bg: 240 10% 6%;
+    --marketing-card: 240 6% 10%;
   }
+}
+
+/* Marketing gradient animations */
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.6; }
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient-shift 3s ease infinite;
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 4s ease-in-out infinite;
 }
 
 @layer base {

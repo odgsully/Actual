@@ -1,6 +1,7 @@
 # Environment variables
 .env
 .env.local
+.mcp.json
 .env.production
 .env*.local
 .env.vercel

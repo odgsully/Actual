@@ -44,7 +44,7 @@ export default function PrintoffsPage() {
       {/* Header */}
       <div className="max-w-2xl mx-auto">
         <Link
-          href="/private/gs-site"
+          href="/"
           className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />

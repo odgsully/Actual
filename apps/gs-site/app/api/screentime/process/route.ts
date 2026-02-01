@@ -28,6 +28,12 @@ export async function POST(request: NextRequest) {
     const userId = body.userId || 'default-user';
 
     const supabase = createServerClient();
+    if (!supabase) {
+      return NextResponse.json(
+        { success: false, error: 'Database connection failed' },
+        { status: 503 }
+      );
+    }
 
     // Get unprocessed uploads for this week
     const { data: uploads, error: fetchError } = await supabase
@@ -199,6 +205,12 @@ export async function GET(request: NextRequest) {
     const userId = 'default-user';
 
     const supabase = createServerClient();
+    if (!supabase) {
+      return NextResponse.json(
+        { success: false, error: 'Database connection failed' },
+        { status: 503 }
+      );
+    }
 
     // Count processed vs unprocessed
     const { data: uploads } = await supabase
