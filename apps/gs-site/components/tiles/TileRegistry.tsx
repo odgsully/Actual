@@ -42,11 +42,6 @@ const TaskWabbedTile = dynamic(
   { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
 );
 
-const HabitInsightsTile = dynamic(
-  () => import('./graphics/HabitInsightsTile').then(mod => ({ default: mod.HabitInsightsTile })),
-  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
-);
-
 const CoreHabitsTile = dynamic(
   () => import('./graphics/CoreHabitsTile').then(mod => ({ default: mod.CoreHabitsTile })),
   { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
@@ -386,10 +381,6 @@ const SPECIALIZED_TILES: Array<{
   {
     match: (name) => name.toLowerCase().includes('task') && name.toLowerCase().includes('wabbed'),
     component: TaskWabbedTile,
-  },
-  {
-    match: (name) => name.toLowerCase().includes('habit') && name.toLowerCase().includes('insight'),
-    component: HabitInsightsTile,
   },
   {
     match: (name) => name.toLowerCase() === 'core habits' || name.toLowerCase().includes('core habits'),

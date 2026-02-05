@@ -8,7 +8,6 @@
 // Notion-connected tiles
 export { HabitsStreakTile } from './HabitsStreakTile';
 export { TaskWabbedTile } from './TaskWabbedTile';
-export { HabitInsightsTile } from './HabitInsightsTile';
 export { HabitInsightsModal } from './HabitInsightsModal';
 export { CaliTaskListTile } from './CaliTaskListTile';
 export { CaliForwardLookTile } from './CaliForwardLookTile';

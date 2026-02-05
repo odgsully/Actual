@@ -1,8 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import { Heart, Brain, UtensilsCrossed, AlertCircle, RefreshCw } from 'lucide-react';
 import { useHabitsStreak } from '@/hooks/useHabitsData';
 import { WarningBorderTrail } from '../WarningBorderTrail';
+import { HabitInsightsModal } from './HabitInsightsModal';
 import type { Tile } from '@/lib/types/tiles';
 
 interface CoreHabitsTileProps {
@@ -30,6 +32,7 @@ const CORE_HABITS = [
  * Data comes from Notion Habits database via useHabitsStreak hook.
  */
 export function CoreHabitsTile({ tile, className }: CoreHabitsTileProps) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const {
     data: allStreaks,
     isLoading,
@@ -57,17 +60,20 @@ export function CoreHabitsTile({ tile, className }: CoreHabitsTileProps) {
     border border-border
     rounded-lg
     hover:border-muted-foreground/30
+    hover:bg-muted/30
     transition-all duration-150
+    cursor-pointer
     ${tile.status === 'Done' ? 'opacity-60' : ''}
     ${className ?? ''}
   `.trim();
 
   return (
+    <>
     <WarningBorderTrail
       active={tile.actionWarning}
       hoverMessage={tile.actionDesc}
     >
-      <div className={baseClasses}>
+      <div className={baseClasses} onClick={() => setIsModalOpen(true)}>
         {/* Header */}
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-medium text-foreground">
@@ -96,7 +102,7 @@ export function CoreHabitsTile({ tile, className }: CoreHabitsTileProps) {
               <AlertCircle className="w-5 h-5 text-red-500 mx-auto mb-1" />
               <p className="text-xs text-muted-foreground">Data unavailable</p>
               <button
-                onClick={() => refetch()}
+                onClick={(e) => { e.stopPropagation(); refetch(); }}
                 className="text-xs text-primary hover:underline mt-1"
               >
                 Retry
@@ -147,6 +153,12 @@ export function CoreHabitsTile({ tile, className }: CoreHabitsTileProps) {
         )}
       </div>
     </WarningBorderTrail>
+
+    <HabitInsightsModal
+      isOpen={isModalOpen}
+      onClose={() => setIsModalOpen(false)}
+    />
+    </>
   );
 }
 

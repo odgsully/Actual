@@ -1297,24 +1297,6 @@ export const LOCAL_TILES: Tile[] = [
     "typeII": "Graph"
   },
   {
-    "id": "2d1cf08f-4499-80e2-9380-cc16c4a892b5",
-    "name": "Habit Insights",
-    "menu": [],
-    "status": "Not started",
-    "desc": "1. Goal here is to give insights into Habits coming from the Habits database in Notion and Supabase,...",
-    "shadcn": [
-      "Graphic"
-    ],
-    "phase": [],
-    "thirdParty": [
-      "Notion"
-    ],
-    "actionWarning": true,
-    "actionDesc": "Notion disconnected",
-    "priority": null,
-    "typeII": "Graph"
-  },
-  {
     "id": "local-data-qa",
     "name": "Data Q&A",
     "menu": [
