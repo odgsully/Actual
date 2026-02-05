@@ -4,6 +4,8 @@ import {
   getSentEmailStats,
 } from '@/lib/integrations/google/gmail-client';
 
+export const dynamic = 'force-dynamic';
+
 export interface EmailsSentResponse {
   connected: boolean;
   email?: string;
