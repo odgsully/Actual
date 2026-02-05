@@ -36,7 +36,6 @@ export type {
 } from './MementoMorriTile';
 
 export type {
-  UploadRecord,
   EPSN3Config,
 } from './EPSN3BinTile';
 

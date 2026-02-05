@@ -1,28 +1,19 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, Settings2, FileText, Trash2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Upload, Settings2, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { WarningBorderTrail } from '../WarningBorderTrail';
+import { useEPSN3Uploads } from '@/hooks/useEPSN3Uploads';
 import type { Tile } from '@/lib/types/tiles';
 
 // ============================================================
 // Types
 // ============================================================
 
-export interface UploadRecord {
-  id: string;
-  fileName: string;
-  fileSize: number;
-  uploadDate: Date;
-  fileType: string;
-}
-
 export interface EPSN3Config {
   /** Target upload frequency in days */
   targetFrequency?: number;
-  /** Maximum number of uploads to track */
-  maxRecords?: number;
   /** Allowed file types (extensions) */
   allowedTypes?: string[];
 }
@@ -34,10 +25,9 @@ interface EPSN3BinTileProps {
 }
 
 // ============================================================
-// Local Storage Keys
+// Local Storage Keys (config only)
 // ============================================================
 
-const STORAGE_KEY_UPLOADS = 'epsn3_uploads';
 const STORAGE_KEY_CONFIG = 'epsn3_config';
 
 // ============================================================
@@ -45,8 +35,7 @@ const STORAGE_KEY_CONFIG = 'epsn3_config';
 // ============================================================
 
 const DEFAULT_CONFIG: EPSN3Config = {
-  targetFrequency: 7, // Weekly uploads
-  maxRecords: 50,
+  targetFrequency: 7,
   allowedTypes: ['.pdf', '.doc', '.docx', '.txt', '.md', '.jpg', '.png', '.zip'],
 };
 
@@ -54,56 +43,11 @@ const DEFAULT_CONFIG: EPSN3Config = {
 // Utility Functions
 // ============================================================
 
-function getDaysSinceLastUpload(uploads: UploadRecord[]): number {
-  if (uploads.length === 0) return Infinity;
-
-  const sortedUploads = [...uploads].sort(
-    (a, b) => new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime()
-  );
-
-  const lastUpload = new Date(sortedUploads[0].uploadDate);
+function getDaysSinceDate(dateStr: string): number {
+  const date = new Date(dateStr);
   const now = new Date();
-  const diff = now.getTime() - lastUpload.getTime();
-
+  const diff = now.getTime() - date.getTime();
   return Math.floor(diff / (1000 * 60 * 60 * 24));
-}
-
-function formatFileSize(bytes: number): string {
-  if (bytes === 0) return '0 B';
-  const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`;
-}
-
-function saveUploads(uploads: UploadRecord[]) {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem(STORAGE_KEY_UPLOADS, JSON.stringify(uploads));
-  }
-}
-
-function loadUploads(): UploadRecord[] {
-  if (typeof window !== 'undefined') {
-    const stored = localStorage.getItem(STORAGE_KEY_UPLOADS);
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        return parsed.map((record: any) => ({
-          ...record,
-          uploadDate: new Date(record.uploadDate),
-        }));
-      } catch {
-        return [];
-      }
-    }
-  }
-  return [];
-}
-
-function saveConfig(config: EPSN3Config) {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(config));
-  }
 }
 
 function loadConfig(): EPSN3Config {
@@ -120,38 +64,16 @@ function loadConfig(): EPSN3Config {
   return DEFAULT_CONFIG;
 }
 
+function saveConfig(config: EPSN3Config) {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(config));
+  }
+}
+
 // ============================================================
 // Main Component
 // ============================================================
 
-/**
- * EPSN3BinTile - Upload tracking with frequency monitoring
- *
- * "EPSN3" appears to be a specific document/file tracking system.
- * This tile tracks upload cadence and alerts when frequency target is not met.
- *
- * Features:
- * - Pure frontend file upload tracking (no API calls)
- * - Configurable upload frequency target
- * - Local file metadata storage (no actual file upload)
- * - Upload history with timestamps
- * - Warning when upload frequency falls below target
- * - Persistent state in localStorage
- * - Works completely offline
- * - Keyboard accessible
- *
- * @example
- * ```tsx
- * <EPSN3BinTile
- *   tile={tile}
- *   config={{
- *     targetFrequency: 7, // Weekly
- *     maxRecords: 50,
- *     allowedTypes: ['.pdf', '.doc', '.docx'],
- *   }}
- * />
- * ```
- */
 export function EPSN3BinTile({
   tile,
   config: initialConfig,
@@ -162,33 +84,22 @@ export function EPSN3BinTile({
     return loadConfig();
   });
 
-  const [uploads, setUploads] = useState<UploadRecord[]>(() => loadUploads());
+  const { uploads, isLoading, upload, isUploading, remove, isDeleting } = useEPSN3Uploads();
+
   const [showSettings, setShowSettings] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [justUploaded, setJustUploaded] = useState(false);
 
   const targetFrequency = config.targetFrequency || DEFAULT_CONFIG.targetFrequency!;
-  const daysSinceLastUpload = getDaysSinceLastUpload(uploads);
+  const daysSinceLastUpload = uploads.length > 0
+    ? getDaysSinceDate(uploads[0].uploadDate)
+    : Infinity;
   const isFrequencyMet = daysSinceLastUpload <= targetFrequency;
   const frequencyWarning = !isFrequencyMet && uploads.length > 0;
-
-  // Save uploads when changed
-  useEffect(() => {
-    saveUploads(uploads);
-  }, [uploads]);
-
-  // Save config when changed
-  useEffect(() => {
-    if (!initialConfig) {
-      saveConfig(config);
-    }
-  }, [config, initialConfig]);
 
   const handleFileUpload = useCallback(
     (files: FileList | null) => {
       if (!files || files.length === 0) return;
-
-      const newUploads: UploadRecord[] = [];
 
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
@@ -197,31 +108,19 @@ export function EPSN3BinTile({
         if (config.allowedTypes && config.allowedTypes.length > 0) {
           const ext = '.' + file.name.split('.').pop()?.toLowerCase();
           if (!config.allowedTypes.includes(ext)) {
-            continue; // Skip disallowed file types
+            continue;
           }
         }
 
-        newUploads.push({
-          id: `${Date.now()}-${i}`,
-          fileName: file.name,
-          fileSize: file.size,
-          uploadDate: new Date(),
-          fileType: file.type || 'unknown',
+        upload(file, {
+          onSuccess: () => {
+            setJustUploaded(true);
+            setTimeout(() => setJustUploaded(false), 2000);
+          },
         });
-      }
-
-      if (newUploads.length > 0) {
-        setUploads((prev) => {
-          const combined = [...newUploads, ...prev];
-          const maxRecords = config.maxRecords || DEFAULT_CONFIG.maxRecords!;
-          return combined.slice(0, maxRecords);
-        });
-
-        setJustUploaded(true);
-        setTimeout(() => setJustUploaded(false), 2000);
       }
     },
-    [config.allowedTypes, config.maxRecords]
+    [config.allowedTypes, upload]
   );
 
   const handleDrop = useCallback(
@@ -243,13 +142,18 @@ export function EPSN3BinTile({
     setIsDragging(false);
   }, []);
 
-  const handleDeleteUpload = useCallback((id: string) => {
-    setUploads((prev) => prev.filter((upload) => upload.id !== id));
-  }, []);
+  const handleDeleteUpload = useCallback(
+    (id: string) => {
+      remove(id);
+    },
+    [remove]
+  );
 
   const handleFrequencyChange = (frequency: number) => {
     if (frequency > 0 && frequency <= 365) {
-      setConfig((prev) => ({ ...prev, targetFrequency: frequency }));
+      const newConfig = { ...config, targetFrequency: frequency };
+      setConfig(newConfig);
+      if (!initialConfig) saveConfig(newConfig);
     }
   };
 
@@ -353,7 +257,18 @@ export function EPSN3BinTile({
             />
 
             <AnimatePresence mode="wait">
-              {justUploaded ? (
+              {isUploading ? (
+                <motion.div
+                  key="uploading"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  exit={{ scale: 0 }}
+                  className="text-center"
+                >
+                  <Loader2 className="w-6 h-6 text-muted-foreground mx-auto mb-1 animate-spin" />
+                  <span className="text-xs text-muted-foreground">Uploading...</span>
+                </motion.div>
+              ) : justUploaded ? (
                 <motion.div
                   key="success"
                   initial={{ scale: 0 }}

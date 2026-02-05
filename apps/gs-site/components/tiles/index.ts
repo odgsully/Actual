@@ -42,6 +42,5 @@ export type {
   RecurrencePattern,
   RecurringDotsConfig,
   MementoMorriConfig,
-  UploadRecord,
   EPSN3Config,
 } from './logic';

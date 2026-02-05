@@ -51,6 +51,7 @@ Thumbs.db
 
 # User uploads/data
 uploads/
+!**/api/**/uploads/
 data/
 # Unignore code files in lib/data directories (tiles.ts, etc.)
 !**/lib/data/
