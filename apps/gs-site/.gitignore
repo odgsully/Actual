@@ -45,3 +45,4 @@ next-env.d.ts
 !/data/claude-stats/.gitkeep
 *.vcf
 *.vcf
+.env*.local
