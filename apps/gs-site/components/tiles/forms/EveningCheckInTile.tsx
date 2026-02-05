@@ -151,8 +151,8 @@ export function EveningCheckInTile({ tile, className, externalOpen, onExternalCl
         await saveDeepWorkHours(deepWorkHours);
       }
 
-      // Save evening check-in data
-      const response = await fetch('/api/notion/habits/update', {
+      // Save evening check-in data (non-blocking — don't gate LIFX on Notion success)
+      fetch('/api/notion/habits/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -166,14 +166,12 @@ export function EveningCheckInTile({ tile, className, externalOpen, onExternalCl
             dayRating,
           },
         }),
-      });
+      }).catch((err) => console.warn('Evening check-in Notion save failed:', err));
 
-      if (response.ok) {
-        // Turn off lights and update schedule state
-        onEveningFormComplete();
-        // Close modal on success
-        setIsOpen(false);
-      }
+      // Turn off lights and update schedule state (independent of Notion)
+      onEveningFormComplete();
+      // Close modal
+      setIsOpen(false);
     } catch (error) {
       console.error('Error submitting evening check-in:', error);
     } finally {

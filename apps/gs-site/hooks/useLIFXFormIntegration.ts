@@ -41,7 +41,13 @@ async function handleMorningFormSubmit(): Promise<FormIntegrationResult> {
     });
 
     if (!lifxResponse.ok) {
-      console.warn('Failed to turn off lights, but state was updated');
+      const errText = await lifxResponse.text().catch(() => 'unknown');
+      console.error('LIFX turn-off failed:', lifxResponse.status, errText);
+      return {
+        success: false,
+        lightsAction: 'none',
+        error: `LIFX API returned ${lifxResponse.status}`,
+      };
     }
 
     return {
@@ -92,7 +98,13 @@ async function handleEveningFormSubmit(): Promise<FormIntegrationResult> {
     });
 
     if (!lifxResponse.ok) {
-      console.warn('Failed to turn off lights, but state was updated');
+      const errText = await lifxResponse.text().catch(() => 'unknown');
+      console.error('LIFX turn-off failed:', lifxResponse.status, errText);
+      return {
+        success: false,
+        lightsAction: 'none',
+        error: `LIFX API returned ${lifxResponse.status}`,
+      };
     }
 
     return {
