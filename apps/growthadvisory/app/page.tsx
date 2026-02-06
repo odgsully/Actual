@@ -1,7 +1,9 @@
 import {
   MarketingNav,
   HeroSection,
-  PainPointsSection,
+  LogoCarousel,
+  StatsSection,
+  SectionDivider,
   ServicesSection,
   MethodologySection,
   TestimonialsSection,
@@ -15,10 +17,15 @@ export default function HomePage() {
       <MarketingNav />
       <main>
         <HeroSection />
-        <PainPointsSection />
+        <LogoCarousel />
+        <StatsSection />
+        <SectionDivider />
         <ServicesSection />
+        <SectionDivider />
         <MethodologySection />
+        <SectionDivider />
         <TestimonialsSection />
+        <SectionDivider />
         <CTASection />
       </main>
       <MarketingFooter />

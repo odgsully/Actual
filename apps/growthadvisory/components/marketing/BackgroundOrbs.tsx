@@ -2,82 +2,62 @@
 
 import { cn } from '@/lib/utils';
 
-interface OrbProps {
-  className?: string;
+interface OrbConfig {
   color: 'gold' | 'purple' | 'teal';
-  size: 'sm' | 'md' | 'lg' | 'xl';
-  delay?: number;
+  className: string;
 }
 
-function Orb({ className, color, size, delay = 0 }: OrbProps) {
-  const colorMap = {
-    gold: 'bg-amber-400/20',
-    purple: 'bg-purple-500/20',
-    teal: 'bg-teal-400/20',
+interface BackgroundOrbsProps {
+  /** Preset configurations for different sections */
+  variant?: 'hero' | 'stats' | 'cta' | 'custom';
+  /** Custom orb configurations (used when variant='custom') */
+  orbs?: OrbConfig[];
+  className?: string;
+}
+
+/**
+ * Aurora-style background orbs with radial gradients and floating animations
+ * Uses clamp() for responsive sizing to prevent mobile overflow
+ */
+export function BackgroundOrbs({
+  variant = 'hero',
+  orbs,
+  className,
+}: BackgroundOrbsProps) {
+  // Preset configurations for different sections
+  const presets: Record<string, OrbConfig[]> = {
+    hero: [
+      { color: 'gold', className: 'w-[clamp(300px,50vw,600px)] h-[clamp(300px,50vw,600px)] -top-[10%] -right-[5%]' },
+      { color: 'purple', className: 'w-[clamp(250px,42vw,500px)] h-[clamp(250px,42vw,500px)] bottom-0 -left-[8%]' },
+      { color: 'teal', className: 'w-[clamp(200px,33vw,400px)] h-[clamp(200px,33vw,400px)] top-[30%] left-[40%]' },
+    ],
+    stats: [
+      { color: 'purple', className: 'w-[clamp(250px,42vw,500px)] h-[clamp(250px,42vw,500px)] -top-[20%] left-1/2 -translate-x-1/2' },
+    ],
+    cta: [
+      { color: 'gold', className: 'w-[clamp(250px,42vw,500px)] h-[clamp(250px,42vw,500px)] -top-[30%] left-[20%]' },
+      { color: 'teal', className: 'w-[clamp(200px,33vw,400px)] h-[clamp(200px,33vw,400px)] -bottom-[30%] right-[20%]' },
+    ],
+    custom: [],
   };
 
-  const sizeMap = {
-    sm: 'w-32 h-32',
-    md: 'w-48 h-48',
-    lg: 'w-64 h-64',
-    xl: 'w-96 h-96',
-  };
+  const orbsToRender = variant === 'custom' && orbs ? orbs : presets[variant];
 
   return (
     <div
-      className={cn(
-        'absolute rounded-full blur-3xl animate-float animate-pulse-glow',
-        colorMap[color],
-        sizeMap[size],
-        className
-      )}
-      style={{ animationDelay: `${delay}s` }}
-    />
-  );
-}
-
-export function BackgroundOrbs() {
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {/* Top left gold orb */}
-      <Orb
-        color="gold"
-        size="lg"
-        className="top-20 -left-32"
-        delay={0}
-      />
-
-      {/* Top right purple orb */}
-      <Orb
-        color="purple"
-        size="xl"
-        className="top-40 -right-48"
-        delay={2}
-      />
-
-      {/* Center teal orb */}
-      <Orb
-        color="teal"
-        size="md"
-        className="top-1/2 left-1/4 -translate-y-1/2"
-        delay={1}
-      />
-
-      {/* Bottom purple orb */}
-      <Orb
-        color="purple"
-        size="lg"
-        className="bottom-20 left-1/3"
-        delay={3}
-      />
-
-      {/* Bottom right gold orb */}
-      <Orb
-        color="gold"
-        size="md"
-        className="bottom-40 -right-20"
-        delay={1.5}
-      />
+      className={cn('absolute inset-0 overflow-hidden pointer-events-none', className)}
+      aria-hidden="true"
+    >
+      {orbsToRender.map((orb, index) => (
+        <div
+          key={index}
+          className={cn(
+            'aurora-orb',
+            `aurora-orb--${orb.color}`,
+            orb.className
+          )}
+        />
+      ))}
     </div>
   );
 }

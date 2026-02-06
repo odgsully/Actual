@@ -22,34 +22,17 @@ export function AnimatedGradientButton({
   className,
   showArrow = false,
 }: AnimatedGradientButtonProps) {
-  const baseStyles =
-    'inline-flex items-center justify-center gap-2 font-medium transition-all duration-300 rounded-lg';
+  const baseStyles = variant === 'primary' ? 'btn-gradient' : 'btn-ghost';
 
   const sizeStyles = {
-    default: 'px-6 py-3 text-sm',
-    large: 'px-8 py-4 text-base',
-  };
-
-  const variantStyles = {
-    primary: cn(
-      'bg-gradient-to-r from-amber-400 via-purple-500 to-teal-400',
-      'animate-gradient text-white',
-      'hover:scale-[1.02] hover:-translate-y-0.5',
-      'shadow-lg hover:shadow-xl hover:shadow-purple-500/25',
-      'active:scale-[0.98]'
-    ),
-    secondary: cn(
-      'border border-border bg-transparent text-foreground',
-      'hover:bg-accent hover:border-accent',
-      'hover:scale-[1.02] hover:-translate-y-0.5',
-      'active:scale-[0.98]'
-    ),
+    default: 'py-2.5 px-6 text-sm',
+    large: 'py-4 px-9 text-[15px]',
   };
 
   const combinedClassName = cn(
     baseStyles,
     sizeStyles[size],
-    variantStyles[variant],
+    'group',
     className
   );
 
@@ -57,7 +40,7 @@ export function AnimatedGradientButton({
     <>
       {children}
       {showArrow && (
-        <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+        <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
       )}
     </>
   );
@@ -66,7 +49,7 @@ export function AnimatedGradientButton({
     return (
       <a
         href={href}
-        className={cn(combinedClassName, 'group')}
+        className={combinedClassName}
         target={href.startsWith('http') ? '_blank' : undefined}
         rel={href.startsWith('http') ? 'noopener noreferrer' : undefined}
       >
@@ -76,7 +59,7 @@ export function AnimatedGradientButton({
   }
 
   return (
-    <button onClick={onClick} className={cn(combinedClassName, 'group')}>
+    <button onClick={onClick} className={combinedClassName}>
       {content}
     </button>
   );

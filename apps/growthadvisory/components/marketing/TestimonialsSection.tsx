@@ -2,51 +2,53 @@
 
 import { testimonials } from '@/lib/marketing-data';
 import { cn } from '@/lib/utils';
-import { Quote } from 'lucide-react';
 
 interface TestimonialCardProps {
   quote: string;
   name: string;
+  initials: string;
   company: string;
   role: string;
   index: number;
 }
 
-function TestimonialCard({ quote, name, company, role, index }: TestimonialCardProps) {
-  const accentColors = [
-    'border-l-amber-400',
-    'border-l-purple-400',
-    'border-l-teal-400',
-  ];
-
+function TestimonialCard({ quote, name, initials, company, role, index }: TestimonialCardProps) {
   return (
-    <div
-      className={cn(
-        'relative p-6 rounded-lg border border-border bg-card/30',
-        'border-l-4',
-        accentColors[index % accentColors.length]
-      )}
-    >
-      {/* Quote icon */}
-      <Quote className="w-8 h-8 text-muted-foreground/30 mb-4" />
-
-      {/* Quote text */}
-      <p className="text-foreground leading-relaxed mb-6 italic">
-        &ldquo;{quote}&rdquo;
+    <div className={cn('reveal glass-card p-8', `reveal-delay-${index + 1}`)}>
+      {/* Quote with large decorative quote mark */}
+      <p className="font-display text-[17px] font-normal italic leading-[1.75] text-[var(--text-secondary)] mb-7">
+        <span
+          className="font-display text-[44px] font-normal not-italic leading-none relative top-3.5 mr-1"
+          style={{
+            background: 'var(--gradient-rainbow-wide)',
+            backgroundSize: '300% 300%',
+            WebkitBackgroundClip: 'text',
+            backgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            animation: 'gradient-shift 6s ease infinite',
+          }}
+        >
+          &ldquo;
+        </span>
+        {quote}
       </p>
 
-      {/* Author info */}
+      {/* Author */}
       <div className="flex items-center gap-3">
-        {/* Avatar placeholder */}
-        <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-          <span className="text-sm font-medium text-muted-foreground">
-            {name.charAt(0)}
-          </span>
+        {/* Avatar with gradient background */}
+        <div
+          className="w-[42px] h-[42px] rounded-full flex items-center justify-center font-semibold text-sm text-[var(--bg-primary)]"
+          style={{
+            background: 'linear-gradient(135deg, var(--gold), var(--purple))',
+            backgroundSize: '200% 200%',
+            animation: 'gradient-shift 6s ease infinite',
+          }}
+        >
+          {initials}
         </div>
-
         <div>
-          <p className="font-medium text-foreground text-sm">{name}</p>
-          <p className="text-xs text-muted-foreground">
+          <p className="font-semibold text-sm text-[var(--text-primary)]">{name}</p>
+          <p className="text-[13px] text-[var(--text-tertiary)]">
             {role}, {company}
           </p>
         </div>
@@ -57,36 +59,30 @@ function TestimonialCard({ quote, name, company, role, index }: TestimonialCardP
 
 export function TestimonialsSection() {
   return (
-    <section id="about" className="py-20 lg:py-32">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section header */}
-        <div className="text-center mb-16">
-          <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-            What Clients Say
-          </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Real feedback from businesses we&apos;ve helped transform.
-          </p>
-        </div>
-
-        {/* Testimonials grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {testimonials.map((testimonial, index) => (
-            <TestimonialCard
-              key={testimonial.name}
-              quote={testimonial.quote}
-              name={testimonial.name}
-              company={testimonial.company}
-              role={testimonial.role}
-              index={index}
-            />
-          ))}
-        </div>
-
-        {/* Note about placeholders */}
-        <p className="text-center text-xs text-muted-foreground/60 mt-8">
-          * Testimonials shown are representative examples
+    <section id="clients" className="relative py-24 px-8 max-w-[1400px] mx-auto">
+      {/* Section header */}
+      <div className="text-center mb-14">
+        <p className="reveal text-xs font-semibold tracking-[0.12em] uppercase text-[var(--text-tertiary)] mb-4 block">
+          Client Stories
         </p>
+        <h2 className="reveal reveal-delay-1 font-display text-[clamp(32px,5vw,52px)] font-medium tracking-[-0.03em] leading-[1.15] mx-auto">
+          Trusted by teams that <span className="accent-text-purple">refuse to settle</span>
+        </h2>
+      </div>
+
+      {/* Testimonials grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {testimonials.map((testimonial, index) => (
+          <TestimonialCard
+            key={testimonial.name}
+            quote={testimonial.quote}
+            name={testimonial.name}
+            initials={testimonial.initials}
+            company={testimonial.company}
+            role={testimonial.role}
+            index={index}
+          />
+        ))}
       </div>
     </section>
   );

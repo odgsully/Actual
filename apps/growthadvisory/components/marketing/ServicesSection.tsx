@@ -1,13 +1,58 @@
 'use client';
 
 import { services } from '@/lib/marketing-data';
-import { Brain, Workflow, Code } from 'lucide-react';
+import { GradientBorderCard } from './GradientBorderCard';
 import { cn } from '@/lib/utils';
 
-const iconMap = {
-  brain: Brain,
-  workflow: Workflow,
-  code: Code,
+// Custom SVG icons with unique gradient IDs to prevent conflicts
+const ServiceIcon = ({ type, gradientId }: { type: string; gradientId: string }) => {
+  const icons: Record<string, React.ReactNode> = {
+    ai: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={`url(#${gradientId})`} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <defs>
+          <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#FBBF24"/>
+            <stop offset="50%" stopColor="#A78BFA"/>
+            <stop offset="100%" stopColor="#22D3EE"/>
+          </linearGradient>
+        </defs>
+        <path d="M12 2a4 4 0 0 1 4 4c0 1.95-1.4 3.58-3.25 3.93L12 22"/>
+        <path d="M12 2a4 4 0 0 0-4 4c0 1.95 1.4 3.58 3.25 3.93"/>
+        <path d="M8.56 13.68C5.27 14.67 3 16.65 3 19h18c0-2.35-2.27-4.33-5.56-5.32"/>
+      </svg>
+    ),
+    workflow: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={`url(#${gradientId})`} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <defs>
+          <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#A78BFA"/>
+            <stop offset="50%" stopColor="#22D3EE"/>
+            <stop offset="100%" stopColor="#FBBF24"/>
+          </linearGradient>
+        </defs>
+        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+        <line x1="8" y1="21" x2="16" y2="21"/>
+        <line x1="12" y1="17" x2="12" y2="21"/>
+        <path d="M7 8h2m4 0h4M7 12h10"/>
+      </svg>
+    ),
+    code: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={`url(#${gradientId})`} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <defs>
+          <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#22D3EE"/>
+            <stop offset="50%" stopColor="#FBBF24"/>
+            <stop offset="100%" stopColor="#A78BFA"/>
+          </linearGradient>
+        </defs>
+        <polyline points="16 18 22 12 16 6"/>
+        <polyline points="8 6 2 12 8 18"/>
+        <line x1="14" y1="4" x2="10" y2="20"/>
+      </svg>
+    ),
+  };
+
+  return icons[type] || icons.ai;
 };
 
 interface ServiceCardProps {
@@ -19,82 +64,65 @@ interface ServiceCardProps {
 }
 
 function ServiceCard({ icon, title, description, features, index }: ServiceCardProps) {
-  const IconComponent = iconMap[icon as keyof typeof iconMap] || Brain;
-
-  const accentColors = [
-    'text-amber-400 bg-amber-400/10 border-amber-400/20',
-    'text-purple-400 bg-purple-400/10 border-purple-400/20',
-    'text-teal-400 bg-teal-400/10 border-teal-400/20',
-  ];
+  const gradientId = `grad-${icon}-${index}`;
 
   return (
-    <div
-      className={cn(
-        'relative p-6 rounded-lg border border-border bg-card/30',
-        'hover:bg-card/60 transition-all duration-300',
-        'hover:border-border/80 hover:-translate-y-1',
-        'flex flex-col h-full'
-      )}
-    >
+    <GradientBorderCard className={cn('reveal', `reveal-delay-${index + 1}`)}>
       {/* Icon */}
-      <div
-        className={cn(
-          'w-12 h-12 rounded-lg flex items-center justify-center mb-4 border',
-          accentColors[index % accentColors.length]
-        )}
-      >
-        <IconComponent className="w-6 h-6" />
+      <div className="w-[52px] h-[52px] rounded-xl flex items-center justify-center mb-6 border border-[var(--border-subtle)] bg-[rgba(255,255,255,0.03)]">
+        <ServiceIcon type={icon} gradientId={gradientId} />
       </div>
 
       {/* Title */}
-      <h3 className="text-xl font-semibold text-foreground mb-3">{title}</h3>
+      <h3 className="font-display text-2xl font-medium tracking-[-0.02em] mb-4">
+        {title}
+      </h3>
 
       {/* Description */}
-      <p className="text-muted-foreground mb-4 leading-relaxed">{description}</p>
+      <p className="text-[15px] text-[var(--text-secondary)] leading-[1.7] mb-5">
+        {description}
+      </p>
 
-      {/* Features */}
-      <ul className="mt-auto space-y-2">
+      {/* Tags */}
+      <div className="flex flex-wrap gap-2 mt-auto">
         {features.map((feature) => (
-          <li
-            key={feature}
-            className="flex items-start gap-2 text-sm text-muted-foreground"
-          >
-            <span className="text-foreground mt-1">•</span>
+          <span key={feature} className="tag">
             {feature}
-          </li>
+          </span>
         ))}
-      </ul>
-    </div>
+      </div>
+    </GradientBorderCard>
   );
 }
 
 export function ServicesSection() {
   return (
-    <section id="services" className="py-20 lg:py-32">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section header */}
-        <div className="text-center mb-16">
-          <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-            What We Do
-          </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            We combine deep technical expertise with business acumen to deliver solutions that actually work.
-          </p>
-        </div>
+    <section id="services" className="relative py-24 px-8 max-w-[1400px] mx-auto">
+      {/* Section header */}
+      <div className="mb-14">
+        <p className="reveal text-xs font-semibold tracking-[0.12em] uppercase text-[var(--text-tertiary)] mb-4">
+          What We Do
+        </p>
+        <h2 className="reveal reveal-delay-1 font-display text-[clamp(32px,5vw,52px)] font-medium tracking-[-0.03em] leading-[1.15] mb-5">
+          Services built for <span className="gradient-text-static">compounding impact</span>
+        </h2>
+        <p className="reveal reveal-delay-2 text-[17px] font-normal text-[var(--text-secondary)] leading-[1.75] max-w-[560px]">
+          End-to-end solutions that integrate AI, operations, and custom development into a cohesive growth engine.
+        </p>
+      </div>
 
-        {/* Services grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {services.map((service, index) => (
-            <ServiceCard
-              key={service.title}
-              icon={service.icon}
-              title={service.title}
-              description={service.description}
-              features={service.features}
-              index={index}
-            />
-          ))}
-        </div>
+      {/* Services grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {services.map((service, index) => (
+          <ServiceCard
+            key={service.title}
+            icon={service.icon}
+            title={service.title}
+            description={service.description}
+            features={service.features}
+            index={index}
+          />
+        ))}
       </div>
     </section>
   );

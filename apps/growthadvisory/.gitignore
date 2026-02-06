@@ -1,1 +1,7 @@
 .vercel
+
+# Design mockups and Figma exports
+design-remix*.html
+
+# Asset duplicates (use /public/assets/ instead)
+/assets/

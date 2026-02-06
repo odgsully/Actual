@@ -42,12 +42,21 @@ module.exports = {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
+        // Brand colors
+        gold: '#FBBF24',
+        purple: '#A78BFA',
+        teal: '#22D3EE',
       },
       fontFamily: {
         sans: [
           'var(--font-inter)',
           'system-ui',
           'sans-serif'
+        ],
+        display: [
+          'var(--font-display)',
+          'Georgia',
+          'serif'
         ],
       },
       borderRadius: {

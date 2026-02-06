@@ -1,102 +1,170 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Menu, X } from 'lucide-react';
 import { navLinks, companyInfo } from '@/lib/marketing-data';
-import { AnimatedGradientButton } from './AnimatedGradientButton';
+import { useDropdownNav } from '@/hooks/useDropdownNav';
+import { NavDropdown } from './NavDropdown';
+import { MobileNavAccordion } from './MobileNavAccordion';
 import { cn } from '@/lib/utils';
 
 export function MarketingNav() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  const {
+    isOpen,
+    handleMouseEnter,
+    handleMouseLeave,
+    handleClick,
+    handleKeyDown,
+    handleItemKeyDown,
+    closeAll,
+    focusedIndex,
+  } = useDropdownNav({ closeDelay: 150 });
+
+  // Handle scroll for backdrop blur effect
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 40);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Close mobile menu on link click
+  const handleLinkClick = () => {
+    setMobileMenuOpen(false);
+    document.body.style.overflow = '';
+  };
+
+  // Toggle mobile menu
+  const toggleMobileMenu = () => {
+    const newState = !mobileMenuOpen;
+    setMobileMenuOpen(newState);
+    document.body.style.overflow = newState ? 'hidden' : '';
+  };
+
+  // Close dropdowns when scrolling on mobile
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      closeAll();
+    }
+  }, [mobileMenuOpen, closeAll]);
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+    <>
+      <nav
+        className={cn(
+          'fixed top-0 left-0 right-0 z-[1000] py-4 transition-all duration-400',
+          scrolled && 'bg-[rgba(10,10,15,0.80)] backdrop-blur-[16px] border-b border-[var(--border-subtle)] py-3'
+        )}
+      >
+        <div className="max-w-[1400px] mx-auto px-8 flex items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-3">
+          <Link
+            href="/"
+            className="flex items-center gap-3"
+          >
             <Image
-              src="/logo.svg"
+              src="/assets/ga-logo-white.png"
               alt="Growth Advisory"
-              width={32}
-              height={32}
-              className="rounded"
+              width={36}
+              height={36}
+              className="object-contain"
             />
-            <span className="text-lg font-semibold text-foreground">
+            <span className="font-display font-medium text-lg tracking-[-0.02em]">
               {companyInfo.name}
             </span>
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-8">
-            {navLinks.map((link) => (
-              <a
-                key={link.label}
-                href={link.href}
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {link.label}
-              </a>
+          <ul className="hidden md:flex items-center gap-8 list-none">
+            {navLinks.map((navLink) => (
+              <li key={navLink.label}>
+                <NavDropdown
+                  navLink={navLink}
+                  isOpen={isOpen(navLink.label)}
+                  focusedIndex={focusedIndex}
+                  onMouseEnter={() => handleMouseEnter(navLink.label)}
+                  onMouseLeave={handleMouseLeave}
+                  onClick={() => handleClick(navLink.label)}
+                  onKeyDown={(e) =>
+                    handleKeyDown(e, navLink.label, navLink.children?.length || 0)
+                  }
+                  onItemKeyDown={(e, index, onSelect) =>
+                    handleItemKeyDown(e, index, navLink.children?.length || 0, onSelect)
+                  }
+                  onClose={closeAll}
+                />
+              </li>
             ))}
-          </div>
+            <li>
+              <a
+                href={companyInfo.bookingUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-gradient py-2.5 px-6 text-sm"
+              >
+                Book a Call
+              </a>
+            </li>
+          </ul>
 
-          {/* Desktop CTA */}
-          <div className="hidden md:block">
-            <AnimatedGradientButton
-              href={companyInfo.bookingUrl}
-              size="default"
-            >
-              Book a Call
-            </AnimatedGradientButton>
-          </div>
-
-          {/* Mobile menu button */}
+          {/* Mobile hamburger button */}
           <button
-            className="md:hidden p-2 text-muted-foreground hover:text-foreground"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="Toggle menu"
-          >
-            {mobileMenuOpen ? (
-              <X className="w-6 h-6" />
-            ) : (
-              <Menu className="w-6 h-6" />
+            className={cn(
+              'md:hidden flex flex-col gap-[5px] bg-transparent border-none cursor-pointer p-1 z-[1001]'
             )}
+            onClick={toggleMobileMenu}
+            aria-label="Toggle navigation"
+            aria-expanded={mobileMenuOpen}
+          >
+            <span
+              className={cn(
+                'block w-6 h-0.5 bg-[var(--text-primary)] rounded-sm transition-all duration-300',
+                mobileMenuOpen && 'rotate-45 translate-x-[5px] translate-y-[5px]'
+              )}
+            />
+            <span
+              className={cn(
+                'block w-6 h-0.5 bg-[var(--text-primary)] rounded-sm transition-all duration-300',
+                mobileMenuOpen && 'opacity-0'
+              )}
+            />
+            <span
+              className={cn(
+                'block w-6 h-0.5 bg-[var(--text-primary)] rounded-sm transition-all duration-300',
+                mobileMenuOpen && '-rotate-45 translate-x-[5px] -translate-y-[5px]'
+              )}
+            />
           </button>
         </div>
-      </div>
+      </nav>
 
-      {/* Mobile menu */}
+      {/* Mobile Menu Overlay */}
       <div
         className={cn(
-          'md:hidden border-t border-border bg-background/95 backdrop-blur-lg',
-          'transition-all duration-300 ease-in-out overflow-hidden',
-          mobileMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+          'fixed inset-0 z-[999] bg-[rgba(10,10,15,0.96)] backdrop-blur-[24px]',
+          'flex-col items-center justify-center gap-8',
+          'transition-opacity duration-400',
+          mobileMenuOpen ? 'flex opacity-100' : 'hidden opacity-0'
         )}
+        aria-hidden={!mobileMenuOpen}
       >
-        <div className="px-4 py-4 space-y-4">
-          {navLinks.map((link) => (
-            <a
-              key={link.label}
-              href={link.href}
-              className="block py-2 text-muted-foreground hover:text-foreground transition-colors"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              {link.label}
-            </a>
-          ))}
-          <div className="pt-2">
-            <AnimatedGradientButton
-              href={companyInfo.bookingUrl}
-              size="default"
-              className="w-full"
-            >
-              Book a Call
-            </AnimatedGradientButton>
-          </div>
-        </div>
+        <MobileNavAccordion navLinks={navLinks} onLinkClick={handleLinkClick} />
+        <a
+          href={companyInfo.bookingUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn-gradient mt-4"
+          onClick={handleLinkClick}
+        >
+          Book a Call
+        </a>
       </div>
-    </nav>
+    </>
   );
 }

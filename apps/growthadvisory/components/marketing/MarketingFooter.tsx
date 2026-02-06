@@ -1,91 +1,79 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { footerLinks, companyInfo } from '@/lib/marketing-data';
 
 export function MarketingFooter() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="border-t border-border bg-background">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Main footer content */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-          {/* Company info */}
-          <div className="md:col-span-1">
-            <h3 className="font-semibold text-foreground mb-4">{companyInfo.name}</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              {companyInfo.tagline}
-            </p>
-            <a
-              href={`mailto:${companyInfo.email}`}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {companyInfo.email}
-            </a>
+    <footer className="border-t border-[var(--border-subtle)] py-[60px] px-8 relative">
+      <div className="max-w-[1400px] mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr] gap-12 lg:gap-12">
+        {/* Brand column */}
+        <div>
+          <div className="flex items-center gap-3 mb-3">
+            <Image
+              src="/assets/ga-logo-white.png"
+              alt="Growth Advisory"
+              width={32}
+              height={32}
+              className="object-contain"
+            />
+            <span className="font-display font-medium text-lg tracking-[-0.02em]">
+              {companyInfo.name}
+            </span>
           </div>
-
-          {/* Services */}
-          <div>
-            <h4 className="font-medium text-foreground mb-4">Services</h4>
-            <ul className="space-y-2">
-              {footerLinks.services.map((link) => (
-                <li key={link.label}>
-                  <a
-                    href={link.href}
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {link.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Company */}
-          <div>
-            <h4 className="font-medium text-foreground mb-4">Company</h4>
-            <ul className="space-y-2">
-              {footerLinks.company.map((link) => (
-                <li key={link.label}>
-                  <a
-                    href={link.href}
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {link.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Legal */}
-          <div>
-            <h4 className="font-medium text-foreground mb-4">Legal</h4>
-            <ul className="space-y-2">
-              {footerLinks.legal.map((link) => (
-                <li key={link.label}>
-                  <Link
-                    href={link.href}
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
+          <p className="text-sm text-[var(--text-tertiary)] max-w-[300px] leading-[1.7]">
+            {companyInfo.tagline}
+          </p>
         </div>
 
-        {/* Divider */}
-        <div className="border-t border-border pt-8">
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-            {/* Copyright */}
-            <p className="text-xs text-muted-foreground">
-              &copy; {currentYear} {companyInfo.name}. All rights reserved.
-            </p>
-          </div>
+        {/* Services column */}
+        <div>
+          <h4 className="font-semibold text-[13px] tracking-[0.02em] text-[var(--text-secondary)] mb-4">
+            Services
+          </h4>
+          <ul className="space-y-2.5 list-none">
+            {footerLinks.services.map((link) => (
+              <li key={link.label}>
+                <a
+                  href={link.href}
+                  className="text-sm text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors duration-300"
+                >
+                  {link.label}
+                </a>
+              </li>
+            ))}
+          </ul>
         </div>
+
+        {/* Company column */}
+        <div>
+          <h4 className="font-semibold text-[13px] tracking-[0.02em] text-[var(--text-secondary)] mb-4">
+            Company
+          </h4>
+          <ul className="space-y-2.5 list-none">
+            {footerLinks.company.map((link) => (
+              <li key={link.label}>
+                <a
+                  href={link.href}
+                  target={link.href.startsWith('http') ? '_blank' : undefined}
+                  rel={link.href.startsWith('http') ? 'noopener noreferrer' : undefined}
+                  className="text-sm text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors duration-300"
+                >
+                  {link.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      {/* Bottom bar */}
+      <div className="max-w-[1400px] mx-auto mt-10 pt-6 border-t border-[var(--border-subtle)] flex flex-col sm:flex-row items-center justify-between gap-3 text-[13px] text-[var(--text-tertiary)]">
+        <span>&copy; {currentYear} {companyInfo.name}. All rights reserved.</span>
+        <span>Built with intention.</span>
       </div>
     </footer>
   );

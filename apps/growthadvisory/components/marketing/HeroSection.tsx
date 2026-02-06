@@ -1,66 +1,57 @@
 'use client';
 
 import { heroContent } from '@/lib/marketing-data';
-import { AnimatedGradientButton } from './AnimatedGradientButton';
 import { BackgroundOrbs } from './BackgroundOrbs';
+import { useScrollRevealAll } from '@/hooks/useScrollReveal';
 
 export function HeroSection() {
+  // Initialize scroll reveal for all .reveal elements
+  useScrollRevealAll();
+
+  // Split headline to insert gradient text for "intelligent"
+  const headlineParts = heroContent.headline.split(heroContent.highlightWord);
+
   return (
-    <section className="relative min-h-screen flex items-center justify-center pt-16 overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-background via-background to-muted/20" />
-      <BackgroundOrbs />
+    <section className="relative min-h-[85vh] flex items-center pt-20 pb-10 overflow-hidden">
+      {/* Aurora background */}
+      <BackgroundOrbs variant="hero" />
 
       {/* Content */}
-      <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center py-20">
-        {/* Headline */}
-        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground leading-tight tracking-tight mb-6">
-          {heroContent.headline}
+      <div className="relative z-10 max-w-[1400px] mx-auto px-8">
+        {/* Eyebrow pill */}
+        <div className="reveal inline-flex items-center gap-2 py-2 px-5 rounded-full border border-[var(--border-subtle)] bg-[rgba(255,255,255,0.03)] text-xs font-semibold tracking-[0.08em] uppercase text-[var(--text-secondary)] mb-6">
+          <span className="w-1.5 h-1.5 rounded-full bg-teal animate-pulse-glow" />
+          {heroContent.eyebrow}
+        </div>
+
+        {/* Title */}
+        <h1 className="reveal reveal-delay-1 font-display text-[clamp(42px,7vw,76px)] font-normal tracking-[-0.04em] leading-[1.08] mb-5 max-w-[900px]">
+          {headlineParts[0]}
+          <em className="gradient-text italic">{heroContent.highlightWord}</em>
+          {headlineParts[1]}
         </h1>
 
-        {/* Subheadline */}
-        <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
+        {/* Subtitle */}
+        <p className="reveal reveal-delay-2 text-[clamp(16px,2vw,19px)] font-normal text-[var(--text-secondary)] leading-[1.7] max-w-[650px] mb-10">
           {heroContent.subheadline}
         </p>
 
         {/* CTAs */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-          <AnimatedGradientButton
+        <div className="reveal reveal-delay-3 flex items-center gap-4 flex-wrap">
+          <a
             href={heroContent.primaryCta.href}
-            variant="primary"
-            size="large"
-            showArrow
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-gradient group"
           >
             {heroContent.primaryCta.text}
-          </AnimatedGradientButton>
-
-          <AnimatedGradientButton
-            href={heroContent.secondaryCta.href}
-            variant="secondary"
-            size="large"
-          >
+            <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">
+              &rarr;
+            </span>
+          </a>
+          <a href={heroContent.secondaryCta.href} className="btn-ghost">
             {heroContent.secondaryCta.text}
-          </AnimatedGradientButton>
-        </div>
-
-        {/* Optional: Quick stats or social proof */}
-        <div className="mt-16 pt-10 border-t border-border/50">
-          <p className="text-sm text-muted-foreground mb-4">
-            Trusted by forward-thinking businesses
-          </p>
-          <div className="flex justify-center gap-8 text-muted-foreground/60">
-            {/* Placeholder for future client logos */}
-            <span className="text-xs uppercase tracking-wider">Client Logo</span>
-            <span className="text-xs uppercase tracking-wider">Client Logo</span>
-            <span className="text-xs uppercase tracking-wider">Client Logo</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Scroll indicator */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
-        <div className="w-6 h-10 border-2 border-muted-foreground/30 rounded-full flex justify-center">
-          <div className="w-1 h-3 bg-muted-foreground/30 rounded-full mt-2" />
+          </a>
         </div>
       </div>
     </section>
