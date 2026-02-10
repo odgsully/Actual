@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Heart, Brain, UtensilsCrossed, AlertCircle, RefreshCw } from 'lucide-react';
+import { Heart, Brain, UtensilsCrossed, Bird, AlertCircle, RefreshCw } from 'lucide-react';
 import { useHabitsStreak } from '@/hooks/useHabitsData';
 import { WarningBorderTrail } from '../WarningBorderTrail';
 import { HabitInsightsModal } from './HabitInsightsModal';
@@ -13,16 +13,17 @@ interface CoreHabitsTileProps {
 }
 
 /**
- * The 3 core habits we want to track prominently
+ * The 4 core habits we want to track prominently
  */
 const CORE_HABITS = [
   { name: 'Heart rate UP', label: 'HR Up', icon: Heart, color: 'text-red-500' },
   { name: 'Stillness', label: 'Stillness', icon: Brain, color: 'text-purple-500' },
   { name: 'Food Tracked', label: 'Food', icon: UtensilsCrossed, color: 'text-green-500' },
+  { name: 'Duolingo', label: 'Duo', icon: Bird, color: 'text-emerald-400' },
 ] as const;
 
 /**
- * CoreHabitsTile - Displays 3 key habits: HR Up, Stillness, Food Tracked
+ * CoreHabitsTile - Displays 4 key habits: HR Up, Stillness, Food Tracked, Duolingo
  *
  * Shows each habit with:
  * - Icon
@@ -88,7 +89,7 @@ export function CoreHabitsTile({ tile, className }: CoreHabitsTileProps) {
         <div className="flex-1 flex items-center justify-center">
           {isLoading && (
             <div className="flex gap-4 animate-pulse">
-              {[1, 2, 3].map((i) => (
+              {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="flex flex-col items-center gap-1">
                   <div className="w-6 h-6 bg-muted rounded-full" />
                   <div className="w-8 h-4 bg-muted rounded" />
@@ -111,29 +112,29 @@ export function CoreHabitsTile({ tile, className }: CoreHabitsTileProps) {
           )}
 
           {!isLoading && !error && (
-            <div className="flex items-center justify-around w-full gap-2">
+            <div className="grid grid-cols-4 w-full">
               {coreStreaks.map((habit) => {
                 const Icon = habit.icon;
                 return (
                   <div
                     key={habit.name}
-                    className="flex flex-col items-center gap-0.5 min-w-0"
+                    className="flex flex-col items-center gap-0 min-w-0"
                   >
                     {/* Icon */}
-                    <Icon className={`w-5 h-5 ${habit.color}`} />
+                    <Icon className={`w-4 h-4 ${habit.color}`} />
 
                     {/* Streak number - prominent */}
-                    <span className="text-xl font-bold text-foreground leading-none">
+                    <span className="text-lg font-bold text-foreground leading-none">
                       {habit.currentStreak}
                     </span>
 
                     {/* Label */}
-                    <span className="text-[10px] text-muted-foreground truncate">
+                    <span className="text-[9px] text-muted-foreground truncate">
                       {habit.label}
                     </span>
 
                     {/* 7-day rate - subtle */}
-                    <span className="text-[9px] text-muted-foreground/70">
+                    <span className="text-[8px] text-muted-foreground/70">
                       {habit.completionRate7Days}%
                     </span>
                   </div>
