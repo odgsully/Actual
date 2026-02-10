@@ -19,7 +19,7 @@ const CORE_HABITS = [
   { name: 'Heart rate UP', label: 'HR Up', icon: Heart, color: 'text-red-500' },
   { name: 'Stillness', label: 'Stillness', icon: Brain, color: 'text-purple-500' },
   { name: 'Food Tracked', label: 'Food', icon: UtensilsCrossed, color: 'text-green-500' },
-  { name: 'Duolingo', label: 'Duo', icon: Bird, color: 'text-emerald-400' },
+  { name: 'Duolingo', label: 'Español', icon: Bird, color: 'text-emerald-400' },
 ] as const;
 
 /**

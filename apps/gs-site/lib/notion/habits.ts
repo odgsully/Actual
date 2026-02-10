@@ -204,6 +204,11 @@ function parseDailyRecord(page: any): DailyRecord | null {
 
 /**
  * Calculate streak for a single habit from daily records
+ *
+ * Streak logic:
+ * - If today is completed, include it and count backward
+ * - If today is NOT completed, skip today (don't break streak) and count from yesterday
+ * - A streak breaks when there's a gap (incomplete day) before yesterday
  */
 function calculateHabitStreak(
   habitName: string,
@@ -214,50 +219,74 @@ function calculateHabitStreak(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 
-  let currentStreak = 0;
   let longestStreak = 0;
   let tempStreak = 0;
   let lastCompletedDate: string | null = null;
-  let streakBroken = false;
 
   // Get today's date string
   const today = new Date().toISOString().split('T')[0];
-  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
 
-  for (let i = 0; i < sortedRecords.length; i++) {
-    const record = sortedRecords[i];
+  // First pass: find lastCompletedDate and calculate longest streak
+  for (const record of sortedRecords) {
     const completed = record.habits[habitName] === true;
 
     if (completed) {
       if (!lastCompletedDate) {
         lastCompletedDate = record.date;
       }
-
       tempStreak++;
-
-      // Current streak only counts if it includes today or yesterday
-      if (!streakBroken && (record.date === today || record.date === yesterday || i === 0)) {
-        currentStreak = tempStreak;
-      }
     } else {
-      // Streak broken
       if (tempStreak > longestStreak) {
         longestStreak = tempStreak;
       }
       tempStreak = 0;
-
-      // If this gap is before any completion, mark streak as broken
-      if (i === 0 && record.date === today) {
-        // Today not completed - streak could still be active from yesterday
-      } else if (!streakBroken && currentStreak > 0) {
-        streakBroken = true;
-      }
     }
   }
-
   // Check final streak
   if (tempStreak > longestStreak) {
     longestStreak = tempStreak;
+  }
+
+  // Second pass: calculate current streak
+  // Start from today or yesterday (whichever has data) and count backward
+  // Today being incomplete does NOT break the streak - we just skip it
+  let currentStreak = 0;
+  let expectingDate = new Date();
+
+  // Check if today's record exists and is incomplete - if so, start from yesterday
+  const todayRecord = sortedRecords.find(r => r.date === today);
+  const todayCompleted = todayRecord?.habits[habitName] === true;
+
+  if (!todayCompleted) {
+    // Skip today - start expecting yesterday
+    expectingDate.setDate(expectingDate.getDate() - 1);
+  }
+
+  for (const record of sortedRecords) {
+    const recordDate = new Date(record.date + 'T12:00:00'); // Noon to avoid timezone issues
+    const expectedDateStr = expectingDate.toISOString().split('T')[0];
+
+    // Skip future dates or dates we're not expecting yet
+    if (record.date > expectedDateStr) {
+      continue;
+    }
+
+    // If there's a gap (record date is before expected date), streak is broken
+    if (record.date < expectedDateStr) {
+      break;
+    }
+
+    // This is the expected date - check if completed
+    const completed = record.habits[habitName] === true;
+
+    if (completed) {
+      currentStreak++;
+      // Move to expect the previous day
+      expectingDate.setDate(expectingDate.getDate() - 1);
+    } else {
+      // Not completed on expected date - streak broken
+      break;
+    }
   }
 
   return {
