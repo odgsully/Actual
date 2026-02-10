@@ -31,6 +31,10 @@ export const metadata: Metadata = {
     title: 'Growth Advisory | AI-Driven Growth for SMBs',
     description: 'Custom AI solutions, operations automation, and full-stack development for growing businesses.',
   },
+  icons: {
+    icon: '/icon.png',
+    apple: '/apple-icon.png',
+  },
 };
 
 export default function RootLayout({
