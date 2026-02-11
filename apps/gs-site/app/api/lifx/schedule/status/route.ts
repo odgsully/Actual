@@ -12,10 +12,13 @@ const supabase = createClient(
  */
 export async function GET() {
   try {
+    // Convert UTC to MST (UTC-7) to match cron handlers — Arizona doesn't observe DST
+    const MST_OFFSET_HOURS = -7;
     const now = new Date();
-    const today = now.toISOString().split('T')[0];
-    const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
+    const mstNow = new Date(now.getTime() + MST_OFFSET_HOURS * 60 * 60 * 1000);
+    const today = mstNow.toISOString().split('T')[0];
+    const currentHour = mstNow.getUTCHours();
+    const currentMinute = mstNow.getUTCMinutes();
     const currentTimeMinutes = currentHour * 60 + currentMinute;
 
     // Fetch today's state

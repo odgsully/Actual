@@ -11,7 +11,11 @@ const supabase = createClient(
 );
 
 function getTodayDate(): string {
-  return new Date().toISOString().split('T')[0];
+  // Use MST (UTC-7) to match cron handlers — Arizona doesn't observe DST
+  const MST_OFFSET_HOURS = -7;
+  const now = new Date();
+  const mstNow = new Date(now.getTime() + MST_OFFSET_HOURS * 60 * 60 * 1000);
+  return mstNow.toISOString().split('T')[0];
 }
 
 /**

@@ -401,6 +401,10 @@ export function MorningFormTile({ tile, className }: TileComponentProps) {
     setIsSubmitting(true);
 
     try {
+      // Turn off LIFX lights FIRST — fire before saveWeight to avoid
+      // race condition with sunrise cron tick (runs every minute)
+      onMorningFormComplete();
+
       // Save weight if not already saved
       if (weight && !weightSaved) {
         await saveWeight(weight);
@@ -415,9 +419,6 @@ export function MorningFormTile({ tile, className }: TileComponentProps) {
       if (facePhotoUrl && facePhotoSource) {
         console.log('Face progress photo to upload:', facePhotoSource);
       }
-
-      // Turn off LIFX lights after morning form completion
-      onMorningFormComplete();
 
       // Close modal on success
       setIsOpen(false);
@@ -1333,12 +1334,13 @@ export function MorningFormModal({ isOpen, onClose }: { isOpen: boolean; onClose
     e.preventDefault();
     setIsSubmitting(true);
     try {
+      // Turn off LIFX lights FIRST — fire before saveWeight to avoid
+      // race condition with sunrise cron tick (runs every minute)
+      onMorningFormComplete();
+
       if (weight && !weightSaved) await saveWeight(weight);
       if (bodyPhotoUrl && bodyPhotoSource) console.log('Body progress photo to upload:', bodyPhotoSource);
       if (facePhotoUrl && facePhotoSource) console.log('Face progress photo to upload:', facePhotoSource);
-
-      // Turn off LIFX lights after morning form completion
-      onMorningFormComplete();
 
       onClose();
     } catch (error) {
