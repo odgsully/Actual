@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface FormIntegrationResult {
   success: boolean;
@@ -123,38 +123,27 @@ async function handleEveningFormSubmit(): Promise<FormIntegrationResult> {
 
 /**
  * Hook for LIFX integration with form submissions
+ *
+ * Uses direct fetch calls instead of React Query mutations so that
+ * LIFX API calls survive component unmount (modal close).
  */
 export function useLIFXFormIntegration() {
   const queryClient = useQueryClient();
 
-  const morningMutation = useMutation({
-    mutationFn: handleMorningFormSubmit,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['lifx'] });
-    },
-  });
-
-  const eveningMutation = useMutation({
-    mutationFn: handleEveningFormSubmit,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['lifx'] });
-    },
-  });
-
   const onMorningFormComplete = useCallback(() => {
-    morningMutation.mutate();
-  }, [morningMutation]);
+    handleMorningFormSubmit()
+      .then(() => queryClient.invalidateQueries({ queryKey: ['lifx'] }))
+      .catch((err) => console.error('Morning LIFX integration failed:', err));
+  }, [queryClient]);
 
   const onEveningFormComplete = useCallback(() => {
-    eveningMutation.mutate();
-  }, [eveningMutation]);
+    handleEveningFormSubmit()
+      .then(() => queryClient.invalidateQueries({ queryKey: ['lifx'] }))
+      .catch((err) => console.error('Evening LIFX integration failed:', err));
+  }, [queryClient]);
 
   return {
     onMorningFormComplete,
     onEveningFormComplete,
-    isMorningPending: morningMutation.isPending,
-    isEveningPending: eveningMutation.isPending,
-    morningResult: morningMutation.data,
-    eveningResult: eveningMutation.data,
   };
 }

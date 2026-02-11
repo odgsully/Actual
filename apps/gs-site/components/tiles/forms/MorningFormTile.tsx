@@ -22,7 +22,7 @@ export function MorningFormTile({ tile, className }: TileComponentProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // LIFX integration - turns off lights when form is submitted
-  const { onMorningFormComplete, isMorningPending } = useLIFXFormIntegration();
+  const { onMorningFormComplete } = useLIFXFormIntegration();
 
   // Weight state
   const [weight, setWeight] = useState('');
