@@ -146,12 +146,15 @@ export function EveningCheckInTile({ tile, className, externalOpen, onExternalCl
     setIsSubmitting(true);
 
     try {
-      // Save deep work hours if not already saved
+      // Turn off lights FIRST — never gate LIFX on Notion/Supabase
+      onEveningFormComplete();
+
+      // All saves below are non-blocking so LIFX always fires
       if (deepWorkHours && !hoursSaved) {
-        await saveDeepWorkHours(deepWorkHours);
+        saveDeepWorkHours(deepWorkHours).catch((err) => console.warn('Deep work save failed:', err));
       }
 
-      // Save evening check-in data (non-blocking — don't gate LIFX on Notion success)
+      // Save evening check-in data to Notion (non-blocking)
       fetch('/api/notion/habits/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -168,8 +171,18 @@ export function EveningCheckInTile({ tile, className, externalOpen, onExternalCl
         }),
       }).catch((err) => console.warn('Evening check-in Notion save failed:', err));
 
-      // Turn off lights and update schedule state (independent of Notion)
-      onEveningFormComplete();
+      // Persist to Supabase (non-blocking)
+      fetch('/api/forms/evening', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          deepWorkHours: deepWorkHours ? parseFloat(deepWorkHours) : undefined,
+          accomplishments: accomplishments || undefined,
+          improvements: improvements || undefined,
+          dayRating: dayRating ?? undefined,
+        }),
+      }).catch((err) => console.warn('Evening check-in Supabase save failed:', err));
+
       // Close modal
       setIsOpen(false);
     } catch (error) {
@@ -615,10 +628,17 @@ export function EveningCheckInModal({ isOpen, onClose }: { isOpen: boolean; onCl
 
     setIsSubmitting(true);
     try {
-      if (deepWorkHours && !hoursSaved) await saveDeepWorkHours(deepWorkHours);
+      // Turn off lights FIRST — never gate LIFX on Notion/Supabase
+      onEveningFormComplete();
 
-      // Ensure Food Tracked is saved (should already be saved inline, but double-check)
-      if (!foodSaved) await saveFoodTracked(true);
+      // All saves below are non-blocking so LIFX always fires
+      if (deepWorkHours && !hoursSaved) {
+        saveDeepWorkHours(deepWorkHours).catch((err) => console.warn('Deep work save failed:', err));
+      }
+
+      if (!foodSaved) {
+        saveFoodTracked(true).catch((err) => console.warn('Food tracked save failed:', err));
+      }
 
       // TODO: Upload habitat photos to Supabase storage
       if (habitatPhotos.length > 0) {
@@ -626,7 +646,8 @@ export function EveningCheckInModal({ isOpen, onClose }: { isOpen: boolean; onCl
         // Future: Upload to Supabase storage bucket
       }
 
-      await fetch('/api/notion/habits/update', {
+      // Save evening check-in data to Notion (non-blocking)
+      fetch('/api/notion/habits/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -642,9 +663,22 @@ export function EveningCheckInModal({ isOpen, onClose }: { isOpen: boolean; onCl
             foodTracked: true,
           },
         }),
-      });
-      // Turn off lights and update schedule state
-      onEveningFormComplete();
+      }).catch((err) => console.warn('Evening check-in Notion save failed:', err));
+
+      // Persist to Supabase (non-blocking)
+      fetch('/api/forms/evening', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          deepWorkHours: deepWorkHours ? parseFloat(deepWorkHours) : undefined,
+          accomplishments: accomplishments || undefined,
+          improvements: improvements || undefined,
+          dayRating: dayRating ?? undefined,
+          foodTracked: true,
+          habitatPhotoCount: habitatPhotos.length,
+        }),
+      }).catch((err) => console.warn('Evening check-in Supabase save failed:', err));
+
       onClose();
     } catch (error) {
       console.error('Error submitting evening check-in:', error);

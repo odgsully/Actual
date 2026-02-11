@@ -1,0 +1,98 @@
+'use client';
+
+import { useQuery } from '@tanstack/react-query';
+
+export interface EveningFormStats {
+  streak: {
+    current: number;
+    longest: number;
+    lastSubmissionDate: string | null;
+  };
+  thisWeek: {
+    completed: number;
+    target: number;
+    percentage: number;
+  };
+  averages: {
+    dayRating: number | null;
+    deepWorkHoursPerDay: number | null;
+  };
+  recentSubmissions: number;
+}
+
+interface UseEveningFormStatsOptions {
+  days?: number;
+  enabled?: boolean;
+  refetchInterval?: number;
+}
+
+async function fetchEveningFormStats(days: number = 30): Promise<EveningFormStats> {
+  const response = await fetch(`/api/forms/evening/stats?days=${days}`);
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch evening form statistics');
+  }
+
+  return response.json();
+}
+
+export function useEveningFormStats(options: UseEveningFormStatsOptions = {}) {
+  const { days = 30, enabled = true, refetchInterval = 5 * 60 * 1000 } = options;
+
+  return useQuery({
+    queryKey: ['eveningFormStats', days],
+    queryFn: () => fetchEveningFormStats(days),
+    enabled,
+    refetchInterval,
+    staleTime: 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    retry: 2,
+    refetchOnWindowFocus: true,
+  });
+}
+
+export function useEveningStreakRisk() {
+  const { data, isLoading, error } = useEveningFormStats();
+
+  const isAtRisk = (() => {
+    if (!data?.streak.lastSubmissionDate) return true;
+
+    const lastSubmission = new Date(data.streak.lastSubmissionDate);
+    const today = new Date();
+    lastSubmission.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+
+    return lastSubmission.getTime() !== today.getTime();
+  })();
+
+  const hoursUntilStreakBreaks = (() => {
+    if (!data?.streak.lastSubmissionDate) return 0;
+
+    const lastSubmission = new Date(data.streak.lastSubmissionDate);
+    const endOfToday = new Date();
+    endOfToday.setHours(23, 59, 59, 999);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    lastSubmission.setHours(0, 0, 0, 0);
+
+    if (lastSubmission.getTime() === today.getTime()) {
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(23, 59, 59, 999);
+      return Math.floor((tomorrow.getTime() - Date.now()) / (1000 * 60 * 60));
+    }
+
+    return Math.max(0, Math.floor((endOfToday.getTime() - Date.now()) / (1000 * 60 * 60)));
+  })();
+
+  return {
+    isAtRisk,
+    hoursUntilStreakBreaks,
+    currentStreak: data?.streak.current || 0,
+    isLoading,
+    error,
+  };
+}
+
+export default useEveningFormStats;
