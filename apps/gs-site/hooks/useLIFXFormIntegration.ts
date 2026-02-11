@@ -11,34 +11,43 @@ interface FormIntegrationResult {
 
 /**
  * Handle morning form submission - turns off lights
+ *
+ * Fires the LIFX off command and Supabase state update in parallel
+ * to close the race window with the sunrise cron tick (runs every minute).
+ * Previously the sequential order (state update THEN light off) left a gap
+ * where the cron could read stale state and turn the light back on.
  */
 async function handleMorningFormSubmit(): Promise<FormIntegrationResult> {
   try {
-    // 1. Update schedule state
-    const stateResponse = await fetch('/api/lifx/schedule', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        morning_form_submitted: true,
-        morning_form_submitted_at: new Date().toISOString(),
-        morning_lights_off: true,
+    const [stateResult, lifxResponse] = await Promise.all([
+      // Update schedule state (so cron skips on next tick)
+      fetch('/api/lifx/schedule', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          morning_form_submitted: true,
+          morning_form_submitted_at: new Date().toISOString(),
+          morning_lights_off: true,
+        }),
+      }).catch((err) => {
+        console.error('LIFX schedule state update failed:', err);
+        return null; // Don't block light-off on state failure
       }),
-    });
+      // Turn off lights immediately
+      fetch('/api/lifx/state', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          selector: 'all',
+          power: 'off',
+          duration: 1,
+        }),
+      }),
+    ]);
 
-    if (!stateResponse.ok) {
-      throw new Error('Failed to update schedule state');
+    if (stateResult && !stateResult.ok) {
+      console.error('LIFX schedule state update returned:', stateResult.status);
     }
-
-    // 2. Turn off lights immediately
-    const lifxResponse = await fetch('/api/lifx/state', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        selector: 'all',
-        power: 'off',
-        duration: 1,
-      }),
-    });
 
     if (!lifxResponse.ok) {
       const errText = await lifxResponse.text().catch(() => 'unknown');
@@ -66,36 +75,45 @@ async function handleMorningFormSubmit(): Promise<FormIntegrationResult> {
 
 /**
  * Handle evening form submission - unlocks controller and turns off lights
+ *
+ * Same parallel pattern as morning: fires the LIFX off command and
+ * Supabase state update simultaneously to avoid the race with the
+ * evening-lock cron. The LIFX state API does not check lock status,
+ * so the light turns off regardless of controller_locked state.
  */
 async function handleEveningFormSubmit(): Promise<FormIntegrationResult> {
   try {
-    // 1. Update schedule state - unlock controller
-    const stateResponse = await fetch('/api/lifx/schedule', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        evening_form_submitted: true,
-        evening_form_submitted_at: new Date().toISOString(),
-        evening_lights_off: true,
-        controller_locked: false,
-        lock_reason: null,
+    const [stateResult, lifxResponse] = await Promise.all([
+      // Update schedule state - unlock controller
+      fetch('/api/lifx/schedule', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          evening_form_submitted: true,
+          evening_form_submitted_at: new Date().toISOString(),
+          evening_lights_off: true,
+          controller_locked: false,
+          lock_reason: null,
+        }),
+      }).catch((err) => {
+        console.error('LIFX schedule state update failed:', err);
+        return null; // Don't block light-off on state failure
       }),
-    });
+      // Turn off lights immediately
+      fetch('/api/lifx/state', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          selector: 'all',
+          power: 'off',
+          duration: 2,
+        }),
+      }),
+    ]);
 
-    if (!stateResponse.ok) {
-      throw new Error('Failed to update schedule state');
+    if (stateResult && !stateResult.ok) {
+      console.error('LIFX schedule state update returned:', stateResult.status);
     }
-
-    // 2. Turn off lights (now that lock is released)
-    const lifxResponse = await fetch('/api/lifx/state', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        selector: 'all',
-        power: 'off',
-        duration: 2,
-      }),
-    });
 
     if (!lifxResponse.ok) {
       const errText = await lifxResponse.text().catch(() => 'unknown');
