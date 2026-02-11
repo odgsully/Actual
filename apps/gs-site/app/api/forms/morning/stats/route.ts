@@ -2,12 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { calculateStreak, getStartOfWeek } from "@/lib/utils/streak";
 
+export const dynamic = "force-dynamic";
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-interface EveningStatsResponse {
+interface MorningStatsResponse {
   streak: {
     current: number;
     longest: number;
@@ -19,8 +21,10 @@ interface EveningStatsResponse {
     percentage: number;
   };
   averages: {
-    dayRating: number | null;
-    deepWorkHoursPerDay: number | null;
+    weight: number | null;
+    teethGrindRating: number | null;
+    retainerCompliancePercent: number | null;
+    photoVideoCompletionPercent: number | null;
   };
   recentSubmissions: number;
 }
@@ -34,7 +38,7 @@ export async function GET(request: NextRequest) {
     startDate.setDate(startDate.getDate() - days);
 
     const { data: submissions, error } = await supabase
-      .from("evening_checkin_submissions")
+      .from("morning_checkin_submissions")
       .select("*")
       .gte("entry_date", startDate.toISOString().split("T")[0])
       .order("entry_date", { ascending: false });
@@ -42,7 +46,7 @@ export async function GET(request: NextRequest) {
     if (error) {
       console.error("Supabase error:", error);
       return NextResponse.json(
-        { error: "Failed to fetch evening stats", details: error.message },
+        { error: "Failed to fetch morning stats", details: error.message },
         { status: 500 }
       );
     }
@@ -58,26 +62,56 @@ export async function GET(request: NextRequest) {
       thisWeekSubmissions.map((s) => s.entry_date)
     ).size;
 
-    // Averages
-    const ratings = (submissions || [])
-      .map((s) => s.day_rating)
-      .filter((r): r is number => r != null);
-    const avgRating =
-      ratings.length > 0
-        ? Math.round((ratings.reduce((a, b) => a + b, 0) / ratings.length) * 10) / 10
-        : null;
-
-    const deepWorkValues = (submissions || [])
-      .map((s) => parseFloat(s.deep_work_hours))
+    // Average weight
+    const weights = (submissions || [])
+      .map((s) => parseFloat(s.weight))
       .filter((v) => !isNaN(v) && v > 0);
-    const avgDeepWork =
-      deepWorkValues.length > 0
+    const avgWeight =
+      weights.length > 0
         ? Math.round(
-            (deepWorkValues.reduce((a, b) => a + b, 0) / deepWorkValues.length) * 10
+            (weights.reduce((a, b) => a + b, 0) / weights.length) * 10
           ) / 10
         : null;
 
-    const response: EveningStatsResponse = {
+    // Average teeth grind rating
+    const grindRatings = (submissions || [])
+      .map((s) => s.teeth_grind_rating)
+      .filter((r): r is number => r != null);
+    const avgGrind =
+      grindRatings.length > 0
+        ? Math.round(
+            (grindRatings.reduce((a, b) => a + b, 0) / grindRatings.length) *
+              10
+          ) / 10
+        : null;
+
+    // Retainer compliance percentage
+    const retainerEntries = (submissions || []).filter(
+      (s) => s.retainer !== null && s.retainer !== undefined
+    );
+    const retainerCompliance =
+      retainerEntries.length > 0
+        ? Math.round(
+            (retainerEntries.filter((s) => s.retainer === true).length /
+              retainerEntries.length) *
+              100
+          )
+        : null;
+
+    // Photo/video completion rate (3 boolean fields per submission)
+    const totalSlots = (submissions || []).length * 3;
+    const completedSlots = (submissions || []).reduce((sum, s) => {
+      return (
+        sum +
+        (s.video_recorded ? 1 : 0) +
+        (s.body_photo_taken ? 1 : 0) +
+        (s.face_photo_taken ? 1 : 0)
+      );
+    }, 0);
+    const photoVideoCompletion =
+      totalSlots > 0 ? Math.round((completedSlots / totalSlots) * 100) : null;
+
+    const response: MorningStatsResponse = {
       streak: {
         current,
         longest,
@@ -89,15 +123,17 @@ export async function GET(request: NextRequest) {
         percentage: Math.round((uniqueDaysThisWeek / 7) * 100),
       },
       averages: {
-        dayRating: avgRating,
-        deepWorkHoursPerDay: avgDeepWork,
+        weight: avgWeight,
+        teethGrindRating: avgGrind,
+        retainerCompliancePercent: retainerCompliance,
+        photoVideoCompletionPercent: photoVideoCompletion,
       },
       recentSubmissions: submissions?.length || 0,
     };
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error("Error fetching evening stats:", error);
+    console.error("Error fetching morning stats:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

@@ -6,6 +6,35 @@ import { WarningBorderTrail } from '../WarningBorderTrail';
 import type { TileComponentProps } from '../TileRegistry';
 import { useLIFXFormIntegration } from '@/hooks/useLIFXFormIntegration';
 
+interface MorningFormData {
+  weight: string;
+  teethGrindRating: number | null;
+  retainer: boolean;
+  shoulderMeasurement: string;
+  thighMeasurement: string;
+  videoRecorded: boolean;
+  bodyPhotoUrl: string | null;
+  facePhotoUrl: string | null;
+}
+
+/** Non-blocking persist to Supabase. Fire-and-forget so LIFX/modal close are never gated. */
+function persistMorningForm(data: MorningFormData): void {
+  fetch('/api/forms/morning', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      weight: data.weight ? parseFloat(data.weight) : undefined,
+      teethGrindRating: data.teethGrindRating ?? undefined,
+      retainer: data.retainer,
+      shoulderMeasurement: data.shoulderMeasurement ? parseFloat(data.shoulderMeasurement) : undefined,
+      thighMeasurement: data.thighMeasurement ? parseFloat(data.thighMeasurement) : undefined,
+      videoRecorded: data.videoRecorded,
+      bodyPhotoTaken: !!data.bodyPhotoUrl,
+      facePhotoTaken: !!data.facePhotoUrl,
+    }),
+  }).catch((err) => console.warn('Morning check-in Supabase save failed:', err));
+}
+
 /**
  * MorningFormTile - Morning Check In form
  *
@@ -401,24 +430,21 @@ export function MorningFormTile({ tile, className }: TileComponentProps) {
     setIsSubmitting(true);
 
     try {
-      // Turn off LIFX lights FIRST — fire before saveWeight to avoid
+      // Turn off LIFX lights FIRST — fire before saves to avoid
       // race condition with sunrise cron tick (runs every minute)
       onMorningFormComplete();
 
-      // Save weight if not already saved
+      // Non-blocking weight save
       if (weight && !weightSaved) {
-        await saveWeight(weight);
+        saveWeight(weight).catch((err) => console.warn('Weight save failed:', err));
       }
 
-      // TODO: Upload body progress photo to Supabase storage if present
-      if (bodyPhotoUrl && bodyPhotoSource) {
-        console.log('Body progress photo to upload:', bodyPhotoSource);
-      }
-
-      // TODO: Upload face progress photo to Supabase storage if present
-      if (facePhotoUrl && facePhotoSource) {
-        console.log('Face progress photo to upload:', facePhotoSource);
-      }
+      // Persist consolidated record to Supabase (non-blocking)
+      persistMorningForm({
+        weight, teethGrindRating, retainer,
+        shoulderMeasurement, thighMeasurement,
+        videoRecorded, bodyPhotoUrl, facePhotoUrl,
+      });
 
       // Close modal on success
       setIsOpen(false);
@@ -427,7 +453,7 @@ export function MorningFormTile({ tile, className }: TileComponentProps) {
     } finally {
       setIsSubmitting(false);
     }
-  }, [weight, weightSaved, saveWeight, bodyPhotoUrl, bodyPhotoSource, facePhotoUrl, facePhotoSource, onMorningFormComplete]);
+  }, [weight, weightSaved, saveWeight, teethGrindRating, retainer, shoulderMeasurement, thighMeasurement, videoRecorded, bodyPhotoUrl, facePhotoUrl, onMorningFormComplete]);
 
   const baseClasses = `
     group
@@ -1334,13 +1360,21 @@ export function MorningFormModal({ isOpen, onClose }: { isOpen: boolean; onClose
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      // Turn off LIFX lights FIRST — fire before saveWeight to avoid
+      // Turn off LIFX lights FIRST — fire before saves to avoid
       // race condition with sunrise cron tick (runs every minute)
       onMorningFormComplete();
 
-      if (weight && !weightSaved) await saveWeight(weight);
-      if (bodyPhotoUrl && bodyPhotoSource) console.log('Body progress photo to upload:', bodyPhotoSource);
-      if (facePhotoUrl && facePhotoSource) console.log('Face progress photo to upload:', facePhotoSource);
+      // Non-blocking weight save
+      if (weight && !weightSaved) {
+        saveWeight(weight).catch((err) => console.warn('Weight save failed:', err));
+      }
+
+      // Persist consolidated record to Supabase (non-blocking)
+      persistMorningForm({
+        weight, teethGrindRating, retainer,
+        shoulderMeasurement, thighMeasurement,
+        videoRecorded, bodyPhotoUrl, facePhotoUrl,
+      });
 
       onClose();
     } catch (error) {
@@ -1348,7 +1382,7 @@ export function MorningFormModal({ isOpen, onClose }: { isOpen: boolean; onClose
     } finally {
       setIsSubmitting(false);
     }
-  }, [weight, weightSaved, saveWeight, bodyPhotoUrl, bodyPhotoSource, facePhotoUrl, facePhotoSource, onClose, onMorningFormComplete]);
+  }, [weight, weightSaved, saveWeight, teethGrindRating, retainer, shoulderMeasurement, thighMeasurement, videoRecorded, bodyPhotoUrl, facePhotoUrl, onClose, onMorningFormComplete]);
 
   if (!isOpen) return null;
 
