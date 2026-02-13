@@ -75,12 +75,22 @@ function getLastNDays(n: number): string[] {
 }
 
 /**
+ * Raw API response shape from /api/notion/habits/heatmap
+ */
+interface HeatmapApiDay {
+  date: string;
+  count: number;
+  total: number;
+  habits: string[]; // Just the names of completed habits
+}
+
+/**
  * Fetch habits for the last 5 days
  */
 async function fetchLast5DaysHabits(): Promise<DayHabits[]> {
-  const res = await fetch('/api/notion/habits/heatmap?days=5');
+  const res = await fetch('/api/notion/habits/heatmap?days=10'); // Fetch extra days to ensure coverage
   if (!res.ok) throw new Error('Failed to fetch habits');
-  const data: DayHabits[] = await res.json();
+  const data: HeatmapApiDay[] = await res.json();
 
   // Get the last 5 days
   const last5Days = getLastNDays(5);
@@ -88,14 +98,19 @@ async function fetchLast5DaysHabits(): Promise<DayHabits[]> {
   // Map the API data to our expected format, filling in missing days
   return last5Days.map((dateStr) => {
     const existing = data.find((d) => d.date === dateStr);
-    if (existing) {
-      return existing;
-    }
-    // Create empty record for missing days
+
+    // Transform habits array from string[] to { name, completed }[]
+    const habits = HABIT_COLUMNS.map((h) => ({
+      name: h.name,
+      completed: existing ? existing.habits.includes(h.name) : false,
+    }));
+
+    const completedCount = habits.filter((h) => h.completed).length;
+
     return {
       date: dateStr,
-      habits: HABIT_COLUMNS.map((h) => ({ name: h.name, completed: false })),
-      completedCount: 0,
+      habits,
+      completedCount,
       totalCount: HABIT_COLUMNS.length,
     };
   });
