@@ -16,17 +16,9 @@ These properties will be scraped with real, accurate data:
 
 ## Quick Setup (Recommended)
 
-Run the automated setup script:
+~~The automated `setup-demo-properties.sh` script was removed during the Feb 2026 monorepo cleanup (legacy, no longer functional).~~
 
-```bash
-./setup-demo-properties.sh
-```
-
-This script will:
-1. Run the database migration to add required columns
-2. Compile the TypeScript scraping script
-3. Scrape real data for all 8 properties
-4. Link them to the demo user account
+To set up demo properties manually, follow the **Manual Setup** steps below.
 
 ## Manual Setup
 
@@ -160,7 +152,7 @@ This will:
 - `scripts/seed-specific-demo-properties.ts` - Scraping script for 8 properties
 - `app/list-view/page.tsx` - Removed hardcoded properties, now fetches from DB
 - `app/api/admin/run-migration/route.ts` - Helper endpoint to run migrations
-- `setup-demo-properties.sh` - Automated setup script
+- ~~`setup-demo-properties.sh`~~ - Removed (Feb 2026 cleanup)
 
 ## Next Steps
 
