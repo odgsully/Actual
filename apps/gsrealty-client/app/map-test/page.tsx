@@ -293,7 +293,7 @@ function MapTestContent() {
           </p>
           <ol className="list-decimal list-inside space-y-1 text-sm text-yellow-700 dark:text-yellow-300">
             <li>Enable PostGIS in your Supabase project (Database → Extensions)</li>
-            <li>Run the spatial setup: <code className="bg-yellow-100 dark:bg-yellow-800 px-1 rounded">npm run db:setup-spatial</code></li>
+            <li>Enable PostGIS spatial features via <code className="bg-yellow-100 dark:bg-yellow-800 px-1 rounded">apps/wabbit-re/migrations/001_enable_postgis_spatial_features.sql</code></li>
             <li>Add Google Maps API key to .env.local: <code className="bg-yellow-100 dark:bg-yellow-800 px-1 rounded">NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_key</code></li>
           </ol>
         </div>
