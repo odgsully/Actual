@@ -1,0 +1,430 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 1220" width="1400" height="1220">
+  <defs>
+    <!-- Glassmorphism filters -->
+    <filter id="glass-blur">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="2"/>
+    </filter>
+    <filter id="glow-blue">
+      <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#3b82f6" flood-opacity="0.3"/>
+    </filter>
+    <filter id="glow-orange">
+      <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#f59e0b" flood-opacity="0.3"/>
+    </filter>
+    <filter id="glow-purple">
+      <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#8b5cf6" flood-opacity="0.3"/>
+    </filter>
+    <filter id="glow-green">
+      <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#10b981" flood-opacity="0.25"/>
+    </filter>
+
+    <!-- Lock icon for RLS -->
+    <symbol id="rls-badge" viewBox="0 0 32 16">
+      <rect x="0" y="0" width="32" height="16" rx="3" fill="#ffffff" fill-opacity="0.08" stroke="#ffffff" stroke-opacity="0.15" stroke-width="0.5"/>
+      <!-- Lock body -->
+      <rect x="3" y="7" width="6" height="5" rx="1" fill="none" stroke="#9ca3af" stroke-width="0.8"/>
+      <!-- Lock shackle -->
+      <path d="M4.5 7 V5.5 A1.5 1.5 0 0 1 7.5 5.5 V7" fill="none" stroke="#9ca3af" stroke-width="0.8"/>
+      <text x="12" y="11.5" font-family="system-ui, sans-serif" font-size="7" fill="#9ca3af" font-weight="500">RLS</text>
+    </symbol>
+
+    <!-- Wave 5 badge -->
+    <symbol id="wave5-badge" viewBox="0 0 46 14">
+      <rect x="0" y="0" width="46" height="14" rx="3" fill="#f59e0b" fill-opacity="0.15" stroke="#f59e0b" stroke-opacity="0.4" stroke-width="0.5"/>
+      <text x="23" y="10" font-family="system-ui, sans-serif" font-size="7" fill="#f59e0b" text-anchor="middle" font-weight="600">Wave 5</text>
+    </symbol>
+
+    <!-- FK line markers -->
+    <marker id="fk-dot" viewBox="0 0 6 6" refX="3" refY="3" markerWidth="5" markerHeight="5">
+      <circle cx="3" cy="3" r="2.5" fill="#ffffff" fill-opacity="0.6"/>
+    </marker>
+    <marker id="pk-circle" viewBox="0 0 6 6" refX="3" refY="3" markerWidth="5" markerHeight="5">
+      <circle cx="3" cy="3" r="2.5" fill="none" stroke="#ffffff" stroke-opacity="0.6" stroke-width="1"/>
+    </marker>
+    <marker id="crow-many" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,5 L9,1 M0,5 L9,5 M0,5 L9,9" fill="none" stroke="#ffffff" stroke-opacity="0.5" stroke-width="1"/>
+    </marker>
+    <marker id="crow-one" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <line x1="3" y1="1" x2="3" y2="9" stroke="#ffffff" stroke-opacity="0.5" stroke-width="1"/>
+      <circle cx="7" cy="5" r="2" fill="none" stroke="#ffffff" stroke-opacity="0.5" stroke-width="1"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1400" height="1220" fill="#0a0a0f"/>
+  <!-- Subtle grid pattern -->
+  <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#ffffff" stroke-opacity="0.02" stroke-width="0.5"/>
+  </pattern>
+  <rect width="1400" height="1220" fill="url(#grid)"/>
+
+  <!-- ============================================================ -->
+  <!-- TITLE -->
+  <!-- ============================================================ -->
+  <text x="40" y="42" font-family="system-ui, sans-serif" font-size="28" font-weight="700" fill="#ffffff" letter-spacing="4">WABBIT</text>
+  <text x="40" y="62" font-family="system-ui, sans-serif" font-size="13" fill="#9ca3af" letter-spacing="1">Database Schema &#xB7; Entity-Relationship Diagram</text>
+
+  <!-- Legend -->
+  <g transform="translate(40, 78)">
+    <rect x="0" y="0" width="10" height="10" rx="2" fill="#3b82f6" fill-opacity="0.5"/>
+    <text x="14" y="9" font-family="system-ui, sans-serif" font-size="9" fill="#9ca3af">Core</text>
+    <rect x="50" y="0" width="10" height="10" rx="2" fill="#f59e0b" fill-opacity="0.5"/>
+    <text x="64" y="9" font-family="system-ui, sans-serif" font-size="9" fill="#9ca3af">Agent</text>
+    <rect x="105" y="0" width="10" height="10" rx="2" fill="#8b5cf6" fill-opacity="0.5"/>
+    <text x="119" y="9" font-family="system-ui, sans-serif" font-size="9" fill="#9ca3af">PWA</text>
+    <rect x="150" y="0" width="10" height="10" rx="2" fill="none" stroke="#10b981" stroke-opacity="0.5" stroke-width="1" stroke-dasharray="2,1"/>
+    <text x="164" y="9" font-family="system-ui, sans-serif" font-size="9" fill="#9ca3af">Views</text>
+  </g>
+
+  <!-- ============================================================ -->
+  <!-- FK RELATIONSHIP LINES (drawn first, behind tables) -->
+  <!-- ============================================================ -->
+  <g stroke="#ffffff" stroke-opacity="0.18" stroke-width="1.2" fill="none">
+
+    <!-- profiles → folders (owner_id) -->
+    <path d="M 220 200 L 320 145 L 400 145" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+
+    <!-- profiles → collections (owner_id) -->
+    <path d="M 200 258 L 200 310 L 440 310 L 440 290" marker-start="url(#crow-one)" marker-end="url(#crow-many)" stroke-opacity="0.22"/>
+
+    <!-- folders → collections (folder_id) -->
+    <path d="M 500 200 L 500 255 L 530 255 L 530 290" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+
+    <!-- collections → records (collection_id) -->
+    <path d="M 420 460 L 200 460 L 200 530" marker-start="url(#crow-one)" marker-end="url(#crow-many)" stroke-opacity="0.22"/>
+
+    <!-- records → rankings (record_id) -->
+    <path d="M 200 720 L 200 758 L 450 758 L 450 750" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+
+    <!-- profiles → rankings (user_id) -->
+    <path d="M 115 258 L 115 758 L 430 758" marker-start="url(#crow-one)" marker-end="url(#crow-many)" stroke-opacity="0.14" stroke-dasharray="4,3"/>
+
+    <!-- collections → rankings (collection_id) -->
+    <path d="M 550 600 L 550 680 L 560 750" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+
+    <!-- collections → collaborators (collection_id) -->
+    <path d="M 740 460 L 820 460 L 820 350" marker-start="url(#crow-one)" marker-end="url(#crow-many)"/>
+
+    <!-- profiles → collaborators (user_id) -->
+    <path d="M 260 180 L 730 180 L 730 260" marker-start="url(#crow-one)" marker-end="url(#crow-many)" stroke-opacity="0.14" stroke-dasharray="4,3"/>
+
+    <!-- collections → agent_events (collection_id) -->
+    <path d="M 740 500 L 1100 500 L 1100 510" marker-start="url(#crow-one)" marker-end="url(#crow-many)" stroke-opacity="0.14"/>
+
+    <!-- profiles → agent_api_keys (user_id) -->
+    <path d="M 260 150 L 1060 150 L 1060 190" marker-start="url(#crow-one)" marker-end="url(#crow-many)" stroke-opacity="0.12" stroke-dasharray="4,3"/>
+
+    <!-- profiles → agent_sessions (user_id) -->
+    <path d="M 260 170 L 1200 170 L 1200 510" marker-start="url(#crow-one)" marker-end="url(#crow-many)" stroke-opacity="0.12" stroke-dasharray="4,3"/>
+
+    <!-- profiles → push_subscriptions (user_id) -->
+    <path d="M 140 258 L 140 1040 L 920 1040" marker-start="url(#crow-one)" marker-end="url(#crow-many)" stroke-opacity="0.12" stroke-dasharray="4,3"/>
+
+    <!-- collections self-ref (parent_collection_id) -->
+    <path d="M 740 380 L 770 380 L 770 420 L 740 420" marker-start="url(#pk-circle)" marker-end="url(#fk-dot)" stroke-opacity="0.25"/>
+    <text x="776" y="404" font-family="monospace" font-size="7" fill="#9ca3af" fill-opacity="0.6">self-ref</text>
+
+    <!-- views connections (light dotted) -->
+    <path d="M 200 720 L 200 930 L 150 960" stroke-opacity="0.1" stroke-dasharray="3,3"/>
+    <path d="M 200 720 L 300 930 L 370 960" stroke-opacity="0.1" stroke-dasharray="3,3"/>
+    <path d="M 550 750 L 560 930 L 580 960" stroke-opacity="0.1" stroke-dasharray="3,3"/>
+    <path d="M 550 750 L 700 930 L 770 960" stroke-opacity="0.1" stroke-dasharray="3,3"/>
+  </g>
+
+  <!-- ============================================================ -->
+  <!-- TABLE: profiles (top-left) -->
+  <!-- ============================================================ -->
+  <g transform="translate(40, 110)" filter="url(#glow-blue)">
+    <rect width="220" height="150" rx="8" fill="#0f1525" fill-opacity="0.85" stroke="#ffffff" stroke-opacity="0.12" stroke-width="1"/>
+    <!-- Header bar -->
+    <rect width="220" height="30" rx="8" fill="#3b82f6" fill-opacity="0.25"/>
+    <rect y="20" width="220" height="10" fill="#3b82f6" fill-opacity="0.25"/>
+    <text x="12" y="20" font-family="system-ui, sans-serif" font-size="12" font-weight="600" fill="#ffffff">profiles</text>
+    <use href="#rls-badge" x="180" y="7" width="32" height="16"/>
+    <!-- Columns -->
+    <g font-family="monospace" font-size="10" fill="#d1d5db">
+      <text x="12" y="48"><tspan fill="#60a5fa">PK</tspan> id <tspan fill="#6b7280">uuid</tspan></text>
+      <text x="12" y="64">display_name <tspan fill="#6b7280">text</tspan></text>
+      <text x="12" y="80">avatar_url <tspan fill="#6b7280">text</tspan></text>
+      <text x="12" y="100" fill="#6b7280">created_at <tspan>timestamptz</tspan></text>
+      <text x="12" y="116" fill="#6b7280">updated_at <tspan>timestamptz</tspan></text>
+    </g>
+  </g>
+
+  <!-- ============================================================ -->
+  <!-- TABLE: folders (top-right area) -->
+  <!-- ============================================================ -->
+  <g transform="translate(380, 100)" filter="url(#glow-blue)">
+    <rect width="210" height="140" rx="8" fill="#0f1525" fill-opacity="0.85" stroke="#ffffff" stroke-opacity="0.12" stroke-width="1"/>
+    <rect width="210" height="30" rx="8" fill="#3b82f6" fill-opacity="0.25"/>
+    <rect y="20" width="210" height="10" fill="#3b82f6" fill-opacity="0.25"/>
+    <text x="12" y="20" font-family="system-ui, sans-serif" font-size="12" font-weight="600" fill="#ffffff">folders</text>
+    <use href="#rls-badge" x="170" y="7" width="32" height="16"/>
+    <g font-family="monospace" font-size="10" fill="#d1d5db">
+      <text x="12" y="48"><tspan fill="#60a5fa">PK</tspan> id <tspan fill="#6b7280">uuid</tspan></text>
+      <text x="12" y="64"><tspan fill="#f59e0b">FK</tspan> owner_id <tspan fill="#6b7280">--> profiles</tspan></text>
+      <text x="12" y="80">name <tspan fill="#6b7280">text</tspan></text>
+      <text x="12" y="96">sort_order <tspan fill="#6b7280">int</tspan></text>
+    </g>
+  </g>
+
+  <!-- ============================================================ -->
+  <!-- TABLE: collections (CENTER - LARGEST) -->
+  <!-- ============================================================ -->
+  <g transform="translate(360, 280)" filter="url(#glow-blue)">
+    <rect width="340" height="320" rx="10" fill="#0f1525" fill-opacity="0.9" stroke="#3b82f6" stroke-opacity="0.3" stroke-width="1.5"/>
+    <!-- Header bar -->
+    <rect width="340" height="34" rx="10" fill="#3b82f6" fill-opacity="0.3"/>
+    <rect y="22" width="340" height="12" fill="#3b82f6" fill-opacity="0.3"/>
+    <text x="14" y="23" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#ffffff">collections</text>
+    <text x="120" y="23" font-family="system-ui, sans-serif" font-size="9" fill="#60a5fa" fill-opacity="0.7">central entity</text>
+    <use href="#rls-badge" x="300" y="9" width="32" height="16"/>
+    <!-- Columns - two column layout -->
+    <g font-family="monospace" font-size="9.5" fill="#d1d5db">
+      <!-- Left column -->
+      <text x="12" y="54"><tspan fill="#60a5fa">PK</tspan> id <tspan fill="#6b7280">uuid</tspan></text>
+      <text x="12" y="70"><tspan fill="#f59e0b">FK</tspan> owner_id <tspan fill="#6b7280">--> profiles</tspan></text>
+      <text x="12" y="86"><tspan fill="#f59e0b">FK</tspan> folder_id <tspan fill="#6b7280">--> folders?</tspan></text>
+      <text x="12" y="102">title <tspan fill="#6b7280">text</tspan></text>
+      <text x="12" y="118">description <tspan fill="#6b7280">text</tspan></text>
+      <text x="12" y="138">output_type <tspan fill="#6b7280">enum</tspan></text>
+      <text x="14" y="151" font-size="7.5" fill="#6b7280">image|video|text|3d|audio|deck</text>
+      <text x="12" y="168">wab_type <tspan fill="#6b7280">enum</tspan></text>
+      <text x="14" y="181" font-size="7.5" fill="#6b7280">standard | vetted_ref</text>
+      <text x="12" y="198">ranking_mode <tspan fill="#6b7280">enum</tspan></text>
+      <text x="14" y="211" font-size="7.5" fill="#6b7280">one_axis|two_axis|quaternary|binary</text>
+
+      <!-- Right column -->
+      <text x="185" y="54">quaternary_labels <tspan fill="#6b7280">jsonb</tspan></text>
+      <text x="185" y="70">agent_optim_level <tspan fill="#6b7280">enum</tspan></text>
+      <text x="185" y="86">collaboration_mode <tspan fill="#6b7280">enum</tspan></text>
+      <text x="187" y="99" font-size="7.5" fill="#6b7280">solo | team</text>
+      <text x="185" y="116">window_duration <tspan fill="#6b7280">int</tspan></text>
+      <text x="185" y="132">current_window <tspan fill="#6b7280">int</tspan></text>
+      <text x="185" y="148">is_active <tspan fill="#6b7280">bool</tspan></text>
+      <text x="185" y="164"><tspan fill="#f59e0b">FK</tspan> parent_collection_id</text>
+      <text x="187" y="177" font-size="7.5" fill="#6b7280">--> collections (self)</text>
+    </g>
+
+    <!-- RAVG highlight block -->
+    <rect x="10" y="224" width="320" height="80" rx="6" fill="#3b82f6" fill-opacity="0.08" stroke="#3b82f6" stroke-opacity="0.2" stroke-width="0.8"/>
+    <text x="20" y="242" font-family="system-ui, sans-serif" font-size="9" font-weight="600" fill="#60a5fa" letter-spacing="1">RAVG FIELDS</text>
+    <g font-family="monospace" font-size="9.5" fill="#93c5fd">
+      <text x="20" y="260">ravg_formula <tspan fill="#6b7280">text</tspan></text>
+      <text x="20" y="276">ravg_member_weights <tspan fill="#6b7280">jsonb</tspan></text>
+      <text x="20" y="292">supervisor_weight <tspan fill="#6b7280">numeric</tspan></text>
+      <text x="195" y="260">branch_carry_over <tspan fill="#6b7280">bool</tspan></text>
+    </g>
+  </g>
+
+  <!-- ============================================================ -->
+  <!-- TABLE: records (center-left) -->
+  <!-- ============================================================ -->
+  <g transform="translate(40, 520)" filter="url(#glow-blue)">
+    <rect width="230" height="200" rx="8" fill="#0f1525" fill-opacity="0.85" stroke="#ffffff" stroke-opacity="0.12" stroke-width="1"/>
+    <rect width="230" height="30" rx="8" fill="#3b82f6" fill-opacity="0.25"/>
+    <rect y="20" width="230" height="10" fill="#3b82f6" fill-opacity="0.25"/>
+    <text x="12" y="20" font-family="system-ui, sans-serif" font-size="12" font-weight="600" fill="#ffffff">records</text>
+    <use href="#rls-badge" x="190" y="7" width="32" height="16"/>
+    <g font-family="monospace" font-size="10" fill="#d1d5db">
+      <text x="12" y="48"><tspan fill="#60a5fa">PK</tspan> id <tspan fill="#6b7280">uuid</tspan></text>
+      <text x="12" y="64"><tspan fill="#f59e0b">FK</tspan> collection_id <tspan fill="#6b7280">--> collections</tspan></text>
+      <text x="12" y="84">title <tspan fill="#6b7280">text</tspan></text>
+      <text x="12" y="100">description <tspan fill="#6b7280">text</tspan></text>
+      <text x="12" y="120">metadata <tspan fill="#6b7280">jsonb</tspan></text>
+      <text x="12" y="136">window_number <tspan fill="#6b7280">int</tspan></text>
+      <text x="12" y="152">sort_order <tspan fill="#6b7280">int</tspan></text>
+      <text x="12" y="172" fill="#6b7280">created_at <tspan>timestamptz</tspan></text>
+    </g>
+  </g>
+
+  <!-- ============================================================ -->
+  <!-- TABLE: collaborators (center-right) -->
+  <!-- ============================================================ -->
+  <g transform="translate(730, 250)" filter="url(#glow-blue)">
+    <rect width="230" height="180" rx="8" fill="#0f1525" fill-opacity="0.85" stroke="#ffffff" stroke-opacity="0.12" stroke-width="1"/>
+    <rect width="230" height="30" rx="8" fill="#3b82f6" fill-opacity="0.25"/>
+    <rect y="20" width="230" height="10" fill="#3b82f6" fill-opacity="0.25"/>
+    <text x="12" y="20" font-family="system-ui, sans-serif" font-size="12" font-weight="600" fill="#ffffff">collaborators</text>
+    <use href="#rls-badge" x="190" y="7" width="32" height="16"/>
+    <g font-family="monospace" font-size="10" fill="#d1d5db">
+      <text x="12" y="48"><tspan fill="#60a5fa">PK</tspan> id <tspan fill="#6b7280">uuid</tspan></text>
+      <text x="12" y="64"><tspan fill="#f59e0b">FK</tspan> user_id <tspan fill="#6b7280">--> profiles</tspan></text>
+      <text x="12" y="80"><tspan fill="#f59e0b">FK</tspan> collection_id <tspan fill="#6b7280">--> collections</tspan></text>
+      <text x="12" y="100">role <tspan fill="#6b7280">enum</tspan></text>
+      <text x="14" y="113" font-size="8" fill="#6b7280">owner | contributor | viewer</text>
+      <text x="12" y="132" fill="#6b7280">invited_at <tspan>timestamptz</tspan></text>
+      <text x="12" y="148" fill="#6b7280">accepted_at <tspan>timestamptz</tspan></text>
+    </g>
+  </g>
+
+  <!-- ============================================================ -->
+  <!-- TABLE: rankings (bottom-center) -->
+  <!-- ============================================================ -->
+  <g transform="translate(350, 740)" filter="url(#glow-blue)">
+    <rect width="290" height="200" rx="8" fill="#0f1525" fill-opacity="0.85" stroke="#ffffff" stroke-opacity="0.12" stroke-width="1"/>
+    <rect width="290" height="30" rx="8" fill="#3b82f6" fill-opacity="0.25"/>
+    <rect y="20" width="290" height="10" fill="#3b82f6" fill-opacity="0.25"/>
+    <text x="12" y="20" font-family="system-ui, sans-serif" font-size="12" font-weight="600" fill="#ffffff">rankings</text>
+    <use href="#rls-badge" x="250" y="7" width="32" height="16"/>
+    <g font-family="monospace" font-size="10" fill="#d1d5db">
+      <text x="12" y="48"><tspan fill="#60a5fa">PK</tspan> id <tspan fill="#6b7280">uuid</tspan></text>
+      <text x="12" y="64"><tspan fill="#f59e0b">FK</tspan> user_id <tspan fill="#6b7280">--> profiles</tspan></text>
+      <text x="12" y="80"><tspan fill="#f59e0b">FK</tspan> record_id <tspan fill="#6b7280">--> records</tspan></text>
+      <text x="12" y="96"><tspan fill="#f59e0b">FK</tspan> collection_id <tspan fill="#6b7280">--> collections</tspan></text>
+      <text x="12" y="116">score <tspan fill="#6b7280">numeric 0-10</tspan></text>
+      <text x="14" y="129" font-size="8" fill="#6b7280">for one_axis / two_axis</text>
+      <text x="12" y="148">choice <tspan fill="#6b7280">text</tspan></text>
+      <text x="14" y="161" font-size="8" fill="#6b7280">a|b|c|d|yes|no (quaternary/binary)</text>
+      <!-- Unique constraint -->
+      <text x="12" y="182" font-size="9" fill="#f59e0b" fill-opacity="0.7">UNIQUE(user_id, record_id)</text>
+    </g>
+  </g>
+
+  <!-- ============================================================ -->
+  <!-- TABLE: agent_api_keys (right side, top) -->
+  <!-- ============================================================ -->
+  <g transform="translate(1010, 180)" filter="url(#glow-orange)">
+    <rect width="210" height="140" rx="8" fill="#1a1408" fill-opacity="0.85" stroke="#ffffff" stroke-opacity="0.12" stroke-width="1"/>
+    <rect width="210" height="28" rx="8" fill="#f59e0b" fill-opacity="0.2"/>
+    <rect y="18" width="210" height="10" fill="#f59e0b" fill-opacity="0.2"/>
+    <text x="12" y="19" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#ffffff">agent_api_keys</text>
+    <use href="#rls-badge" x="170" y="6" width="32" height="16"/>
+    <use href="#wave5-badge" x="152" y="32" width="46" height="14"/>
+    <g font-family="monospace" font-size="9.5" fill="#d1d5db">
+      <text x="12" y="52"><tspan fill="#60a5fa">PK</tspan> id <tspan fill="#6b7280">uuid</tspan></text>
+      <text x="12" y="66"><tspan fill="#f59e0b">FK</tspan> user_id <tspan fill="#6b7280">--> profiles</tspan></text>
+      <text x="12" y="82">key_hash <tspan fill="#6b7280">text</tspan></text>
+      <text x="12" y="98">scopes <tspan fill="#6b7280">text[]</tspan></text>
+      <text x="12" y="114">label <tspan fill="#6b7280">text</tspan></text>
+    </g>
+  </g>
+
+  <!-- ============================================================ -->
+  <!-- TABLE: agent_events (right side, middle) -->
+  <!-- ============================================================ -->
+  <g transform="translate(1010, 370)" filter="url(#glow-orange)">
+    <rect width="210" height="140" rx="8" fill="#1a1408" fill-opacity="0.85" stroke="#ffffff" stroke-opacity="0.12" stroke-width="1"/>
+    <rect width="210" height="28" rx="8" fill="#f59e0b" fill-opacity="0.2"/>
+    <rect y="18" width="210" height="10" fill="#f59e0b" fill-opacity="0.2"/>
+    <text x="12" y="19" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#ffffff">agent_events</text>
+    <use href="#rls-badge" x="170" y="6" width="32" height="16"/>
+    <use href="#wave5-badge" x="152" y="32" width="46" height="14"/>
+    <g font-family="monospace" font-size="9.5" fill="#d1d5db">
+      <text x="12" y="52"><tspan fill="#60a5fa">PK</tspan> id <tspan fill="#6b7280">uuid</tspan></text>
+      <text x="12" y="66"><tspan fill="#f59e0b">FK</tspan> collection_id <tspan fill="#6b7280">--> collections</tspan></text>
+      <text x="12" y="82">event_type <tspan fill="#6b7280">text</tspan></text>
+      <text x="12" y="98">record_id <tspan fill="#6b7280">uuid</tspan></text>
+      <text x="12" y="114">payload <tspan fill="#6b7280">jsonb</tspan></text>
+    </g>
+  </g>
+
+  <!-- ============================================================ -->
+  <!-- TABLE: agent_sessions (right side, bottom) -->
+  <!-- ============================================================ -->
+  <g transform="translate(1120, 550)" filter="url(#glow-orange)">
+    <rect width="210" height="130" rx="8" fill="#1a1408" fill-opacity="0.85" stroke="#ffffff" stroke-opacity="0.12" stroke-width="1"/>
+    <rect width="210" height="28" rx="8" fill="#f59e0b" fill-opacity="0.2"/>
+    <rect y="18" width="210" height="10" fill="#f59e0b" fill-opacity="0.2"/>
+    <text x="12" y="19" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#ffffff">agent_sessions</text>
+    <use href="#rls-badge" x="170" y="6" width="32" height="16"/>
+    <use href="#wave5-badge" x="152" y="32" width="46" height="14"/>
+    <g font-family="monospace" font-size="9.5" fill="#d1d5db">
+      <text x="12" y="52"><tspan fill="#60a5fa">PK</tspan> id <tspan fill="#6b7280">uuid</tspan></text>
+      <text x="12" y="66"><tspan fill="#f59e0b">FK</tspan> user_id <tspan fill="#6b7280">--> profiles</tspan></text>
+      <text x="12" y="82">status <tspan fill="#6b7280">text</tspan></text>
+      <text x="12" y="98">connected_at <tspan fill="#6b7280">timestamptz</tspan></text>
+    </g>
+  </g>
+
+  <!-- ============================================================ -->
+  <!-- TABLE: push_subscriptions (bottom-right) -->
+  <!-- ============================================================ -->
+  <g transform="translate(880, 990)" filter="url(#glow-purple)">
+    <rect width="230" height="170" rx="8" fill="#150f25" fill-opacity="0.85" stroke="#ffffff" stroke-opacity="0.12" stroke-width="1"/>
+    <rect width="230" height="28" rx="8" fill="#8b5cf6" fill-opacity="0.25"/>
+    <rect y="18" width="230" height="10" fill="#8b5cf6" fill-opacity="0.25"/>
+    <text x="12" y="19" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#ffffff">push_subscriptions</text>
+    <use href="#rls-badge" x="190" y="6" width="32" height="16"/>
+    <use href="#wave5-badge" x="172" y="32" width="46" height="14"/>
+    <g font-family="monospace" font-size="9.5" fill="#d1d5db">
+      <text x="12" y="52"><tspan fill="#60a5fa">PK</tspan> id <tspan fill="#6b7280">uuid</tspan></text>
+      <text x="12" y="66"><tspan fill="#f59e0b">FK</tspan> user_id <tspan fill="#6b7280">--> profiles</tspan></text>
+      <text x="12" y="84">endpoint <tspan fill="#6b7280">text</tspan></text>
+      <text x="12" y="100">p256dh <tspan fill="#6b7280">text</tspan></text>
+      <text x="12" y="116">auth <tspan fill="#6b7280">text</tspan></text>
+      <text x="12" y="140" font-size="9" fill="#8b5cf6" fill-opacity="0.7">UNIQUE(user_id, endpoint)</text>
+    </g>
+  </g>
+
+  <!-- ============================================================ -->
+  <!-- VIEWS (bottom-left, row of 4 dashed green boxes) -->
+  <!-- ============================================================ -->
+
+  <!-- VIEW: record_scores -->
+  <g transform="translate(40, 960)" filter="url(#glow-green)">
+    <rect width="175" height="120" rx="6" fill="#081a12" fill-opacity="0.7" stroke="#10b981" stroke-opacity="0.35" stroke-width="1" stroke-dasharray="4,2"/>
+    <rect width="175" height="22" rx="6" fill="#10b981" fill-opacity="0.12"/>
+    <rect y="14" width="175" height="8" fill="#10b981" fill-opacity="0.12"/>
+    <text x="8" y="16" font-family="system-ui, sans-serif" font-size="9.5" font-weight="600" fill="#34d399">VIEW record_scores</text>
+    <g font-family="monospace" font-size="8.5" fill="#9ca3af">
+      <text x="8" y="38">record_id</text>
+      <text x="8" y="50">collection_id</text>
+      <text x="8" y="62">total_rankings</text>
+      <text x="8" y="74">avg_score</text>
+      <text x="8" y="86">min, max</text>
+      <text x="8" y="98">stddev</text>
+    </g>
+  </g>
+
+  <!-- VIEW: record_choices -->
+  <g transform="translate(230, 960)" filter="url(#glow-green)">
+    <rect width="175" height="120" rx="6" fill="#081a12" fill-opacity="0.7" stroke="#10b981" stroke-opacity="0.35" stroke-width="1" stroke-dasharray="4,2"/>
+    <rect width="175" height="22" rx="6" fill="#10b981" fill-opacity="0.12"/>
+    <rect y="14" width="175" height="8" fill="#10b981" fill-opacity="0.12"/>
+    <text x="8" y="16" font-family="system-ui, sans-serif" font-size="9.5" font-weight="600" fill="#34d399">VIEW record_choices</text>
+    <g font-family="monospace" font-size="8.5" fill="#9ca3af">
+      <text x="8" y="38">record_id</text>
+      <text x="8" y="50">tally_a, tally_b</text>
+      <text x="8" y="62">tally_c, tally_d</text>
+      <text x="8" y="74">tally_yes</text>
+      <text x="8" y="86">tally_no</text>
+    </g>
+  </g>
+
+  <!-- VIEW: collection_leaderboard -->
+  <g transform="translate(420, 960)" filter="url(#glow-green)">
+    <rect width="195" height="120" rx="6" fill="#081a12" fill-opacity="0.7" stroke="#10b981" stroke-opacity="0.35" stroke-width="1" stroke-dasharray="4,2"/>
+    <rect width="195" height="22" rx="6" fill="#10b981" fill-opacity="0.12"/>
+    <rect y="14" width="195" height="8" fill="#10b981" fill-opacity="0.12"/>
+    <text x="8" y="16" font-family="system-ui, sans-serif" font-size="9" font-weight="600" fill="#34d399">VIEW collection_leaderboard</text>
+    <g font-family="monospace" font-size="8.5" fill="#9ca3af">
+      <text x="8" y="38">record_id</text>
+      <text x="8" y="50">collection_id</text>
+      <text x="8" y="62">avg_score</text>
+      <text x="8" y="74">total_rankings</text>
+      <text x="8" y="86">rank_position</text>
+    </g>
+  </g>
+
+  <!-- VIEW: user_progress -->
+  <g transform="translate(630, 960)" filter="url(#glow-green)">
+    <rect width="175" height="120" rx="6" fill="#081a12" fill-opacity="0.7" stroke="#10b981" stroke-opacity="0.35" stroke-width="1" stroke-dasharray="4,2"/>
+    <rect width="175" height="22" rx="6" fill="#10b981" fill-opacity="0.12"/>
+    <rect y="14" width="175" height="8" fill="#10b981" fill-opacity="0.12"/>
+    <text x="8" y="16" font-family="system-ui, sans-serif" font-size="9.5" font-weight="600" fill="#34d399">VIEW user_progress</text>
+    <g font-family="monospace" font-size="8.5" fill="#9ca3af">
+      <text x="8" y="38">user_id</text>
+      <text x="8" y="50">collection_id</text>
+      <text x="8" y="62">total_records</text>
+      <text x="8" y="74">ranked_records</text>
+      <text x="8" y="86">completion_pct</text>
+    </g>
+  </g>
+
+  <!-- ============================================================ -->
+  <!-- FOOTER -->
+  <!-- ============================================================ -->
+  <text x="1360" y="1198" font-family="system-ui, sans-serif" font-size="10" fill="#6b7280" text-anchor="end">6 core tables + 3 agent tables + 1 PWA table + 4 views</text>
+  <text x="1360" y="1212" font-family="system-ui, sans-serif" font-size="8" fill="#4b5563" text-anchor="end">Wabbit ERD v1.0</text>
+
+</svg>

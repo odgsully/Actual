@@ -1,0 +1,395 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 800" width="1400" height="800">
+  <defs>
+    <!-- Arrowhead marker -->
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="rgba(255,255,255,0.5)"/>
+    </marker>
+    <marker id="arrowhead-cyan" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="rgba(6,182,212,0.6)"/>
+    </marker>
+    <marker id="arrowhead-green" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="rgba(16,185,129,0.6)"/>
+    </marker>
+    <marker id="arrowhead-purple" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="rgba(139,92,246,0.6)"/>
+    </marker>
+    <marker id="arrowhead-orange" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="rgba(245,158,11,0.6)"/>
+    </marker>
+
+    <!-- Glassmorphism filters -->
+    <filter id="glow-cyan" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feFlood flood-color="#06b6d4" flood-opacity="0.15"/>
+      <feComposite in2="blur" operator="in"/>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow-blue" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feFlood flood-color="#3b82f6" flood-opacity="0.15"/>
+      <feComposite in2="blur" operator="in"/>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow-green" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feFlood flood-color="#10b981" flood-opacity="0.15"/>
+      <feComposite in2="blur" operator="in"/>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow-purple" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feFlood flood-color="#8b5cf6" flood-opacity="0.15"/>
+      <feComposite in2="blur" operator="in"/>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow-orange" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feFlood flood-color="#f59e0b" flood-opacity="0.15"/>
+      <feComposite in2="blur" operator="in"/>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+
+    <filter id="blur-bg">
+      <feGaussianBlur stdDeviation="8"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1400" height="800" fill="#0a0a0f"/>
+
+  <!-- Subtle background grid pattern -->
+  <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.02)" stroke-width="0.5"/>
+  </pattern>
+  <rect width="1400" height="800" fill="url(#grid)"/>
+
+  <!-- Ambient glow spots -->
+  <circle cx="200" cy="350" r="200" fill="rgba(6,182,212,0.03)" filter="url(#blur-bg)"/>
+  <circle cx="550" cy="300" r="180" fill="rgba(59,130,246,0.03)" filter="url(#blur-bg)"/>
+  <circle cx="850" cy="350" r="180" fill="rgba(16,185,129,0.03)" filter="url(#blur-bg)"/>
+  <circle cx="1100" cy="250" r="180" fill="rgba(139,92,246,0.03)" filter="url(#blur-bg)"/>
+  <circle cx="1250" cy="500" r="160" fill="rgba(245,158,11,0.03)" filter="url(#blur-bg)"/>
+
+  <!-- ============================================================ -->
+  <!-- TITLE (top-left) -->
+  <!-- ============================================================ -->
+  <text x="30" y="38" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="700" fill="white" letter-spacing="4">WABBIT</text>
+  <text x="30" y="58" font-family="system-ui, -apple-system, sans-serif" font-size="13" fill="rgba(255,255,255,0.5)" letter-spacing="1">Data &amp; Event Flow</text>
+
+  <!-- ============================================================ -->
+  <!-- COLUMN 1: Record Sources (x: 30-175) -->
+  <!-- ============================================================ -->
+
+  <!-- Manual Upload -->
+  <rect x="30" y="120" width="145" height="52" rx="8" fill="rgba(6,182,212,0.12)" stroke="rgba(6,182,212,0.25)" stroke-width="1" filter="url(#glow-cyan)"/>
+  <text x="102" y="143" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="600" fill="white" text-anchor="middle">Manual Upload</text>
+  <text x="102" y="161" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(6,182,212,0.7)" text-anchor="middle">drag-and-drop</text>
+
+  <!-- AI API -->
+  <rect x="30" y="184" width="145" height="52" rx="8" fill="rgba(6,182,212,0.12)" stroke="rgba(6,182,212,0.25)" stroke-width="1" filter="url(#glow-cyan)"/>
+  <text x="102" y="207" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="600" fill="white" text-anchor="middle">AI API</text>
+  <text x="102" y="225" font-family="system-ui, -apple-system, sans-serif" font-size="8.5" fill="rgba(6,182,212,0.7)" text-anchor="middle">DALL-E / Midjourney / Runway</text>
+
+  <!-- Webhook -->
+  <rect x="30" y="248" width="145" height="52" rx="8" fill="rgba(6,182,212,0.12)" stroke="rgba(6,182,212,0.25)" stroke-width="1" filter="url(#glow-cyan)"/>
+  <text x="102" y="271" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="600" fill="white" text-anchor="middle">Webhook</text>
+  <text x="102" y="289" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(6,182,212,0.7)" text-anchor="middle">Edge Function ingest</text>
+
+  <!-- Batch Import -->
+  <rect x="30" y="312" width="145" height="52" rx="8" fill="rgba(6,182,212,0.12)" stroke="rgba(6,182,212,0.25)" stroke-width="1" filter="url(#glow-cyan)"/>
+  <text x="102" y="335" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="600" fill="white" text-anchor="middle">Batch Import</text>
+  <text x="102" y="353" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(6,182,212,0.7)" text-anchor="middle">CSV / bulk</text>
+
+  <!-- ============================================================ -->
+  <!-- Arrows: Sources → merge point → records table -->
+  <!-- ============================================================ -->
+
+  <!-- Merge point at x=210 y=242 -->
+  <!-- Manual Upload arrow -->
+  <path d="M 175 146 C 192 146, 195 242, 210 242" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.2" marker-end="url(#arrowhead)"/>
+  <!-- AI API arrow -->
+  <path d="M 175 210 C 192 210, 195 242, 210 242" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.2"/>
+  <!-- Webhook arrow -->
+  <path d="M 175 274 C 192 274, 195 242, 210 242" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.2"/>
+  <!-- Batch Import arrow -->
+  <path d="M 175 338 C 192 338, 195 242, 210 242" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.2"/>
+
+  <!-- "Edge Function" label on webhook arrow -->
+  <text x="188" y="264" font-family="system-ui, -apple-system, sans-serif" font-size="7" fill="rgba(6,182,212,0.6)" transform="rotate(-12, 188, 264)">Edge Function</text>
+
+  <!-- Merge line to records -->
+  <line x1="210" y1="242" x2="245" y2="242" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+
+  <!-- ============================================================ -->
+  <!-- COLUMN 2: records table (x: 245-430) -->
+  <!-- ============================================================ -->
+  <rect x="245" y="185" width="185" height="115" rx="10" fill="rgba(16,185,129,0.10)" stroke="rgba(16,185,129,0.22)" stroke-width="1" filter="url(#glow-green)"/>
+
+  <!-- Table header bar -->
+  <rect x="245" y="185" width="185" height="30" rx="10" fill="rgba(16,185,129,0.08)"/>
+  <rect x="245" y="205" width="185" height="10" fill="rgba(16,185,129,0.08)"/>
+  <text x="337" y="205" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="700" fill="white" text-anchor="middle">records</text>
+  <text x="337" y="220" font-family="system-ui, -apple-system, sans-serif" font-size="8.5" fill="rgba(16,185,129,0.6)" text-anchor="middle">table</text>
+
+  <!-- Column listing -->
+  <text x="260" y="240" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.7)">id</text>
+  <text x="260" y="254" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.7)">collection_id</text>
+  <text x="260" y="268" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.7)">title</text>
+  <text x="260" y="282" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.7)">metadata</text>
+
+  <text x="350" y="240" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.7)">uuid</text>
+  <text x="350" y="254" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.7)">uuid (FK)</text>
+  <text x="350" y="268" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.7)">text</text>
+  <text x="350" y="282" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.7)">jsonb</text>
+
+  <text x="260" y="296" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.7)">window_number</text>
+  <text x="350" y="296" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.7)">int</text>
+
+  <!-- Arrow: records → Ranking Controls -->
+  <line x1="430" y1="242" x2="470" y2="242" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+
+  <!-- ============================================================ -->
+  <!-- COLUMN 3: Ranking Controls (x: 470-665) -->
+  <!-- ============================================================ -->
+  <rect x="470" y="165" width="195" height="155" rx="10" fill="rgba(59,130,246,0.10)" stroke="rgba(59,130,246,0.22)" stroke-width="1" filter="url(#glow-blue)"/>
+
+  <text x="567" y="188" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="700" fill="white" text-anchor="middle">Ranking Controls</text>
+  <text x="567" y="202" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(59,130,246,0.65)" text-anchor="middle">Mode Dispatcher</text>
+
+  <!-- 2x2 grid of sub-boxes -->
+  <!-- 1-Axis -->
+  <rect x="482" y="212" width="88" height="44" rx="6" fill="rgba(59,130,246,0.12)" stroke="rgba(59,130,246,0.18)" stroke-width="0.8"/>
+  <text x="526" y="231" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="600" fill="white" text-anchor="middle">1-Axis</text>
+  <text x="526" y="247" font-family="system-ui, -apple-system, sans-serif" font-size="8" fill="rgba(59,130,246,0.6)" text-anchor="middle">0-10 slider</text>
+
+  <!-- Binary -->
+  <rect x="576" y="212" width="82" height="44" rx="6" fill="rgba(59,130,246,0.12)" stroke="rgba(59,130,246,0.18)" stroke-width="0.8"/>
+  <text x="617" y="231" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="600" fill="white" text-anchor="middle">Binary</text>
+  <text x="617" y="247" font-family="system-ui, -apple-system, sans-serif" font-size="8" fill="rgba(59,130,246,0.6)" text-anchor="middle">Yes / No</text>
+
+  <!-- Quaternary -->
+  <rect x="482" y="264" width="88" height="44" rx="6" fill="rgba(59,130,246,0.12)" stroke="rgba(59,130,246,0.18)" stroke-width="0.8"/>
+  <text x="526" y="283" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="600" fill="white" text-anchor="middle">Quaternary</text>
+  <text x="526" y="299" font-family="system-ui, -apple-system, sans-serif" font-size="8" fill="rgba(59,130,246,0.6)" text-anchor="middle">A / B / C / D</text>
+
+  <!-- 2-Axis -->
+  <rect x="576" y="264" width="82" height="44" rx="6" fill="rgba(59,130,246,0.12)" stroke="rgba(59,130,246,0.18)" stroke-width="0.8"/>
+  <text x="617" y="283" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="600" fill="white" text-anchor="middle">2-Axis</text>
+  <text x="617" y="299" font-family="system-ui, -apple-system, sans-serif" font-size="8" fill="rgba(59,130,246,0.6)" text-anchor="middle">X / Y grid</text>
+
+  <!-- Arrow: Ranking Controls → rankings table -->
+  <line x1="665" y1="242" x2="705" y2="242" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+
+  <!-- ============================================================ -->
+  <!-- COLUMN 4: rankings table (x: 705-900) -->
+  <!-- ============================================================ -->
+  <rect x="705" y="175" width="195" height="135" rx="10" fill="rgba(16,185,129,0.10)" stroke="rgba(16,185,129,0.22)" stroke-width="1" filter="url(#glow-green)"/>
+
+  <rect x="705" y="175" width="195" height="30" rx="10" fill="rgba(16,185,129,0.08)"/>
+  <rect x="705" y="195" width="195" height="10" fill="rgba(16,185,129,0.08)"/>
+  <text x="802" y="195" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="700" fill="white" text-anchor="middle">rankings</text>
+  <text x="802" y="210" font-family="system-ui, -apple-system, sans-serif" font-size="8.5" fill="rgba(16,185,129,0.6)" text-anchor="middle">table</text>
+
+  <text x="720" y="230" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.7)">user_id</text>
+  <text x="720" y="244" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.7)">record_id</text>
+  <text x="720" y="258" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.7)">score</text>
+  <text x="720" y="272" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.7)">choice</text>
+
+  <text x="800" y="230" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.7)">uuid (FK)</text>
+  <text x="800" y="244" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.7)">uuid (FK)</text>
+  <text x="800" y="258" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.7)">numeric</text>
+  <text x="800" y="272" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.7)">text</text>
+
+  <!-- Badges -->
+  <rect x="715" y="282" width="175" height="18" rx="4" fill="rgba(16,185,129,0.12)" stroke="rgba(16,185,129,0.2)" stroke-width="0.6"/>
+  <text x="802" y="294" font-family="system-ui, -apple-system, sans-serif" font-size="7.5" fill="rgba(16,185,129,0.8)" text-anchor="middle">UNIQUE(user_id, record_id)  |  Upsert pattern</text>
+
+  <!-- ============================================================ -->
+  <!-- SPLIT: rankings → Path A (RAVG, top) and Path B (Events, bottom) -->
+  <!-- ============================================================ -->
+
+  <!-- Split point at x=900, y=242 -->
+  <!-- Path A: upward curve to RAVG -->
+  <path d="M 900 242 C 920 242, 920 150, 940 150" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+
+  <!-- Path B: downward curve to agent_events -->
+  <path d="M 900 242 C 920 242, 920 460, 940 460" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+
+  <!-- Path split labels -->
+  <text x="912" y="185" font-family="system-ui, -apple-system, sans-serif" font-size="8" fill="rgba(255,255,255,0.35)" text-anchor="middle">Path A</text>
+  <text x="912" y="370" font-family="system-ui, -apple-system, sans-serif" font-size="8" fill="rgba(255,255,255,0.35)" text-anchor="middle">Path B</text>
+
+  <!-- ============================================================ -->
+  <!-- PATH A: RAVG Engine (x: 940-1175) -->
+  <!-- ============================================================ -->
+  <rect x="940" y="80" width="235" height="148" rx="10" fill="rgba(139,92,246,0.10)" stroke="rgba(139,92,246,0.22)" stroke-width="1" filter="url(#glow-purple)"/>
+
+  <text x="1057" y="102" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="700" fill="white" text-anchor="middle">RAVG Engine</text>
+  <text x="1057" y="116" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(139,92,246,0.65)" text-anchor="middle">Configurable formula</text>
+
+  <!-- Level 1 sub-box -->
+  <rect x="952" y="124" width="211" height="40" rx="5" fill="rgba(139,92,246,0.08)" stroke="rgba(139,92,246,0.15)" stroke-width="0.6"/>
+  <text x="962" y="138" font-family="system-ui, -apple-system, sans-serif" font-size="8.5" font-weight="600" fill="rgba(139,92,246,0.85)">Level 1: Team RAVG</text>
+  <text x="962" y="156" font-family="system-ui, -apple-system, sans-serif" font-size="7.5" fill="rgba(255,255,255,0.55)">simple_mean | weighted_by_role | exclude_outliers | custom</text>
+
+  <!-- Level 2 sub-box -->
+  <rect x="952" y="170" width="211" height="34" rx="5" fill="rgba(139,92,246,0.08)" stroke="rgba(139,92,246,0.15)" stroke-width="0.6"/>
+  <text x="962" y="184" font-family="system-ui, -apple-system, sans-serif" font-size="8.5" font-weight="600" fill="rgba(139,92,246,0.85)">Level 2: Super RAVG</text>
+  <text x="962" y="198" font-family="system-ui, -apple-system, sans-serif" font-size="7.5" fill="rgba(255,255,255,0.55)">Owner score applied with supervisor_weight</text>
+
+  <!-- Note -->
+  <text x="1057" y="222" font-family="system-ui, -apple-system, sans-serif" font-size="7.5" fill="rgba(245,158,11,0.6)" text-anchor="middle" font-style="italic">Owner EXCLUDED from Level 1</text>
+
+  <!-- Arrow: RAVG Engine → Leaderboard -->
+  <line x1="1175" y1="154" x2="1210" y2="154" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+
+  <!-- ============================================================ -->
+  <!-- Leaderboard (x: 1210-1370) -->
+  <!-- ============================================================ -->
+  <rect x="1210" y="116" width="160" height="76" rx="10" fill="rgba(245,158,11,0.10)" stroke="rgba(245,158,11,0.22)" stroke-width="1" filter="url(#glow-orange)"/>
+
+  <text x="1290" y="146" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="700" fill="white" text-anchor="middle">Leaderboard</text>
+  <text x="1290" y="161" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(245,158,11,0.65)" text-anchor="middle">view</text>
+  <text x="1290" y="180" font-family="system-ui, -apple-system, sans-serif" font-size="8.5" fill="rgba(255,255,255,0.5)" text-anchor="middle">Records ranked by RAVG score</text>
+
+  <!-- ============================================================ -->
+  <!-- PATH B: agent_events table (x: 940-1175) -->
+  <!-- ============================================================ -->
+  <rect x="940" y="385" width="235" height="158" rx="10" fill="rgba(16,185,129,0.10)" stroke="rgba(16,185,129,0.22)" stroke-width="1" filter="url(#glow-green)"/>
+
+  <rect x="940" y="385" width="235" height="30" rx="10" fill="rgba(16,185,129,0.08)"/>
+  <rect x="940" y="405" width="235" height="10" fill="rgba(16,185,129,0.08)"/>
+  <text x="1057" y="405" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="700" fill="white" text-anchor="middle">agent_events</text>
+  <text x="1057" y="420" font-family="system-ui, -apple-system, sans-serif" font-size="8.5" fill="rgba(16,185,129,0.6)" text-anchor="middle">table</text>
+
+  <!-- Event types -->
+  <text x="955" y="440" font-family="system-ui, -apple-system, sans-serif" font-size="8.5" fill="rgba(255,255,255,0.6)">event types:</text>
+
+  <rect x="955" y="448" width="90" height="18" rx="4" fill="rgba(16,185,129,0.08)" stroke="rgba(16,185,129,0.12)" stroke-width="0.5"/>
+  <text x="1000" y="460" font-family="system-ui, -apple-system, sans-serif" font-size="7.5" fill="rgba(255,255,255,0.6)" text-anchor="middle">new_record</text>
+
+  <rect x="1052" y="448" width="110" height="18" rx="4" fill="rgba(16,185,129,0.08)" stroke="rgba(16,185,129,0.12)" stroke-width="0.5"/>
+  <text x="1107" y="460" font-family="system-ui, -apple-system, sans-serif" font-size="7.5" fill="rgba(255,255,255,0.6)" text-anchor="middle">ranking_submitted</text>
+
+  <rect x="955" y="472" width="90" height="18" rx="4" fill="rgba(16,185,129,0.08)" stroke="rgba(16,185,129,0.12)" stroke-width="0.5"/>
+  <text x="1000" y="484" font-family="system-ui, -apple-system, sans-serif" font-size="7.5" fill="rgba(255,255,255,0.6)" text-anchor="middle">ravg_updated</text>
+
+  <rect x="1052" y="472" width="110" height="18" rx="4" fill="rgba(16,185,129,0.08)" stroke="rgba(16,185,129,0.12)" stroke-width="0.5"/>
+  <text x="1107" y="484" font-family="system-ui, -apple-system, sans-serif" font-size="7.5" fill="rgba(255,255,255,0.6)" text-anchor="middle">window_closing</text>
+
+  <rect x="955" y="496" width="90" height="18" rx="4" fill="rgba(16,185,129,0.08)" stroke="rgba(16,185,129,0.12)" stroke-width="0.5"/>
+  <text x="1000" y="508" font-family="system-ui, -apple-system, sans-serif" font-size="7.5" fill="rgba(255,255,255,0.6)" text-anchor="middle">branch_created</text>
+
+  <rect x="1052" y="496" width="110" height="18" rx="4" fill="rgba(16,185,129,0.08)" stroke="rgba(16,185,129,0.12)" stroke-width="0.5"/>
+  <text x="1107" y="508" font-family="system-ui, -apple-system, sans-serif" font-size="7.5" fill="rgba(255,255,255,0.6)" text-anchor="middle">collaborator_joined</text>
+
+  <!-- ============================================================ -->
+  <!-- Fan-out arrows from agent_events → 3 consumers -->
+  <!-- ============================================================ -->
+
+  <!-- "Supabase Realtime" label on the fan-out zone -->
+  <rect x="1186" y="432" width="100" height="16" rx="3" fill="rgba(16,185,129,0.1)" stroke="rgba(16,185,129,0.2)" stroke-width="0.5"/>
+  <text x="1236" y="443" font-family="system-ui, -apple-system, sans-serif" font-size="7.5" fill="rgba(16,185,129,0.7)" text-anchor="middle">Supabase Realtime</text>
+
+  <text x="1236" y="456" font-family="system-ui, -apple-system, sans-serif" font-size="7" fill="rgba(255,255,255,0.3)" text-anchor="middle">WebSocket broadcast</text>
+
+  <!-- Arrow to Web App (top consumer) -->
+  <path d="M 1175 440 C 1200 440, 1210 375, 1240 375" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.2" marker-end="url(#arrowhead)"/>
+
+  <!-- Arrow to OpenClaw (middle consumer) -->
+  <path d="M 1175 464 C 1200 464, 1220 465, 1240 465" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.2" marker-end="url(#arrowhead)"/>
+
+  <!-- Arrow to MCP Server (bottom consumer) -->
+  <path d="M 1175 490 C 1200 490, 1210 555, 1240 555" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.2" marker-end="url(#arrowhead)"/>
+
+  <!-- ============================================================ -->
+  <!-- COLUMN 5: Consumer Fan-Out (right side vertical stack) -->
+  <!-- ============================================================ -->
+
+  <!-- Web App -->
+  <rect x="1248" y="345" width="140" height="60" rx="9" fill="rgba(59,130,246,0.12)" stroke="rgba(59,130,246,0.25)" stroke-width="1" filter="url(#glow-blue)"/>
+  <text x="1318" y="366" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="600" fill="white" text-anchor="middle">Web App</text>
+  <text x="1318" y="380" font-family="system-ui, -apple-system, sans-serif" font-size="8.5" fill="rgba(59,130,246,0.7)" text-anchor="middle">PWA Push</text>
+  <text x="1318" y="396" font-family="system-ui, -apple-system, sans-serif" font-size="8" fill="rgba(255,255,255,0.4)" text-anchor="middle">Browser toast + badge</text>
+
+  <!-- OpenClaw -->
+  <rect x="1248" y="435" width="140" height="60" rx="9" fill="rgba(245,158,11,0.12)" stroke="rgba(245,158,11,0.25)" stroke-width="1" filter="url(#glow-orange)"/>
+  <text x="1318" y="456" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="600" fill="white" text-anchor="middle">OpenClaw</text>
+  <text x="1318" y="470" font-family="system-ui, -apple-system, sans-serif" font-size="8" fill="rgba(245,158,11,0.7)" text-anchor="middle">WhatsApp / Telegram</text>
+  <text x="1318" y="484" font-family="system-ui, -apple-system, sans-serif" font-size="8" fill="rgba(245,158,11,0.7)" text-anchor="middle">Slack / Discord</text>
+
+  <!-- MCP Server -->
+  <rect x="1248" y="525" width="140" height="60" rx="9" fill="rgba(139,92,246,0.12)" stroke="rgba(139,92,246,0.25)" stroke-width="1" filter="url(#glow-purple)"/>
+  <text x="1318" y="546" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="600" fill="white" text-anchor="middle">MCP Server</text>
+  <text x="1318" y="560" font-family="system-ui, -apple-system, sans-serif" font-size="8.5" fill="rgba(139,92,246,0.7)" text-anchor="middle">Claude Code / AI Agents</text>
+  <text x="1318" y="576" font-family="system-ui, -apple-system, sans-serif" font-size="8" fill="rgba(255,255,255,0.4)" text-anchor="middle">Tool-based access</text>
+
+  <!-- ============================================================ -->
+  <!-- Window Lifecycle (bottom-left callout) -->
+  <!-- ============================================================ -->
+  <rect x="30" y="690" width="420" height="80" rx="10" fill="rgba(59,130,246,0.06)" stroke="rgba(59,130,246,0.15)" stroke-width="1"/>
+
+  <text x="45" y="712" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="600" fill="rgba(59,130,246,0.8)">Wabb Time Window Lifecycle</text>
+
+  <!-- Lifecycle flow -->
+  <!-- Open -->
+  <rect x="50" y="722" width="52" height="22" rx="5" fill="rgba(16,185,129,0.15)" stroke="rgba(16,185,129,0.25)" stroke-width="0.7"/>
+  <text x="76" y="737" font-family="system-ui, -apple-system, sans-serif" font-size="8.5" font-weight="600" fill="rgba(16,185,129,0.9)" text-anchor="middle">Open</text>
+
+  <text x="110" y="737" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.35)">&#x2192;</text>
+
+  <!-- Active -->
+  <rect x="122" y="722" width="56" height="22" rx="5" fill="rgba(59,130,246,0.15)" stroke="rgba(59,130,246,0.25)" stroke-width="0.7"/>
+  <text x="150" y="737" font-family="system-ui, -apple-system, sans-serif" font-size="8.5" font-weight="600" fill="rgba(59,130,246,0.9)" text-anchor="middle">Active</text>
+
+  <text x="186" y="737" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.35)">&#x2192;</text>
+
+  <!-- Closing -->
+  <rect x="198" y="722" width="58" height="22" rx="5" fill="rgba(245,158,11,0.15)" stroke="rgba(245,158,11,0.25)" stroke-width="0.7"/>
+  <text x="227" y="737" font-family="system-ui, -apple-system, sans-serif" font-size="8.5" font-weight="600" fill="rgba(245,158,11,0.9)" text-anchor="middle">Closing</text>
+
+  <text x="264" y="737" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.35)">&#x2192;</text>
+
+  <!-- Closed -->
+  <rect x="276" y="722" width="56" height="22" rx="5" fill="rgba(239,68,68,0.15)" stroke="rgba(239,68,68,0.25)" stroke-width="0.7"/>
+  <text x="304" y="737" font-family="system-ui, -apple-system, sans-serif" font-size="8.5" font-weight="600" fill="rgba(239,68,68,0.9)" text-anchor="middle">Closed</text>
+
+  <text x="340" y="737" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.35)">&#x2192;</text>
+
+  <!-- Reopened -->
+  <rect x="352" y="722" width="82" height="22" rx="5" fill="rgba(139,92,246,0.15)" stroke="rgba(139,92,246,0.25)" stroke-width="0.7"/>
+  <text x="393" y="737" font-family="system-ui, -apple-system, sans-serif" font-size="8.5" font-weight="600" fill="rgba(139,92,246,0.9)" text-anchor="middle">Reopened</text>
+
+  <text x="393" y="757" font-family="system-ui, -apple-system, sans-serif" font-size="7.5" fill="rgba(255,255,255,0.35)" text-anchor="middle">(Window 2)</text>
+
+  <!-- ============================================================ -->
+  <!-- LEGEND (bottom-right) -->
+  <!-- ============================================================ -->
+  <rect x="1120" y="660" width="260" height="120" rx="10" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.08)" stroke-width="0.8"/>
+  <text x="1140" y="682" font-family="system-ui, -apple-system, sans-serif" font-size="9" font-weight="600" fill="rgba(255,255,255,0.5)">COLOR KEY</text>
+
+  <!-- Cyan -->
+  <rect x="1140" y="692" width="12" height="12" rx="3" fill="rgba(6,182,212,0.25)" stroke="rgba(6,182,212,0.4)" stroke-width="0.6"/>
+  <text x="1160" y="702" font-family="system-ui, -apple-system, sans-serif" font-size="8.5" fill="rgba(255,255,255,0.6)">Ingest / Sources</text>
+
+  <!-- Blue -->
+  <rect x="1140" y="710" width="12" height="12" rx="3" fill="rgba(59,130,246,0.25)" stroke="rgba(59,130,246,0.4)" stroke-width="0.6"/>
+  <text x="1160" y="720" font-family="system-ui, -apple-system, sans-serif" font-size="8.5" fill="rgba(255,255,255,0.6)">Core Processing</text>
+
+  <!-- Green -->
+  <rect x="1140" y="728" width="12" height="12" rx="3" fill="rgba(16,185,129,0.25)" stroke="rgba(16,185,129,0.4)" stroke-width="0.6"/>
+  <text x="1160" y="738" font-family="system-ui, -apple-system, sans-serif" font-size="8.5" fill="rgba(255,255,255,0.6)">Storage / Tables</text>
+
+  <!-- Purple -->
+  <rect x="1280" y="692" width="12" height="12" rx="3" fill="rgba(139,92,246,0.25)" stroke="rgba(139,92,246,0.4)" stroke-width="0.6"/>
+  <text x="1300" y="702" font-family="system-ui, -apple-system, sans-serif" font-size="8.5" fill="rgba(255,255,255,0.6)">Calculation</text>
+
+  <!-- Orange -->
+  <rect x="1280" y="710" width="12" height="12" rx="3" fill="rgba(245,158,11,0.25)" stroke="rgba(245,158,11,0.4)" stroke-width="0.6"/>
+  <text x="1300" y="720" font-family="system-ui, -apple-system, sans-serif" font-size="8.5" fill="rgba(255,255,255,0.6)">Output / Consumers</text>
+
+  <!-- Flow direction indicator -->
+  <text x="1140" y="758" font-family="system-ui, -apple-system, sans-serif" font-size="8" fill="rgba(255,255,255,0.35)">Flow direction: L &#x2192; R  |  Events fan out &#x2192; &#x2193;</text>
+  <text x="1140" y="772" font-family="system-ui, -apple-system, sans-serif" font-size="8" fill="rgba(255,255,255,0.35)">Arrows: data flow  |  Dashed: realtime broadcast</text>
+
+</svg>
