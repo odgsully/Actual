@@ -111,8 +111,8 @@ ALERT_WEBHOOK_URL= (optional)
 ```
 
 ### Database Setup Required
-1. Run `database-schema.sql` (initial schema)
-2. Run `migrations/002_add_scraping_tables.sql` (scraping tables)
+1. Run `ref/sql/database-schema.sql` (initial schema)
+2. Run `migrations/002_add_scraping_tables.sql` (scraping tables — in `apps/wabbit-re/migrations/`)
 3. Create Supabase Storage bucket: `property-images`
 
 ### Deployment Command

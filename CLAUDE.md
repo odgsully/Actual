@@ -67,7 +67,7 @@ cat [session-file].jsonl | jq -r 'select(.type == "user" or .type == "assistant"
 
 ## ⚠️ Critical Context (September 5, 2024)
 
-**IMPORTANT**: This is the restored working version from the `main` branch. The `clean-deployment` branch was corrupted (missing 34,199 files including authentication) and should NOT be used. See `Fix_explain_09.05.md` and `docs/deployment/DEPLOYMENT_FIX_CONTEXT.md` for restoration details.
+**IMPORTANT**: This is the restored working version from the `main` branch. The `clean-deployment` branch was corrupted (missing 34,199 files including authentication) and should NOT be used. See `docs/Fix_explain_09.05.md` and `docs/deployment/DEPLOYMENT_FIX_CONTEXT.md` for restoration details.
 
 ## Safety Documentation
 
@@ -89,6 +89,11 @@ For detailed safety protocols, database ownership, and emergency procedures, see
 | [`MIGRATION_SAFETY_PROTOCOLS.md`](./MIGRATION_SAFETY_PROTOCOLS.md) | **Safety reference** - Ultra-conservative procedures for high-risk operations  |
 
 **When to use Safety Protocols:** Database schema changes, production deployments, file moves/deletes, any operation that could cause data loss.
+
+## Git Commit Style
+
+- Do **not** include `Co-Authored-By` lines in commit messages
+- Write detailed but concise commit messages that explain the "why" and summarize key changes
 
 ## Common Development Commands
 
@@ -125,12 +130,7 @@ For detailed safety protocols, database ownership, and emergency procedures, see
 
 ### Legacy Deployment Files (Hetzner - Discontinued)
 
-> **Note**: Hetzner/PM2/Nginx deployment was discontinued in favor of Vercel. These files are kept for reference only.
-
-- `ecosystem.config.js` - Legacy PM2 config
-- `deployment/nginx.conf` - Legacy Nginx config
-- `deployment/deploy.sh` - Legacy deploy script
-- `deployment/DEPLOYMENT_GUIDE.md` - Legacy Hetzner guide
+> **Note**: Hetzner/PM2/Nginx deployment was discontinued in favor of Vercel. All legacy deployment files (`ecosystem.config.js`, `deployment/`, `server-deploy.sh`, `deploy-phase4.sh`) were deleted in the Feb 2026 monorepo cleanup. See `docs/deployment/DEPLOYMENT_FIX_CONTEXT.md` for historical context.
 
 ## Architecture Overview
 
@@ -149,27 +149,24 @@ For detailed safety protocols, database ownership, and emergency procedures, see
 ### Project Structure
 
 ```
-/app                    # Next.js App Router pages and API routes
-  /api                  # API endpoints (health, email, preferences, setup)
-  /form                 # Multi-step preferences questionnaire
-  /rank-feed           # 4-tile property ranking interface
-  /list-view           # Property list/grid view
-  /settings            # User settings and preferences
-  /signup              # User registration flow
-  /setup/[token]       # Token-based setup flow
-/components            # Reusable UI components
-  /auth               # Authentication components (SignInModal)
-  /form               # Form components (ResponseSummary)
-/contexts              # React context providers
-  AuthContext.tsx     # Authentication state management
-/lib                   # Core utilities
-  /database            # Database access functions (users, properties, rankings, preferences)
-  /supabase            # Supabase client configuration
-/deployment            # Production deployment scripts and configs
-/scripts               # Database seeding and utility scripts
-/scrape_3rd           # MLS data scraping utilities
-/hooks                 # Custom React hooks
-/public                # Static assets
+apps/
+  gs-site/              # Personal dashboard (pickleballisapsyop.com)
+  growthadvisory/       # Marketing site (growthadvisory.ai)
+  gsrealty-client/      # CRM platform
+  wabbit-re/            # Property ranking platform (wabbit-rank.ai)
+    app/                # Next.js App Router pages and API routes
+    components/         # Reusable UI components
+    contexts/           # React context providers
+    lib/                # Core utilities (database, supabase, scraping)
+    scripts/            # Database seeding and utility scripts
+    scrape_3rd/         # MLS data scraping utilities
+    hooks/              # Custom React hooks
+    public/             # Static assets
+    migrations/         # Database migrations
+    ref/                # Reference SQL and data files
+  wabbit/               # Gesture-driven content ranking tool
+packages/               # Shared packages (auth, supabase, ui, utils)
+docs/                   # Cross-project documentation
 ```
 
 ### Key Application Routes
@@ -205,26 +202,26 @@ Production deployment requires these in `.env.production` or `.env.local`:
 
 - Strict mode enabled
 - Path aliases configured (@/components, @/lib, etc.)
-- Excludes: node_modules, dev_buildout, "every cc [copy] copy"
+- Excludes: node_modules, scripts
 
 ### Important Documentation Files
 
 - `README.md` - Project overview and quick start
 - `MIGRATION_PROGRESS_TRACKER.md` - **Main development roadmap** (95% complete)
 - `MIGRATION_SAFETY_PROTOCOLS.md` - Ultra-conservative safety procedures for migrations
-- `WABBIT_PRD.md` - Product requirements document
-- `SUBAGENT_PLAN.md` - Architecture and implementation plan
+- `apps/wabbit-re/WABBIT_PRD.md` - Product requirements document
+- `apps/wabbit-re/SUBAGENT_PLAN.md` - Architecture and implementation plan
 - `docs/supabase/SUPABASE_SETUP.md` - Database setup instructions
 - `apps/wabbit-re/docs/setup/GOOGLE_MAPS_SETUP.md` - Maps API configuration
 - `apps/wabbit-re/docs/setup/DEMO_SETUP.md` - Demo account setup instructions
-- `database-schema.sql` - Complete database schema
-- `test-verification-flow.md` - Testing documentation
+- `apps/wabbit-re/ref/sql/database-schema.sql` - Complete database schema
+- `apps/wabbit-re/docs/test-verification-flow.md` - Testing documentation
 
 ### Data Processing
 
 The platform processes:
 
-- Client preferences from `CRM-Buyer-preferences.xlsx`
+- Client preferences from `apps/wabbit-re/ref/data/CRM-Buyer-preferences.xlsx`
 - MLS property data from `MLS scrape_[BuyerEmail].xlsx`
 - Property images from `/MLS_Image_scrape_[BuyerEmail]/`
 
@@ -266,7 +263,7 @@ The platform processes:
 - **September 5, 2024**: Restored from `clean-deployment` branch corruption
   - Lost 34,199 files including authentication
   - Recovered from `main` branch (Actual-clean directory)
-  - See `Fix_explain_09.05.md` for details
+  - See `docs/Fix_explain_09.05.md` for details
 - **DNS Issue**: Nameserver mismatch between Namecheap and Cloudflare
   - Required: lana.ns.cloudflare.com and leif.ns.cloudflare.com
   - See `docs/deployment/DEPLOYMENT_FIX_CONTEXT.md` for resolution steps
@@ -398,12 +395,12 @@ Complete property scraping and filtering system for Maricopa County, Arizona wit
 
 ### Key Components
 
-- **Scrapers**: `/lib/scraping/scrapers/` (Playwright-based)
-- **Queue Manager**: `/lib/scraping/queue-manager.ts`
-- **Data Normalizer**: `/lib/pipeline/data-normalizer.ts`
-- **Property Manager**: `/lib/database/property-manager.ts`
-- **Image Optimizer**: `/lib/storage/image-optimizer.ts`
-- **Notifier**: `/lib/notifications/property-notifier.ts`
+- **Scrapers**: `apps/wabbit-re/lib/scraping/scrapers/` (Playwright-based)
+- **Queue Manager**: `apps/wabbit-re/lib/scraping/queue-manager.ts`
+- **Data Normalizer**: `apps/wabbit-re/lib/pipeline/data-normalizer.ts`
+- **Property Manager**: `apps/wabbit-re/lib/database/property-manager.ts`
+- **Image Optimizer**: `apps/wabbit-re/lib/storage/image-optimizer.ts`
+- **Notifier**: `apps/wabbit-re/lib/notifications/property-notifier.ts`
 
 ### Vercel Cron Jobs
 
@@ -431,7 +428,7 @@ Configured in `vercel.json`:
 
 ### Database Tables (New)
 
-Run `migrations/002_add_scraping_tables.sql` for:
+Run `apps/wabbit-re/migrations/002_add_scraping_tables.sql` for:
 
 - `property_notifications` - User alerts
 - `notification_queue` - Email digest queue
@@ -461,7 +458,7 @@ curl http://localhost:3000/api/cron/check-health
 
 After deploying to Vercel, verify cron jobs are active in Vercel Dashboard → Functions → Cron.
 
-For detailed implementation status, see `SCRAPING_SYSTEM_STATUS.md`.
+For detailed implementation status, see `apps/wabbit-re/docs/SCRAPING_SYSTEM_STATUS.md`.
 
 ## GS Site Dashboard (Updated January 2026)
 

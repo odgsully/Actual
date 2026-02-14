@@ -65,7 +65,7 @@ export default function AdminOverviewPage() {
   // Calculate tile stats
   const totalTiles = tiles?.length ?? 0;
   const tilesWithWarnings = tiles?.filter((t: Tile) => t.actionWarning).length ?? 0;
-  const configurableTiles = 9; // From GO-PLAN.md
+  const configurableTiles = 9; // From docs/GO-PLAN.md
 
   // Tiles by status
   const tilesByStatus = {

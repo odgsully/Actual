@@ -4,7 +4,7 @@
 
 ### 1. RLS Policy for Sign-up (CRITICAL)
 **Problem:** "new row violates row-level security policy for table 'user_profiles'" error during sign-up
-**Solution:** Created SQL script (`fix-auth-issues.sql`) to add INSERT policy for user_profiles table
+**Solution:** Created SQL script (`ref/sql/fix-auth-issues.sql`) to add INSERT policy for user_profiles table
 **Action Required:** Run the SQL script in Supabase dashboard
 
 ### 2. Sign In Button on Sign-up Page
@@ -31,7 +31,7 @@
 
 1. **Apply Database Fix:**
    ```bash
-   # Run fix-auth-issues.sql in Supabase SQL editor
+   # Run ref/sql/fix-auth-issues.sql in Supabase SQL editor
    ```
 
 2. **Create Test Users:**
@@ -48,7 +48,7 @@
 
 1. `/app/signup/page.tsx` - Fixed Sign In link
 2. `/app/rank-feed/page.tsx` - Fixed hooks order
-3. `/fix-auth-issues.sql` - Created RLS policy fix script
+3. `ref/sql/fix-auth-issues.sql` - Created RLS policy fix script
 
 ## Server Status
 

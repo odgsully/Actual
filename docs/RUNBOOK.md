@@ -257,10 +257,10 @@ vercel logs wabbit-property-scraping
 
 ```bash
 # Local verification
-./scripts/verify-deployment.sh
+./apps/wabbit-re/scripts/verify-deployment.sh
 
 # Remote verification (production)
-./scripts/verify-deployment.sh https://wabbit-property-scraping.vercel.app
+./apps/wabbit-re/scripts/verify-deployment.sh https://wabbit-property-scraping.vercel.app
 
 # Check cron jobs
 # Vercel Dashboard → Functions → Cron
