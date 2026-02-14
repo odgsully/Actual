@@ -18,14 +18,7 @@
     "db:migrate": "supabase db push",
     "db:apply-rls": "tsx scripts/apply-rls-policies.ts",
     "db:verify-rls": "tsx scripts/verify-rls.ts",
-    "storage:init": "node scripts/create-storage-bucket.mjs",
-    "db:seed": "tsx scripts/seed-database.ts",
-    "db:seed-demo": "tsx scripts/seed-demo-account.ts",
-    "db:update-demo": "tsx scripts/update-demo-password.ts",
-    "db:seed-data": "tsx scripts/seed-sample-data.ts",
-    "db:seed-live-demo": "tsx scripts/seed-live-demo-properties.ts",
-    "db:setup-spatial": "tsx scripts/setup-spatial.ts",
-    "db:check-spatial": "tsx scripts/check-spatial-setup.ts"
+    "storage:init": "node scripts/create-storage-bucket.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.1.0",
