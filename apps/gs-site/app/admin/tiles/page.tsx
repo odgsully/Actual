@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
-// Configurable tiles from GO-PLAN.md
+// Configurable tiles from docs/GO-PLAN.md
 const CONFIGURABLE_TILES = [
   {
     id: 'realtyone-events',

@@ -18,14 +18,7 @@
     "db:migrate": "supabase db push",
     "db:apply-rls": "tsx scripts/apply-rls-policies.ts",
     "db:verify-rls": "tsx scripts/verify-rls.ts",
-    "storage:init": "node scripts/create-storage-bucket.mjs",
-    "db:seed": "tsx scripts/seed-database.ts",
-    "db:seed-demo": "tsx scripts/seed-demo-account.ts",
-    "db:update-demo": "tsx scripts/update-demo-password.ts",
-    "db:seed-data": "tsx scripts/seed-sample-data.ts",
-    "db:seed-live-demo": "tsx scripts/seed-live-demo-properties.ts",
-    "db:setup-spatial": "tsx scripts/setup-spatial.ts",
-    "db:check-spatial": "tsx scripts/check-spatial-setup.ts"
+    "storage:init": "node scripts/create-storage-bucket.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.1.0",
@@ -69,15 +62,12 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "date-fns-tz": "^3.2.0",
-    "embla-carousel-react": "^8.0.0",
     "exceljs": "^4.4.0",
-    "framer-motion": "^10.18.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^2.5.1",
     "lucide-react": "^0.311.0",
     "next": "14.2.33",
     "next-themes": "^0.2.1",
-    "node-cron": "^4.2.1",
     "openai": "^4.24.7",
     "p-queue": "^8.1.1",
     "papaparse": "^5.4.1",
@@ -93,13 +83,11 @@
     "recharts": "^2.12.7",
     "resend": "^6.1.3",
     "sharp": "^0.33.5",
-    "swr": "^2.2.4",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
     "uuid": "^8.3.2",
     "xlsx": "^0.18.5",
-    "zod": "^3.22.4",
-    "zustand": "^4.4.7"
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@jest/globals": "^29.7.0",

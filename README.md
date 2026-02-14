@@ -164,9 +164,8 @@ The platform includes several preview pages to demonstrate functionality:
 ├── components/            # Reusable components (to be created)
 ├── lib/                   # Utility functions (to be created)
 ├── public/                # Static assets
-├── database-schema.sql    # PostgreSQL schema
 ├── package.json           # Dependencies
-└── WABBIT_PRD.md         # Product requirements document
+└── apps/wabbit-re/ref/sql/database-schema.sql  # PostgreSQL schema
 ```
 
 ## Data Sources
@@ -228,7 +227,7 @@ To set up the database:
 1. Create a Supabase project
 2. Run the SQL schema:
 ```bash
-psql -h [your-supabase-url] -U postgres -d postgres -f database-schema.sql
+psql -h [your-supabase-url] -U postgres -d postgres -f apps/wabbit-re/ref/sql/database-schema.sql
 ```
 3. Configure Row Level Security policies
 4. Import initial data from Excel files
@@ -288,23 +287,23 @@ Private - All rights reserved
 
 ### Core Documentation
 - `README.md` - This file, project overview
-- `WABBIT_PRD.md` - Complete product requirements document
-- `SUBAGENT_PLAN.md` - Development execution plan
+- `apps/wabbit-re/WABBIT_PRD.md` - Complete product requirements document
+- `apps/wabbit-re/SUBAGENT_PLAN.md` - Development execution plan
 - `CLAUDE.md` - AI assistant guidance for development
 
 ### Database Documentation
-- `database-schema.sql` - Complete database structure
-- `database-migration-temp-preferences.sql` - Temporary preferences migration
+- `apps/wabbit-re/ref/sql/database-schema.sql` - Complete database structure
+- `apps/wabbit-re/ref/sql/database-migration-temp-preferences.sql` - Temporary preferences migration
 - `docs/supabase/SUPABASE_SETUP.md` - Supabase configuration guide
 
 ### Setup Guides
 - `apps/wabbit-re/docs/setup/GOOGLE_MAPS_SETUP.md` - Google Maps API configuration
 - `apps/wabbit-re/docs/setup/DEMO_SETUP.md` - Demo account setup instructions
-- `test-verification-flow.md` - Testing email verification
+- `apps/wabbit-re/docs/test-verification-flow.md` - Testing email verification
 
 ### Deployment & Recovery
 - `docs/deployment/DEPLOYMENT_FIX_CONTEXT.md` - Deployment fix procedures
-- `Fix_explain_09.05.md` - Directory restoration documentation
+- `docs/Fix_explain_09.05.md` - Directory restoration documentation
 - `docs/deployment/DEPLOYMENT_GUIDE.md` - Complete deployment guide
 
 ## Support

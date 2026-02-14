@@ -257,10 +257,10 @@ vercel logs wabbit-property-scraping
 
 ```bash
 # Local verification
-./scripts/verify-deployment.sh
+./apps/wabbit-re/scripts/verify-deployment.sh
 
 # Remote verification (production)
-./scripts/verify-deployment.sh https://wabbit-property-scraping.vercel.app
+./apps/wabbit-re/scripts/verify-deployment.sh https://wabbit-property-scraping.vercel.app
 
 # Check cron jobs
 # Vercel Dashboard → Functions → Cron
@@ -340,40 +340,27 @@ git checkout [commit-hash] -- path/to/file
 
 > **Note**: Hetzner/PM2 deployment was discontinued in favor of Vercel. These procedures are kept for historical reference only.
 
-### Legacy: Interactive Rollback (Hetzner)
+### Legacy: Interactive Rollback (Hetzner) — REMOVED
 
-```bash
+> **Note**: `scripts/rollback.sh`, `ecosystem.config.js`, and all Hetzner deployment scripts were removed in the Feb 2026 monorepo cleanup. The procedures below are preserved as historical reference only — they are no longer executable.
+
+~~```bash
 ssh deploy@5.78.100.116
 cd /var/www/wabbit
-
-# Interactive mode - shows available backups
 ./scripts/rollback.sh
-
-# Or specify backup directly
 ./scripts/rollback.sh backup_20251219_120000.tar.gz
-```
+```~~
 
-### Legacy: PM2/Hetzner Manual Rollback
-```bash
+### Legacy: PM2/Hetzner Manual Rollback — REMOVED
+
+> Same as above — all referenced scripts (`rollback.sh`, `ecosystem.config.js`, `verify-deployment.sh`) have been removed or relocated.
+
+~~```bash
 ssh deploy@5.78.100.116
 cd /var/www/wabbit
-
-# Stop all apps
 pm2 stop all
-
-# Restore from backup
-BACKUP="backup_YYYYMMDD_HHMMSS.tar.gz"
-rm -rf /var/www/wabbit/*
-tar -xzf /var/backups/wabbit/$BACKUP -C /var/www/wabbit
-
-# Rebuild and restart
-npm ci
-npm run build
-pm2 restart ecosystem.config.js --update-env
-
-# Verify
-./scripts/verify-deployment.sh
-```
+# ... (see git history for full procedure)
+```~~
 
 ---
 

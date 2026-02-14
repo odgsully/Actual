@@ -98,7 +98,7 @@ async function checkSpatialSetup() {
   console.log('\n📝 Summary:')
   console.log('If any functions are missing, you need to run the migration:')
   console.log('1. Go to Supabase SQL Editor')
-  console.log('2. Copy contents of migrations/002_spatial_rpc_functions.sql')
+  console.log('2. Copy contents of apps/wabbit-re/migrations/002_spatial_rpc_functions.sql')
   console.log('3. Run the SQL to create the functions')
   console.log('\nOr if PostGIS is not enabled:')
   console.log('1. Go to Supabase Dashboard > Database > Extensions')

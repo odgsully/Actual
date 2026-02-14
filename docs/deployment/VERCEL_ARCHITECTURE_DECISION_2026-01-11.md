@@ -384,6 +384,6 @@ If issues arise:
 ## Related Documentation
 
 - [Database Ownership](./DATABASE_OWNERSHIP.md)
-- [growthadvisory.ai Vercel Setup](../growthadvisoryai-vercel.md)
+- [growthadvisory.ai Vercel Setup](../../apps/growthadvisory/docs/growthadvisoryai-vercel.md)
 - [Vercel Deployment Status](./VERCEL_DEPLOYMENT_STATUS.md)
 - [Safety Protocols](./SAFETY_PROTOCOLS.md)

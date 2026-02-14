@@ -146,10 +146,10 @@ jobs:
         run: sleep 60
 
       - name: Make verification script executable
-        run: chmod +x scripts/verify-deployment.sh
+        run: chmod +x apps/wabbit-re/scripts/verify-deployment.sh
 
       - name: Run verification
-        run: ./scripts/verify-deployment.sh https://wabbit-rank.ai
+        run: ./apps/wabbit-re/scripts/verify-deployment.sh https://wabbit-rank.ai
         continue-on-error: true
         id: verify
 

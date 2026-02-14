@@ -24,7 +24,7 @@ Migrating from single Wabbit Real Estate app to a 4-app monorepo architecture un
 | No CI/CD automated testing gates    | **HIGH**     | Phase 2.5 | ✅ **RESOLVED** (GitHub Actions + husky)     |
 | 35-45% code duplication across apps | **MEDIUM**   | Phase 5   | ⚠️ Reduced (~20% remaining)                  |
 
-> **Progress**: ALL CRITICAL BLOCKERS RESOLVED! RLS migration ready. Run `migrations/007_comprehensive_rls_policies.sql` in Supabase.
+> **Progress**: ALL CRITICAL BLOCKERS RESOLVED! RLS migration already applied. Reference copy at `apps/wabbit-re/ref/sql/007_comprehensive_rls_policies.sql`.
 
 ---
 
@@ -353,10 +353,10 @@ _Duration: 1-2 days_
 
 ### Documentation
 
-- [x] Document current folder structure (PRE_MONOREPO_DOCUMENTATION.md created)
+- [x] Document current folder structure (`docs/PRE_MONOREPO_DOCUMENTATION.md` created)
 - [x] List all active cron jobs and their schedules (Documented: hourly-scrape, daily-cleanup, check-health)
 - [x] Document current Vercel configuration (Project: wabbit-property-scraping)
-- [x] Note all API endpoints and their purposes (Complete list in PRE_MONOREPO_DOCUMENTATION.md)
+- [x] Note all API endpoints and their purposes (Complete list in `docs/PRE_MONOREPO_DOCUMENTATION.md`)
 - [x] Record current deployment URL (https://wabbit-property-scraping.vercel.app)
 
 ### Verification
@@ -668,7 +668,7 @@ _Completed: December 18, 2025_ ✅
 
 > **RESOLVED:** Comprehensive RLS policies added for all 11+ tables.
 
-**Migration Created:** `migrations/007_comprehensive_rls_policies.sql`
+**Migration Created:** `apps/wabbit-re/ref/sql/007_comprehensive_rls_policies.sql` (moved from root during Feb 2026 cleanup)
 
 **Tables Now Protected:**
 
@@ -914,8 +914,8 @@ _Added: December 18, 2025_
 
 | Script | Purpose |
 |--------|---------|
-| `scripts/verify-deployment.sh` | Comprehensive health & API checks |
-| `scripts/rollback.sh` | Legacy: Interactive rollback (Hetzner - discontinued) |
+| `apps/wabbit-re/scripts/verify-deployment.sh` | Comprehensive health & API checks |
+| `scripts/rollback.sh` | Legacy: deleted in Feb 2026 cleanup (Hetzner - discontinued) |
 
 **Verification Script Features:**
 - [x] Health checks for all 4 apps

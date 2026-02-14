@@ -104,7 +104,7 @@ async function verifySetup() {
   log.header('2. Database Setup Files');
   
   const dbFiles = [
-    'database-schema.sql',
+    'ref/sql/database-schema.sql',
     'migrations/002_add_scraping_tables.sql'
   ];
   

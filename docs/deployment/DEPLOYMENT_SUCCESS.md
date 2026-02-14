@@ -144,7 +144,7 @@ After deploying to Vercel:
 
 ### Resources:
 - **Deployment Guide**: See DEPLOYMENT_GUIDE.md
-- **Development Plan**: See DEVELOPMENT_PLAN.md
+- **Development Plan**: See `apps/wabbit-re/docs/DEVELOPMENT_PLAN.md`
 - **System Status**: See DEVELOPMENT_STATUS.md
 - **Vercel Docs**: https://vercel.com/docs
 

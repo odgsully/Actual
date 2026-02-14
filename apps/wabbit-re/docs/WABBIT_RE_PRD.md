@@ -76,7 +76,7 @@ interface SignUpData {
 A sophisticated multi-page form system that adapts based on existing user data and provides a Typeform-like experience.
 
 ### Data Source Structure
-Based on `CRM-Buyer-preferences.xlsx`:
+Based on `ref/data/CRM-Buyer-preferences.xlsx`:
 - **Columns B-J**: User identification fields
 - **Columns K-AB**: Preference questions
 - **Row 1**: Page index for form flow
@@ -264,7 +264,7 @@ CREATE TABLE rankings (
 ### Data Import Process
 
 #### Excel to Database Migration
-1. Parse `CRM-Buyer-preferences.xlsx`
+1. Parse `ref/data/CRM-Buyer-preferences.xlsx`
 2. Map columns to database fields
 3. Import existing user records
 4. Maintain data integrity with foreign keys
@@ -538,7 +538,7 @@ OPENAI_API_KEY=
 ## Appendices
 
 ### A. File Structure Reference
-- `/CRM-Buyer-preferences.xlsx`: User preference data
+- `ref/data/CRM-Buyer-preferences.xlsx`: User preference data
 - `/MLS scrape_[BuyerEmail].xlsx`: Property listings
 - `/MLS_Image_scrape_[BuyerEmail]/`: Property images
 - `/dev_buildout/wireframes-ref/`: UI references
