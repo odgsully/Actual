@@ -1,260 +1,102 @@
 # GS Personal App Suite - Monorepo
 
-A monorepo containing multiple applications under one unified workspace.
+A Turborepo monorepo containing multiple applications deployed to separate domains via Vercel.
 
-## 🚨 Monorepo Migration Status
-
-**Branch:** `gssite-dec18-per-notion`
-**Status:** Phase 4 In Progress (95% Functional / 98% Structural)
-**Main Development Plan:** See [`MIGRATION_PROGRESS_TRACKER.md`](./MIGRATION_PROGRESS_TRACKER.md) for detailed roadmap
-**Safety Protocols:** See [`MIGRATION_SAFETY_PROTOCOLS.md`](./MIGRATION_SAFETY_PROTOCOLS.md) for ultra-conservative procedures
-
-### Quick Migration Summary
-- ✅ Phase 0-1: Foundation & Structure Complete
-- ✅ Phase 2: 4 Apps Created & Running
-- ✅ Phase 2.5: CI/CD Foundation Complete
-- ✅ Phase 3: Integration/RLS Complete
-- ⏳ Phase 4: Deployment (90% - GitHub Secrets pending)
-- 📝 Phase 5: Stabilization (not started)
-
-## 📁 Monorepo Structure
+## Monorepo Structure
 
 ```
 Actual/
 ├── apps/
 │   ├── gsrealty-client/    # Real estate CRM (port 3004)
 │   ├── wabbit-re/          # Property ranking platform (port 3000)
-│   ├── wabbit/             # General ranking platform (port 3002)
-│   └── gs-site/            # Personal dashboard hub (port 3003)
+│   ├── wabbit/             # Gesture-driven content ranking (port 3002)
+│   ├── gs-site/            # Personal dashboard hub (port 3003)
+│   └── growthadvisory/     # Marketing site (port 3005)
 ├── packages/
-│   ├── supabase/           # Shared Supabase utilities
+│   ├── auth/               # Shared authentication utilities
+│   ├── supabase/           # Shared Supabase client & helpers
 │   ├── ui/                 # Shared UI components
 │   └── utils/              # Common utilities
-├── package.json                    # Root workspace config
-├── turbo.json                      # Turborepo build pipeline
-├── MIGRATION_PROGRESS_TRACKER.md   # Main development roadmap (95% complete)
-└── MIGRATION_SAFETY_PROTOCOLS.md   # Ultra-conservative safety procedures
+├── docs/                   # Cross-project documentation & archives
+├── turbo.json              # Turborepo build pipeline
+└── package.json            # Root workspace config
 ```
 
 ## Quick Start
 
 ### Prerequisites
-- Node.js 18.17.0 or higher
+
+- Node.js 18.17+ (currently running v24)
 - npm 9+ (uses npm workspaces)
 - Supabase account (for database)
-- Environment variables (see `.env.local`)
 
 ### Installation
 
-1. **Install all workspace dependencies:**
 ```bash
 npm install
 ```
 
-2. **Set up environment variables:**
-```bash
-cp .env.sample .env.local
-# Edit .env.local with your API keys
-```
+### Running Apps
 
-3. **Run specific app:**
 ```bash
-npm run dev:gsrealty     # GSRealty CRM on port 3004
-npm run dev:wabbit-re    # Wabbit RE on port 3000
-npm run dev:wabbit       # Wabbit on port 3002
-npm run dev:dashboard    # GS Site on port 3003
-```
-
-4. **Or run all apps (parallel):**
-```bash
+# Run all apps in parallel
 npm run dev
+
+# Run a specific app
+npm run dev -w wabbit-re      # Property ranking on :3000
+npm run dev -w gs-site         # Dashboard on :3003
+npm run dev -w gsrealty-client # CRM on :3004
+npm run dev -w growthadvisory  # Marketing site on :3005
 ```
 
-## 🚨 Known Limitations
+### Root Scripts
 
-### Google Maps API on Vercel Preview Deployments
-- **Issue**: Google Cloud Console doesn't support wildcard subdomain patterns (e.g., `https://wabbit-property-scraping-*.vercel.app/*`)
-- **Impact**: Google Maps won't work on Vercel preview/branch deployments
-- **Workaround**: Test map features locally or in production only
-- **Allowed Domains**:
-  - Production: `https://wabbit-property-scraping.vercel.app/*`
-  - Local Development: `http://localhost:3000/*` and `http://localhost:3001/*`
+| Script | Command | Description |
+|--------|---------|-------------|
+| `npm run dev` | `turbo dev` | Start all apps in parallel |
+| `npm run build` | `turbo build` | Build all apps |
+| `npm run lint` | `turbo lint` | Lint all apps |
+| `npm run typecheck` | `turbo typecheck` | TypeScript checks across all apps |
+| `npm run test` | `turbo test` | Run tests across all apps |
+| `npm run format` | `prettier --write` | Format all files |
 
-### Vercel Deployment Requirements
-- **Hobby Plan**: Limited to daily cron jobs only
-- **Pro Plan**: Required for hourly property scraping (cron jobs that run more than once per day)
-- **Function Timeout**: 300 seconds max on Pro plan
+Database and app-specific scripts live in each app's `package.json`. For example:
 
-## Available Scripts
-
-### Development
-- `npm run dev` - Start development server on port 3000
-- `npm run build` - Build production bundle
-- `npm run start` - Start production server
-- `npm run lint` - Run ESLint
-- `npm run typecheck` - Run TypeScript type checking
-- `npm run format` - Format code with Prettier
-
-### Testing
-- `npm test` - Run unit tests
-- `npm run test:watch` - Run tests in watch mode
-- `npm run test:e2e` - Run end-to-end tests
-
-### Database
-- `npm run db:migrate` - Run database migrations
-- `npm run db:seed` - Seed database with sample data
-
-## Preview Pages
-
-The platform includes several preview pages to demonstrate functionality:
-
-### 1. **Sign Up** (`/signup`)
-- User registration form
-- Privacy and marketing preferences
-- Email validation
-
-### 2. **Preferences Form** (`/form`)
-- 7-page questionnaire
-- Dynamic form with progress tracking
-- User preference collection including:
-  - Property type preferences
-  - Size and budget requirements
-  - Commute preferences
-  - Room requirements
-  - Location preferences
-  - Home features
-  - Current residence feedback
-
-### 3. **Rank Feed** (`/rank-feed`)
-- 4-tile property evaluation interface:
-  - **Property Info**: Details about the listing
-  - **Ranking Tile**: 4 key metrics (Price:Value, Location, Layout, Turnkey)
-  - **Interactive Map**: Location visualization
-  - **Image Carousel**: Property photos
-- Interactive sliders for ranking (1-10 scale)
-- Real-time average score calculation
-
-### 4. **List View** (`/list-view`)
-- Grid/List toggle view
-- Property cards with key information
-- Filtering and sorting options
-- Favorite marking
-- Multi-user voting indicators
-
-### 5. **Settings** (`/settings`)
-- Dark/Light mode toggle
-- Font size adjustment
-- Friend invitation system
-- Third-party platform connections (Zillow, Redfin, Homes.com)
-- Account management
-
-## Project Structure
-
-```
-/
-├── app/                    # Next.js app directory
-│   ├── layout.tsx         # Root layout
-│   ├── page.tsx           # Home page
-│   ├── globals.css        # Global styles
-│   ├── signup/            # Sign-up flow
-│   ├── form/              # Multi-page preferences form
-│   ├── rank-feed/         # Property ranking interface
-│   ├── list-view/         # Property list view
-│   └── settings/          # User settings
-├── components/            # Reusable components (to be created)
-├── lib/                   # Utility functions (to be created)
-├── public/                # Static assets
-├── package.json           # Dependencies
-└── apps/wabbit-re/ref/sql/database-schema.sql  # PostgreSQL schema
-```
-
-## Data Sources
-
-The platform processes data from:
-- `CRM-Buyer-preferences.xlsx` - Existing client preferences
-- `MLS scrape_[BuyerEmail].xlsx` - Property listings
-- `/MLS_Image_scrape_[BuyerEmail]/` - Property images
-
-## Features
-
-### Current Implementation (Verified Working)
-- ✅ **User Authentication System**
-  - Sign up with email/password
-  - Sign in/Sign out functionality
-  - Demo account support (`support@wabbit-rank.ai`)
-  - Email verification flow
-  - Token-based account setup
-- ✅ **7-Page Dynamic Preferences Form**
-  - Property type and size preferences
-  - Budget and location requirements
-  - Commute preferences
-  - Home features selection
-  - Current residence feedback
-- ✅ **Property Ranking Interface** (4-tile layout)
-  - Property details display
-  - Interactive ranking system
-  - Map integration preparation
-  - Image carousel
-- ✅ **List View** with filtering capabilities
-- ✅ **Settings Management**
-  - User preferences
-  - Dark/Light mode toggle
-  - Account settings
-- ✅ **Responsive Design** for all screen sizes
-
-### Pending Implementation
-- ⏳ Supabase backend integration (partial)
-- ⏳ Real MLS data import
-- ⏳ Google Maps API activation
-- ⏳ OpenAI location intelligence
-- ⏳ Multi-user collaboration features
-- ⏳ Third-party platform connections (Zillow, Redfin, etc.)
-- ⏳ Real-time data synchronization
-
-## Development Workflow
-
-1. **Start with the home page** (`/`) to see all available previews
-2. **Test the sign-up flow** to understand user onboarding
-3. **Complete the form** to see the 7-page questionnaire
-4. **Explore Rank Feed** for the main property evaluation interface
-5. **Browse List View** for property management
-6. **Adjust Settings** to see customization options
-
-## Database Setup
-
-To set up the database:
-
-1. Create a Supabase project
-2. Run the SQL schema:
 ```bash
-psql -h [your-supabase-url] -U postgres -d postgres -f apps/wabbit-re/ref/sql/database-schema.sql
+# wabbit-re database scripts
+npm run db:migrate -w wabbit-re
+npm run db:seed -w wabbit-re
+npm run db:seed-demo -w wabbit-re
+
+# gsrealty-client database scripts
+npm run db:migrate -w gsrealty-client
+npm run db:apply-rls -w gsrealty-client
 ```
-3. Configure Row Level Security policies
-4. Import initial data from Excel files
 
 ## Deployment
 
-### Production Deployment (Vercel)
-The application is deployed on Vercel (Pro Plan) with automatic builds, SSL, and cron job support.
+All apps deploy to **Vercel** (Pro Plan - odgsullys-projects).
+
+| Domain | App | Vercel Project | Status |
+|--------|-----|----------------|--------|
+| `wabbit-rank.ai` | `apps/wabbit-re` | wabbit-property-scraping | Deployed |
+| `pickleballisapsyop.com` | `apps/gs-site` | gs-site | In Progress |
+| `growthadvisory.ai` | `apps/growthadvisory` | TBD | Needs Vercel Project |
+
+### Deploy Commands
 
 ```bash
-# Build for production
+# Deploy specific app
+cd apps/wabbit-re && vercel --prod
+
+# Build for production (all apps)
 npm run build
-
-# Deploy to Vercel
-vercel --prod
-
-# Or deploy specific app
-cd apps/gs-site && vercel --prod
 ```
 
-**Vercel Project**: `wabbit-property-scraping` (odgsullys-projects)
-**Production URL**: https://wabbit-property-scraping.vercel.app
-
 ### Environment Variables
-Environment variables are configured in the **Vercel Dashboard** (Settings → Environment Variables).
 
-Required variables:
+Configured in **Vercel Dashboard** (Settings > Environment Variables) per project:
+
 - `NEXT_PUBLIC_SUPABASE_URL` - Supabase project URL
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase anonymous key
 - `SUPABASE_SERVICE_ROLE_KEY` - Supabase service role key
@@ -263,49 +105,127 @@ Required variables:
 - `OPENAI_API_KEY` - OpenAI API key
 - `CRON_SECRET` - Vercel cron authentication
 
-### Configuration Files
-- `vercel.json` - Vercel configuration (rewrites, crons, headers)
-- `apps/*/vercel.json` - Per-app Vercel configs
+### Vercel Configuration
 
-### Legacy Deployment Files (Hetzner - Discontinued)
-> **Note**: These files are kept for historical reference only. Hetzner deployment was discontinued in favor of Vercel.
-- `ecosystem.config.js` - Legacy PM2 configuration
-- `deployment/nginx.conf` - Legacy Nginx configuration
-- `deployment/server-setup.sh` - Legacy server setup script
-- `deployment/deploy.sh` - Legacy deployment script
-- `deployment/DEPLOYMENT_GUIDE.md` - Legacy Hetzner guide
+- Root `vercel.json` handles monorepo routing
+- Per-app configs in `apps/*/vercel.json`
+- Cron jobs configured for wabbit-re (requires Pro plan for hourly intervals)
 
-## Contributing
+## Apps
 
-See `SUBAGENT_PLAN.md` for the development roadmap and agent architecture.
+### wabbit-re (Property Ranking Platform)
+
+**Domain:** wabbit-rank.ai | **Port:** 3000
+
+Property scraping, ranking, and evaluation platform for Maricopa County, Arizona.
+
+**Key Routes:**
+- `/` - Landing page
+- `/signup` - User registration
+- `/signin` - Sign in
+- `/form` - 7-page preferences questionnaire
+- `/rank-feed` - Property evaluation interface (4-tile layout)
+- `/list-view` - Property browsing with filters
+- `/settings` - User preferences & account management
+- `/setup/[token]` - Magic link setup flow
+- `/agent-view` - Agent dashboard
+- `/map-test` - Map testing
+
+**Implemented Features:**
+- User authentication (sign up, sign in, sign out, email verification, magic links)
+- Demo account system (`support@wabbit-rank.ai`)
+- 7-page dynamic preferences form
+- Property ranking interface (4-tile layout with interactive sliders)
+- List view with filtering and favorites
+- Property scraping system (Zillow, Redfin, Homes.com)
+- Automated hourly scraping via Vercel cron jobs
+- Property notifications and price drop alerts
+- Supabase backend with Row Level Security
+
+**Pending:**
+- Google Maps API activation
+- OpenAI location intelligence
+- Multi-user collaboration
+- Direct MLS data connections
+
+### gs-site (Personal Dashboard)
+
+**Domain:** pickleballisapsyop.com | **Port:** 3003
+
+Tile-based personal dashboard with integrations (Notion, GitHub, LIFX, etc.). Tile definitions are fully local in `lib/data/tiles.ts`.
+
+### gsrealty-client (Real Estate CRM)
+
+**Port:** 3004
+
+CRM platform with glassmorphism UI. See `CLAUDE.md` for the design system.
+
+### growthadvisory (Marketing Site)
+
+**Domain:** growthadvisory.ai | **Port:** 3005
+
+Static marketing landing page for Growth Advisory consulting.
+
+### wabbit (Content Ranking Tool)
+
+**Port:** 3002
+
+Gesture-driven content ranking tool. Early development — no package.json yet.
+
+## Property Scraping System
+
+The wabbit-re app includes a complete property scraping pipeline:
+
+- **Scrapers:** Playwright-based (Zillow, Redfin, Homes.com) in `apps/wabbit-re/lib/scraping/scrapers/`
+- **Queue Manager:** Rate-limited processing (100-150 requests/hour per source)
+- **Coverage:** 50+ Maricopa County cities, 100+ ZIP codes
+- **Cron Jobs:** Hourly scrape, daily cleanup, 15-min health checks
+- **APIs:** `/api/cron/hourly-scrape`, `/api/scrape/on-demand`, `/api/scrape/test`
+
+See `apps/wabbit-re/docs/SCRAPING_SYSTEM_STATUS.md` for details.
+
+## Database
+
+**Provider:** Supabase (PostgreSQL with Row Level Security)
+
+```bash
+# Schema reference
+apps/wabbit-re/ref/sql/database-schema.sql
+
+# Migrations
+apps/wabbit-re/migrations/
+
+# Setup guide
+docs/supabase/SUPABASE_SETUP.md
+```
+
+## Known Limitations
+
+- **Google Maps on Vercel previews** - Wildcard subdomain patterns not supported by Google Cloud Console. Test map features locally or in production only.
+- **Vercel Pro Plan required** - Hourly cron jobs need Pro plan (daily only on Hobby).
+- **Google Maps not yet active** - Setup guide exists at `apps/wabbit-re/docs/setup/GOOGLE_MAPS_SETUP.md` but API is not yet configured.
+
+## Documentation
+
+| Document | Location | Purpose |
+|----------|----------|---------|
+| CLAUDE.md | `./CLAUDE.md` | AI assistant guidance & project conventions |
+| Product Requirements | `apps/wabbit-re/docs/WABBIT_RE_PRD.md` | Wabbit RE product spec |
+| Architecture Plan | `apps/wabbit-re/SUBAGENT_PLAN.md` | Development execution plan |
+| Supabase Setup | `docs/supabase/SUPABASE_SETUP.md` | Database configuration guide |
+| Google Maps Setup | `apps/wabbit-re/docs/setup/GOOGLE_MAPS_SETUP.md` | Maps API configuration |
+| Demo Setup | `apps/wabbit-re/docs/setup/DEMO_SETUP.md` | Demo account setup |
+| Scraping Status | `apps/wabbit-re/docs/SCRAPING_SYSTEM_STATUS.md` | Scraping system details |
+| Deployment Context | `docs/deployment/DEPLOYMENT_FIX_CONTEXT.md` | Historical deployment fixes |
+| GS Site Tile Plan | `apps/gs-site/tile-logic-untile.md` | Dashboard implementation plan |
+
+## Branch Guidelines
+
+- **USE:** `main` (verified working, primary development branch)
+- **DO NOT USE:** `clean-deployment` (corrupted Sept 2024, missing 34,199 files)
+
+See `docs/Fix_explain_09.05.md` for restoration details.
 
 ## License
 
 Private - All rights reserved
-
-## Important Documentation
-
-### Core Documentation
-- `README.md` - This file, project overview
-- `apps/wabbit-re/WABBIT_PRD.md` - Complete product requirements document
-- `apps/wabbit-re/SUBAGENT_PLAN.md` - Development execution plan
-- `CLAUDE.md` - AI assistant guidance for development
-
-### Database Documentation
-- `apps/wabbit-re/ref/sql/database-schema.sql` - Complete database structure
-- `apps/wabbit-re/ref/sql/database-migration-temp-preferences.sql` - Temporary preferences migration
-- `docs/supabase/SUPABASE_SETUP.md` - Supabase configuration guide
-
-### Setup Guides
-- `apps/wabbit-re/docs/setup/GOOGLE_MAPS_SETUP.md` - Google Maps API configuration
-- `apps/wabbit-re/docs/setup/DEMO_SETUP.md` - Demo account setup instructions
-- `apps/wabbit-re/docs/test-verification-flow.md` - Testing email verification
-
-### Deployment & Recovery
-- `docs/deployment/DEPLOYMENT_FIX_CONTEXT.md` - Deployment fix procedures
-- `docs/Fix_explain_09.05.md` - Directory restoration documentation
-- `docs/deployment/DEPLOYMENT_GUIDE.md` - Complete deployment guide
-
-## Support
-
-For issues or questions, contact the development team or refer to the documentation above.

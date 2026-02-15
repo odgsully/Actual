@@ -1,6 +1,8 @@
-# 📋 Monorepo Migration Progress Tracker
+# 📋 Monorepo Migration Progress Tracker (ARCHIVED)
 
-> **Related Document**: See [`MIGRATION_SAFETY_PROTOCOLS.md`](./MIGRATION_SAFETY_PROTOCOLS.md) for ultra-conservative safety procedures, disaster recovery, and backup protocols. Use those protocols for high-risk operations (database changes, production deployments).
+> **Archived**: Moved from repo root to docs/archive/ in February 2026. The monorepo migration is effectively complete.
+
+> **Related Document**: See [`MIGRATION_SAFETY_PROTOCOLS.md`](./MIGRATION_SAFETY_PROTOCOLS.md) for ultra-conservative safety procedures, disaster recovery, and backup protocols.
 
 ---
 

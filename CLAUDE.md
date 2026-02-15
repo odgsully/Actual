@@ -81,12 +81,12 @@ For detailed safety protocols, database ownership, and emergency procedures, see
 
 ## Monorepo Migration Documentation
 
-**Current Status:** 95% Complete (Phase 4) - See documents below for details.
+**Status:** Migration complete (Phases 0-4). Archived for historical reference.
 
-| Document                                                           | Purpose                                                                        |
-| ------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
-| [`MIGRATION_PROGRESS_TRACKER.md`](./MIGRATION_PROGRESS_TRACKER.md) | **Primary roadmap** - Day-to-day progress, troubleshooting, operational status |
-| [`MIGRATION_SAFETY_PROTOCOLS.md`](./MIGRATION_SAFETY_PROTOCOLS.md) | **Safety reference** - Ultra-conservative procedures for high-risk operations  |
+| Document                                                                              | Purpose                                                  |
+| ------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| [`docs/archive/MIGRATION_PROGRESS_TRACKER.md`](./docs/archive/MIGRATION_PROGRESS_TRACKER.md) | Archived roadmap - phases 0-5 checklist and status       |
+| [`docs/archive/MIGRATION_SAFETY_PROTOCOLS.md`](./docs/archive/MIGRATION_SAFETY_PROTOCOLS.md) | Archived safety procedures for high-risk operations      |
 
 **When to use Safety Protocols:** Database schema changes, production deployments, file moves/deletes, any operation that could cause data loss.
 
@@ -207,8 +207,8 @@ Production deployment requires these in `.env.production` or `.env.local`:
 ### Important Documentation Files
 
 - `README.md` - Project overview and quick start
-- `MIGRATION_PROGRESS_TRACKER.md` - **Main development roadmap** (95% complete)
-- `MIGRATION_SAFETY_PROTOCOLS.md` - Ultra-conservative safety procedures for migrations
+- `docs/archive/MIGRATION_PROGRESS_TRACKER.md` - Archived migration roadmap (complete)
+- `docs/archive/MIGRATION_SAFETY_PROTOCOLS.md` - Archived safety procedures for migrations
 - `apps/wabbit-re/WABBIT_PRD.md` - Product requirements document
 - `apps/wabbit-re/SUBAGENT_PLAN.md` - Architecture and implementation plan
 - `docs/supabase/SUPABASE_SETUP.md` - Database setup instructions
