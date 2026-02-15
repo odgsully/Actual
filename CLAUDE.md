@@ -152,7 +152,7 @@ For detailed safety protocols, database ownership, and emergency procedures, see
 apps/
   gs-site/              # Personal dashboard (pickleballisapsyop.com)
   growthadvisory/       # Marketing site (growthadvisory.ai)
-  gsrealty-client/      # CRM platform
+  gs-crm/      # CRM platform
   wabbit-re/            # Property ranking platform (wabbit-rank.ai)
     app/                # Next.js App Router pages and API routes
     components/         # Reusable UI components
@@ -505,12 +505,12 @@ WABBIT_URL=http://localhost:3002
 
 **Affected Tiles** (6 tiles):
 
-- CRM → gsrealty-client
+- CRM → gs-crm
 - Go to my Wabbit → wabbit-re
 - New GS Wab → wabbit
 - Jump to Wab: Task List → wabbit
 - Wab: Task Tile → wabbit
-- GS-clients Admin → gsrealty-client
+- GS-clients Admin → gs-crm
 
 ### GS Site Commands
 
@@ -536,9 +536,9 @@ See [`.claude/commands/gs-site.md`](./.claude/commands/gs-site.md) for comprehen
 
 ### Glassmorphism Design Language
 
-The `gsrealty-client` app uses a **glassmorphism UI** with dark backgrounds and frosted glass effects. **Always prefer these patterns when building new features.**
+The `gs-crm` app uses a **glassmorphism UI** with dark backgrounds and frosted glass effects. **Always prefer these patterns when building new features.**
 
-### Required CSS Classes (defined in `apps/gsrealty-client/app/globals.css`)
+### Required CSS Classes (defined in `apps/gs-crm/app/globals.css`)
 
 | Class               | Use Case                  | Tailwind Equivalent                                                                                |
 | ------------------- | ------------------------- | -------------------------------------------------------------------------------------------------- |
@@ -620,7 +620,7 @@ import { Input } from "@/components/ui/input";
 
 ### Reference Implementation
 
-See `apps/gsrealty-client/app/admin/page.tsx` for the canonical dashboard implementation with:
+See `apps/gs-crm/app/admin/page.tsx` for the canonical dashboard implementation with:
 
 - Stats grid with colored icons
 - Recent contacts list with avatars and badges
