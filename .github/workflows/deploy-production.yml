@@ -198,7 +198,7 @@ jobs:
           echo "- Dashboard: https://wabbit-rank.ai/" >> $GITHUB_STEP_SUMMARY
           echo "- Wabbit RE: https://wabbit-rank.ai/wabbit-re" >> $GITHUB_STEP_SUMMARY
           echo "- Wabbit: https://wabbit-rank.ai/wabbit" >> $GITHUB_STEP_SUMMARY
-          echo "- GSRealty: https://wabbit-rank.ai/gsrealty" >> $GITHUB_STEP_SUMMARY
+          echo "- CRM: https://wabbit-rank.ai/gsrealty" >> $GITHUB_STEP_SUMMARY
 
       - name: Send success notification
         run: |

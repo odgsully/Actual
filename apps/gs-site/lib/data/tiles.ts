@@ -522,7 +522,7 @@ export const LOCAL_TILES: Tile[] = [
       "Software"
     ],
     "status": "Not started",
-    "desc": "Link to gsrealty-client site",
+    "desc": "Link to CRM",
     "shadcn": [
       "Button"
     ],

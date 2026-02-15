@@ -3,7 +3,7 @@
  *
  * Provides API wrappers for communicating with other Wabbit applications:
  * - wabbit-re (port 3000) - Property ranking platform
- * - gsrealty-client (port 3004) - Real estate CRM
+ * - gs-crm (port 3004) - Real estate CRM
  * - wabbit (port 3002) - General ranking platform
  */
 
@@ -16,7 +16,7 @@ export const WABBIT_APPS = {
     healthEndpoint: '/api/health',
   },
   gsrealty: {
-    name: 'GS Realty',
+    name: 'CRM',
     baseUrl: process.env.GSREALTY_URL || 'http://localhost:3004',
     description: 'Real estate CRM',
     healthEndpoint: '/api/health',

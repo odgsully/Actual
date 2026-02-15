@@ -35,7 +35,7 @@ jobs:
     needs: lint-and-typecheck
     strategy:
       matrix:
-        app: [wabbit-re, wabbit, gsrealty-client]
+        app: [wabbit-re, wabbit, gs-crm]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

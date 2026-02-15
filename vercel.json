@@ -14,7 +14,7 @@
     },
     {
       "source": "/gsrealty/:path*",
-      "destination": "/apps/gsrealty-client/:path*"
+      "destination": "/apps/gs-crm/:path*"
     }
   ],
   "crons": [

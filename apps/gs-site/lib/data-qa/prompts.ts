@@ -148,7 +148,7 @@ export const SUGGESTED_QUERIES = [
   "What's my total spending this month?",
 
   // CRM & Real Estate
-  'Show all gsrealty clients with status active',
+  'Show all CRM clients with status active',
   'How many deals are in progress?',
 
   // Properties

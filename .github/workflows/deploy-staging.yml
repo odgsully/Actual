@@ -130,10 +130,10 @@ jobs:
           echo "Checking Wabbit..."
           curl -sf "${{ needs.deploy-staging.outputs.preview_url }}/wabbit/api/health" || echo "Wabbit health check skipped (may need basePath)"
 
-      - name: Verify GSRealty
+      - name: Verify CRM
         run: |
-          echo "Checking GSRealty..."
-          curl -sf "${{ needs.deploy-staging.outputs.preview_url }}/gsrealty/api/health" || echo "GSRealty health check skipped (may need basePath)"
+          echo "Checking CRM..."
+          curl -sf "${{ needs.deploy-staging.outputs.preview_url }}/gsrealty/api/health" || echo "CRM health check skipped (may need basePath)"
 
       - name: Staging verification complete
         run: echo "Staging deployment verified successfully!"
@@ -160,7 +160,7 @@ jobs:
             | Dashboard | ${{ needs.deploy-staging.outputs.preview_url }} |
             | Wabbit RE | ${{ needs.deploy-staging.outputs.preview_url }}/wabbit-re |
             | Wabbit | ${{ needs.deploy-staging.outputs.preview_url }}/wabbit |
-            | GSRealty | ${{ needs.deploy-staging.outputs.preview_url }}/gsrealty |
+            | CRM | ${{ needs.deploy-staging.outputs.preview_url }}/gsrealty |
 
             All health checks passed.`
             })
