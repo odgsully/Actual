@@ -21,7 +21,9 @@ All three consumer layers (Web App, MCP, OpenClaw) connect directly to Supabase.
 | File | Purpose |
 |------|---------|
 | `v2BUILD_PLAN.md` | Master build document — source of truth for implementation |
+| `v2MONETIZATION.md` | Monetization strategy, tier definitions, agent-first onboarding |
 | `ref/schema.sql` | Production-ready database schema (all tables, RLS, triggers, views) |
+| `ref/diagrams/monetization.svg` | Visual monetization architecture diagram |
 | `ref/docs/ARCHITECTURE.md` | Full technical architecture |
 | `ref/docs/PRD.md` | Product requirements document |
 | `ref/docs/GLOSSARY.md` | Canonical terminology definitions |
@@ -50,16 +52,17 @@ All three consumer layers (Web App, MCP, OpenClaw) connect directly to Supabase.
 
 ## Build Waves
 
-| Wave | Name | Key Deliverables |
-|------|------|-----------------|
-| 0 | Dev Environment | Vite/Astro scaffold, Supabase project, Turborepo config |
-| 1 | Foundation | OAuth auth, Zustand stores, 3-column layout shell, storage bucket |
-| 2 | Core Ranking | Folder CRUD, 4 ranking modes, sidebar tree, leaderboard, progress dots |
-| 3 | UI Polish | Glassmorphism system, settings popup (6 tabs), video player, layer viewer |
-| 4 | Collaboration | Multi-user teams, RAVG engine, Super RAVG, branching, window mechanics |
-| 5 | Integrations | OpenClaw skills, MCP server, agent events/keys/sessions, Slack (Phase 3) |
-| 6 | Record Population | Webhook ingest, window expiration, 3rd-party API connectors |
-| Phase 2+ | Mobile & Advanced | iOS native (SwiftUI), Timeline Rank mode, real-time notifications |
+| Wave | Name | Status | Key Deliverables |
+|------|------|--------|-----------------|
+| 0 | Dev Environment | ✅ Done | Vite/Astro scaffold, Supabase project, Turborepo config |
+| 1 | Foundation | ✅ Done | OAuth auth, Zustand stores, 3-column layout shell, storage bucket |
+| 2 | Core Ranking | ✅ Done | Folder CRUD, 4 ranking modes, sidebar tree, leaderboard, progress dots |
+| 3 | UI Polish | ⚠️ ~90% | Glassmorphism system, settings popup (6 tabs), video player, layer viewer. Landing page stub only |
+| 4 | Collaboration | ⚠️ ~60% | RAVG engine + unit tests, collaborator API, branching menu built. Multi-user e2e untested, Super RAVG UI unclear, realtime not fully wired |
+| 5 | Integrations | ❌ 0% | OpenClaw skills, MCP server (incl. `wabbit_launch_ranking`), agent onboarding, magic links |
+| 6 | Record Population | ⚠️ ~50% | Upload UI built (RecordUploader, BulkUploader). Edge fns scaffolded. Window logic + 3rd-party connectors not done |
+| 7 | Monetization | ❌ 0% | Stripe subscriptions, feature gates, usage metering, upgrade prompts |
+| Phase 2+ | Mobile & Advanced | — | iOS native (SwiftUI, free all tiers), Timeline Rank mode, real-time notifications |
 
 ## Database
 
@@ -68,6 +71,9 @@ All three consumer layers (Web App, MCP, OpenClaw) connect directly to Supabase.
 
 ### Agent Tables (Wave 5)
 `agent_api_keys`, `agent_events`, `agent_sessions`
+
+### Monetization Tables (Wave 7)
+`api_usage`, `storage_usage` (+ `subscription_tier` column on `profiles`)
 
 ### PWA Table (Wave 5)
 `push_subscriptions`
@@ -178,9 +184,21 @@ npx supabase gen types typescript --local > web/src/lib/database.types.ts
 
 **OpenClaw Skills** (6): search-wabbs, rank-record, my-progress, get-leaderboard, wabb-detail, digest
 
-**MCP Tools** (7): wabbit_search_wabbs, wabbit_get_wabb, wabbit_get_records, wabbit_submit_ranking, wabbit_get_leaderboard, wabbit_get_progress, wabbit_create_wabb
+**MCP High-Level Tools** (3): `wabbit_launch_ranking` (one-call setup + magic link), `wabbit_get_results` (poll/webhook for results), `wabbit_quick_poll` (binary on small sets)
 
-Both connect to Supabase directly — never through the web app.
+**MCP Granular Tools** (7): wabbit_search_wabbs, wabbit_get_wabb, wabbit_get_records, wabbit_submit_ranking, wabbit_get_leaderboard, wabbit_get_progress, wabbit_create_wabb
+
+Both connect to Supabase directly — never through the web app. The agent layer is also a **distribution channel**: agents proactively create Wabbs and send magic links to humans. See `v2MONETIZATION.md` §6 for the agent-first onboarding flow.
+
+## Monetization Model
+
+**Tiers:** Free ($0) / Pro ($29/mo) / Team ($149/mo) / Business ($299/mo). Flat pricing, unlimited rankers at all tiers.
+
+**iOS is free at all tiers** — distribution channel, not revenue gate.
+
+**Key gates:** Agent CRUD (Pro+), Super RAVG + Windows (Team+), SSO + audit logs (Business). See `v2MONETIZATION.md` for full tier table.
+
+**Two front doors:** Humans discover organically (web/app store) + agents discover via MCP and onboard humans proactively with magic links.
 
 ## Git Commit Style
 

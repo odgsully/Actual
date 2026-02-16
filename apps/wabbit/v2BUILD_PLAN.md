@@ -1,7 +1,7 @@
 # Wabbit v2 Build Plan
 
-> **Last Updated:** 2026-02-16 (Wave 4 complete, monetization strategy aligned)
-> **Status:** Wave 0-4 Complete (web app) — Ready for Wave 5 (Integrations & Agent Layer)
+> **Last Updated:** 2026-02-16 (status audit — corrected wave completion markers)
+> **Status:** Wave 0-2 Complete | Wave 3 ~90% (landing page stub) | Wave 4 ~60% (components built, untested) | Wave 6 ~50% (upload UI + edge fn scaffolds) | Waves 5 & 7 Not Started
 > **Product:** Gesture-driven ranking/scoring tool with async collaboration for AI-generated content
 >
 > **Sources of Truth:**
@@ -1084,6 +1084,8 @@ function getProgressColor(pct: number): string {
 
 ## Wave 3 — UI Polish & Layout
 
+> **Status:** ~90% — All web app UI complete. Landing page is stub only (no marketing content, no Schema.org, no pricing).
+>
 > **Goal:** Glassmorphism styling applied. Three-column layout fully functional. Landing page built. Media display components working.
 > **Source:** TASKS.md §UI, ARCHITECTURE.md §Layout
 
@@ -1287,24 +1289,26 @@ const { title, description } = Astro.props
 
 ## Wave 4 — Collaboration & RAVG Engine
 
+> **Status:** ~60% — Components and engine code built. Multi-user invite flow, Super RAVG integration, and real-time collab updates need integration testing. Acceptance criteria unchecked.
+>
 > **Goal:** Multi-user collaboration. RAVG with customizable formulas and weights. Branching flow complete.
 > **Source:** PRD §7.3-7.5, GLOSSARY.md §RAVG, §Super RAVG, §Branched Wabb
 
 ### Tasks
 
-| # | Task | Deliverable |
-|---|------|-------------|
-| 4.1 | RAVG migration | `supabase/migrations/002_ravg_fields.sql` |
-| 4.2 | Collaborator invites | Owner invites by email. Creates `collaborators` row with `accepted_at = NULL` |
-| 4.3 | Role-based access | Owner, Contributor, Viewer permissions enforced |
-| 4.4 | RAVG calculation engine | `web/src/lib/ravg.ts` |
-| 4.5 | RAVG config UI | `RAVGConfig.tsx` — formula picker + per-member weight sliders |
-| 4.6 | Super RAVG | Supervisor weight separately configurable |
-| 4.7 | User progress tracking | `user_progress` view in Context Panel |
-| 4.8 | Team progress display | Per-collaborator completion % + scores on current record |
-| 4.9 | Branching flow | `BranchingMenu.tsx` — smart defaults, confirmation prompt |
-| 4.10 | Quaternary label change trigger | Auto-triggers Branch with confirmation |
-| 4.11 | Supabase Realtime | Live updates for progress dots, RAVG, team activity |
+| # | Task | Deliverable | Status |
+|---|------|-------------|--------|
+| 4.1 | RAVG migration | `supabase/migrations/002_ravg_fields.sql` | ✅ Built |
+| 4.2 | Collaborator invites | Owner invites by email. Creates `collaborators` row with `accepted_at = NULL` | ⚠️ UI built, `invite-by-email` edge fn scaffolded, untested end-to-end |
+| 4.3 | Role-based access | Owner, Contributor, Viewer permissions enforced | ⚠️ Code exists, untested with real multi-user flow |
+| 4.4 | RAVG calculation engine | `web/src/lib/ravg.ts` | ✅ Built + unit tests |
+| 4.5 | RAVG config UI | `RAVGConfig.tsx` — formula picker + per-member weight sliders | ✅ Built |
+| 4.6 | Super RAVG | Supervisor weight separately configurable | ⚠️ Engine code exists, UI integration unclear |
+| 4.7 | User progress tracking | `user_progress` view in Context Panel | ✅ Built |
+| 4.8 | Team progress display | Per-collaborator completion % + scores on current record | ⚠️ Component exists, real-time updates not fully wired |
+| 4.9 | Branching flow | `BranchingMenu.tsx` — smart defaults, confirmation prompt | ✅ Built |
+| 4.10 | Quaternary label change trigger | Auto-triggers Branch with confirmation | ⚠️ Untested |
+| 4.11 | Supabase Realtime | Live updates for progress dots, RAVG, team activity | ⚠️ Subscription exists, not fully wired to all components |
 
 ### Role Permissions Matrix
 
@@ -1456,6 +1460,8 @@ When "Asset Library" is checked during branching, all files from the parent coll
 
 ## Wave 5 — Integrations & Agent Layer
 
+> **Status:** ❌ Not Started — No MCP server, no OpenClaw skills, no API key system, no PWA, no magic links, no rate limiting. This is the critical differentiator wave.
+>
 > **Goal:** Agent API surface built. MCP server functional. OpenClaw skill pack created. Slack integration started.
 >
 > **Reference:** `docs/OPENCLAW_WABBIT_ARCHITECTURE.md` and `docs/OPENCLAW_IMPLEMENTATION_PLAN.md`
@@ -1673,18 +1679,20 @@ Agents act proactively — they create value and notify humans. See `v2MONETIZAT
 
 ## Wave 6 — Record Population Pipeline
 
+> **Status:** ~50% — Upload UI components built (`RecordUploader`, `BulkUploader`, `RecordForm`, `AddRecordsModal`). Edge functions `ingest-records/` and `manage-windows/` scaffolded early. Window expiration logic, window number tracking, and 3rd-party connectors not done.
+>
 > **Goal:** Records can be populated into Wabbs manually, via API, or on a timer/schedule.
 
 ### Tasks
 
-| # | Task | Deliverable |
-|---|------|-------------|
-| 6.1 | Manual record upload | `RecordUploader.tsx` — drag-and-drop + file picker |
-| 6.2 | Bulk upload | `BulkUploader.tsx` — multiple files → multiple records |
-| 6.3 | API record ingestion | `supabase/functions/ingest-records/` — webhook endpoint |
-| 6.4 | Content source config | Per-Wabb: which API, what prompt, how often |
-| 6.5 | Timer/schedule | `supabase/functions/manage-windows/` — window expiration + increment |
-| 6.6 | Window number tracking | Records tagged with current `window_number` |
+| # | Task | Deliverable | Status |
+|---|------|-------------|--------|
+| 6.1 | Manual record upload | `RecordUploader.tsx` — drag-and-drop + file picker | ✅ Built |
+| 6.2 | Bulk upload | `BulkUploader.tsx` — multiple files → multiple records | ✅ Built |
+| 6.3 | API record ingestion | `supabase/functions/ingest-records/` — webhook endpoint | ⚠️ Scaffolded, not verified against spec |
+| 6.4 | Content source config | Per-Wabb: which API, what prompt, how often | ❌ Not started |
+| 6.5 | Timer/schedule | `supabase/functions/manage-windows/` — window expiration + increment | ⚠️ Scaffolded, logic incomplete |
+| 6.6 | Window number tracking | Records tagged with current `window_number` | ❌ Not started |
 
 ### Manual Upload — File Acceptance by Output Type
 
@@ -1752,6 +1760,8 @@ Schedule → AI Generation (ChatGPT/DALL-E/Midjourney/Sora)
 
 ## Wave 7 — Monetization & Billing
 
+> **Status:** ❌ Not Started — No Stripe integration, no feature gates, no usage metering, no tier enforcement.
+>
 > **Goal:** Subscription infrastructure built. Feature gates enforced. Usage metering active. Stripe integration functional.
 >
 > **Reference:** `v2MONETIZATION.md` — Pricing model, tier definitions, agent-first onboarding strategy
@@ -1942,20 +1952,20 @@ These features are referenced in source docs but have no build spec yet. Explici
 
 ## Acceptance Criteria by Wave
 
-### Wave 0: Dev Environment
+### Wave 0: Dev Environment ✅
 - [x] Project scaffolded (web/, landing/, supabase/)
 - [x] Supabase project created
 - [x] TypeScript types generated
 - [x] Dev servers start (:5173 + :4321)
 
-### Wave 1: Foundation
+### Wave 1: Foundation ✅
 - [x] Auth working (Google + GitHub OAuth)
 - [x] Database schema applied with RLS
 - [x] Three-column layout renders
 - [x] Protected routing functional
 - [x] Storage bucket created with RLS
 
-### Wave 2: Core Ranking
+### Wave 2: Core Ranking ✅
 - [x] Full CRUD on folders and Wabbs
 - [x] All 4 ranking modes working (1-axis, 2-axis, Quaternary, Binary)
 - [x] Upsert ranking persists correctly
@@ -1963,21 +1973,21 @@ These features are referenced in source docs but have no build spec yet. Explici
 - [x] Leaderboard displays ranked records
 - [x] Progress dots update
 
-### Wave 3: UI Polish
+### Wave 3: UI Polish ⚠️ ~90%
 - [x] Glassmorphism styling consistent (DO/DON'T rules followed)
 - [x] Settings popup with 6 tabs functional
 - [x] Video player with chapter markers
 - [x] Layer viewer + audio player working
 - [ ] Landing page live (10 sections, Astro, Schema.org) *(deferred — stub only)*
 
-### Wave 4: Collaboration
-- [ ] Multi-user invites and roles (Owner/Contributor/Viewer)
-- [ ] RAVG calculation with all 4 formulas
-- [ ] Super RAVG with separate supervisor weight
-- [ ] Branching flow with smart defaults
-- [ ] Real-time updates via Supabase Realtime
+### Wave 4: Collaboration ⚠️ ~60% (components built, needs integration testing)
+- [ ] Multi-user invites and roles (Owner/Contributor/Viewer) *(UI + edge fn scaffolded, untested e2e)*
+- [x] RAVG calculation engine with all 4 formulas *(engine + unit tests built)*
+- [ ] Super RAVG with separate supervisor weight *(engine code exists, UI integration unclear)*
+- [x] Branching flow with smart defaults *(BranchingMenu built)*
+- [ ] Real-time updates via Supabase Realtime *(subscription exists, not fully wired)*
 
-### Wave 5: Agent Layer
+### Wave 5: Agent Layer ❌ Not Started
 - [ ] API key system functional (SHA-256 HMAC)
 - [ ] MCP server published and working (including `wabbit_launch_ranking`)
 - [ ] Magic link auth + deep linking functional
@@ -1985,19 +1995,25 @@ These features are referenced in source docs but have no build spec yet. Explici
 - [ ] PWA installable
 - [ ] Rate limiting active (Upstash Redis), tiered by subscription
 
-### Wave 6: Population
-- [ ] Manual upload + bulk upload working
-- [ ] API ingestion endpoint functional
+### Wave 6: Population ⚠️ ~50% (upload UI built, pipeline incomplete)
+- [x] Manual upload + bulk upload UI components built *(RecordUploader, BulkUploader, RecordForm, AddRecordsModal)*
+- [ ] API ingestion endpoint functional *(edge fn scaffolded, not verified against spec)*
 - [ ] Window number tracking correct
-- [ ] Window expiration handled
+- [ ] Window expiration handled *(edge fn scaffolded, logic incomplete)*
 
-### Wave 7: Monetization & Billing
+### Wave 7: Monetization & Billing ❌ Not Started
 - [ ] Stripe subscription flow working (checkout → webhook → tier update)
 - [ ] Feature gates enforced (Wabb limit, RAVG formulas, agent access)
 - [ ] API call metering with quota enforcement
 - [ ] Storage metering with quota enforcement
 - [ ] Upgrade prompts in-app and via agent API responses
 - [ ] Landing page pricing section live
+
+### Undocumented Additions (not in original build plan)
+- `apps/wabbit/studio/` — Remotion 4 project for shortform video compositions
+- `apps/wabbit/marketing/` — Shortform marketing scripts
+- `supabase/functions/invite-by-email/` — Email invitation edge function (built ahead of Wave 5)
+- `supabase/migrations/004_fix_rls_recursion.sql` — RLS fix migration (not in wave spec)
 
 ---
 
