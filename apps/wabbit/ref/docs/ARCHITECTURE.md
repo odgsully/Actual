@@ -1,6 +1,12 @@
 # Wabbit - Technical Architecture
 
-> Synthesized from Opus4.6 prototype files and Notion build notes.
+> Synthesized from Opus4.6 prototype files, Notion build notes, v2MONETIZATION.md, and v2BUILD_PLAN.md.
+>
+> **Sources of Truth:**
+> - `v2MONETIZATION.md` — Monetization strategy, tier definitions, agent-first onboarding
+> - `v2BUILD_PLAN.md` — Master build document (Waves 0–7)
+> - `ref/docs/PRD.md` — Product requirements
+> - `ref/docs/GLOSSARY.md` — Canonical terminology
 
 ---
 
@@ -18,26 +24,35 @@
                     │  └────────────────┘  │
                     │  ┌────────────────┐  │
                     │  │ Edge Functions  │  │
+                    │  │ (Agent API,    │  │
+                    │  │  Stripe hooks, │  │
+                    │  │  usage meter)  │  │
+                    │  └────────────────┘  │
+                    │  ┌────────────────┐  │
+                    │  │   Realtime WS   │  │
                     │  └────────────────┘  │
                     └──────────┬───────────┘
                                │
-              ┌────────────────┼────────────────┐
-              │                │                │
-     ┌────────▼──────┐  ┌─────▼──────┐  ┌──────▼──────┐
-     │   Web App     │  │  iOS App   │  │  Slack App  │
-     │  Vite+React   │  │  SwiftUI   │  │  Edge Fns   │
-     │  SPA          │  │  + UIKit   │  │  + Slack API│
-     │  Tailwind     │  │  Gestures  │  │             │
-     │  Zustand      │  │  Haptics   │  │             │
-     └───────┬───────┘  └────────────┘  └─────────────┘
+              ┌────────────────┼──────────────────┐
+              │                │                  │
+     ┌────────▼──────┐  ┌─────▼──────┐  ┌───────▼───────┐
+     │   Web App     │  │  iOS App   │  │  Slack App    │
+     │  Vite+React   │  │  SwiftUI   │  │  Edge Fns     │
+     │  SPA          │  │  + UIKit   │  │  + Slack API  │
+     │  Tailwind     │  │  Gestures  │  │               │
+     │  Zustand      │  │  Haptics   │  │               │
+     └───────┬───────┘  └────────────┘  └───────────────┘
              │
-     ┌───────▼───────┐
-     │  Landing Page  │
-     │  Astro(static) │
-     │  SEO/GEO       │
-     │  React Islands │
-     └───────────────┘
+     ┌───────▼───────┐        ┌──────────────────┐
+     │  Landing Page │        │  Agent Layer      │
+     │  Astro static │        │  OpenClaw + MCP   │
+     │  SEO/GEO      │        │  (parallel        │
+     │  React Islands│        │   Supabase        │
+     └───────────────┘        │   consumers)      │
+                              └──────────────────┘
 ```
+
+All five consumer layers (Web App, iOS App, Slack App, Landing Page, Agent Layer) connect to Supabase. The Agent Layer is also a **distribution channel** — agents proactively create Wabbs and send magic links to onboard humans. See `v2MONETIZATION.md` §6.
 
 ---
 
@@ -72,14 +87,18 @@ wabbit/
 │       ├── pages/         # Astro pages (static HTML output)
 │       ├── components/    # Astro + React island components
 │       └── layouts/       # Page layouts with Schema.org JSON-LD
-├── ios/                   # Native iOS application
+├── packages/
+│   ├── mcp-server/        # MCP server (proprietary npm pkg, Wave 5)
+│   │   └── src/tools/     # 3 high-level + 7 granular MCP tools
+│   └── openclaw-skills/   # OpenClaw skill pack (6 skills, Wave 5)
+├── ios/                   # Native iOS application (Phase 2, free at all tiers)
 │   └── Wabbit/
 │       ├── Views/         # SwiftUI views
 │       ├── Gestures/      # UIKit gesture recognizer bridge
 │       │   └── RankingGestureView.swift
 │       ├── Models/        # Data models
 │       └── Services/      # Supabase SDK integration
-└── slack/                 # Slack app integration
+└── slack/                 # Slack app integration (Team+ tier)
     └── functions/         # Edge functions for Slack events
 ```
 
@@ -115,6 +134,10 @@ Extends Supabase Auth. Auto-created on signup via trigger.
 | id | UUID (PK) | References auth.users |
 | display_name | text | Defaults to email |
 | avatar_url | text | From OAuth provider |
+| subscription_tier | text | `free`, `pro`, `team`, `business`. Default `free`. (Wave 7) |
+| stripe_customer_id | text | Stripe customer ID. Nullable. (Wave 7) |
+| stripe_subscription_id | text | Stripe subscription ID. Nullable. (Wave 7) |
+| subscription_status | text | `active`, `past_due`, `canceled`, `trialing`. Default `active`. (Wave 7) |
 | created_at | timestamptz | |
 | updated_at | timestamptz | Auto-updated via trigger |
 
@@ -199,9 +222,35 @@ User access to collections.
 | accepted_at | timestamptz | NULL until accepted |
 | | UNIQUE | (user_id, collection_id) |
 
+#### Agent Tables (Wave 5)
+
+| Table | Purpose | Key Fields |
+|-------|---------|------------|
+| `agent_api_keys` | API key management | user_id, short_token (8 chars, indexed), long_token_hash (HMAC-SHA-256), scopes (text[]), expires_at, revoked_at |
+| `agent_events` | Agent event stream for Realtime | user_id, event_type (new_record, ranking_submitted, ravg_updated, window_closing, branch_created, collaborator_joined), payload (JSONB), collection_id, processed |
+| `agent_sessions` | Agent connection tracking | user_id, api_key_id, agent_type (openclaw, claude_code, cloud_worker, custom), status (connected, disconnected), last_heartbeat |
+
+All agent tables have RLS enabled — users can only access their own keys, events, and sessions.
+
+#### Monetization Tables (Wave 7)
+
+| Table | Purpose | Key Fields |
+|-------|---------|------------|
+| `api_usage` | Daily API call tracking | user_id, date, calls_count. UNIQUE(user_id, date) |
+| `storage_usage` | Storage quota tracking | user_id (UNIQUE), bytes_used, updated_at |
+
+Both tables have RLS — users can only read their own usage.
+
+#### PWA Table (Wave 5)
+
+| Table | Purpose | Key Fields |
+|-------|---------|------------|
+| `push_subscriptions` | Web Push notification subscriptions | user_id, endpoint, p256dh, auth |
+
 ### Views
 
-- **`record_scores`** — Per-record: count, avg, min, max, stddev
+- **`record_scores`** — Per-record: count, avg, min, max, stddev (quantitative modes)
+- **`record_choices`** — Per-record choice tallies (quaternary/binary modes)
 - **`collection_leaderboard`** — Records ranked by avg score with `rank() over (partition by collection_id)`
 - **`user_progress`** — Per-user completion % within a collection
 
@@ -247,24 +296,88 @@ User access to collections.
 | Layer | Technology | Notes |
 |-------|-----------|-------|
 | **Database** | Supabase PostgreSQL | RLS policies, triggers, views. All schema in `ref/schema.sql`. |
-| **Auth** | Supabase Auth (GoTrue) | Google + GitHub OAuth. Auto-creates profile on signup via trigger. |
+| **Auth** | Supabase Auth (GoTrue) | Google + GitHub OAuth + magic link (agent-led). Auto-creates profile on signup via trigger. |
 | **Real-time** | Supabase Realtime | WebSocket channels for live ranking updates, progress tracking. |
 | **Storage** | Supabase Storage | Record assets (images, videos, design comps). |
 | **Edge Functions** | Supabase Edge Functions (Deno) | Agent API endpoints, webhook handlers, custom server logic. Replaces the need for Next.js API routes. |
 | **PostgREST** | Supabase REST API | Auto-generated REST API for all tables with RLS. Used by agents and MCP server. |
 
-### Agent Layer (Phase 3+)
+### Agent Layer (Wave 5)
+
+> The agent layer is both a technical integration AND a **distribution channel**. Agents proactively create Wabbs and send magic links to onboard humans. See `v2MONETIZATION.md` §6 for the full agent-first onboarding strategy.
 
 | Layer | Technology | Notes |
 |-------|-----------|-------|
 | **Agent Runtime** | OpenClaw | Local gateway (`ws://127.0.0.1:18789`). Wabbit skills installed via skill pack. |
-| **MCP Server** | Standalone Node.js (`packages/mcp-server/`) | Exposes Wabbit data as MCP tools for Claude Code and AI assistants. |
-| **Agent API** | Supabase Edge Functions | REST endpoints for agent actions (submit ranking, query collections, manage records). Not in the web framework. |
+| **MCP Server** | Standalone Node.js (`packages/mcp-server/`) | Proprietary npm package (free to use). Open API spec (OpenAPI/Swagger). Closed source — Stripe model. |
+| **Agent API** | Supabase Edge Functions | REST endpoints for agent actions. Not in the web framework. |
 | **Agent Events** | Supabase Realtime | OpenClaw subscribes directly to Realtime channels — no SSE proxy needed. |
-| **Agent Auth** | API keys in `agent_api_keys` table | Long-lived tokens for agent access, separate from browser session auth. |
+| **Agent Auth** | API keys in `agent_api_keys` table | HMAC-SHA-256 hashed tokens, separate from browser session auth. |
+| **Rate Limiting** | Upstash Redis | Tier-based: Free 100/day, Pro 1K/day, Team 10K/day, Business unlimited. |
+| **Event Functions** | Inngest (in Edge Functions) | Event fan-out, retries, idempotency for webhook processing, window expiration, batch ops. |
 | **Notifications** | OpenClaw → WhatsApp / Telegram / Slack / Discord | OpenClaw routes notifications to user's preferred messaging platform. |
 
-### iOS (Phase 2 — `ios/`)
+#### Open API Spec, Closed Implementation
+
+This is the **Stripe model**: proprietary SDK, excellent public documentation. No application code is exposed.
+
+- **Published openly:** OpenAPI/Swagger spec, WebSocket event schemas, API auth guide, webhook schemas, integration guides, suggested agent message templates
+- **Stays closed:** MCP server source, OpenClaw skills source, Edge Functions, Supabase schema/RLS/triggers, RAVG engine
+
+If someone builds their own MCP server from the published API spec, it still drives traffic to the hosted Wabbit API — like how anyone can build a Stripe client, but they're still using Stripe.
+
+#### MCP Tool Design — High-Level + Granular
+
+**High-Level Tools** (what agents use 90% of the time — opinionated happy-path):
+
+| Tool | Purpose |
+|------|---------|
+| `wabbit_launch_ranking` | **One-call:** provision user if needed, create Wabb, populate records, return magic link. The agent-first onboarding entry point. |
+| `wabbit_get_results` | Poll or webhook for completed rankings, return sorted leaderboard |
+| `wabbit_quick_poll` | Binary yes/no on small set (< 10 records), even faster flow |
+
+**Granular CRUD Tools** (7):
+
+| Tool | Purpose |
+|------|---------|
+| `wabbit_create_wabb` | Create a new collection |
+| `wabbit_search_wabbs` | Search collections by criteria |
+| `wabbit_get_wabb` | Full Wabb details + records |
+| `wabbit_get_records` | Records in a collection |
+| `wabbit_submit_ranking` | Submit a score/choice for a record |
+| `wabbit_get_leaderboard` | Records ranked by RAVG |
+| `wabbit_get_progress` | User progress on a Wabb |
+
+The high-level tools are what make agents *choose* Wabbit over "just ask the human to pick from a numbered list." One call and a magic link vs. 5 calls and an account creation flow. The API response includes a `suggested_message` template so agents present Wabbit consistently.
+
+#### Agent API Key Format
+
+```
+wab_live_BRTRKFsL_51FwqftsmMDHHbJAMEXXHCgG
+│        │         │
+│        │         └── Long token (32 chars, shown once, only hash stored)
+│        └──────────── Short token (8 chars, public identifier)
+└───────────────────── Prefix: wab_live_ / wab_test_ / wab_dev_
+```
+
+**Scopes:** `read:collections`, `write:collections`, `read:records`, `write:rankings`, `read:notifications`, `write:notifications`, `subscribe:realtime`, `push:notifications`
+
+#### Tier Gating on Agent Access
+
+| Tier | Agent Capabilities |
+|------|--------------------|
+| Free | Read-only — agents can check results, not create |
+| Pro ($29/mo) | Full CRUD — agents can create Wabbs, populate records, read results |
+| Team ($149/mo) | + Batch operations + webhook subscriptions + agent observability dashboard |
+| Business ($299/mo) | Unlimited + custom rate limits |
+
+#### OpenClaw Skills (6)
+
+`search-wabbs`, `rank-record`, `my-progress`, `get-leaderboard`, `wabb-detail`, `digest`
+
+### iOS (Phase 2 — `ios/`) — Free at All Tiers
+
+> iOS is a **distribution channel, not a revenue gate**. All rankers (unlimited at every tier) have full access to the gesture-driven ranking experience. Tier gates apply to administration features on web, not consumption on mobile. See `v2MONETIZATION.md` §4 Layer 2 for rationale.
 
 | Layer | Technology | Notes |
 |-------|-----------|-------|
@@ -272,6 +385,9 @@ User access to collections.
 | **Gestures** | UIKit (UIViewRepresentable bridge) | Tap, pan, long press, two-finger tap. |
 | **Haptics** | CoreHaptics | Variable intensity at score boundaries. |
 | **Backend** | Supabase Swift SDK | Auth, queries, real-time. |
+| **Deep Links** | Universal Links | Magic links (`wabbit.app/r/:token`) open straight to Wabb, record #1 ready to rank. Falls back to mobile web if app not installed. |
+
+**Tier-enhanced features on iOS:** Pro: all 4 ranking modes. Team: real-time team presence indicators.
 
 ### Zustand Store Architecture
 
@@ -351,11 +467,29 @@ Result clamped to [0.0, 10.0], rounded to 1 decimal
 
 ## Auth Flow
 
+Two authentication paths — **OAuth** (human-led) and **Magic Link** (agent-led):
+
+### OAuth (Human-Led)
+
 1. User signs up via Supabase Auth (Google or GitHub OAuth)
 2. `on_auth_user_created` trigger fires → creates `profiles` row
 3. User creates a collection → `on_collection_created` trigger adds them as 'owner' collaborator
 4. Owner invites collaborators via email → `collaborators` row created with `accepted_at = NULL`
 5. Collaborator accepts → `accepted_at` set
+
+### Magic Link (Agent-Led)
+
+1. Agent calls `wabbit_launch_ranking` with human's email + records
+2. Wabbit checks if user exists; if not, provisions a Free account tied to that email
+3. Wabbit generates a magic link with short-lived JWT: `wabbit.app/r/{6-char-code}`
+4. Agent sends magic link to human (API returns a `suggested_message` template)
+5. Human taps link → auto-authenticated (no login screen, no OAuth redirect)
+6. If iOS app installed → Universal Link deep links to Wabb, record #1 ready to rank
+7. If no app → mobile web opens with full ranking experience
+8. Rankings sync to RAVG. Webhook fires back to agent: "ranking complete"
+9. Human now has a Wabbit account with ranking history — discoverable the next time an agent or they return
+
+Magic links expire after 7–30 days. If expired: "This link expired. Open Wabbit to find your Wabb."
 
 ---
 
@@ -388,7 +522,48 @@ The web app and agent layer are **parallel consumers** of the same Supabase back
 - OpenClaw subscribes to Supabase Realtime directly (WebSocket-native) — no SSE proxy needed
 - MCP server calls PostgREST directly — never touches the web app
 
-See `OPENCLAW_WABBIT_ARCHITECTURE.md` in the monorepo root for the full three-layer architecture (Normie / Agentic Coding / Agent).
+See `OPENCLAW_WABBIT_ARCHITECTURE.md` in the monorepo root for the full three-layer architecture (Normie / Agentic Coding / Agent). See `v2MONETIZATION.md` §6 for the agent-first onboarding flow and the "two front doors" distribution strategy.
+
+---
+
+## Monetization Model
+
+> **Source of Truth:** `v2MONETIZATION.md` — Full pricing rationale, competitive analysis, agent-first onboarding.
+
+### Tier Summary
+
+| | **Free** | **Pro** | **Team** | **Business** |
+|---|---|---|---|---|
+| **Price** | $0 | $29/mo flat | $149/mo flat | $299/mo flat |
+| **Creators** | 1 | 3 | 10 | 25 |
+| **Rankers** | Unlimited | Unlimited | Unlimited | Unlimited |
+| **iOS** | Yes | Yes | Yes | Yes |
+| **Active Wabbs** | 3 | Unlimited | Unlimited | Unlimited |
+| **RAVG** | Simple mean | + weighted + exclude outliers | + Full custom + Super RAVG | Full + cross-Wabb analytics |
+| **Agent Access** | Read-only | Full CRUD | + Batch + webhooks | Unlimited + custom limits |
+| **API Calls/day** | 100 | 1,000 | 10,000 | Unlimited |
+| **Storage** | 2 GB | 50 GB | 500 GB | 2 TB |
+| **Integrations** | Upload + webhook | + Zapier, Drive | + Slack, Figma, Notion | + Adobe, Shopify, Social |
+| **SSO / Audit** | No | No | No | Yes |
+
+### Billing Infrastructure (Wave 7)
+
+| Component | Technology | Purpose |
+|-----------|-----------|---------|
+| **Stripe Checkout** | Client-side (Vite) | Subscription creation, plan selection |
+| **stripe-webhook/** | Edge Function | Handles checkout.session.completed, invoice.paid, customer.subscription.updated/deleted |
+| **check-tier/** | Edge Function | Validates user's `subscription_tier` before allowing gated actions |
+| **usage-meter/** | Edge Function | Increments `api_usage.calls_count`, returns 429 with upgrade prompt when quota exceeded |
+| **api_usage** | Table | Daily call buckets per user (UNIQUE user_id + date) |
+| **storage_usage** | Table | Byte count per user, checked on upload |
+
+### Quota Enforcement
+
+- **Free tier:** Limited to 3 active Wabbs (enforced at application + RLS level)
+- **RAVG formulas:** Restricted by tier — Free gets `simple_mean` only, Pro adds `weighted` + `exclude_outliers`, Team+ gets `custom` + Super RAVG
+- **Agent CRUD:** Blocked on Free (read-only), functional on Pro+
+- **Storage:** Upload blocked when quota exceeded, with upgrade prompt
+- **API calls:** Daily counter incremented per request, 429 returned at limit with `{ upgrade_required: true, reason: "api_limit" }`
 
 ---
 
@@ -403,3 +578,6 @@ See `OPENCLAW_WABBIT_ARCHITECTURE.md` in the monorepo root for the full three-la
 7. **JSONB metadata on records** — Flexible schema for any content type without table-per-type (layer data, chapter markers, source URLs, model info).
 8. **Upsert on (user_id, record_id)** — Users can re-rank, but only one score per record.
 9. **Separate web/iOS codebases** — Native gesture experience requires native Swift code; web is Vite + React SPA. No cross-platform compromise.
+10. **Closed SaaS + Open API (Stripe model)** — All code proprietary. Only the API spec is public (OpenAPI/Swagger). MCP server distributed as closed npm package (free to use). Prevents forking while maintaining excellent developer experience for agent integrations. See `v2MONETIZATION.md` §2 for rationale.
+11. **iOS free at all tiers** — Mobile is distribution, not revenue. Tiers gate administration (web), not consumption (mobile). See `v2MONETIZATION.md` §4 Layer 2.
+12. **Flat tier pricing, unlimited rankers** — RAVG depends on team participation. Per-seat pricing would undermine the core value prop. See `v2MONETIZATION.md` §5.
