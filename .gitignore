@@ -104,6 +104,15 @@ test_data_support.csv
 
 # Supabase temp
 supabase/.temp/
+**/supabase/.temp/
+
+# Astro generated cache/types
+**/.astro/
+
+# Per-app lockfiles (Turborepo uses root lockfile)
+apps/*/package-lock.json
+apps/*/*/package-lock.json
+packages/*/package-lock.json
 
 # Reference copies (not source code)
 apps/wabbit/ref/Zapier-hamza-copy/
