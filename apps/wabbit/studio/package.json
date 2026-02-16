@@ -1,0 +1,24 @@
+{
+  "name": "wabbit-studio",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "remotion studio",
+    "build": "remotion bundle",
+    "render": "remotion render",
+    "typecheck": "tsc --noEmit",
+    "upgrade": "remotion upgrade"
+  },
+  "dependencies": {
+    "remotion": "4.0.423",
+    "@remotion/cli": "4.0.423",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "zod": "3.22.3"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.0",
+    "typescript": "^5.3.3"
+  }
+}

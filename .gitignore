@@ -120,6 +120,9 @@ apps/wabbit/ref/Zapier-hamza-copy/
 # Marketing scripts (internal content, not source code)
 apps/wabbit/marketing/shortform-scripts/
 
+# Remotion render output
+apps/wabbit/studio/out/
+
 # Self-contained tools with own git repos
 tools/rapid-prototyping/
 
