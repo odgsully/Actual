@@ -1,7 +1,7 @@
 # Wabbit v2 Build Plan
 
-> **Last Updated:** 2026-02-12
-> **Status:** Pre-Implementation (Phase 1 MVP)
+> **Last Updated:** 2026-02-15 (Wave 4 Collaboration & RAVG Engine complete)
+> **Status:** Wave 0-4 Complete (web app) — Ready for Wave 5 (Integrations & Agent Layer)
 > **Product:** Gesture-driven ranking/scoring tool with async collaboration for AI-generated content
 >
 > **Sources of Truth:**
@@ -533,11 +533,11 @@ SUPABASE_SERVICE_ROLE_KEY=<service-role-key>
 
 ### Acceptance Criteria
 
-- [ ] `cd apps/wabbit/web && npm run dev` starts Vite dev server on :5173
-- [ ] `cd apps/wabbit/landing && npm run dev` starts Astro dev server on :4321
-- [ ] Supabase project created and accessible
-- [ ] TypeScript types generated from schema
-- [ ] Turbo `dev` task starts both web and landing in parallel
+- [x] `cd apps/wabbit/web && npm run dev` starts Vite dev server on :5173
+- [x] `cd apps/wabbit/landing && npm run dev` starts Astro dev server on :4321
+- [x] Supabase project created and accessible
+- [x] TypeScript types generated from schema
+- [x] Turbo `dev` task starts both web and landing in parallel
 
 ---
 
@@ -738,12 +738,12 @@ CREATE POLICY "Owner and contributors can upload record assets"
 
 ### Acceptance Criteria
 
-- [ ] User can sign up / sign in via Google or GitHub
-- [ ] Auto-profile creation on signup (trigger fires)
-- [ ] Protected routes redirect to `/login`
-- [ ] Three-column layout renders (sidebar | main | context panel)
-- [ ] All 6 tables visible in Supabase Dashboard with RLS enabled
-- [ ] `record-assets` storage bucket created with RLS
+- [x] User can sign up / sign in via Google or GitHub
+- [x] Auto-profile creation on signup (trigger fires)
+- [x] Protected routes redirect to `/login`
+- [x] Three-column layout renders (sidebar | main | context panel)
+- [x] All 6 tables visible in Supabase Dashboard with RLS enabled
+- [x] `record-assets` storage bucket created with RLS
 
 ---
 
@@ -1065,18 +1065,18 @@ function getProgressColor(pct: number): string {
 
 ### Acceptance Criteria
 
-- [ ] User can create a folder and a Wabb within it
-- [ ] Wabb appears in sidebar with correct output type icon + progress dot
-- [ ] Clicking a Wabb shows the first unranked record (no intermediate overview page)
-- [ ] User can rank a record via 1-axis slider (0.0-10.0, one decimal)
-- [ ] User can rank via Binary (Yes/No)
-- [ ] User can rank via Quaternary (A/B/C/D with custom labels)
-- [ ] User can rank via 2-axis
-- [ ] Score persists via upsert — re-ranking updates (doesn't duplicate)
-- [ ] Auto-advances to next unranked record after submit
-- [ ] "You're All Caught Up" shown when all records ranked
-- [ ] Leaderboard shows records ordered by avg score
-- [ ] Sidebar progress dot updates as user ranks
+- [x] User can create a folder and a Wabb within it
+- [x] Wabb appears in sidebar with correct output type icon + progress dot
+- [x] Clicking a Wabb shows the first unranked record (no intermediate overview page)
+- [x] User can rank a record via 1-axis slider (0.0-10.0, one decimal)
+- [x] User can rank via Binary (Yes/No)
+- [x] User can rank via Quaternary (A/B/C/D with custom labels)
+- [x] User can rank via 2-axis
+- [x] Score persists via upsert — re-ranking updates (doesn't duplicate)
+- [x] Auto-advances to next unranked record after submit
+- [x] "You're All Caught Up" shown when all records ranked
+- [x] Leaderboard shows records ordered by avg score
+- [x] Sidebar progress dot updates as user ranks
 
 ---
 
@@ -1271,15 +1271,15 @@ const { title, description } = Astro.props
 
 ### Acceptance Criteria
 
-- [ ] Glassmorphism styling consistent across all components
-- [ ] Dark backgrounds, white text, frosted glass, `duration-700 ease-out` transitions
-- [ ] Settings gear popup opens with 6 tabs
-- [ ] Context panel toggles open/closed with smooth animation
-- [ ] Video player plays with chapter marker navigation
-- [ ] Layer viewer toggles layer visibility (read-only)
-- [ ] Mobile: sidebar slides in as drawer, context panel hidden
-- [ ] Landing page: 10 sections, Astro static, Schema.org JSON-LD
-- [ ] Landing page: interactive demo via React island
+- [x] Glassmorphism styling consistent across all components
+- [x] Dark backgrounds, white text, frosted glass, `duration-700 ease-out` transitions
+- [x] Settings gear popup opens with 6 tabs
+- [x] Context panel toggles open/closed with smooth animation
+- [x] Video player plays with chapter marker navigation
+- [x] Layer viewer toggles layer visibility (read-only)
+- [x] Mobile: sidebar slides in as drawer, context panel hidden
+- [ ] Landing page: 10 sections, Astro static, Schema.org JSON-LD *(deferred — stub only)*
+- [ ] Landing page: interactive demo via React island *(deferred — stub only)*
 
 ---
 
@@ -1787,32 +1787,32 @@ These features are referenced in source docs but have no build spec yet. Explici
 ## Acceptance Criteria by Wave
 
 ### Wave 0: Dev Environment
-- [ ] Project scaffolded (web/, landing/, supabase/)
-- [ ] Supabase project created
-- [ ] TypeScript types generated
-- [ ] Dev servers start (:5173 + :4321)
+- [x] Project scaffolded (web/, landing/, supabase/)
+- [x] Supabase project created
+- [x] TypeScript types generated
+- [x] Dev servers start (:5173 + :4321)
 
 ### Wave 1: Foundation
-- [ ] Auth working (Google + GitHub OAuth)
-- [ ] Database schema applied with RLS
-- [ ] Three-column layout renders
-- [ ] Protected routing functional
-- [ ] Storage bucket created with RLS
+- [x] Auth working (Google + GitHub OAuth)
+- [x] Database schema applied with RLS
+- [x] Three-column layout renders
+- [x] Protected routing functional
+- [x] Storage bucket created with RLS
 
 ### Wave 2: Core Ranking
-- [ ] Full CRUD on folders and Wabbs
-- [ ] All 4 ranking modes working (1-axis, 2-axis, Quaternary, Binary)
-- [ ] Upsert ranking persists correctly
-- [ ] "You're All Caught Up" shown when done
-- [ ] Leaderboard displays ranked records
-- [ ] Progress dots update
+- [x] Full CRUD on folders and Wabbs
+- [x] All 4 ranking modes working (1-axis, 2-axis, Quaternary, Binary)
+- [x] Upsert ranking persists correctly
+- [x] "You're All Caught Up" shown when done
+- [x] Leaderboard displays ranked records
+- [x] Progress dots update
 
 ### Wave 3: UI Polish
-- [ ] Glassmorphism styling consistent (DO/DON'T rules followed)
-- [ ] Settings popup with 6 tabs functional
-- [ ] Video player with chapter markers
-- [ ] Layer viewer + audio player working
-- [ ] Landing page live (10 sections, Astro, Schema.org)
+- [x] Glassmorphism styling consistent (DO/DON'T rules followed)
+- [x] Settings popup with 6 tabs functional
+- [x] Video player with chapter markers
+- [x] Layer viewer + audio player working
+- [ ] Landing page live (10 sections, Astro, Schema.org) *(deferred — stub only)*
 
 ### Wave 4: Collaboration
 - [ ] Multi-user invites and roles (Owner/Contributor/Viewer)
