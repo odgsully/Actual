@@ -117,6 +117,9 @@ packages/*/package-lock.json
 # Reference copies (not source code)
 apps/wabbit/ref/Zapier-hamza-copy/
 
+# Marketing scripts (internal content, not source code)
+apps/wabbit/marketing/shortform-scripts/
+
 # Self-contained tools with own git repos
 tools/rapid-prototyping/
 
