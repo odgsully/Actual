@@ -1,0 +1,36 @@
+---
+import '../styles/global.css'
+
+interface Props {
+  title: string
+  description: string
+}
+const { title, description } = Astro.props
+---
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{title}</title>
+  <meta name="description" content={description} />
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:type" content="website" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Wabbit",
+    "description": "Gesture-driven content ranking tool with async team collaboration for AI-generated content.",
+    "applicationCategory": "ProductivityApplication",
+    "operatingSystem": "Web, iOS",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "featureList": ["Content Ranking", "Team Collaboration", "AIGC Review", "Gesture-Driven Scoring", "RAVG Consensus"]
+  }
+  </script>
+</head>
+<body class="bg-[#0a0a0f] text-white">
+  <slot />
+</body>
+</html>

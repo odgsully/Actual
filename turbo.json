@@ -15,12 +15,14 @@
     "NOTION_TASKS_DATABASE_ID",
     "GITHUB_ACCESS_TOKEN",
     "GOOGLE_CLIENT_ID",
-    "GOOGLE_CLIENT_SECRET"
+    "GOOGLE_CLIENT_SECRET",
+    "VITE_SUPABASE_URL",
+    "VITE_SUPABASE_ANON_KEY"
   ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**"]
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
     },
     "lint": {
       "dependsOn": ["^lint"]

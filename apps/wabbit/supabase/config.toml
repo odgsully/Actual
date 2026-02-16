@@ -1,0 +1,26 @@
+[project]
+id = "aqvniuyvykihylvttpft"
+
+[api]
+port = 54321
+schemas = ["public", "storage"]
+
+[db]
+port = 54322
+
+[studio]
+port = 54323
+
+[auth]
+site_url = "http://localhost:5173"
+additional_redirect_urls = ["http://localhost:5173/auth/callback"]
+
+[auth.external.google]
+enabled = true
+client_id = ""
+secret = ""
+
+[auth.external.github]
+enabled = true
+client_id = ""
+secret = ""
