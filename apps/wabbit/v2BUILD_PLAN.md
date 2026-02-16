@@ -1,10 +1,11 @@
 # Wabbit v2 Build Plan
 
-> **Last Updated:** 2026-02-15 (Wave 4 Collaboration & RAVG Engine complete)
+> **Last Updated:** 2026-02-16 (Wave 4 complete, monetization strategy aligned)
 > **Status:** Wave 0-4 Complete (web app) — Ready for Wave 5 (Integrations & Agent Layer)
 > **Product:** Gesture-driven ranking/scoring tool with async collaboration for AI-generated content
 >
 > **Sources of Truth:**
+> - `v2MONETIZATION.md` — Monetization strategy, tier definitions, agent-first onboarding
 > - `ref/core/Wabbit-webapp.md` — Core product concept
 > - `ref/docs/PRD.md` — Product requirements
 > - `ref/docs/ARCHITECTURE.md` — Technical architecture
@@ -32,8 +33,9 @@
 9. [Wave 4 — Collaboration & RAVG Engine](#wave-4--collaboration--ravg-engine)
 10. [Wave 5 — Integrations & Agent Layer](#wave-5--integrations--agent-layer)
 11. [Wave 6 — Record Population Pipeline](#wave-6--record-population-pipeline)
-12. [Phase 2+ Roadmap](#phase-2-roadmap)
-13. [Deferred Features (NOT YET SCOPED)](#deferred-features-not-yet-scoped)
+12. [Wave 7 — Monetization & Billing](#wave-7--monetization--billing)
+13. [Phase 2+ Roadmap](#phase-2-roadmap)
+14. [Deferred Features (NOT YET SCOPED)](#deferred-features-not-yet-scoped)
 14. [Environment Variables](#environment-variables)
 15. [Acceptance Criteria by Wave](#acceptance-criteria-by-wave)
 16. [Open Questions](#open-questions)
@@ -1560,6 +1562,16 @@ wab_live_BRTRKFsL_51FwqftsmMDHHbJAMEXXHCgG
 
 ### MCP Tools
 
+**High-Level Tools** (what agents use 90% of the time — opinionated happy-path):
+
+| Tool | Scopes Required | Description |
+|------|----------------|-------------|
+| `wabbit_launch_ranking` | `write:collections`, `write:records` | **One-call setup:** provision user if needed, create Wabb, populate records, return magic link. This is the agent-first onboarding entry point. |
+| `wabbit_get_results` | `read:collections` | Poll or webhook for completed rankings, return sorted leaderboard |
+| `wabbit_quick_poll` | `write:collections`, `write:records` | Binary yes/no on small set (< 10 records), even faster flow |
+
+**Granular CRUD Tools:**
+
 | Tool | Scopes Required | Description |
 |------|----------------|-------------|
 | `wabbit_search_wabbs` | `read:collections` | Search collections by criteria |
@@ -1569,6 +1581,48 @@ wab_live_BRTRKFsL_51FwqftsmMDHHbJAMEXXHCgG
 | `wabbit_get_leaderboard` | `read:collections` | Records ranked by RAVG |
 | `wabbit_get_progress` | `read:collections` | User progress on a Wabb |
 | `wabbit_create_wabb` | `write:collections` | Create a new collection |
+
+### Agent-First Onboarding Flow
+
+Agents act proactively — they create value and notify humans. See `v2MONETIZATION.md` §6 for full strategy.
+
+**`wabbit_launch_ranking` request:**
+```json
+{
+  "human_email": "user@company.com",
+  "wabb_name": "Landing Page Heroes — Round 1",
+  "records": [
+    { "url": "https://...", "label": "Option A" },
+    { "url": "https://...", "label": "Option B" }
+  ],
+  "ranking_mode": "one_axis",
+  "message": "Rank these by visual impact. Top 5 go to production."
+}
+```
+
+**Response:**
+```json
+{
+  "wabb_id": "abc123",
+  "magic_link": "https://wabbit.app/r/x7k9m2",
+  "records_count": 40,
+  "estimated_rank_time": "4 min",
+  "suggested_message": "I put together a ranking session for your 40 hero images..."
+}
+```
+
+**Magic link requirements:**
+- Authenticates user (no login screen, JWT embedded)
+- Deep links to specific Wabb (iOS Universal Link or mobile web fallback)
+- Short, clean URL: `wabbit.app/r/{6-char-code}`
+- Expires gracefully (7-30 days)
+- If user doesn't exist, provisions Free account invisibly
+
+**Tier gating on agent access:**
+- **Free:** Read-only (agents can check results, not create)
+- **Pro ($29/mo):** Full CRUD — agents can create Wabbs, populate records, read results
+- **Team ($149/mo):** + Batch operations + webhook subscriptions
+- **Business ($299/mo):** Unlimited + custom rate limits
 
 **MCP Configuration (`.claude/.mcp.json`):**
 
@@ -1607,10 +1661,13 @@ wab_live_BRTRKFsL_51FwqftsmMDHHbJAMEXXHCgG
 - [ ] Agent events table receives events when rankings are submitted
 - [ ] Supabase Realtime broadcasts events to subscribed agents
 - [ ] MCP server installable and functional from Claude Code
+- [ ] `wabbit_launch_ranking` one-call flow works (provision + create + magic link)
+- [ ] Magic link authenticates user and deep links to Wabb
 - [ ] OpenClaw skill pack works end-to-end (query → action → confirmation)
 - [ ] PWA installable on mobile with service worker
-- [ ] Rate limiting active on all agent routes (Upstash Redis)
-- [ ] API documentation covers all endpoints
+- [ ] Rate limiting active on all agent routes (Upstash Redis), tiered by subscription
+- [ ] API response includes `suggested_message` template for agent UX
+- [ ] API documentation covers all endpoints (OpenAPI/Swagger)
 
 ---
 
@@ -1693,15 +1750,106 @@ Schedule → AI Generation (ChatGPT/DALL-E/Midjourney/Sora)
 
 ---
 
+## Wave 7 — Monetization & Billing
+
+> **Goal:** Subscription infrastructure built. Feature gates enforced. Usage metering active. Stripe integration functional.
+>
+> **Reference:** `v2MONETIZATION.md` — Pricing model, tier definitions, agent-first onboarding strategy
+
+### Sub-Phases
+
+| Sub-Phase | Name | Deliverable |
+|-----------|------|-------------|
+| 7.0 | Subscription Schema | `subscription_tier` column on profiles, subscription tables, usage tracking tables |
+| 7.1 | Stripe Integration | Stripe Checkout, webhook handlers, subscription lifecycle (create/upgrade/cancel) |
+| 7.2 | Feature Gate Middleware | Tier-based enforcement on RAVG formulas, Wabb limits, agent access, integrations |
+| 7.3 | Usage Metering | API call counting, storage tracking, quota enforcement with overage handling |
+| 7.4 | Upgrade Prompts | In-app upgrade flows, agent-surfaced upgrade suggestions, pricing page on landing site |
+
+### Database Schema (Migration 005)
+
+```sql
+-- Add subscription tier to profiles
+ALTER TABLE profiles ADD COLUMN subscription_tier TEXT NOT NULL DEFAULT 'free'
+  CHECK (subscription_tier IN ('free', 'pro', 'team', 'business'));
+ALTER TABLE profiles ADD COLUMN stripe_customer_id TEXT;
+ALTER TABLE profiles ADD COLUMN stripe_subscription_id TEXT;
+ALTER TABLE profiles ADD COLUMN subscription_status TEXT DEFAULT 'active'
+  CHECK (subscription_status IN ('active', 'past_due', 'canceled', 'trialing'));
+
+-- API usage tracking (daily buckets)
+CREATE TABLE api_usage (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  date DATE NOT NULL DEFAULT CURRENT_DATE,
+  calls_count INTEGER DEFAULT 0,
+  UNIQUE(user_id, date)
+);
+
+ALTER TABLE api_usage ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users see own usage" ON api_usage FOR SELECT USING (auth.uid() = user_id);
+
+-- Storage usage tracking
+CREATE TABLE storage_usage (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL UNIQUE,
+  bytes_used BIGINT DEFAULT 0,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE storage_usage ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users see own storage" ON storage_usage FOR SELECT USING (auth.uid() = user_id);
+```
+
+### Tier Limits (enforced at application + RLS level)
+
+| Limit | Free | Pro ($29) | Team ($149) | Business ($299) |
+|-------|------|-----------|-------------|-----------------|
+| Creators | 1 | 3 | 10 | 25 |
+| Active Wabbs | 3 | Unlimited | Unlimited | Unlimited |
+| Ranking Modes | 1-axis + binary | All 4 | All 4 + label customization | All 4 |
+| RAVG Formulas | simple_mean | + weighted + exclude_outliers | + custom + Super RAVG | Full + cross-Wabb |
+| Agent Access | Read-only | Full CRUD | + Batch + webhooks | Unlimited |
+| API Calls/day | 100 | 1,000 | 10,000 | Unlimited |
+| Storage | 2 GB | 50 GB | 500 GB | 2 TB |
+| iOS App | Yes | Yes | Yes | Yes |
+
+### Edge Functions (Wave 7)
+
+| Function | Purpose |
+|----------|---------|
+| `supabase/functions/stripe-webhook/` | Handle Stripe subscription events (checkout.session.completed, invoice.paid, customer.subscription.updated/deleted) |
+| `supabase/functions/check-tier/` | Validate user's tier before allowing gated actions |
+| `supabase/functions/usage-meter/` | Increment API call counter, check quota, return 429 with upgrade prompt when exceeded |
+
+### Acceptance Criteria
+
+- [ ] `subscription_tier` column on profiles, defaults to 'free'
+- [ ] Stripe Checkout flow creates subscription and updates tier
+- [ ] Webhook handles upgrades, downgrades, cancellations
+- [ ] Free tier limited to 3 active Wabbs (enforced)
+- [ ] RAVG formula restricted by tier (enforced)
+- [ ] Agent CRUD blocked on Free tier, functional on Pro+
+- [ ] API call counter increments per request, returns 429 at limit
+- [ ] Storage usage tracked, upload blocked when quota exceeded
+- [ ] Upgrade prompt shown when tier limit hit (in-app + agent response)
+- [ ] Landing page pricing section reflects 4 tiers
+
+---
+
 ## Phase 2+ Roadmap
 
 ### Phase 2: Native iOS App (2026 H2)
+
+**iOS is free at all tiers** — it's a distribution channel, not a revenue gate. See `v2MONETIZATION.md` §4 Layer 2 for rationale.
 
 - Gesture system is the star
 - UIKit gesture recognizers bridged to SwiftUI
 - CoreHaptics feedback at score boundaries
 - Symmetry with web ranking experience
 - 4corners category swiping exploration
+- Magic link deep linking (Universal Links → straight to Wabb)
+- Rankings sync to RAVG regardless of tier
 
 **Gesture Mapping (from ref/RankingGestureView.swift):**
 
@@ -1782,6 +1930,14 @@ These features are referenced in source docs but have no build spec yet. Explici
 | `INNGEST_SIGNING_KEY` | Yes | Inngest webhook validation |
 | `INNGEST_EVENT_KEY` | Yes | Inngest event sending |
 
+### Wave 7 (Monetization)
+
+| Variable | Sensitive | Purpose |
+|----------|-----------|---------|
+| `STRIPE_SECRET_KEY` | Yes | Stripe API (server-side only) |
+| `STRIPE_WEBHOOK_SECRET` | Yes | Stripe webhook signature verification |
+| `VITE_STRIPE_PUBLISHABLE_KEY` | No | Stripe Checkout (client-side) |
+
 ---
 
 ## Acceptance Criteria by Wave
@@ -1823,16 +1979,25 @@ These features are referenced in source docs but have no build spec yet. Explici
 
 ### Wave 5: Agent Layer
 - [ ] API key system functional (SHA-256 HMAC)
-- [ ] MCP server published and working
+- [ ] MCP server published and working (including `wabbit_launch_ranking`)
+- [ ] Magic link auth + deep linking functional
 - [ ] OpenClaw skills functional
 - [ ] PWA installable
-- [ ] Rate limiting active (Upstash Redis)
+- [ ] Rate limiting active (Upstash Redis), tiered by subscription
 
 ### Wave 6: Population
 - [ ] Manual upload + bulk upload working
 - [ ] API ingestion endpoint functional
 - [ ] Window number tracking correct
 - [ ] Window expiration handled
+
+### Wave 7: Monetization & Billing
+- [ ] Stripe subscription flow working (checkout → webhook → tier update)
+- [ ] Feature gates enforced (Wabb limit, RAVG formulas, agent access)
+- [ ] API call metering with quota enforcement
+- [ ] Storage metering with quota enforcement
+- [ ] Upgrade prompts in-app and via agent API responses
+- [ ] Landing page pricing section live
 
 ---
 
@@ -1846,6 +2011,8 @@ These features are referenced in source docs but have no build spec yet. Explici
 | 4 | **Crypto/Crowd Coffees** | How tightly coupled to MVP? Coinbase Base integration scope? |
 | 5 | **Template marketplace** | Phase 1 or later? Minimum template sharing flow? |
 | 6 | **4corners mobile UX** | Replacement for 1-10 slider on mobile, or additional mode? |
+| 10 | ~~iOS tier gating~~ | **RESOLVED** — iOS is free at all tiers. Distribution channel, not revenue gate. See v2MONETIZATION.md §4 |
+| 11 | ~~Pricing model (seat vs flat)~~ | **RESOLVED** — Flat tier pricing with unlimited rankers. Not per-seat. See v2MONETIZATION.md §5 |
 | 7 | ~~Branched Wabb mechanics~~ | **RESOLVED** — Rankings never carry over. Smart defaults menu. |
 | 8 | ~~Quaternary labels~~ | **RESOLVED** — Configurable per-Wabb. Change triggers Branch. |
 | 9 | **Separate Supabase project** | New project for Wabbit content ranking vs. sharing with existing monorepo apps? (Recommended: separate) |
