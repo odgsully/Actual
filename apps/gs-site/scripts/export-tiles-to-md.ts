@@ -3,10 +3,10 @@
  * Reverse Sync Script: Code → Markdown
  *
  * Exports tile definitions FROM working code TO documentation.
- * Direction: tiles.ts + TileRegistry.tsx → gs-site-notion-sum.md
+ * Direction: tiles.ts + TileRegistry.tsx → docs/reference/gs-site-notion-sum.md
  *
  * Usage:
- *   npm run export-tiles              # Write to gs-site-notion-sum.md
+ *   npm run export-tiles              # Write to docs/reference/gs-site-notion-sum.md
  *   npm run export-tiles -- --dry-run # Preview without writing
  *   npm run export-tiles -- --output=custom.md  # Write to custom file
  *
@@ -586,7 +586,7 @@ async function main() {
   const outputArg = args.find((a) => a.startsWith('--output='));
   const outputFile = outputArg
     ? outputArg.replace('--output=', '')
-    : 'gs-site-notion-sum.md';
+    : 'docs/reference/gs-site-notion-sum.md';
   const outputPath = resolve(GS_SITE_ROOT, outputFile);
 
   console.log('🔄 Exporting tiles from code to markdown...\n');

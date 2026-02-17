@@ -5,7 +5,7 @@
 **Tile Definitions**: All tile definitions are now stored locally in `lib/data/tiles.ts`.
 Notion is used **only for DATA** (habits values, task completion), NOT for tile definitions.
 
-**Documentation**: The file `gs-site-notion-sum.md` contains implementation specs and goals.
+**Documentation**: The file `docs/reference/gs-site-notion-sum.md` contains implementation specs and goals.
 
 ## Architecture (Updated Jan 2026)
 
@@ -23,7 +23,7 @@ The old tile sync infrastructure has been deprecated (see `scripts/archive/`).
 | `lib/data/tiles.ts` | **Source of truth** - All tile definitions (LOCAL_TILES) |
 | `lib/notion/habits.ts` | Notion Habits database client (DATA only) |
 | `lib/notion/tasks.ts` | Notion Task List database client (DATA only) |
-| `gs-site-notion-sum.md` | Implementation specs and goals documentation |
+| `docs/reference/gs-site-notion-sum.md` | Implementation specs and goals documentation |
 | `tile-logic-untile.md` | Implementation plan and phase breakdown |
 
 ## Notion Integration Status
@@ -91,7 +91,7 @@ If OAuth fails with `auth_failed`, check:
 - **Evening**: End-of-day check-in tiles
 
 ### Third-Party Integrations
-See `gs-site-notion-sum.md` for full integration matrix. Key ones:
+See `docs/reference/gs-site-notion-sum.md` for full integration matrix. Key ones:
 - **Notion**: Habits, Tasks, Calendar data
 - **Wabbit**: Cross-app task ranking
 - **GitHub**: Commit counts, repo listing
@@ -165,9 +165,9 @@ These tiles have content that exceeds 112px and should open popups/subpages:
 
 ## When Implementing Tiles
 
-1. Check `gs-site-notion-sum.md` for the tile's full spec
+1. Check `docs/reference/gs-site-notion-sum.md` for the tile's full spec
 2. Note the Priority (1 = Critical, 3 = Nice to have)
 3. Check Third Party dependencies
 4. **If content exceeds 112px height → implement as popup/subpage launcher**
-5. Update the tile's status in gs-site-notion-sum.md when done
+5. Update the tile's status in docs/reference/gs-site-notion-sum.md when done
 6. Add implementation notes if the logic differs from original spec
