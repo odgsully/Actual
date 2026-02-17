@@ -5,7 +5,7 @@
  * Reads data from Analysis sheet and returns structured results
  *
  * @module breakups-generator
- * @see DOCUMENTATION/REPORTIT_BREAKUPS_ANALYSIS.md for full specification
+ * @see docs/reference/REPORTIT_BREAKUPS_ANALYSIS.md for full specification
  */
 
 import * as ExcelJS from 'exceljs'

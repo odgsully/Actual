@@ -1,1 +1,43 @@
+# Vercel
 .vercel
+
+# Dependencies
+node_modules/
+
+# Build output
+.next/
+.turbo/
+out/
+dist/
+
+# Temporary/cache directories
+tmp/
+mcao-upload-temp/
+APN/
+
+# Test output
+test-results/
+playwright-report/
+test-results.json
+
+# Excel temp/lock files
+~$*.xlsx
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment (symlink is fine, but actual .env files should not be committed)
+.env
+.env.local
+.env.production
+!.env.sample
+
+# TypeScript build info
+tsconfig.tsbuildinfo
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

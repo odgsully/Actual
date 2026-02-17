@@ -4,7 +4,7 @@
  * Types for property data from Maricopa County Assessor's Office API
  * Used for property lookups by APN (Assessor Parcel Number)
  *
- * @see DOCUMENTATION/GSREALTY_PROJECT_REQUIREMENTS.md - Section 3.2.4, 3.2.5
+ * @see docs/reference/GSREALTY_PROJECT_REQUIREMENTS.md - Section 3.2.4, 3.2.5
  */
 
 /**
@@ -133,7 +133,7 @@ export interface MCAOPropertySummary {
  * Fields for populating the "Maricopa" sheet in template.xlsx
  * Rows 2-24: Column B = label, Column C = data value
  *
- * @see DOCUMENTATION/GSREALTY_PROJECT_REQUIREMENTS.md - Section 4.2 (Sheet: Maricopa)
+ * @see docs/reference/GSREALTY_PROJECT_REQUIREMENTS.md - Section 4.2 (Sheet: Maricopa)
  */
 export interface MCAOMaricopaSheetData {
   // Row 2

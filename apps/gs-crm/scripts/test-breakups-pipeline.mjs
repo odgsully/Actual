@@ -17,21 +17,21 @@ async function testPipeline() {
   try {
     // Test 1: Load modules
     console.log('[1/4] Testing module imports...');
-    const { generateAllBreakupsAnalyses } = await import('./lib/processing/breakups-generator.ts');
+    const { generateAllBreakupsAnalyses } = await import('../lib/processing/breakups-generator.ts');
     console.log('✅ breakups-generator imported');
 
-    const { generateAllVisualizations } = await import('./lib/processing/breakups-visualizer.ts');
+    const { generateAllVisualizations } = await import('../lib/processing/breakups-visualizer.ts');
     console.log('✅ breakups-visualizer imported');
 
-    const { generateAllPDFReports } = await import('./lib/processing/breakups-pdf-generator.ts');
+    const { generateAllPDFReports } = await import('../lib/processing/breakups-pdf-generator.ts');
     console.log('✅ breakups-pdf-generator imported');
 
-    const { packageBreakupsReport } = await import('./lib/processing/breakups-packager.ts');
+    const { packageBreakupsReport } = await import('../lib/processing/breakups-packager.ts');
     console.log('✅ breakups-packager imported\n');
 
     // Test 2: Check if sample file exists
     console.log('[2/4] Checking for test Excel file...');
-    const testFilePath = join(__dirname, 'gsrealty-client-template.xlsx');
+    const testFilePath = join(__dirname, '..', 'gsrealty-client-template.xlsx');
     try {
       const fileBuffer = readFileSync(testFilePath);
       console.log(`✅ Found test file: ${testFilePath} (${(fileBuffer.length / 1024).toFixed(2)} KB)\n`);

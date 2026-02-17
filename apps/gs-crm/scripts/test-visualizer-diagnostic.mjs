@@ -76,7 +76,7 @@ async function testMockAnalysisData() {
 
   try {
     // Import the visualizer
-    const { generateAllVisualizations } = await import('./lib/processing/breakups-visualizer.ts');
+    const { generateAllVisualizations } = await import('../lib/processing/breakups-visualizer.ts');
 
     // Create mock analysis results
     const mockAnalysisResults = {

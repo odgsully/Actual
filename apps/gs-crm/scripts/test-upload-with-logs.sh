@@ -10,7 +10,7 @@ echo "=============================================="
 echo ""
 
 # Find or create test file
-TEST_FILE="Complete_TestUpload_2025-10-29-1226.xlsx"
+TEST_FILE="../ref/test-samples/uploads/Complete_TestUpload_2025-10-29-1226.xlsx"
 
 if [ ! -f "$TEST_FILE" ]; then
     echo "❌ Test file not found: $TEST_FILE"

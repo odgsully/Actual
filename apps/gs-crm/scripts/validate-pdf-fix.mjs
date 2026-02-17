@@ -52,7 +52,7 @@ try {
 
 // Test 2: Verify breakups-pdf-generator.ts exists and has the fix
 console.log('\nTest 2: Verifying fix in breakups-pdf-generator.ts...');
-const generatorPath = path.join(__dirname, 'lib/processing/breakups-pdf-generator.ts');
+const generatorPath = path.join(__dirname, '..', 'lib/processing/breakups-pdf-generator.ts');
 try {
   const content = fs.readFileSync(generatorPath, 'utf-8');
 
@@ -141,7 +141,7 @@ try {
 // Test 4: Import and test the actual PDF generator
 console.log('\nTest 4: Testing breakups-pdf-generator module...');
 try {
-  const { generateAllPDFReports } = await import('./lib/processing/breakups-pdf-generator.ts');
+  const { generateAllPDFReports } = await import('../lib/processing/breakups-pdf-generator.ts');
 
   if (typeof generateAllPDFReports === 'function') {
     pass('generateAllPDFReports function is exported');

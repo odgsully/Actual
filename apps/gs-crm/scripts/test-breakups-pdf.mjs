@@ -12,7 +12,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Dynamic import of TypeScript module
-const { generateAllPDFReports } = await import('./lib/processing/breakups-pdf-generator.ts');
+const { generateAllPDFReports } = await import('../lib/processing/breakups-pdf-generator.ts');
 
 console.log('=== Break-ups PDF Generator Test ===\n');
 
