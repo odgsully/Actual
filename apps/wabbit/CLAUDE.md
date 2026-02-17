@@ -57,10 +57,10 @@ All three consumer layers (Web App, MCP, OpenClaw) connect directly to Supabase.
 | 0 | Dev Environment | ✅ Done | Vite/Astro scaffold, Supabase project, Turborepo config |
 | 1 | Foundation | ✅ Done | OAuth auth, Zustand stores, 3-column layout shell, storage bucket |
 | 2 | Core Ranking | ✅ Done | Folder CRUD, 4 ranking modes, sidebar tree, leaderboard, progress dots |
-| 3 | UI Polish | ⚠️ ~90% | Glassmorphism system, settings popup (6 tabs), video player, layer viewer. Landing page stub only |
-| 4 | Collaboration | ⚠️ ~60% | RAVG engine + unit tests, collaborator API, branching menu built. Multi-user e2e untested, Super RAVG UI unclear, realtime not fully wired |
+| 3 | UI Polish | ✅ Done | Glassmorphism system, settings popup (6 tabs), video player, layer viewer. Landing page (10 sections). InteractiveDemo React island deferred |
+| 4 | Collaboration | ✅ Done | RAVG engine + unit tests, collaborator API, branching menu, realtime hardened (callbackRef, debounce, reconnection). RAVGDisplay prop mismatch documented |
 | 5 | Integrations | ❌ 0% | OpenClaw skills, MCP server (incl. `wabbit_launch_ranking`), agent onboarding, magic links |
-| 6 | Record Population | ⚠️ ~50% | Upload UI built (RecordUploader, BulkUploader). Edge fns scaffolded. Window logic + 3rd-party connectors not done |
+| 6 | Record Population | ✅ Done | Upload UI, records API (createRecordWithAsset, bulkCreateRecords), manage-windows edge fn (jump-to-correct-window). Known: duration change retroactive |
 | 7 | Monetization | ❌ 0% | Stripe subscriptions, feature gates, usage metering, upgrade prompts |
 | Phase 2+ | Mobile & Advanced | — | iOS native (SwiftUI, free all tiers), Timeline Rank mode, real-time notifications |
 

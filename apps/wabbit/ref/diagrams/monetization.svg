@@ -1,0 +1,410 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 1120" width="1400" height="1120">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="rgba(255,255,255,0.4)" />
+    </marker>
+    <filter id="glow-blue" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="b" />
+      <feFlood flood-color="#3b82f6" flood-opacity="0.3" result="c" />
+      <feComposite in="c" in2="b" operator="in" result="s" />
+      <feMerge><feMergeNode in="s" /><feMergeNode in="SourceGraphic" /></feMerge>
+    </filter>
+    <filter id="glow-green" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="b" />
+      <feFlood flood-color="#10b981" flood-opacity="0.3" result="c" />
+      <feComposite in="c" in2="b" operator="in" result="s" />
+      <feMerge><feMergeNode in="s" /><feMergeNode in="SourceGraphic" /></feMerge>
+    </filter>
+    <filter id="glow-rose" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="b" />
+      <feFlood flood-color="#f43f5e" flood-opacity="0.3" result="c" />
+      <feComposite in="c" in2="b" operator="in" result="s" />
+      <feMerge><feMergeNode in="s" /><feMergeNode in="SourceGraphic" /></feMerge>
+    </filter>
+    <filter id="glow-purple" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="b" />
+      <feFlood flood-color="#8b5cf6" flood-opacity="0.3" result="c" />
+      <feComposite in="c" in2="b" operator="in" result="s" />
+      <feMerge><feMergeNode in="s" /><feMergeNode in="SourceGraphic" /></feMerge>
+    </filter>
+    <filter id="glow-orange" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="b" />
+      <feFlood flood-color="#f59e0b" flood-opacity="0.3" result="c" />
+      <feComposite in="c" in2="b" operator="in" result="s" />
+      <feMerge><feMergeNode in="s" /><feMergeNode in="SourceGraphic" /></feMerge>
+    </filter>
+    <filter id="glow-cyan" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="b" />
+      <feFlood flood-color="#06b6d4" flood-opacity="0.3" result="c" />
+      <feComposite in="c" in2="b" operator="in" result="s" />
+      <feMerge><feMergeNode in="s" /><feMergeNode in="SourceGraphic" /></feMerge>
+    </filter>
+    <filter id="noise">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" stitchTiles="stitch" result="n" />
+      <feColorMatrix type="saturate" values="0" in="n" result="g" />
+      <feComponentTransfer in="g" result="f"><feFuncA type="linear" slope="0.03" /></feComponentTransfer>
+      <feMerge><feMergeNode in="SourceGraphic" /><feMergeNode in="f" /></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1400" height="1120" fill="#0a0a0f" />
+  <rect width="1400" height="1120" fill="transparent" filter="url(#noise)" />
+
+  <!-- ===== TITLE ===== -->
+  <text x="40" y="42" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="700" fill="#ffffff" letter-spacing="4">WABBIT</text>
+  <text x="40" y="62" font-family="system-ui, -apple-system, sans-serif" font-size="13" fill="rgba(255,255,255,0.5)" letter-spacing="1">Monetization Architecture v2 / Closed SaaS + Open API + Agent Distribution</text>
+
+  <!-- Legend -->
+  <rect x="880" y="20" width="14" height="14" rx="3" fill="rgba(244,63,94,0.4)" stroke="rgba(244,63,94,0.6)" stroke-width="0.5" />
+  <text x="900" y="31" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.5)">Proprietary (closed source)</text>
+  <rect x="1060" y="20" width="14" height="14" rx="3" fill="rgba(16,185,129,0.4)" stroke="rgba(16,185,129,0.6)" stroke-width="0.5" />
+  <text x="1080" y="31" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.5)">Open API Spec (public docs)</text>
+  <rect x="1240" y="20" width="14" height="14" rx="3" fill="rgba(6,182,212,0.4)" stroke="rgba(6,182,212,0.6)" stroke-width="0.5" />
+  <text x="1260" y="31" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.5)">Revenue Stream</text>
+  <rect x="880" y="40" width="14" height="14" rx="3" fill="rgba(139,92,246,0.4)" stroke="rgba(139,92,246,0.6)" stroke-width="0.5" />
+  <text x="900" y="51" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.5)">Distribution Channel</text>
+  <rect x="1060" y="40" width="14" height="14" rx="3" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.15)" stroke-width="0.5" />
+  <text x="1080" y="51" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.35)">Annotation</text>
+
+  <!-- ===================================================================== -->
+  <!--  LAYER 1: WEB APP / CLOSED SaaS                                       -->
+  <!-- ===================================================================== -->
+  <text x="20" y="150" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="600" fill="rgba(59,130,246,0.6)" letter-spacing="2" transform="rotate(-90, 20, 150)">LAYER 1</text>
+  <line x1="55" y1="78" x2="55" y2="300" stroke="rgba(59,130,246,0.15)" stroke-width="1" />
+
+  <rect x="65" y="78" width="1315" height="22" rx="4" fill="rgba(59,130,246,0.08)" />
+  <text x="75" y="93" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="600" fill="rgba(59,130,246,0.7)" letter-spacing="1.5">WEB APP / CLOSED SaaS</text>
+  <text x="300" y="93" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(59,130,246,0.45)">Vite + React + Supabase / where creators manage, tiers gate administration</text>
+
+  <!-- Free Tier Features -->
+  <rect x="65" y="108" width="440" height="185" rx="12" fill="rgba(244,63,94,0.08)" stroke="rgba(244,63,94,0.25)" stroke-width="1" filter="url(#glow-rose)" />
+  <rect x="75" y="116" width="80" height="16" rx="8" fill="rgba(244,63,94,0.2)" />
+  <text x="83" y="127" font-family="system-ui, -apple-system, sans-serif" font-size="8" font-weight="600" fill="rgba(244,63,94,0.85)">FREE TIER</text>
+  <text x="165" y="128" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="700" fill="#ffffff">Core Product</text>
+  <text x="85" y="148" font-family="system-ui, -apple-system, sans-serif" font-size="11" fill="rgba(255,255,255,0.45)">1 creator, unlimited rankers, 3 active Wabbs, 2 GB</text>
+  <circle cx="90" cy="170" r="2" fill="rgba(59,130,246,0.6)" />
+  <text x="98" y="174" font-family="system-ui, -apple-system, sans-serif" font-size="11" fill="rgba(255,255,255,0.7)">1-axis + binary ranking modes</text>
+  <circle cx="90" cy="190" r="2" fill="rgba(59,130,246,0.6)" />
+  <text x="98" y="194" font-family="system-ui, -apple-system, sans-serif" font-size="11" fill="rgba(255,255,255,0.7)">Simple RAVG (arithmetic mean)</text>
+  <circle cx="90" cy="210" r="2" fill="rgba(59,130,246,0.6)" />
+  <text x="98" y="214" font-family="system-ui, -apple-system, sans-serif" font-size="11" fill="rgba(255,255,255,0.7)">iOS app (full ranking experience)</text>
+  <circle cx="90" cy="230" r="2" fill="rgba(59,130,246,0.6)" />
+  <text x="98" y="234" font-family="system-ui, -apple-system, sans-serif" font-size="11" fill="rgba(255,255,255,0.7)">Upload + webhook ingest</text>
+  <circle cx="90" cy="250" r="2" fill="rgba(59,130,246,0.6)" />
+  <text x="98" y="254" font-family="system-ui, -apple-system, sans-serif" font-size="11" fill="rgba(255,255,255,0.7)">Agent: read-only (can check results)</text>
+  <circle cx="90" cy="270" r="2" fill="rgba(59,130,246,0.6)" />
+  <text x="98" y="274" font-family="system-ui, -apple-system, sans-serif" font-size="11" fill="rgba(255,255,255,0.7)">100 API calls/day</text>
+
+  <!-- Paid Tier Features -->
+  <rect x="525" y="108" width="400" height="185" rx="12" fill="rgba(244,63,94,0.1)" stroke="rgba(244,63,94,0.3)" stroke-width="1" filter="url(#glow-rose)" />
+  <rect x="535" y="116" width="105" height="16" rx="8" fill="rgba(244,63,94,0.25)" />
+  <text x="543" y="127" font-family="system-ui, -apple-system, sans-serif" font-size="8" font-weight="600" fill="rgba(244,63,94,0.9)">PRO / TEAM / BIZ</text>
+  <text x="650" y="128" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="700" fill="#ffffff">Premium Features</text>
+  <text x="545" y="148" font-family="system-ui, -apple-system, sans-serif" font-size="11" fill="rgba(255,255,255,0.45)">Upgrade triggers by collaboration depth</text>
+  <circle cx="550" cy="170" r="2" fill="rgba(244,63,94,0.6)" />
+  <text x="558" y="174" font-family="system-ui, -apple-system, sans-serif" font-size="11" fill="rgba(255,255,255,0.7)">Agent full CRUD (Pro+: create Wabbs for you)</text>
+  <circle cx="550" cy="190" r="2" fill="rgba(244,63,94,0.6)" />
+  <text x="558" y="194" font-family="system-ui, -apple-system, sans-serif" font-size="11" fill="rgba(255,255,255,0.7)">Super RAVG + custom weight formulas (Team+)</text>
+  <circle cx="550" cy="210" r="2" fill="rgba(244,63,94,0.6)" />
+  <text x="558" y="214" font-family="system-ui, -apple-system, sans-serif" font-size="11" fill="rgba(255,255,255,0.7)">Windows + branching with carry-over (Team+)</text>
+  <circle cx="550" cy="230" r="2" fill="rgba(244,63,94,0.6)" />
+  <text x="558" y="234" font-family="system-ui, -apple-system, sans-serif" font-size="11" fill="rgba(255,255,255,0.7)">Slack / Figma / Notion integrations (Team+)</text>
+  <circle cx="550" cy="250" r="2" fill="rgba(244,63,94,0.6)" />
+  <text x="558" y="254" font-family="system-ui, -apple-system, sans-serif" font-size="11" fill="rgba(255,255,255,0.7)">SSO / SAML + audit logs (Business)</text>
+  <circle cx="550" cy="270" r="2" fill="rgba(244,63,94,0.6)" />
+  <text x="558" y="274" font-family="system-ui, -apple-system, sans-serif" font-size="11" fill="rgba(255,255,255,0.7)">White-label / custom branding (Business)</text>
+
+  <!-- Revenue: Cloud Subscriptions -->
+  <rect x="945" y="108" width="435" height="185" rx="12" fill="rgba(6,182,212,0.1)" stroke="rgba(6,182,212,0.3)" stroke-width="1" filter="url(#glow-cyan)" />
+  <text x="965" y="130" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="700" fill="rgba(6,182,212,0.9)">$ SUBSCRIPTIONS (PRIMARY MRR)</text>
+  <text x="965" y="148" font-family="system-ui, -apple-system, sans-serif" font-size="11" fill="rgba(255,255,255,0.45)">Flat tier pricing, unlimited rankers, iOS free at all tiers</text>
+
+  <rect x="960" y="160" width="200" height="28" rx="6" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.1)" stroke-width="0.5" />
+  <text x="970" y="178" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.6)">Free / 1 creator, 3 Wabbs</text>
+  <text x="1120" y="178" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.35)" text-anchor="end">$0</text>
+
+  <rect x="960" y="192" width="200" height="28" rx="6" fill="rgba(6,182,212,0.06)" stroke="rgba(6,182,212,0.12)" stroke-width="0.5" />
+  <text x="970" y="210" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.7)">Pro / 3 creators + agent CRUD</text>
+  <text x="1120" y="210" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="600" fill="rgba(6,182,212,0.9)" text-anchor="end">$29/mo</text>
+
+  <rect x="960" y="224" width="200" height="28" rx="6" fill="rgba(6,182,212,0.1)" stroke="rgba(6,182,212,0.18)" stroke-width="0.5" />
+  <text x="970" y="242" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.7)">Team / 10 creators + Super RAVG</text>
+  <text x="1120" y="242" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="600" fill="rgba(6,182,212,0.9)" text-anchor="end">$149/mo</text>
+
+  <rect x="960" y="256" width="200" height="28" rx="6" fill="rgba(6,182,212,0.16)" stroke="rgba(6,182,212,0.25)" stroke-width="0.5" />
+  <text x="970" y="274" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.7)">Business / 25 creators + SSO</text>
+  <text x="1120" y="274" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="600" fill="rgba(6,182,212,0.9)" text-anchor="end">$299/mo</text>
+
+  <!-- Storage overages note -->
+  <text x="1185" y="165" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.35)">OVERAGES</text>
+  <text x="1185" y="180" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.3)">Storage: $10/100GB</text>
+  <text x="1185" y="195" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.3)">API: per-call beyond tier</text>
+  <text x="1185" y="225" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.35)">AGENCY WHITE-LABEL</text>
+  <text x="1185" y="240" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.3)">$500-2K/mo base</text>
+  <text x="1185" y="255" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.3)">Custom embed licensing</text>
+
+  <!-- ===================================================================== -->
+  <!--  LAYER 2: MOBILE / iOS / FREE DISTRIBUTION CHANNEL                    -->
+  <!-- ===================================================================== -->
+  <text x="20" y="385" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="600" fill="rgba(139,92,246,0.6)" letter-spacing="2" transform="rotate(-90, 20, 385)">LAYER 2</text>
+  <line x1="55" y1="315" x2="55" y2="470" stroke="rgba(139,92,246,0.15)" stroke-width="1" />
+
+  <rect x="65" y="313" width="1315" height="22" rx="4" fill="rgba(139,92,246,0.08)" />
+  <text x="75" y="328" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="600" fill="rgba(139,92,246,0.7)" letter-spacing="1.5">MOBILE / FREE DISTRIBUTION CHANNEL</text>
+  <text x="370" y="328" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(139,92,246,0.45)">SwiftUI + CoreHaptics / free at all tiers, closed source</text>
+
+  <!-- iOS App -->
+  <rect x="65" y="343" width="530" height="120" rx="12" fill="rgba(139,92,246,0.1)" stroke="rgba(139,92,246,0.3)" stroke-width="1" filter="url(#glow-purple)" />
+  <rect x="75" y="351" width="100" height="16" rx="8" fill="rgba(139,92,246,0.25)" />
+  <text x="83" y="362" font-family="system-ui, -apple-system, sans-serif" font-size="8" font-weight="600" fill="rgba(139,92,246,0.9)">FREE ALL TIERS</text>
+  <text x="185" y="363" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="700" fill="#ffffff">iOS Gesture App</text>
+  <text x="85" y="383" font-family="system-ui, -apple-system, sans-serif" font-size="11" fill="rgba(255,255,255,0.45)">Consumption layer: rank anywhere, sync everywhere</text>
+  <circle cx="90" cy="405" r="2" fill="rgba(139,92,246,0.6)" />
+  <text x="98" y="409" font-family="system-ui, -apple-system, sans-serif" font-size="11" fill="rgba(255,255,255,0.7)">Tap-drag scoring + CoreHaptics feedback</text>
+  <circle cx="90" cy="425" r="2" fill="rgba(139,92,246,0.6)" />
+  <text x="98" y="429" font-family="system-ui, -apple-system, sans-serif" font-size="11" fill="rgba(255,255,255,0.7)">4corners category swiping</text>
+  <circle cx="90" cy="445" r="2" fill="rgba(139,92,246,0.6)" />
+  <text x="98" y="449" font-family="system-ui, -apple-system, sans-serif" font-size="11" fill="rgba(255,255,255,0.7)">Magic link deep linking (one tap to rank)</text>
+
+  <!-- Distribution rationale -->
+  <rect x="615" y="343" width="310" height="120" rx="12" fill="rgba(139,92,246,0.08)" stroke="rgba(139,92,246,0.2)" stroke-width="1" filter="url(#glow-purple)" />
+  <text x="635" y="365" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="700" fill="rgba(139,92,246,0.9)">WHY FREE (NOT GATED)</text>
+  <text x="635" y="385" font-family="system-ui, -apple-system, sans-serif" font-size="11" fill="rgba(255,255,255,0.45)">Mobile = consumption, web = administration</text>
+  <circle cx="640" cy="407" r="2" fill="rgba(139,92,246,0.5)" />
+  <text x="648" y="411" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.6)">Best feature seen by most people</text>
+  <circle cx="640" cy="427" r="2" fill="rgba(139,92,246,0.5)" />
+  <text x="648" y="431" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.6)">Viral loop: invite rankers, they get the app</text>
+  <circle cx="640" cy="447" r="2" fill="rgba(139,92,246,0.5)" />
+  <text x="648" y="451" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.6)">No comp gates mobile (Frame.io, Figma, etc.)</text>
+
+  <!-- Defensibility annotation -->
+  <rect x="945" y="343" width="435" height="120" rx="12" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.08)" stroke-width="1" />
+  <text x="965" y="365" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="600" fill="rgba(255,255,255,0.4)">MOAT: WHAT'S ACTUALLY DEFENSIBLE</text>
+  <circle cx="970" cy="390" r="2" fill="rgba(255,255,255,0.25)" />
+  <text x="978" y="394" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.45)">Execution speed (6-12mo head start)</text>
+  <circle cx="970" cy="410" r="2" fill="rgba(255,255,255,0.25)" />
+  <text x="978" y="414" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.45)">Brand: "HIL layer for AI content"</text>
+  <circle cx="970" cy="430" r="2" fill="rgba(255,255,255,0.25)" />
+  <text x="978" y="434" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.45)">Agent distribution: first MCP-native ranking tool</text>
+  <circle cx="970" cy="450" r="2" fill="rgba(255,255,255,0.25)" />
+  <text x="978" y="454" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.45)">Network effects + iOS gesture craftsmanship</text>
+
+  <!-- ===================================================================== -->
+  <!--  LAYER 3: AGENT / CLOSED PKG + OPEN API + DISTRIBUTION                -->
+  <!-- ===================================================================== -->
+  <text x="20" y="565" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="600" fill="rgba(245,158,11,0.6)" letter-spacing="2" transform="rotate(-90, 20, 565)">LAYER 3</text>
+  <line x1="55" y1="490" x2="55" y2="650" stroke="rgba(245,158,11,0.15)" stroke-width="1" />
+
+  <rect x="65" y="488" width="1315" height="22" rx="4" fill="rgba(245,158,11,0.08)" />
+  <text x="75" y="503" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="600" fill="rgba(245,158,11,0.7)" letter-spacing="1.5">AGENT / CLOSED PKG + OPEN API SPEC + DISTRIBUTION CHANNEL</text>
+  <text x="540" y="503" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(245,158,11,0.45)">Stripe model: proprietary SDK, public docs. Agents are free sales reps.</text>
+
+  <!-- MCP Server (Closed, free npm) -->
+  <rect x="65" y="518" width="310" height="120" rx="12" fill="rgba(244,63,94,0.1)" stroke="rgba(244,63,94,0.3)" stroke-width="1" filter="url(#glow-rose)" />
+  <rect x="75" y="526" width="95" height="16" rx="8" fill="rgba(244,63,94,0.25)" />
+  <text x="83" y="537" font-family="system-ui, -apple-system, sans-serif" font-size="8" font-weight="600" fill="rgba(244,63,94,0.9)">CLOSED / FREE</text>
+  <text x="180" y="538" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="700" fill="#ffffff">MCP Server</text>
+  <text x="85" y="558" font-family="system-ui, -apple-system, sans-serif" font-size="11" fill="rgba(255,255,255,0.45)">npm pkg / proprietary, free to use</text>
+  <circle cx="90" cy="578" r="2" fill="rgba(245,158,11,0.6)" />
+  <text x="98" y="582" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.7)">wabbit_launch_ranking (one-call setup)</text>
+  <circle cx="90" cy="596" r="2" fill="rgba(245,158,11,0.6)" />
+  <text x="98" y="600" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.7)">wabbit_get_results + wabbit_quick_poll</text>
+  <circle cx="90" cy="614" r="2" fill="rgba(245,158,11,0.6)" />
+  <text x="98" y="618" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.7)">6 granular CRUD tools</text>
+  <circle cx="90" cy="632" r="2" fill="rgba(245,158,11,0.6)" />
+  <text x="98" y="636" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.7)">All calls route through Wabbit Cloud</text>
+
+  <!-- Agent Onboarding Flow -->
+  <rect x="395" y="518" width="245" height="120" rx="12" fill="rgba(139,92,246,0.1)" stroke="rgba(139,92,246,0.3)" stroke-width="1" filter="url(#glow-purple)" />
+  <rect x="405" y="526" width="115" height="16" rx="8" fill="rgba(139,92,246,0.25)" />
+  <text x="413" y="537" font-family="system-ui, -apple-system, sans-serif" font-size="8" font-weight="600" fill="rgba(139,92,246,0.9)">AGENT ONBOARD</text>
+  <text x="530" y="538" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="700" fill="#ffffff">Flow</text>
+  <text x="415" y="558" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.45)">Proactive: create value, notify human</text>
+  <circle cx="420" cy="578" r="2" fill="rgba(139,92,246,0.6)" />
+  <text x="428" y="582" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.65)">1 API call: provision + create + link</text>
+  <circle cx="420" cy="596" r="2" fill="rgba(139,92,246,0.6)" />
+  <text x="428" y="600" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.65)">Magic link: wabbit.app/r/x7k9m2</text>
+  <circle cx="420" cy="614" r="2" fill="rgba(139,92,246,0.6)" />
+  <text x="428" y="618" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.65)">Invisible account creation</text>
+  <circle cx="420" cy="632" r="2" fill="rgba(139,92,246,0.6)" />
+  <text x="428" y="636" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.65)">Webhook when ranking complete</text>
+
+  <!-- API Gateway -->
+  <rect x="660" y="518" width="285" height="120" rx="12" fill="rgba(244,63,94,0.1)" stroke="rgba(244,63,94,0.3)" stroke-width="1" filter="url(#glow-rose)" />
+  <rect x="670" y="526" width="60" height="16" rx="8" fill="rgba(244,63,94,0.25)" />
+  <text x="678" y="537" font-family="system-ui, -apple-system, sans-serif" font-size="8" font-weight="600" fill="rgba(244,63,94,0.9)">CLOUD</text>
+  <text x="740" y="538" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="700" fill="#ffffff">API Gateway</text>
+  <text x="680" y="558" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.45)">All agent traffic routes through here</text>
+  <circle cx="685" cy="578" r="2" fill="rgba(244,63,94,0.6)" />
+  <text x="693" y="582" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.7)">API key mgmt + rotation</text>
+  <circle cx="685" cy="596" r="2" fill="rgba(244,63,94,0.6)" />
+  <text x="693" y="600" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.7)">Rate limiting + metering by tier</text>
+  <circle cx="685" cy="614" r="2" fill="rgba(244,63,94,0.6)" />
+  <text x="693" y="618" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.7)">Agent observability dashboard (Team+)</text>
+  <circle cx="685" cy="632" r="2" fill="rgba(244,63,94,0.6)" />
+  <text x="693" y="636" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.7)">Suggested message templates in response</text>
+
+  <!-- Revenue: Agent Metering -->
+  <rect x="965" y="518" width="415" height="120" rx="12" fill="rgba(6,182,212,0.1)" stroke="rgba(6,182,212,0.3)" stroke-width="1" filter="url(#glow-cyan)" />
+  <text x="985" y="540" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="700" fill="rgba(6,182,212,0.9)">$ API METERING + AGENT DISTRIBUTION</text>
+  <text x="985" y="558" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.45)">Free: read-only / Pro+: full CRUD (the upgrade trigger)</text>
+  <rect x="985" y="570" width="115" height="22" rx="6" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.1)" stroke-width="0.5" />
+  <text x="998" y="585" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.5)">Free: 100/day RO</text>
+  <rect x="1110" y="570" width="115" height="22" rx="6" fill="rgba(6,182,212,0.08)" stroke="rgba(6,182,212,0.15)" stroke-width="0.5" />
+  <text x="1123" y="585" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.6)">Pro: 1K/day CRUD</text>
+  <rect x="1235" y="570" width="130" height="22" rx="6" fill="rgba(6,182,212,0.15)" stroke="rgba(6,182,212,0.2)" stroke-width="0.5" />
+  <text x="1248" y="585" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.7)">Team: 10K + batch</text>
+  <circle cx="995" cy="610" r="2" fill="rgba(6,182,212,0.6)" />
+  <text x="1003" y="614" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.6)">Agents create value that drives subs</text>
+  <circle cx="995" cy="628" r="2" fill="rgba(6,182,212,0.6)" />
+  <text x="1003" y="632" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.6)">Every agent is an unpaid sales rep</text>
+
+  <!-- ===================================================================== -->
+  <!--  LAYER 4: INTEGRATIONS                                                -->
+  <!-- ===================================================================== -->
+  <text x="20" y="740" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="600" fill="rgba(59,130,246,0.6)" letter-spacing="2" transform="rotate(-90, 20, 740)">LAYER 4</text>
+  <line x1="55" y1="668" x2="55" y2="830" stroke="rgba(59,130,246,0.15)" stroke-width="1" />
+
+  <rect x="65" y="668" width="1315" height="22" rx="4" fill="rgba(59,130,246,0.08)" />
+  <text x="75" y="683" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="600" fill="rgba(59,130,246,0.7)" letter-spacing="1.5">INTEGRATIONS / ALL PROPRIETARY</text>
+  <text x="340" y="683" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(59,130,246,0.45)">Built in-house, tiered by plan</text>
+
+  <!-- Free Tier Integrations -->
+  <rect x="65" y="698" width="360" height="120" rx="12" fill="rgba(244,63,94,0.08)" stroke="rgba(244,63,94,0.25)" stroke-width="1" filter="url(#glow-rose)" />
+  <rect x="75" y="706" width="80" height="16" rx="8" fill="rgba(244,63,94,0.2)" />
+  <text x="83" y="717" font-family="system-ui, -apple-system, sans-serif" font-size="8" font-weight="600" fill="rgba(244,63,94,0.85)">ALL TIERS</text>
+  <text x="163" y="718" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="700" fill="#ffffff">Base Integrations</text>
+  <text x="85" y="738" font-family="system-ui, -apple-system, sans-serif" font-size="11" fill="rgba(255,255,255,0.45)">Drives record ingest adoption</text>
+  <rect x="85" y="752" width="100" height="20" rx="10" fill="rgba(244,63,94,0.08)" stroke="rgba(244,63,94,0.15)" stroke-width="0.5" />
+  <text x="103" y="766" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.6)">Manual Upload</text>
+  <rect x="195" y="752" width="105" height="20" rx="10" fill="rgba(244,63,94,0.08)" stroke="rgba(244,63,94,0.15)" stroke-width="0.5" />
+  <text x="213" y="766" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.6)">Webhook Ingest</text>
+  <rect x="310" y="752" width="100" height="20" rx="10" fill="rgba(244,63,94,0.08)" stroke="rgba(244,63,94,0.15)" stroke-width="0.5" />
+  <text x="325" y="766" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.6)">Google Drive</text>
+  <rect x="85" y="780" width="100" height="20" rx="10" fill="rgba(244,63,94,0.08)" stroke="rgba(244,63,94,0.15)" stroke-width="0.5" />
+  <text x="97" y="794" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.6)">Zapier (basic)</text>
+
+  <!-- Premium Integrations -->
+  <rect x="445" y="698" width="420" height="120" rx="12" fill="rgba(244,63,94,0.1)" stroke="rgba(244,63,94,0.3)" stroke-width="1" filter="url(#glow-rose)" />
+  <rect x="455" y="706" width="70" height="16" rx="8" fill="rgba(244,63,94,0.25)" />
+  <text x="463" y="717" font-family="system-ui, -apple-system, sans-serif" font-size="8" font-weight="600" fill="rgba(244,63,94,0.9)">TEAM+</text>
+  <text x="535" y="718" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="700" fill="#ffffff">Premium Integrations</text>
+  <text x="465" y="738" font-family="system-ui, -apple-system, sans-serif" font-size="11" fill="rgba(255,255,255,0.45)">Cloud Team ($149/mo) and above</text>
+  <rect x="465" y="752" width="115" height="20" rx="10" fill="rgba(244,63,94,0.12)" stroke="rgba(244,63,94,0.2)" stroke-width="0.5" />
+  <text x="483" y="766" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.6)">Slack Ranking</text>
+  <rect x="590" y="752" width="90" height="20" rx="10" fill="rgba(244,63,94,0.12)" stroke="rgba(244,63,94,0.2)" stroke-width="0.5" />
+  <text x="607" y="766" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.6)">Figma Sync</text>
+  <rect x="690" y="752" width="105" height="20" rx="10" fill="rgba(244,63,94,0.12)" stroke="rgba(244,63,94,0.2)" stroke-width="0.5" />
+  <text x="704" y="766" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.6)">Notion Docs</text>
+  <rect x="465" y="780" width="115" height="20" rx="10" fill="rgba(244,63,94,0.12)" stroke="rgba(244,63,94,0.2)" stroke-width="0.5" />
+  <text x="478" y="794" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.6)">Social Scheduler</text>
+  <rect x="590" y="780" width="90" height="20" rx="10" fill="rgba(244,63,94,0.12)" stroke="rgba(244,63,94,0.2)" stroke-width="0.5" />
+  <text x="605" y="794" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.6)">Adobe CC</text>
+  <rect x="690" y="780" width="105" height="20" rx="10" fill="rgba(244,63,94,0.12)" stroke="rgba(244,63,94,0.2)" stroke-width="0.5" />
+  <text x="710" y="794" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.6)">Shopify</text>
+
+  <!-- Revenue: Template Marketplace -->
+  <rect x="885" y="698" width="495" height="120" rx="12" fill="rgba(6,182,212,0.1)" stroke="rgba(6,182,212,0.3)" stroke-width="1" filter="url(#glow-cyan)" />
+  <rect x="895" y="706" width="66" height="16" rx="8" fill="rgba(6,182,212,0.2)" />
+  <text x="903" y="717" font-family="system-ui, -apple-system, sans-serif" font-size="8" font-weight="600" fill="rgba(6,182,212,0.8)">PHASE 4+</text>
+  <text x="971" y="718" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="700" fill="rgba(6,182,212,0.9)">$ TEMPLATE MARKETPLACE</text>
+  <text x="905" y="738" font-family="system-ui, -apple-system, sans-serif" font-size="11" fill="rgba(255,255,255,0.45)">Crowd Coffees / community templates</text>
+  <circle cx="910" cy="760" r="2" fill="rgba(6,182,212,0.6)" />
+  <text x="918" y="764" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.65)">15-20% platform fee on template sales</text>
+  <circle cx="910" cy="780" r="2" fill="rgba(6,182,212,0.6)" />
+  <text x="918" y="784" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.65)">Start with Stripe, add crypto (Base) later</text>
+  <circle cx="910" cy="800" r="2" fill="rgba(6,182,212,0.6)" />
+  <text x="918" y="804" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.65)">Community content becomes the moat</text>
+
+  <!-- ===================================================================== -->
+  <!--  OPEN API LAYER (bottom bar)                                          -->
+  <!-- ===================================================================== -->
+  <rect x="65" y="845" width="1315" height="22" rx="4" fill="rgba(16,185,129,0.08)" />
+  <text x="75" y="860" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="600" fill="rgba(16,185,129,0.7)" letter-spacing="1.5">OPEN API SPEC (THE ONLY OPEN THING)</text>
+  <text x="450" y="860" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(16,185,129,0.45)">OpenAPI/Swagger docs, webhook schemas, auth guides, suggested agent message templates</text>
+
+  <!-- ===================================================================== -->
+  <!--  KEY PRINCIPLES                                                       -->
+  <!-- ===================================================================== -->
+  <rect x="65" y="878" width="1315" height="22" rx="4" fill="rgba(255,255,255,0.04)" />
+  <text x="75" y="893" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="600" fill="rgba(255,255,255,0.35)" letter-spacing="1.5">KEY PRINCIPLES</text>
+
+  <rect x="65" y="908" width="260" height="70" rx="10" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.08)" stroke-width="0.5" />
+  <text x="85" y="930" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="600" fill="rgba(255,255,255,0.5)">Unlimited rankers at every tier</text>
+  <text x="85" y="948" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.3)">RAVG needs team participation</text>
+
+  <rect x="345" y="908" width="260" height="70" rx="10" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.08)" stroke-width="0.5" />
+  <text x="365" y="930" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="600" fill="rgba(255,255,255,0.5)">iOS free at all tiers</text>
+  <text x="365" y="948" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.3)">Distribution channel, not revenue gate</text>
+
+  <rect x="625" y="908" width="260" height="70" rx="10" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.08)" stroke-width="0.5" />
+  <text x="645" y="930" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="600" fill="rgba(255,255,255,0.5)">Agents are free sales reps</text>
+  <text x="645" y="948" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.3)">API quality = distribution channel</text>
+
+  <rect x="905" y="908" width="260" height="70" rx="10" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.08)" stroke-width="0.5" />
+  <text x="925" y="930" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="600" fill="rgba(255,255,255,0.5)">Flat pricing, not per-seat</text>
+  <text x="925" y="948" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.3)">Matches Filestage / Ziflow model</text>
+
+  <rect x="1185" y="908" width="195" height="70" rx="10" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.08)" stroke-width="0.5" />
+  <text x="1200" y="930" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="600" fill="rgba(255,255,255,0.5)">Open API, closed code</text>
+  <text x="1200" y="948" font-family="system-ui, -apple-system, sans-serif" font-size="10" fill="rgba(255,255,255,0.3)">Stripe model</text>
+
+  <!-- ===================================================================== -->
+  <!--  DUAL FLYWHEEL (right edge)                                           -->
+  <!-- ===================================================================== -->
+  <text x="1382" y="90" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(59,130,246,0.3)" text-anchor="end" letter-spacing="1">HUMAN FLYWHEEL</text>
+  <line x1="1392" y1="100" x2="1392" y2="470" stroke="rgba(59,130,246,0.1)" stroke-width="1" stroke-dasharray="4,6" />
+
+  <circle cx="1392" cy="140" r="3" fill="rgba(59,130,246,0.4)" />
+  <text x="1382" y="144" font-family="system-ui, -apple-system, sans-serif" font-size="8" fill="rgba(255,255,255,0.2)" text-anchor="end">Free (web + iOS)</text>
+
+  <circle cx="1392" cy="200" r="3" fill="rgba(59,130,246,0.5)" />
+  <text x="1382" y="204" font-family="system-ui, -apple-system, sans-serif" font-size="8" fill="rgba(255,255,255,0.2)" text-anchor="end">Solo user ranks</text>
+
+  <circle cx="1392" cy="260" r="3" fill="rgba(6,182,212,0.5)" />
+  <text x="1382" y="264" font-family="system-ui, -apple-system, sans-serif" font-size="8" fill="rgba(255,255,255,0.2)" text-anchor="end">Invites team</text>
+
+  <circle cx="1392" cy="320" r="3" fill="rgba(6,182,212,0.6)" />
+  <text x="1382" y="324" font-family="system-ui, -apple-system, sans-serif" font-size="8" fill="rgba(255,255,255,0.2)" text-anchor="end">Pro $29 (agent CRUD)</text>
+
+  <circle cx="1392" cy="380" r="3" fill="rgba(6,182,212,0.7)" />
+  <text x="1382" y="384" font-family="system-ui, -apple-system, sans-serif" font-size="8" fill="rgba(255,255,255,0.2)" text-anchor="end">Team $149 (Super RAVG)</text>
+
+  <circle cx="1392" cy="440" r="3" fill="rgba(6,182,212,0.8)" />
+  <text x="1382" y="444" font-family="system-ui, -apple-system, sans-serif" font-size="8" fill="rgba(255,255,255,0.2)" text-anchor="end">Business $299 (SSO)</text>
+
+  <!-- Agent Flywheel -->
+  <text x="1382" y="510" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(245,158,11,0.3)" text-anchor="end" letter-spacing="1">AGENT FLYWHEEL</text>
+  <line x1="1392" y1="520" x2="1392" y2="840" stroke="rgba(245,158,11,0.1)" stroke-width="1" stroke-dasharray="4,6" />
+
+  <circle cx="1392" cy="555" r="3" fill="rgba(245,158,11,0.4)" />
+  <text x="1382" y="559" font-family="system-ui, -apple-system, sans-serif" font-size="8" fill="rgba(255,255,255,0.2)" text-anchor="end">Agent discovers MCP</text>
+
+  <circle cx="1392" cy="600" r="3" fill="rgba(245,158,11,0.5)" />
+  <text x="1382" y="604" font-family="system-ui, -apple-system, sans-serif" font-size="8" fill="rgba(255,255,255,0.2)" text-anchor="end">Creates Wabb + magic link</text>
+
+  <circle cx="1392" cy="645" r="3" fill="rgba(139,92,246,0.5)" />
+  <text x="1382" y="649" font-family="system-ui, -apple-system, sans-serif" font-size="8" fill="rgba(255,255,255,0.2)" text-anchor="end">Human ranks (free)</text>
+
+  <circle cx="1392" cy="690" r="3" fill="rgba(245,158,11,0.6)" />
+  <text x="1382" y="694" font-family="system-ui, -apple-system, sans-serif" font-size="8" fill="rgba(255,255,255,0.2)" text-anchor="end">Agent retrieves results</text>
+
+  <circle cx="1392" cy="735" r="3" fill="rgba(245,158,11,0.7)" />
+  <text x="1382" y="739" font-family="system-ui, -apple-system, sans-serif" font-size="8" fill="rgba(255,255,255,0.2)" text-anchor="end">Hits Free limits</text>
+
+  <circle cx="1392" cy="780" r="3" fill="rgba(6,182,212,0.7)" />
+  <text x="1382" y="784" font-family="system-ui, -apple-system, sans-serif" font-size="8" fill="rgba(255,255,255,0.2)" text-anchor="end">Upgrades to Pro ($29)</text>
+
+  <circle cx="1392" cy="825" r="3" fill="rgba(6,182,212,0.8)" />
+  <text x="1382" y="829" font-family="system-ui, -apple-system, sans-serif" font-size="8" fill="rgba(255,255,255,0.2)" text-anchor="end">Invites team (feeds human flywheel)</text>
+
+  <!-- ===================================================================== -->
+  <!--  FOOTER                                                               -->
+  <!-- ===================================================================== -->
+  <text x="700" y="1060" font-family="system-ui, -apple-system, sans-serif" font-size="9" fill="rgba(255,255,255,0.12)" text-anchor="middle">Closed SaaS + open API spec / iOS free at all tiers / agents are the top of the funnel</text>
+  <text x="700" y="1080" font-family="system-ui, -apple-system, sans-serif" font-size="8" fill="rgba(255,255,255,0.08)" text-anchor="middle">Two front doors: humans discover organically, agents discover via MCP and onboard humans proactively</text>
+  <text x="700" y="1100" font-family="system-ui, -apple-system, sans-serif" font-size="8" fill="rgba(255,255,255,0.06)" text-anchor="middle">v2 / 2026-02-16</text>
+
+</svg>
