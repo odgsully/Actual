@@ -1,0 +1,55 @@
+---
+import AvatarStack from './AvatarStack.astro'
+---
+<section id="how-it-works" class="py-24 px-6">
+  <div class="max-w-5xl mx-auto">
+    <div class="text-center mb-16">
+      <h2 class="font-['Playfair_Display'] text-3xl sm:text-4xl font-bold mb-4">How It Works</h2>
+      <p class="text-white/50 max-w-xl mx-auto">Three steps from content chaos to team consensus.</p>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-8">
+      <!-- Step 1 -->
+      <div class="text-center group">
+        <div class="w-16 h-16 mx-auto mb-6 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-2xl font-bold text-white/20 group-hover:bg-white/10 group-hover:text-white/40 transition-all duration-700">
+          1
+        </div>
+        <h3 class="text-lg font-semibold mb-2">Create a Wabb</h3>
+        <p class="text-white/40 text-sm leading-relaxed mb-4">
+          Upload AI-generated images, video, text, 3D models, audio, or decks. Organize into folders. Invite your team.
+        </p>
+        <div class="flex justify-center">
+          <AvatarStack count={3} size={28} seed="create" label="Invite team" />
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="text-center group">
+        <div class="w-16 h-16 mx-auto mb-6 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-2xl font-bold text-white/20 group-hover:bg-white/10 group-hover:text-white/40 transition-all duration-700">
+          2
+        </div>
+        <h3 class="text-lg font-semibold mb-2">Rank Records</h3>
+        <p class="text-white/40 text-sm leading-relaxed mb-4">
+          Swipe, slide, or tap through content using one of four ranking modes. Each mode fits a different decision type.
+        </p>
+        <div class="flex justify-center">
+          <AvatarStack count={4} size={28} seed="rank" label="Scoring async" />
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="text-center group">
+        <div class="w-16 h-16 mx-auto mb-6 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-2xl font-bold text-white/20 group-hover:bg-white/10 group-hover:text-white/40 transition-all duration-700">
+          3
+        </div>
+        <h3 class="text-lg font-semibold mb-2">Get Consensus</h3>
+        <p class="text-white/40 text-sm leading-relaxed mb-4">
+          RAVG calculates a weighted team score. Leaderboards surface the best content. Ship with confidence.
+        </p>
+        <div class="flex justify-center">
+          <AvatarStack count={6} size={28} seed="consensus" label="Team aligned" />
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

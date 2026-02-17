@@ -1,0 +1,125 @@
+---
+const tiers = [
+  {
+    name: 'Free',
+    price: '$0',
+    period: '',
+    creators: '1 creator',
+    cta: 'Get Started',
+    ctaHref: 'https://app.wabbit.ai/signup',
+    highlight: false,
+    features: [
+      '3 active Wabbs',
+      '1-axis + binary modes',
+      'Simple mean RAVG',
+      'Read-only agent access',
+      '100 API calls/day',
+      '2 GB storage',
+    ],
+  },
+  {
+    name: 'Pro',
+    price: '$29',
+    period: '/mo',
+    creators: '3 creators',
+    cta: 'Start Free Trial',
+    ctaHref: 'https://app.wabbit.ai/signup?plan=pro',
+    highlight: true,
+    features: [
+      'Unlimited active Wabbs',
+      'All 4 ranking modes',
+      'Weighted + outlier RAVG',
+      'Agent CRUD access',
+      '1K API calls/day',
+      '50 GB storage',
+      'Basic branching',
+    ],
+  },
+  {
+    name: 'Team',
+    price: '$149',
+    period: '/mo',
+    creators: '10 creators',
+    cta: 'Start Free Trial',
+    ctaHref: 'https://app.wabbit.ai/signup?plan=team',
+    highlight: false,
+    features: [
+      'Everything in Pro',
+      'Super RAVG + member weights',
+      'Windows (sprint periods)',
+      'Slack, Figma, Notion',
+      '10K API calls/day',
+      '500 GB storage',
+      'Agent observability',
+    ],
+  },
+  {
+    name: 'Business',
+    price: '$299',
+    period: '/mo',
+    creators: '25 creators',
+    cta: 'Talk to Sales',
+    ctaHref: 'mailto:sales@wabbit.ai',
+    highlight: false,
+    features: [
+      'Everything in Team',
+      'SSO / SAML',
+      'Audit logs',
+      'White-label branding',
+      'Unlimited API',
+      '2 TB storage',
+      'Adobe, Shopify, Social',
+    ],
+  },
+]
+---
+<section id="pricing" class="py-24 px-6">
+  <div class="max-w-6xl mx-auto">
+    <div class="text-center mb-4">
+      <h2 class="text-3xl sm:text-4xl font-bold mb-4">Simple, Flat Pricing</h2>
+      <p class="text-white/50 max-w-xl mx-auto">Unlimited rankers at every tier. No per-seat surprises. iOS app free at all tiers.</p>
+    </div>
+
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-12">
+      {tiers.map((tier) => (
+        <div class:list={[
+          'glass-card p-6 flex flex-col',
+          tier.highlight && 'border-white/30 bg-white/[0.08]'
+        ]}>
+          {tier.highlight && (
+            <span class="text-[10px] uppercase tracking-wider text-white/50 mb-3">Most Popular</span>
+          )}
+          <h3 class="text-lg font-semibold">{tier.name}</h3>
+          <div class="mt-2 mb-1">
+            <span class="text-3xl font-bold">{tier.price}</span>
+            {tier.period && <span class="text-white/40 text-sm">{tier.period}</span>}
+          </div>
+          <p class="text-white/30 text-xs mb-5">{tier.creators} &middot; Unlimited rankers</p>
+
+          <ul class="space-y-2.5 mb-8 flex-1">
+            {tier.features.map((f) => (
+              <li class="flex items-start gap-2 text-sm text-white/50">
+                <svg class="w-4 h-4 text-white/20 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                {f}
+              </li>
+            ))}
+          </ul>
+
+          <a
+            href={tier.ctaHref}
+            class:list={[
+              'block text-center py-2.5 rounded-xl text-sm font-medium transition-all duration-700 hover:scale-[1.02]',
+              tier.highlight
+                ? 'bg-white text-[#0a0a0f] hover:bg-white/90'
+                : 'glass-button'
+            ]}
+          >
+            {tier.cta}
+          </a>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>

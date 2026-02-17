@@ -1,1 +1,21 @@
 @import 'tailwindcss';
+
+/* Glassmorphism utility classes — shared with web app */
+@layer components {
+  .glass-card {
+    @apply backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl;
+  }
+
+  .glass-button {
+    @apply bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all duration-700 ease-out hover:scale-[1.02];
+  }
+
+  .glass-input {
+    @apply bg-white/5 border border-white/20 rounded-xl text-white placeholder:text-white/40 focus:border-white/40 focus:outline-none;
+  }
+}
+
+/* Smooth scrolling for anchor links */
+html {
+  scroll-behavior: smooth;
+}

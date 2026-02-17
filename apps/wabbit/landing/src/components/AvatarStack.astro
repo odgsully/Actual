@@ -1,0 +1,121 @@
+---
+/**
+ * AvatarStack — overlapping circular avatars that stagger-animate in.
+ * Uses DiceBear API for consistent placeholder faces.
+ *
+ * Props:
+ *   count: number of avatars (default 5)
+ *   size: avatar size in px (default 36)
+ *   label: text to show after avatars (optional)
+ *   seed: starting seed for avatar generation
+ */
+interface Props {
+  count?: number
+  size?: number
+  label?: string
+  seed?: string
+}
+
+const { count = 5, size = 36, label, seed = 'wabbit' } = Astro.props
+
+const seeds = Array.from({ length: count }, (_, i) => `${seed}-${i}`)
+---
+
+<div class="avatar-stack-wrapper" data-animated>
+  <div class="avatar-stack" style={`--avatar-size: ${size}px;`}>
+    {seeds.map((s, i) => (
+      <div
+        class="avatar-item"
+        style={`
+          --delay: ${i * 0.08}s;
+          z-index: ${count - i};
+          background: hsl(${(i * 47 + 200) % 360}, 45%, 55%);
+        `}
+      >
+        <img
+          src={`https://api.dicebear.com/9.x/notionists/svg?seed=${s}&backgroundColor=transparent`}
+          alt=""
+          width={size}
+          height={size}
+          loading="lazy"
+        />
+      </div>
+    ))}
+  </div>
+  {label && <span class="avatar-label">{label}</span>}
+</div>
+
+<style>
+  .avatar-stack-wrapper {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .avatar-stack {
+    display: flex;
+    align-items: center;
+  }
+
+  .avatar-item {
+    width: var(--avatar-size);
+    height: var(--avatar-size);
+    border-radius: 50%;
+    border: 2px solid rgba(10, 10, 15, 0.8);
+    overflow: hidden;
+    margin-left: calc(var(--avatar-size) * -0.3);
+    opacity: 0;
+    transform: translateX(-12px) scale(0.8);
+    animation: avatar-slide-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    animation-delay: var(--delay);
+    animation-play-state: paused;
+  }
+
+  .avatar-item:first-child {
+    margin-left: 0;
+  }
+
+  .avatar-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* Animate when in view */
+  [data-animated].in-view .avatar-item {
+    animation-play-state: running;
+  }
+
+  @keyframes avatar-slide-in {
+    0% {
+      opacity: 0;
+      transform: translateX(-12px) scale(0.8);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+    }
+  }
+
+  .avatar-label {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.45);
+    white-space: nowrap;
+  }
+</style>
+
+<script>
+  // IntersectionObserver to trigger animation when scrolled into view
+  const stacks = document.querySelectorAll('[data-animated]')
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('in-view')
+        }
+      })
+    },
+    { threshold: 0.3 }
+  )
+  stacks.forEach((el) => observer.observe(el))
+</script>

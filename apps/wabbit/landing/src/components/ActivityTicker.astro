@@ -1,0 +1,199 @@
+---
+/**
+ * ActivityTicker — infinite horizontal scrolling banner showing
+ * recent Wabb activity cards as social proof. Inspired by creatorhunter.io.
+ * Cards auto-scroll left with seamless loop (duplicated track).
+ * Fade masks on both edges.
+ */
+
+const activities = [
+  { avatars: ['tick-1', 'tick-2', 'tick-3'], extra: 42, tag: 'Brand Assets', tagColor: '#ea580c', tagEmoji: '🎨', time: '2 min ago' },
+  { avatars: ['tick-4', 'tick-5'], extra: 8, tag: 'Product Shots', tagColor: '#8b5cf6', tagEmoji: '📸', time: '5 min ago' },
+  { avatars: ['tick-6', 'tick-7', 'tick-8', 'tick-9'], extra: 156, tag: 'Video Ads', tagColor: '#ef4444', tagEmoji: '🎬', time: '12 min ago' },
+  { avatars: ['tick-10', 'tick-11'], extra: 23, tag: 'Social Content', tagColor: '#3b82f6', tagEmoji: '📱', time: '18 min ago' },
+  { avatars: ['tick-12', 'tick-13', 'tick-14'], extra: 67, tag: '3D Renders', tagColor: '#10b981', tagEmoji: '🧊', time: '25 min ago' },
+  { avatars: ['tick-15', 'tick-16'], extra: 12, tag: 'Audio Clips', tagColor: '#f59e0b', tagEmoji: '🎵', time: '31 min ago' },
+  { avatars: ['tick-17', 'tick-18', 'tick-19'], extra: 89, tag: 'Pitch Decks', tagColor: '#6366f1', tagEmoji: '📊', time: '45 min ago' },
+  { avatars: ['tick-20', 'tick-21'], extra: 34, tag: 'AI Images', tagColor: '#ec4899', tagEmoji: '✨', time: '1 hr ago' },
+]
+---
+
+<section class="ticker-section">
+  <div class="ticker-header">
+    <h3 class="font-['Playfair_Display'] text-2xl sm:text-3xl font-bold">Public Wabb Templates</h3>
+    <p class="ticker-subtitle">Get started from Wabbs made public by other users</p>
+  </div>
+  <div class="ticker-track">
+    {/* First set */}
+    {activities.map((a) => (
+      <div class="ticker-card">
+        <div class="ticker-avatars">
+          {a.avatars.map((seed) => (
+            <img
+              src={`https://api.dicebear.com/9.x/notionists/svg?seed=${seed}&backgroundColor=transparent`}
+              alt=""
+              class="ticker-av"
+            />
+          ))}
+          <span class="ticker-extra">+{a.extra}</span>
+        </div>
+        <div class="ticker-meta">
+          <span class="ticker-tag" style={`background: ${a.tagColor}15; color: ${a.tagColor}; border-color: ${a.tagColor}30;`}>
+            <span class="ticker-emoji">{a.tagEmoji}</span> {a.tag}
+          </span>
+          <span class="ticker-time">{a.time}</span>
+        </div>
+      </div>
+    ))}
+    {/* Duplicate for seamless loop */}
+    {activities.map((a) => (
+      <div class="ticker-card" aria-hidden="true">
+        <div class="ticker-avatars">
+          {a.avatars.map((seed) => (
+            <img
+              src={`https://api.dicebear.com/9.x/notionists/svg?seed=${seed}&backgroundColor=transparent`}
+              alt=""
+              class="ticker-av"
+            />
+          ))}
+          <span class="ticker-extra">+{a.extra}</span>
+        </div>
+        <div class="ticker-meta">
+          <span class="ticker-tag" style={`background: ${a.tagColor}15; color: ${a.tagColor}; border-color: ${a.tagColor}30;`}>
+            <span class="ticker-emoji">{a.tagEmoji}</span> {a.tag}
+          </span>
+          <span class="ticker-time">{a.time}</span>
+        </div>
+      </div>
+    ))}
+  </div>
+</section>
+
+<style>
+  .ticker-header {
+    text-align: center;
+    padding: 0 24px 16px;
+  }
+
+  .ticker-subtitle {
+    margin-top: 6px;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.4);
+  }
+
+  .ticker-section {
+    position: relative;
+    overflow: hidden;
+    padding: 28px 0 20px;
+    /* Fade masks on edges */
+    mask-image: linear-gradient(
+      to right,
+      transparent 0%,
+      black 8%,
+      black 92%,
+      transparent 100%
+    );
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent 0%,
+      black 8%,
+      black 92%,
+      transparent 100%
+    );
+  }
+
+  .ticker-track {
+    display: flex;
+    gap: 16px;
+    width: max-content;
+    animation: ticker-scroll 45s linear infinite;
+  }
+
+  .ticker-track:hover {
+    animation-play-state: paused;
+  }
+
+  @keyframes ticker-scroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  .ticker-card {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px 18px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(8px);
+    min-width: 200px;
+  }
+
+  .ticker-avatars {
+    display: flex;
+    align-items: center;
+  }
+
+  .ticker-av {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 2px solid rgba(10, 10, 15, 0.6);
+    background: hsl(220, 30%, 70%);
+    margin-left: -8px;
+    object-fit: cover;
+  }
+
+  .ticker-av:first-child {
+    margin-left: 0;
+  }
+
+  .ticker-extra {
+    margin-left: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
+    letter-spacing: -0.02em;
+  }
+
+  .ticker-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .ticker-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid;
+    white-space: nowrap;
+  }
+
+  .ticker-emoji {
+    font-size: 11px;
+  }
+
+  .ticker-time {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.3);
+    white-space: nowrap;
+  }
+
+  @media (max-width: 480px) {
+    .ticker-card {
+      padding: 10px 14px;
+      min-width: 170px;
+    }
+    .ticker-av {
+      width: 28px;
+      height: 28px;
+    }
+  }
+</style>

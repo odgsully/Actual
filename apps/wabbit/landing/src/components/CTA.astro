@@ -1,0 +1,33 @@
+---
+import AvatarStack from './AvatarStack.astro'
+---
+<section class="py-24 px-6">
+  <div class="max-w-3xl mx-auto text-center">
+    <div class="glass-card p-12 relative overflow-hidden">
+      <!-- Background glow -->
+      <div class="absolute -top-24 -right-24 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl"></div>
+      <div class="absolute -bottom-24 -left-24 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl"></div>
+
+      <div class="relative z-10">
+        <h2 class="font-['Playfair_Display'] text-3xl sm:text-4xl font-bold mb-4">Ready to rank?</h2>
+        <p class="text-white/50 max-w-md mx-auto mb-6">
+          Stop debating in Slack threads. Start ranking with your team and let the data decide.
+        </p>
+
+        <!-- Avatar social proof -->
+        <div class="flex justify-center mb-8">
+          <AvatarStack count={7} size={36} seed="cta" label="Join teams already ranking" />
+        </div>
+
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <a href="https://app.wabbit.ai/signup" class="bg-white text-[#0a0a0f] px-8 py-3.5 rounded-full font-medium text-base hover:bg-white/90 transition-all duration-700 hover:scale-[1.02]">
+            Get Started Free
+          </a>
+          <a href="mailto:sales@wabbit.ai" class="glass-button px-8 py-3.5 rounded-full text-base">
+            Talk to Sales
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

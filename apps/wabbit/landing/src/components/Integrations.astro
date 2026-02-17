@@ -1,0 +1,36 @@
+---
+const integrations = [
+  { name: 'Slack', desc: 'Rank in Slack without opening the app' },
+  { name: 'Figma', desc: 'Import design variants directly' },
+  { name: 'Notion', desc: 'Auto-document results to your wiki' },
+  { name: 'GitHub', desc: 'Trigger rankings from CI/CD' },
+  { name: 'Google Drive', desc: 'Sync files as records' },
+  { name: 'Adobe CC', desc: 'Creative Cloud asset pipeline' },
+]
+---
+<section id="integrations" class="py-24 px-6">
+  <div class="max-w-5xl mx-auto">
+    <div class="text-center mb-16">
+      <h2 class="text-3xl sm:text-4xl font-bold mb-4">Integrations</h2>
+      <p class="text-white/50 max-w-xl mx-auto">Connect your tools. Records flow in, results flow out.</p>
+    </div>
+
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {integrations.map(({ name, desc }) => (
+        <div class="glass-card p-5 flex items-start gap-4 group hover:bg-white/[0.08] transition-all duration-700">
+          <div class="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0 text-sm font-bold text-white/30 group-hover:text-white/50 transition-colors duration-700">
+            {name.slice(0, 2)}
+          </div>
+          <div>
+            <h3 class="text-sm font-medium mb-0.5">{name}</h3>
+            <p class="text-white/40 text-xs">{desc}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    <p class="text-center text-white/20 text-xs mt-8">
+      Integrations available on Pro tier and above. Coming soon.
+    </p>
+  </div>
+</section>
