@@ -5,10 +5,12 @@ export function TopBar() {
     toggleContextPanel,
     toggleMobileDrawer,
     toggleSettings,
+    toggleAddRecords,
     contextPanelOpen,
     wabbTitle,
     recordCounter,
     activeWabbId,
+    canAddRecords,
   } = useLayoutStore()
 
   return (
@@ -35,6 +37,20 @@ export function TopBar() {
 
       {/* Right actions */}
       <div className="flex items-center gap-2">
+        {/* Add Records — only for owner/contributor */}
+        {activeWabbId && canAddRecords && (
+          <button
+            onClick={toggleAddRecords}
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg text-white/40 hover:text-white/80 hover:bg-white/5 transition-all duration-700"
+            title="Add Records"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            Add
+          </button>
+        )}
+
         {/* Settings gear — only when a wabb is active */}
         {activeWabbId && (
           <button

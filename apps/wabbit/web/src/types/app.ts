@@ -21,6 +21,35 @@ export interface BranchCarryOver {
   notification_preferences: boolean
 }
 
+// Accepted file formats per output type
+export const ACCEPTED_FORMATS: Record<OutputType, string[]> = {
+  image: ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg'],
+  video: ['.mp4', '.webm', '.mov'],
+  audio: ['.mp3', '.wav', '.ogg'],
+  text: [], // inline entry, no file upload
+  deck: ['.pdf', '.pptx'],
+  '3d': ['.glb', '.gltf', '.fbx'],
+}
+
+export const ACCEPT_STRING: Record<OutputType, string> = {
+  image: 'image/jpeg,image/png,image/webp,image/gif,image/svg+xml',
+  video: 'video/mp4,video/webm,video/quicktime',
+  audio: 'audio/mpeg,audio/wav,audio/ogg',
+  text: '',
+  deck: 'application/pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  '3d': '.glb,.gltf,.fbx',
+}
+
+export const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
+
+export interface RecordMetadata {
+  sourceUrl?: string
+  sourceApi?: string
+  generationPrompt?: string
+  text?: string
+  [key: string]: unknown
+}
+
 // Settings popup tab identifiers
 export type SettingsTab = 'overview' | 'ranking' | 'team' | 'window' | 'branch' | 'agent'
 

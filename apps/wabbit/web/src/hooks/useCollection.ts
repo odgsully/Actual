@@ -75,9 +75,13 @@ export function useCollection(collectionId: string | undefined) {
     allRanked,
     reload: () => {
       if (collectionId && user) {
-        getUserRankings(collectionId, user.id).then(({ data }) => {
+        Promise.all([
+          getRecords(collectionId),
+          getUserRankings(collectionId, user.id),
+        ]).then(([recRes, rankRes]) => {
+          setRecords(recRes.data ?? [])
           const rankMap = new Map<string, Ranking>()
-          for (const r of data ?? []) {
+          for (const r of rankRes.data ?? []) {
             rankMap.set(r.record_id, r)
           }
           setUserRankings(rankMap)

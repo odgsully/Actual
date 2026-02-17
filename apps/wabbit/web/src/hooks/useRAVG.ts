@@ -93,7 +93,8 @@ export function useRAVG(
     currentRecordId ? `record_id=eq.${currentRecordId}` : undefined,
     () => {
       calculate()
-    }
+    },
+    { debounceMs: 300 }
   )
 
   return { ravgResult, voteTally, loading, recalculate: calculate }

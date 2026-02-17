@@ -44,18 +44,18 @@ export function ContextPanel() {
     })
   }, [activeWabbId])
 
-  // Live ranking updates
+  // Live ranking updates — debounced to prevent rapid getCollaborators calls
   useRealtime(
     'rankings',
     activeWabbId ? `collection_id=eq.${activeWabbId}` : undefined,
     () => {
-      // Refresh ranking counts on any change
       if (activeWabbId) {
         getCollaborators(activeWabbId).then(({ data }) => {
           setCollaborators((data ?? []) as unknown as Collaborator[])
         })
       }
-    }
+    },
+    { debounceMs: 500 }
   )
 
   if (!activeWabbId) {
@@ -89,9 +89,11 @@ export function ContextPanel() {
     <div className="p-4 space-y-3">
       <h3 className="text-sm font-medium text-white/60">Details</h3>
 
+      {/* NOTE: RAVGDisplay receives `collection` as single prop but expects destructured props — pre-existing bug, document for next sprint */}
       <RAVGDisplay collection={collection} />
 
       <TeamProgress
+        collectionId={activeWabbId!}
         collaborators={collaborators}
         totalRecords={0}
         rankingCounts={rankingCounts}

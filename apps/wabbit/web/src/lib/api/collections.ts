@@ -15,7 +15,7 @@ export async function getCollection(id: string) {
   return supabase
     .from('collections')
     .select(
-      '*, folders(name), collaborators(user_id, role, profiles(display_name, avatar_url))'
+      '*, folders(name), collaborators(user_id, role)'
     )
     .eq('id', id)
     .single()
@@ -27,7 +27,10 @@ export async function createCollection(data: NewWabbForm) {
   } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
 
-  return supabase.from('collections').insert({
+  const id = crypto.randomUUID()
+
+  const { error } = await supabase.from('collections').insert({
+    id,
     owner_id: user.id,
     folder_id: data.folderId || null,
     title: data.title,
@@ -45,6 +48,8 @@ export async function createCollection(data: NewWabbForm) {
     ravg_member_weights: (data.ravgMemberWeights || {}) as Json,
     supervisor_weight: data.supervisorWeight || 1.0,
   })
+
+  return { data: error ? null : { id }, error }
 }
 
 export async function updateCollection(

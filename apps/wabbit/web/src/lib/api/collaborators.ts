@@ -4,7 +4,7 @@ import type { CollaboratorRole } from '@/types/app'
 export async function getCollaborators(collectionId: string) {
   return supabase
     .from('collaborators')
-    .select('*, profiles(display_name, avatar_url)')
+    .select('*')
     .eq('collection_id', collectionId)
 }
 

@@ -48,6 +48,8 @@ export function NewWabbForm({ folderId, onClose, onCreated }: Props) {
   })
 
   const rankingMode = watch('rankingMode')
+  const outputType = watch('outputType')
+  const collaboration = watch('collaboration')
 
   async function onSubmit(data: NewWabbFormData) {
     setError(null)
@@ -57,9 +59,8 @@ export function NewWabbForm({ folderId, onClose, onCreated }: Props) {
       return
     }
     if (result.data) {
-      onCreated((result.data as { id: string }).id)
+      onCreated(result.data.id)
     }
-    onClose()
   }
 
   return (
@@ -106,7 +107,11 @@ export function NewWabbForm({ folderId, onClose, onCreated }: Props) {
               {OUTPUT_TYPES.map((t) => (
                 <label
                   key={t.value}
-                  className="flex items-center gap-2 glass-button justify-center cursor-pointer text-sm has-[:checked]:bg-white/20 has-[:checked]:border-white/40"
+                  className={`flex items-center gap-2 justify-center cursor-pointer text-sm border rounded-xl px-4 py-2 transition-all duration-700 hover:scale-[1.02] ${
+                    outputType === t.value
+                      ? 'bg-white/20 border-white/40 text-white'
+                      : 'bg-white/10 border-white/20 text-white hover:bg-white/20'
+                  }`}
                 >
                   <input
                     type="radio"
@@ -129,7 +134,11 @@ export function NewWabbForm({ folderId, onClose, onCreated }: Props) {
               {RANKING_MODES.map((m) => (
                 <label
                   key={m.value}
-                  className="flex items-center gap-2 glass-button justify-center cursor-pointer text-sm has-[:checked]:bg-white/20 has-[:checked]:border-white/40"
+                  className={`flex items-center gap-2 justify-center cursor-pointer text-sm border rounded-xl px-4 py-2 transition-all duration-700 hover:scale-[1.02] ${
+                    rankingMode === m.value
+                      ? 'bg-white/20 border-white/40 text-white'
+                      : 'bg-white/10 border-white/20 text-white hover:bg-white/20'
+                  }`}
                 >
                   <input
                     type="radio"
@@ -166,7 +175,11 @@ export function NewWabbForm({ folderId, onClose, onCreated }: Props) {
           <div>
             <label className="block text-sm text-white/60 mb-2">Mode</label>
             <div className="grid grid-cols-2 gap-2">
-              <label className="glass-button text-center cursor-pointer text-sm has-[:checked]:bg-white/20 has-[:checked]:border-white/40">
+              <label className={`text-center cursor-pointer text-sm border rounded-xl px-4 py-2 transition-all duration-700 hover:scale-[1.02] ${
+                collaboration === 'solo'
+                  ? 'bg-white/20 border-white/40 text-white'
+                  : 'bg-white/10 border-white/20 text-white hover:bg-white/20'
+              }`}>
                 <input
                   type="radio"
                   value="solo"
@@ -175,7 +188,11 @@ export function NewWabbForm({ folderId, onClose, onCreated }: Props) {
                 />
                 Solo
               </label>
-              <label className="glass-button text-center cursor-pointer text-sm has-[:checked]:bg-white/20 has-[:checked]:border-white/40">
+              <label className={`text-center cursor-pointer text-sm border rounded-xl px-4 py-2 transition-all duration-700 hover:scale-[1.02] ${
+                collaboration === 'team'
+                  ? 'bg-white/20 border-white/40 text-white'
+                  : 'bg-white/10 border-white/20 text-white hover:bg-white/20'
+              }`}>
                 <input
                   type="radio"
                   value="team"

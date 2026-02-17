@@ -1,5 +1,6 @@
 import { useParams, Link } from 'react-router-dom'
 import { useState, useEffect } from 'react'
+import { useAuth } from '@/hooks/useAuth'
 import { useCollection } from '@/hooks/useCollection'
 import { useRanking } from '@/hooks/useRanking'
 import { useRankingStore } from '@/stores/rankingStore'
@@ -7,10 +8,12 @@ import { useLayoutStore } from '@/stores/layoutStore'
 import { RecordCard } from '@/components/ranking/RecordCard'
 import { RankingControls } from '@/components/ranking/RankingControls'
 import { WabbSettingsPopup } from '@/components/wabb/WabbSettingsPopup'
-import type { RankingMode, QuaternaryLabels } from '@/types/app'
+import { AddRecordsModal } from '@/components/records/AddRecordsModal'
+import type { RankingMode, QuaternaryLabels, OutputType } from '@/types/app'
 
 export function WabbPage() {
   const { id } = useParams<{ id: string }>()
+  const { user } = useAuth()
   const {
     collection,
     records,
@@ -26,17 +29,27 @@ export function WabbPage() {
   const { submitScore, submitChoice, submitting } = useRanking(id)
   const { currentRecordIndex, setCollection: setStoreCollection, nextRecord, previousRecord } =
     useRankingStore()
-  const { settingsOpen, toggleSettings, setWabbContext, clearWabbContext } = useLayoutStore()
+  const { settingsOpen, addRecordsOpen, canAddRecords, toggleSettings, toggleAddRecords, setWabbContext, clearWabbContext } = useLayoutStore()
   const [navigatedToFirst, setNavigatedToFirst] = useState(false)
 
   // Push wabb context to layout store for TopBar
   useEffect(() => {
-    if (collection && id) {
+    if (collection && id && user) {
       const counter = `${Math.min(rankedCount + 1, totalCount)} of ${totalCount}`
-      setWabbContext(collection.title, counter, id)
+      const collabs = (collection as any).collaborators as Array<{ user_id: string; role: string }> | undefined
+      const userRole = collabs?.find((c) => c.user_id === user.id)?.role
+      const canAdd = userRole === 'owner' || userRole === 'contributor'
+      setWabbContext({
+        title: collection.title,
+        counter,
+        wabbId: id,
+        outputType: collection.output_type as OutputType,
+        currentWindow: collection.current_window,
+        canAddRecords: canAdd,
+      })
     }
     return () => clearWabbContext()
-  }, [collection?.title, rankedCount, totalCount, id])
+  }, [collection?.title, rankedCount, totalCount, id, user])
 
   // Initialize store when collection loads
   useEffect(() => {
@@ -103,6 +116,15 @@ export function WabbPage() {
         {settingsOpen && (
           <WabbSettingsPopup collectionId={id!} onClose={toggleSettings} />
         )}
+        {addRecordsOpen && (
+          <AddRecordsModal
+            collectionId={id!}
+            outputType={collection.output_type as OutputType}
+            currentWindow={collection.current_window}
+            onClose={toggleAddRecords}
+            onRecordsAdded={reload}
+          />
+        )}
       </>
     )
   }
@@ -114,13 +136,30 @@ export function WabbPage() {
         <div className="flex items-center justify-center h-full">
           <div className="glass-card p-12 text-center max-w-md">
             <h2 className="text-2xl font-bold mb-3">{collection.title}</h2>
-            <p className="text-white/60">
+            <p className="text-white/60 mb-3">
               No records yet. Add content to start ranking.
             </p>
+            {canAddRecords && (
+              <button
+                onClick={toggleAddRecords}
+                className="glass-button px-6 py-2"
+              >
+                Add Records
+              </button>
+            )}
           </div>
         </div>
         {settingsOpen && (
           <WabbSettingsPopup collectionId={id!} onClose={toggleSettings} />
+        )}
+        {addRecordsOpen && (
+          <AddRecordsModal
+            collectionId={id!}
+            outputType={collection.output_type as OutputType}
+            currentWindow={collection.current_window}
+            onClose={toggleAddRecords}
+            onRecordsAdded={reload}
+          />
         )}
       </>
     )
@@ -195,6 +234,17 @@ export function WabbPage() {
       {/* Settings popup */}
       {settingsOpen && (
         <WabbSettingsPopup collectionId={id!} onClose={toggleSettings} />
+      )}
+
+      {/* Add records modal */}
+      {addRecordsOpen && collection && (
+        <AddRecordsModal
+          collectionId={id!}
+          outputType={collection.output_type as OutputType}
+          currentWindow={collection.current_window}
+          onClose={toggleAddRecords}
+          onRecordsAdded={reload}
+        />
       )}
     </>
   )

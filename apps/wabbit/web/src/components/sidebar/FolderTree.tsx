@@ -23,7 +23,7 @@ import type { Database } from '@/types/database'
 type Folder = Database['public']['Tables']['folders']['Row']
 type Collection = Database['public']['Tables']['collections']['Row']
 
-export function FolderTree() {
+export function FolderTree({ refreshKey }: { refreshKey?: number }) {
   const [folders, setFolders] = useState<Folder[]>([])
   const [collections, setCollections] = useState<Collection[]>([])
   const [loading, setLoading] = useState(true)
@@ -41,7 +41,7 @@ export function FolderTree() {
     setLoading(false)
   }, [])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => { load() }, [load, refreshKey])
 
   // Filter collections
   let filtered = collections

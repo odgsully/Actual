@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom'
 export function Sidebar() {
   const { user, signOut } = useAuth()
   const [showNewWabb, setShowNewWabb] = useState(false)
+  const [refreshKey, setRefreshKey] = useState(0)
   const navigate = useNavigate()
 
   return (
@@ -20,7 +21,7 @@ export function Sidebar() {
 
         {/* Folder tree with search/filters */}
         <div className="flex-1 overflow-y-auto">
-          <FolderTree />
+          <FolderTree refreshKey={refreshKey} />
         </div>
 
         {/* New Wabb button */}
@@ -65,6 +66,7 @@ export function Sidebar() {
           onClose={() => setShowNewWabb(false)}
           onCreated={(id) => {
             setShowNewWabb(false)
+            setRefreshKey((k) => k + 1)
             navigate(`/wabb/${id}`)
           }}
         />

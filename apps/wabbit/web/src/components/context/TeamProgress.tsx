@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import { useRealtime } from '@/hooks/useRealtime'
 
 interface Collaborator {
@@ -34,17 +35,18 @@ export function TeamProgress({
   currentRecordRankings,
   onRankingCountsChange,
 }: Props) {
-  // Live updates: increment ranking counts when new rankings arrive
+  // Track counts internally via ref to avoid stale closure over rankingCounts prop
+  const countsRef = useRef(rankingCounts)
+  countsRef.current = rankingCounts
+
+  // Live updates: increment ranking counts on INSERT only (upsert fires INSERT on first ranking)
   useRealtime(
     'rankings',
     `collection_id=eq.${collectionId}`,
     (payload) => {
-      if (
-        onRankingCountsChange &&
-        (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE')
-      ) {
+      if (onRankingCountsChange && payload.eventType === 'INSERT') {
         const userId = (payload.new as { user_id: string }).user_id
-        const updated = new Map(rankingCounts)
+        const updated = new Map(countsRef.current)
         updated.set(userId, (updated.get(userId) ?? 0) + 1)
         onRankingCountsChange(updated)
       }

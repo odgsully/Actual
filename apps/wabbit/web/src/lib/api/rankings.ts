@@ -30,6 +30,6 @@ export async function getUserRankings(collectionId: string, userId: string) {
 export async function getRecordRankings(recordId: string) {
   return supabase
     .from('rankings')
-    .select('*, profiles(display_name, avatar_url)')
+    .select('*')
     .eq('record_id', recordId)
 }
