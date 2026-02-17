@@ -1320,6 +1320,31 @@ export const LOCAL_TILES: Tile[] = [
     "actionDesc": null,
     "priority": "1",
     "typeII": "Logic"
+  },
+  {
+    "id": "local-context-dump",
+    "name": "Context Dump",
+    "menu": [
+      "Org",
+      "Software"
+    ],
+    "status": "In progress",
+    "desc": "Daily context dump — goals + clarifying questions about the monorepo. Tracked in Supabase, committed to GitHub.",
+    "shadcn": [
+      "Form",
+      "Logic"
+    ],
+    "phase": [
+      "GS Site Standing"
+    ],
+    "thirdParty": [
+      "GitHub",
+      "Logic"
+    ],
+    "actionWarning": false,
+    "actionDesc": null,
+    "priority": "1",
+    "typeII": "Form"
   }
 ];
 

@@ -1,9 +1,18 @@
 # GS-CRM Cleanup & Restructure Plan
 
 > **Created:** 2026-02-15
+> **Revised:** 2026-02-16 — Audit fixes applied (see below)
 > **Status:** Plan - Not yet executed
 > **Risk Level:** Low-Medium (file moves + reference updates, minimal code changes)
 > **Verified:** All file references grep-verified across codebase by 5 parallel subagents
+>
+> ### Audit Fixes Applied (2026-02-16)
+> 1. **Phase 2:** Added 5 missed script path updates (`test-visualizer-diagnostic.mjs`, `validate-pdf-fix.mjs`, `test-breakups-pipeline.mjs` `__dirname` ref). Total: 5 → 10 path updates.
+> 2. **Phase 1:** Corrected .md count from 71 to 68 (71 is the total including README/SKILLS/cleantime). Added `SKILLS 2.md` duplicate.
+> 3. **Phase 3:** Renamed `test-data/` → `ref/test-samples/` for monorepo consistency (no sibling app uses `test-data/`).
+> 4. **Phase 4E:** Added required `git rm --cached` step for `mcao-upload-temp/` (3 CSVs are already tracked in git).
+> 5. **Tech Debt #3:** Promoted hardcoded absolute path in `generate-excel/route.ts:32` to PRODUCTION BUG severity.
+> 6. **Phase 2:** Added CWD-dependency notes for `check-all-sheets.mjs` and `check-excel-sheets.mjs`.
 
 ---
 
@@ -54,7 +63,9 @@ These are documentation comments only - moving the folder won't break runtime. U
 
 ## Current Root Inventory (Verified Exact)
 
-### Markdown Files — 71 files (excluding README.md, SKILLS.md, cleantime-gscrm.md)
+### Markdown Files — 68 files to move (71 total root .md files minus README.md, SKILLS.md, cleantime-gscrm.md)
+
+> **Note:** `SKILLS 2.md` (duplicate with space in name) also exists in root — move to `docs/archive/` or delete.
 
 ```
 ANALYSIS_SHEET_FIX.md
@@ -138,15 +149,17 @@ BREAKUPS_PACKAGER_FLOW.txt
 check-all-sheets.mjs
 check-excel-sheets.mjs
 test-breakups-pdf.mjs          ⚠️ Has ./lib/ import (1 path to update)
-test-breakups-pipeline.mjs     ⚠️ Has ./lib/ imports (4 paths to update)
+test-breakups-pipeline.mjs     ⚠️ Has ./lib/ imports (4 paths to update) + __dirname ref to gsrealty-client-template.xlsx (line 34)
 test-pdf-fix.mjs
 test-pdf-generation.mjs
 test-pdf-lib.mjs
 test-reportit.mjs
 test-single-chart.mjs
-test-upload-with-logs.sh       ⚠️ References Complete_TestUpload_2025-10-29-1226.xlsx
-test-visualizer-diagnostic.mjs
-validate-pdf-fix.mjs
+test-upload-with-logs.sh       ⚠️ References Complete_TestUpload_2025-10-29-1226.xlsx + cd's to $(dirname "$0")
+test-visualizer-diagnostic.mjs ⚠️ Has ./lib/ import (1 path to update — line 79)
+validate-pdf-fix.mjs           ⚠️ Has ./lib/ import (line 144) + __dirname lib/ path (line 55) — 2 paths to update
+check-all-sheets.mjs           ⚠️ CWD-dependent: calls checkExcel('gsrealty-client-template.xlsx') — must run from app root
+check-excel-sheets.mjs         ⚠️ CWD-dependent: same bare filename pattern — must run from app root
 ```
 
 ### Excel Files (.xlsx) — 7 files
@@ -249,8 +262,12 @@ apps/gs-crm/
 ├── public/                       # Static assets (unchanged)
 ├── ref/                          # Reference materials (expanded)
 │   ├── r1-crm/                   # CRM reference screenshots (existing)
+│   ├── apn-cache/                # APN cache CSVs (was APN/)
 │   ├── examples/                 # Data overlap examples (was data-overlap/)
 │   ├── templates/                # Dashboard template (was new-template/)
+│   ├── test-samples/             # Test fixture data (was test-data/ — renamed for monorepo consistency)
+│   │   ├── mcao-samples/         # MCAO test xlsx files
+│   │   └── uploads/              # Test upload xlsx files
 │   └── wabbit-re-archive/        # Old wabbit-re migrations + scripts
 ├── scrape_3rd/                   # Python scrapers (unchanged)
 ├── scripts/                      # Utility scripts (expanded with root test scripts)
@@ -293,7 +310,7 @@ apps/gs-crm/
 
 **Impact:** Zero. Markdown/docx files are not imported by any code.
 **Exception:** 3 JSDoc `@see` comments reference `DOCUMENTATION/` paths — update these after moving.
-**Files moved:** 71 markdown + 1 txt + 1 docx + 19 from DOCUMENTATION/ + 3 from safety-docs/ = **95 files**
+**Files moved:** 68 markdown + 1 txt + 1 docx + 19 from DOCUMENTATION/ + 3 from safety-docs/ + 1 duplicate (SKILLS 2.md) = **93 files**
 
 ### 1A. Create docs/ directory structure
 
@@ -483,32 +500,32 @@ After moving DOCUMENTATION/, update these comments:
 - [ ] Grep `DOCUMENTATION/` in .ts/.tsx files — should return 0 results after @see updates
 - [ ] `DOCUMENTATION/` and `safety-docs/` directories are empty and removed
 
-**Phase 1 total: 91 files moved, 3 comment updates, 2 directories removed**
+**Phase 1 total: 93 files moved (corrected from 91), 3 comment updates, 2 directories removed**
 
 ---
 
 ## Phase 2: Test Script Organization (Very Low Risk)
 
 **Impact:** These scripts are standalone `.mjs`/`.sh` files not registered in `package.json` scripts. Not imported by app code. Not run by CI.
-**Code changes required:** 5 import path updates in 2 files, 1 file path update in 1 file.
+**Code changes required:** 10 import/path updates in 4 files, 1 file path update in 1 file. 2 additional scripts are CWD-dependent (no code change needed but must be run from app root).
 **Files moved:** 12 scripts
 
 ### 2A. Move all root test scripts → scripts/
 
 | File | Destination | Path Updates Needed |
 |------|-------------|-------------------|
-| `check-all-sheets.mjs` | `scripts/` | None (only npm imports) |
-| `check-excel-sheets.mjs` | `scripts/` | None (only npm imports) |
+| `check-all-sheets.mjs` | `scripts/` | None (but CWD-dependent — calls `checkExcel('gsrealty-client-template.xlsx')` at line 39, must be run from app root) |
+| `check-excel-sheets.mjs` | `scripts/` | None (but CWD-dependent — same bare filename pattern at line 39, must be run from app root) |
 | `test-breakups-pdf.mjs` | `scripts/` | **1 update:** `./lib/processing/breakups-pdf-generator.ts` → `../lib/processing/breakups-pdf-generator.ts` |
-| `test-breakups-pipeline.mjs` | `scripts/` | **4 updates:** all `./lib/` → `../lib/` (lines ~20, 23, 26, 29) |
+| `test-breakups-pipeline.mjs` | `scripts/` | **5 updates:** all `./lib/` → `../lib/` (lines ~20, 23, 26, 29) + `__dirname` ref to `gsrealty-client-template.xlsx` at line 34 → `join(__dirname, '..', 'gsrealty-client-template.xlsx')` |
 | `test-pdf-fix.mjs` | `scripts/` | None (uses absolute path + npm imports) |
 | `test-pdf-generation.mjs` | `scripts/` | None (only npm imports) |
 | `test-pdf-lib.mjs` | `scripts/` | None (only npm imports) |
 | `test-reportit.mjs` | `scripts/` | None (uses playwright + npm) |
 | `test-single-chart.mjs` | `scripts/` | None (only npm imports) |
-| `test-upload-with-logs.sh` | `scripts/` | **1 update:** `TEST_FILE` path from `"Complete_TestUpload_2025-10-29-1226.xlsx"` → `"../test-data/uploads/Complete_TestUpload_2025-10-29-1226.xlsx"` (only if Excel file also moves — see Phase 2B) |
-| `test-visualizer-diagnostic.mjs` | `scripts/` | None (only npm imports) |
-| `validate-pdf-fix.mjs` | `scripts/` | None (only node built-ins) |
+| `test-upload-with-logs.sh` | `scripts/` | **1 update:** `TEST_FILE` path from `"Complete_TestUpload_2025-10-29-1226.xlsx"` → `"../ref/test-samples/uploads/Complete_TestUpload_2025-10-29-1226.xlsx"` (only if Excel file also moves — see Phase 2B) |
+| `test-visualizer-diagnostic.mjs` | `scripts/` | **1 update:** `./lib/processing/breakups-visualizer.ts` → `../lib/processing/breakups-visualizer.ts` (line 79) |
+| `validate-pdf-fix.mjs` | `scripts/` | **2 updates:** `__dirname + 'lib/processing/breakups-pdf-generator.ts'` → `__dirname + '../lib/...'` (line 55) + `./lib/processing/breakups-pdf-generator.ts` → `../lib/...` (line 144) |
 
 ### 2B. Specific Path Updates Required
 
@@ -534,13 +551,42 @@ const { generateAllPDFReports } = await import('../lib/processing/breakups-pdf-g
 const { packageBreakupsReport } = await import('../lib/processing/breakups-packager.ts');
 ```
 
+**`test-breakups-pipeline.mjs` — 1 additional change (missed in original plan):**
+```javascript
+// Line ~34 — Before:
+const testFilePath = join(__dirname, 'gsrealty-client-template.xlsx');
+// After:
+const testFilePath = join(__dirname, '..', 'gsrealty-client-template.xlsx');
+```
+
+**`test-visualizer-diagnostic.mjs` — 1 change (missed in original plan):**
+```javascript
+// Line ~79 — Before:
+const { generateAllVisualizations } = await import('./lib/processing/breakups-visualizer.ts');
+// After:
+const { generateAllVisualizations } = await import('../lib/processing/breakups-visualizer.ts');
+```
+
+**`validate-pdf-fix.mjs` — 2 changes (missed in original plan):**
+```javascript
+// Line ~55 — Before:
+const generatorPath = path.join(__dirname, 'lib/processing/breakups-pdf-generator.ts');
+// After:
+const generatorPath = path.join(__dirname, '..', 'lib/processing/breakups-pdf-generator.ts');
+
+// Line ~144 — Before:
+const { generateAllPDFReports } = await import('./lib/processing/breakups-pdf-generator.ts');
+// After:
+const { generateAllPDFReports } = await import('../lib/processing/breakups-pdf-generator.ts');
+```
+
 ### 2C. Verification
 
 - [ ] `npm run build` succeeds (scripts/ is excluded from tsconfig)
 - [ ] Run `node scripts/test-breakups-pipeline.mjs` to verify updated paths work
 - [ ] No test scripts remain in root
 
-**Phase 2 total: 12 files moved, 5 import path updates**
+**Phase 2 total: 12 files moved, 10 import/path updates (was 5 — corrected after audit)**
 
 ---
 
@@ -549,19 +595,21 @@ const { packageBreakupsReport } = await import('../lib/processing/breakups-packa
 **Impact:** Excel files with runtime `process.cwd()` references MUST stay in root. Others are safe to move.
 **Files moved:** 3 Excel files. **Files deleted:** 2 junk files. **Files staying:** 3 (locked by code refs).
 
-### 3A. Create test-data/ directory
+### 3A. Create ref/test-samples/ directory
+
+> **Naming note:** Originally `test-data/` — renamed to `ref/test-samples/` after audit found no sibling app uses `test-data/`. All sibling apps (`wabbit-re`, `gs-site`, `wabbit`) use `ref/` for reference materials. This aligns with monorepo conventions.
 
 ```bash
-mkdir -p test-data/{mcao-samples,uploads}
+mkdir -p ref/test-samples/{mcao-samples,uploads}
 ```
 
 ### 3B. Move Excel files (only those with 0 code references)
 
 | File | Action | Reason |
 |------|--------|--------|
-| `MCAO_2025-11-13T23-20-16.xlsx` | Move → `test-data/mcao-samples/` | 0 code refs |
-| `APN_Grab_2025-11-13T23-20-16.xlsx` | Move → `test-data/mcao-samples/` | 0 code refs (note: code *generates* `APN_Grab_*.xlsx` dynamically but doesn't read this specific file) |
-| `Complete_TestUpload_2025-10-29-1226.xlsx` | Move → `test-data/uploads/` | Only ref is in `test-upload-with-logs.sh` (update path there) |
+| `MCAO_2025-11-13T23-20-16.xlsx` | Move → `ref/test-samples/mcao-samples/` | 0 code refs |
+| `APN_Grab_2025-11-13T23-20-16.xlsx` | Move → `ref/test-samples/mcao-samples/` | 0 code refs (note: code *generates* `APN_Grab_*.xlsx` dynamically but doesn't read this specific file) |
+| `Complete_TestUpload_2025-10-29-1226.xlsx` | Move → `ref/test-samples/uploads/` | Only ref is in `test-upload-with-logs.sh` (update path there) |
 | `Complete_TestUpload_$(date +%Y-%m-%d-%H%M).xlsx` | **DELETE** | Invalid filename — unresolved shell syntax, cannot be reliably referenced |
 | `~$gsrealty-client-template.xlsx` | **DELETE** | Excel lock/temp file — should never be committed |
 | `gs-crm-template.xlsx` | **🔒 STAYS IN ROOT** | `process.cwd()` reference in `lib/processing/template-populator.ts:884` |
@@ -641,14 +689,19 @@ mv APN/ ref/apn-cache/
 
 **Grep verification:** 0 matches for `APN/Cache`, `apn_master`, or `failed_lookups` in code files. Safe.
 
-### 4E. Handle mcao-upload-temp/ — Gitignore and delete contents
+### 4E. Handle mcao-upload-temp/ — Untrack from git, then delete
+
+> **IMPORTANT:** 3 CSV files inside are **already committed and tracked in git**. Simply adding to `.gitignore` will NOT untrack them. Must run `git rm --cached` first.
 
 ```bash
-# No code references this directory
+# Step 1: Untrack from git (keeps files on disk temporarily)
+git rm --cached -r mcao-upload-temp/
+
+# Step 2: Delete the directory
 rm -rf mcao-upload-temp/
 ```
 
-**Contents (3 CSV files):** `1mi-allcomps.csv`, `all-scopes.csv`, `v0-direct-comps.csv`
+**Contents (3 tracked CSV files):** `1mi-allcomps.csv`, `all-scopes.csv`, `v0-direct-comps.csv`
 
 **Grep verification:** 0 matches for `mcao-upload-temp` in code files. Safe to delete.
 
@@ -789,7 +842,8 @@ tsconfig.tsbuildinfo
 ### 6B. Verification
 
 - [ ] `git status` still shows expected tracked files
-- [ ] Newly ignored files (tmp/, test-results/, etc.) will stop being tracked on next commit
+- [ ] Newly ignored files (tmp/, test-results/, etc.) are already untracked — `.gitignore` is preventive
+- [ ] `mcao-upload-temp/` requires `git rm --cached` BEFORE gitignore takes effect (3 CSVs are tracked — see Phase 4E)
 - [ ] `.env.sample` is NOT ignored (allowlisted)
 
 **Phase 6 total: 1 file updated**
@@ -888,11 +942,15 @@ gs-crm directly queries 8 wabbit-re tables:
 
 gs-crm has its own Supabase client (`lib/supabase/`) rather than using `packages/supabase/`. Consider migrating for consistency.
 
-### 3. Hardcoded Absolute Paths
+### 3. Hardcoded Absolute Paths — PRODUCTION BUG
+
+> **Severity: HIGH.** `app/api/admin/upload/generate-excel/route.ts:32` uses a hardcoded dev-machine absolute path (`/Users/garrettsullivan/Desktop/‼️/RE/RealtyONE/MY LISTINGS/gs-crm-template.xlsx`) instead of `process.cwd()`. This endpoint is **broken in production** (Vercel) regardless of where the file sits in the repo. The test file has the same issue. Compare with `lib/processing/template-populator.ts:884` which correctly uses `path.join(process.cwd(), 'gs-crm-template.xlsx')`.
+>
+> **Recommended fix (separate PR):** Update `generate-excel/route.ts:32` to use `path.join(process.cwd(), 'gs-crm-template.xlsx')` to match the template-populator pattern.
 
 8+ files contain hardcoded paths to `/Users/garrettsullivan/Desktop/‼️/RE/RealtyONE/MY LISTINGS/`:
 - `lib/storage/config.ts:21`
-- `app/api/admin/upload/generate-excel/route.ts:32`
+- `app/api/admin/upload/generate-excel/route.ts:32` **← PRODUCTION BUG (broken on Vercel)**
 - `app/api/admin/upload/__tests__/subject-property-generation.test.ts:36`
 - `test-pdf-fix.mjs:15`
 - `scripts/inspect-excel.js:10`
@@ -914,7 +972,7 @@ gs-crm has its own Supabase client (`lib/supabase/`) rather than using `packages
 - [ ] Verify `npm run build` passes
 - [ ] Verify `npm test` passes
 
-### Phase 1: Documentation (91 files moved, 3 comment updates)
+### Phase 1: Documentation (93 files moved, 3 comment updates)
 
 - [ ] Create docs/ subdirectory structure
 - [ ] Move 26 archive/fix/session/weekly files → `docs/archive/`
@@ -929,18 +987,21 @@ gs-crm has its own Supabase client (`lib/supabase/`) rather than using `packages
 - [ ] Delete empty `DOCUMENTATION/` and `safety-docs/` directories
 - [ ] `npm run build` ✅
 
-### Phase 2: Test Scripts (12 files moved, 5 path updates)
+### Phase 2: Test Scripts (12 files moved, 10 path updates)
 
 - [ ] Move 12 test scripts → `scripts/`
 - [ ] Update `test-breakups-pdf.mjs` — 1 import path
-- [ ] Update `test-breakups-pipeline.mjs` — 4 import paths
+- [ ] Update `test-breakups-pipeline.mjs` — 4 import paths + 1 `__dirname` ref
+- [ ] Update `test-visualizer-diagnostic.mjs` — 1 import path
+- [ ] Update `validate-pdf-fix.mjs` — 2 paths (`__dirname` + import)
+- [ ] Verify `check-all-sheets.mjs` and `check-excel-sheets.mjs` work when run from app root
 - [ ] `npm run build` ✅
 
 ### Phase 3: Data Files (3 moved, 2 deleted, 3 stay)
 
-- [ ] Create `test-data/{mcao-samples,uploads}`
-- [ ] Move 2 MCAO xlsx → `test-data/mcao-samples/`
-- [ ] Move 1 test upload xlsx → `test-data/uploads/`
+- [ ] Create `ref/test-samples/{mcao-samples,uploads}`
+- [ ] Move 2 MCAO xlsx → `ref/test-samples/mcao-samples/`
+- [ ] Move 1 test upload xlsx → `ref/test-samples/uploads/`
 - [ ] Delete invalid-name xlsx
 - [ ] Delete Excel lock file
 - [ ] Confirm gs-crm-template.xlsx, Upload-template-PropertyRadar.xlsx, logo1.png stay in root
@@ -953,6 +1014,7 @@ gs-crm has its own Supabase client (`lib/supabase/`) rather than using `packages
 - [ ] Move `_migrations_WABBIT_RE_DO_NOT_USE/` → `ref/wabbit-re-archive/migrations/`
 - [ ] Move `_scripts_WABBIT_RE_DO_NOT_USE/` → `ref/wabbit-re-archive/scripts/`
 - [ ] Move `APN/` → `ref/apn-cache/`
+- [ ] `git rm --cached -r mcao-upload-temp/` (3 tracked CSVs must be untracked first)
 - [ ] Delete `mcao-upload-temp/`
 - [ ] `npm run build` ✅
 
@@ -986,10 +1048,10 @@ gs-crm has its own Supabase client (`lib/supabase/`) rather than using `packages
 
 | Metric | Count |
 |--------|-------|
-| **Files moved** | ~108 (91 docs + 12 scripts + 3 data + APN/data-overlap/etc.) |
+| **Files moved** | ~110 (93 docs + 12 scripts + 3 data + APN/data-overlap/etc.) |
 | **Files deleted** | 2 (invalid xlsx + lock file) |
 | **Directories eliminated from root** | 7 (DOCUMENTATION, safety-docs, data-overlap, new-template, _migrations_*, _scripts_*, mcao-upload-temp) |
-| **Code changes** | 8 (3 JSDoc comments + 5 script import paths) |
+| **Code changes** | 13 (3 JSDoc comments + 10 script import/path updates) |
 | **Config changes** | 1 (.gitignore expansion) |
 | **Files locked in root** | 3 (logo1.png, gs-crm-template.xlsx, Upload-template-PropertyRadar.xlsx) |
 | **Root files before** | ~105 non-config |

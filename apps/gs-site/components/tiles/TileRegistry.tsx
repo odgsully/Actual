@@ -259,6 +259,12 @@ const CodebaseLearnTile = dynamic(
   { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
 );
 
+// Context Dump tile (daily context + goals)
+const ContextDumpTile = dynamic(
+  () => import('./forms/ContextDumpTile').then(mod => ({ default: mod.ContextDumpTile })),
+  { loading: () => <TileSkeleton variant="form" />, ssr: false }
+);
+
 // Printoffs & KPIs tile (Phase 8 - consolidates print tiles)
 const PrintoffsKPIsTile = dynamic(
   () => import('./printoffs/PrintoffsKPIsTile').then(mod => ({ default: mod.PrintoffsKPIsTile })),
@@ -591,6 +597,13 @@ const SPECIALIZED_TILES: Array<{
   {
     match: (name) => name.toLowerCase().includes('socials scheduler'),
     component: ButtonTile,
+  },
+  // Context Dump tile - daily goals + clarifying questions
+  {
+    match: (name, tile) =>
+      tile?.id === 'local-context-dump' ||
+      name.toLowerCase() === 'context dump',
+    component: ContextDumpTile,
   },
   // Printoffs & KPIs tile - single consolidated tile
   {
