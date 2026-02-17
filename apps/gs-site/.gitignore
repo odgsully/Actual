@@ -44,5 +44,10 @@ next-env.d.ts
 /data/claude-stats/*.json
 !/data/claude-stats/.gitkeep
 *.vcf
-*.vcf
 .env*.local
+
+# Sensitive files
+ngrok_recovery_codes.txt
+
+# Temp outputs
+scheduler/output/
