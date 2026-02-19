@@ -86,6 +86,77 @@ High-value workflow automation for enterprise and agency workflows.
 
 ---
 
+## Remotion Integration — Programmatic Video Assembly (Phase 2+ Phase 5)
+
+> **Tier:** Pro+ (template assembly and ranking). Business for TikTok auto-publish.
+> **Feasibility:** 7.5/10. See `v2BUILD_PLAN.md` Phase 2+ Phase 5 for full technical spec.
+
+Remotion is a React-based programmatic video framework. The integration turns Wabbit into a **video assembly tool** where users rank candidate content for each scene slot in a multi-node video template, then ship the assembled composition to a render pipeline.
+
+### Why Remotion + Wabbit
+
+- Remotion compositions are React components with props — **config-driven by design**
+- `<Series>` chains scenes sequentially = maps 1:1 to an 8-node template timeline
+- `inputProps` + Zod schemas = the composition config JSON Wabbit generates is the render input
+- Wabbit's pairwise ranking solves creative selection paralysis — 4 candidate previews, pick the best, converge fast
+
+### Architecture
+
+```
+Wabbit App (rank candidates per node)
+    ↓ generates composition config JSON
+GitHub Repo (Remotion project + configs/)
+    ↓ push triggers GitHub Action or Lambda
+Remotion Render (serverless or CI)
+    ↓ output MP4 to S3/R2
+Wabbit App (preview, publish, analytics feedback)
+```
+
+### Key Components
+
+| Component | Technology | Purpose |
+|-----------|-----------|---------|
+| Template Engine | Remotion `<Composition>` + `<Series>` | Define multi-node video templates as React components |
+| Candidate Preview | Remotion `<Player>` or pre-rendered MP4 loops | 4-tile video preview in ranking UI |
+| AI Clip Generation | fal.ai (Kling v2.1, Veo 3, Wan 2.5) | Generate 3-8s video clips for node slots |
+| Config Push | Octokit (`repos.createOrUpdateFileContents`) | Ship composition config to GitHub render repo |
+| Render Pipeline | Remotion Lambda or GitHub Actions | Serverless video rendering from config JSON |
+| Asset Storage | S3 / Cloudflare R2 | Video clips, images referenced by URL in configs |
+
+### AI Video Generation Providers (via fal.ai)
+
+| Provider | Cost/5s | Quality | Best For |
+|----------|---------|---------|----------|
+| Kling v2.1 | $0.28 | High | Workhorse i2v — best cost/quality ratio |
+| Veo 3 Fast | $0.50 | Very High | Hero cinematic shots |
+| Wan 2.5 | $0.25 | Good | Budget batch, filler/background clips |
+
+Pipeline: Flux reference frame ($0.003) → Kling i2v animation ($0.28) = ~$0.30/node total.
+
+### Node Types
+
+`hook` | `text-animation` | `explanation` | `ai-video-clip` | `data-viz` | `b-roll` | `testimonial` | `cta` | `transition-card` | `screen-recording`
+
+### Existing Foundation
+
+- `apps/wabbit/studio/` — Remotion 4 project already scaffolded
+- `apps/wabbit/marketing/` — Shortform marketing scripts (content source)
+- Wave 2 Quaternary ranking mode — maps directly to 4-candidate video ranking
+- Wave 6 record upload pipeline — reusable for video asset ingestion
+
+### Tier Gating
+
+| Feature | Tier |
+|---------|------|
+| Template browsing & preview | Free |
+| Node-by-node ranking (up to 3 templates) | Free |
+| Unlimited templates + AI clip generation | Pro ($29/mo) |
+| Ship-to-GitHub + auto-render | Pro ($29/mo) |
+| Team template collaboration + RAVG | Team ($149/mo) |
+| TikTok auto-publish + analytics feedback | Business ($299/mo) |
+
+---
+
 ## Future Integrations (No Tier Assigned Yet)
 
 Listed for reference. Tier assignment will be determined during scoping.
@@ -219,7 +290,8 @@ These are APIs and methods that **populate records** into Wabbs:
 |--------|-------------|-------------------|
 | **AI Agents** (Claude Code, GPT, Custom) | Any | `wabbit_launch_ranking` MCP tool — agent proactively creates Wabb + populates records + sends magic link |
 | AI Image Models (DALL-E, Midjourney, Stable Diffusion) | Images | API / webhook on generation |
-| AI Video Models (Sora, Runway) | Video | API / webhook |
+| AI Video Models (Kling, Veo 3, Wan via fal.ai) | Video | fal.ai unified SDK — async polling/webhook |
+| **Remotion** | Video (assembled) | Config-driven composition render — Lambda or GitHub Actions |
 | AI Text Models (GPT, Claude) | Copy/text | API |
 | Manual Upload | Any | User drag-and-drop |
 | Bulk Upload | Any | Multiple files → multiple records |

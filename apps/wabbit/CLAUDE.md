@@ -62,7 +62,7 @@ All three consumer layers (Web App, MCP, OpenClaw) connect directly to Supabase.
 | 5 | Integrations | ❌ 0% | OpenClaw skills, MCP server (incl. `wabbit_launch_ranking`), agent onboarding, magic links |
 | 6 | Record Population | ✅ Done | Upload UI, records API (createRecordWithAsset, bulkCreateRecords), manage-windows edge fn (jump-to-correct-window). Known: duration change retroactive |
 | 7 | Monetization | ❌ 0% | Stripe subscriptions, feature gates, usage metering, upgrade prompts |
-| Phase 2+ | Mobile & Advanced | — | iOS native (SwiftUI, free all tiers), Timeline Rank mode, real-time notifications |
+| Phase 2+ | Mobile & Advanced | — | iOS native (SwiftUI, free all tiers), Timeline Rank mode, Remotion video assembly (8-node templates + fal.ai), real-time notifications |
 
 ## Database
 

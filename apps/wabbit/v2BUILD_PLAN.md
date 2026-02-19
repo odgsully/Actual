@@ -1886,7 +1886,172 @@ CREATE POLICY "Users see own storage" ON storage_usage FOR SELECT USING (auth.ui
 - Mobile P2P payment features
 - Template library with marketplace ("Crowd Coffees")
 
-### Phase 5: Advanced (2028+)
+### Phase 5: Remotion Video Assembly (2027–2028)
+
+> **Feasibility: 7.5/10** — Core loop (template → rank nodes → ship → render) is highly feasible with existing tools. Remotion's `<Series>` + `inputProps` + Zod schemas are a native fit. The harder parts are UX polish and the analytics feedback loop.
+
+**Concept:** Programmatic TikTok/shortform video assembly using Wabbit's ranking engine. An 8-node video template where each node is a scene slot (hook, explanation, AI clip, data viz, CTA). Users rank candidate content for each slot using the 4-tile interface, then ship the assembled composition to a Remotion render pipeline.
+
+**Why Wabbit + Remotion:** Wabbit's pairwise ranking is better than direct selection for creative content. Seeing 4 candidates and picking the best converges on preferences users couldn't articulate upfront. The template (not the individual video) becomes the product — ranking data across users creates a feedback loop that identifies which hooks, CTAs, and transitions perform best.
+
+#### 8-Node Template Structure
+
+```
+[Hook 3s] → [Problem 4s] → [Solution 5s] → [AI Demo 4s] → [Feature 3s] → [Feature 3s] → [Social Proof 4s] → [CTA 4s]
+```
+
+Each node has a **type** and a **candidate pool** ranked via ELO:
+
+| Node Type | Description | Content Source |
+|-----------|-------------|----------------|
+| `hook` | Attention-grabbing opener (first 1-3s) | Remotion components, AI clips |
+| `text-animation` | Kinetic typography | Remotion components |
+| `explanation` | Animated diagram/graphic | Remotion components |
+| `ai-video-clip` | AI-generated video (3-8s) | Kling, Veo 3, Wan via fal.ai |
+| `data-viz` | Chart animation, stat counter | Remotion components |
+| `b-roll` | Stock/generated ambient footage | AI generation, media library |
+| `testimonial` | Quote card or video testimonial | Upload, Remotion components |
+| `cta` | Call to action closer | Remotion components |
+
+#### Wabbit UI Adaptation
+
+```
+Template Timeline (top bar — 8 nodes, active one highlighted)
+┌──────┬──────┬──────┬──────┬──────┬──────┬──────┬──────┐
+│ Hook │ Text │ Demo │  AI  │ Feat │ Feat │Proof │ CTA  │
+│  ✅  │  ✅  │  🔄  │  ○   │  ○   │  ○   │  ○   │  ○   │
+└──────┴──────┴──────┴──────┴──────┴──────┴──────┴──────┘
+
+4-Tile Ranking (each tile plays a looping candidate preview)
+┌────────────┐  ┌────────────┐
+│ Candidate A│  │ Candidate B│
+│  (playing) │  │  (playing) │
+│  ELO: 1520 │  │  ELO: 1480 │
+└────────────┘  └────────────┘
+┌────────────┐  ┌────────────┐
+│ Candidate C│  │ Candidate D│
+│  (playing) │  │  (playing) │
+│  ELO: 1510 │  │  ELO: 1495 │
+└────────────┘  └────────────┘
+```
+
+- **Swipe up / tap**: "This one wins" (same as standard ranking)
+- **Long press**: Full-screen preview with audio
+- **Pinch out**: See candidate in context of full assembled timeline
+- **"Preview Full"**: Plays all current winners stitched together
+
+#### Remotion Technical Architecture
+
+Remotion compositions map 1:1 to templates. Each node in the `scenes[]` array resolves to a React component:
+
+```typescript
+// Config JSON shipped to render pipeline
+{
+  "compositionId": "product-launch-v2",
+  "templateId": "tmpl_abc123",
+  "render": { "width": 1080, "height": 1920, "fps": 30 },
+  "nodes": [
+    {
+      "index": 0, "type": "hook",
+      "component": "TextRevealHook",
+      "durationFrames": 90,
+      "props": { "headline": "You're leaving money on the table." }
+    },
+    {
+      "index": 3, "type": "ai-video-clip",
+      "component": "MediaPlayer",
+      "durationFrames": 150,
+      "props": { "src": "https://cdn.example.com/gen_xyz789.mp4" }
+    }
+  ]
+}
+```
+
+**Remotion features used:**
+- `<Series>` chains nodes sequentially (no manual frame math)
+- `<TransitionSeries>` for animated transitions between nodes
+- `inputProps` + Zod schema validates the config at render time
+- `calculateMetadata()` computes total duration from node array
+- `<Player>` renders live in-browser previews (for candidate tiles)
+
+#### Ship-to-GitHub Flow
+
+1. User hits "Ship It" → composition config JSON generated
+2. Octokit pushes `configs/{templateId}.json` to Remotion render repo
+3. GitHub Action triggered via `paths: ["configs/**.json"]` filter
+4. Action runs `renderMedia()` with config as `inputProps`
+5. Output MP4 → S3/R2 → webhook notifies Wabbit app
+6. Template ID preserved for versioning, remixing, analytics
+
+**Alternative (faster):** Call `renderMediaOnLambda()` directly from an API route for serverless rendering (~10-30s cold start vs ~60s for GitHub runner). Still commit config to GitHub for version history.
+
+#### AI Video Generation for Nodes
+
+Use **fal.ai as unified gateway** (single SDK, all models, consistent async pattern):
+
+| Provider | Model | Cost/5s Clip | Time | Use Case |
+|----------|-------|-------------|------|----------|
+| Kling (fal.ai) | v2.1 Standard | $0.28 | 60-120s | Workhorse i2v — best cost/quality |
+| Veo 3 (fal.ai) | Fast | $0.50 | 60-120s | Hero cinematic shots |
+| Wan (fal.ai) | 2.5 | $0.25 | 30-90s | Budget batch / filler clips |
+
+**Pipeline:** Generate reference frame with Flux ($0.003) → Animate with Kling i2v ($0.28) → Total per node: ~$0.30. All providers support 9:16 aspect ratio natively.
+
+Candidates generate in background and drop into the Wabbit ranking pool as they complete — start ranking library candidates immediately, AI clips appear as they finish.
+
+#### Key Technical Challenges
+
+| Challenge | Severity | Mitigation |
+|-----------|----------|------------|
+| 4 simultaneous video previews | High | Pre-render candidate previews as short MP4 loops at 480p; live Player only for expanded view |
+| Node coherence (jarring assembled video) | Medium | AI coherence scoring on full assembly, template "mood curves," transition intelligence |
+| AI generation latency (30-120s) | Medium | Pre-generate common prompts when template selected; async pool expansion during ranking |
+| Asset management across systems | Medium | S3/R2 with public URLs referenced in config JSON; never put video files in Git |
+| Component prop compatibility | Low | Component registry JSON in Remotion repo; Wabbit fetches available components + schemas |
+
+#### Feasibility Breakdown
+
+| Component | Score | Notes |
+|-----------|:-----:|-------|
+| Remotion 8-node template system | 9/10 | Native fit — Series + inputProps + Zod |
+| Wabbit 4-tile ranking for video | 7/10 | UI adaptation moderate; 4-preview rendering is the hard part |
+| AI video generation (fal.ai/Kling) | 8/10 | APIs mature, unified via fal.ai |
+| Ship-to-GitHub with template ID | 9/10 | Octokit + GitHub Actions is battle-tested |
+| Remotion Lambda auto-render | 8/10 | Well-documented, production-grade |
+| Full template preview (stitched) | 7/10 | Remotion Player can do it; needs perf management on mobile |
+| TikTok publish API | 6/10 | API exists but has approval requirements |
+| Analytics feedback loop | 5/10 | TikTok analytics API limited; may need manual reporting initially |
+
+#### End-to-End Workflow
+
+1. **Template Selection** (2 min) — Browse template library or create from scratch
+2. **Content Population** (5-15 min) — Auto-populate candidate pools from library + generate AI candidates
+3. **Node-by-Node Ranking** (5-10 min) — 4-tile ranking per node, ~8-15 swipes each to converge
+4. **Assembly Refinement** (3-5 min) — Full preview, reorder nodes, adjust timing/transitions
+5. **Ship** (1 min) — Config → GitHub → render (30s-3min depending on complexity)
+6. **Publish** (30s) — One-click TikTok publish or download MP4
+7. **Feedback Loop** — Performance data feeds back into template and node ELO rankings
+
+#### Existing Foundation
+
+- `apps/wabbit/studio/` — Remotion 4 project already scaffolded (see Undocumented Additions)
+- `apps/wabbit/marketing/` — Shortform marketing scripts (content source for templates)
+- Wave 2 4-tile ranking modes — Quaternary mode maps directly to 4-candidate video ranking
+- Wave 6 record upload pipeline — Reusable for video asset ingestion
+
+#### New Environment Variables
+
+| Variable | Sensitive | Purpose |
+|----------|-----------|---------|
+| `FAL_AI_API_KEY` | Yes | fal.ai unified video generation gateway |
+| `REMOTION_GITHUB_PAT` | Yes | GitHub PAT for Octokit config push |
+| `REMOTION_REPO_OWNER` | No | GitHub org/user for render repo |
+| `REMOTION_REPO_NAME` | No | GitHub repo name for Remotion project |
+| `AWS_ACCESS_KEY_ID` | Yes | Remotion Lambda rendering (if using Lambda path) |
+| `AWS_SECRET_ACCESS_KEY` | Yes | Remotion Lambda rendering (if using Lambda path) |
+| `REMOTION_S3_BUCKET` | No | S3/R2 bucket for rendered output |
+
+### Phase 6: Advanced (2028+)
 
 - 3D content creation tooling
 - Robotics integration for automated capture
