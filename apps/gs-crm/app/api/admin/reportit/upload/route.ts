@@ -200,30 +200,37 @@ function generateSTRAnalysisInsight(result: any): string {
 }
 
 /**
- * Analysis 4: RENOVATE_SCORE Impact (Y vs N vs 0.5)
+ * Analysis 4: Renovation Score Impact (High/Mid/Low tiers, 1-10 scale)
  * Includes recommendation if premium is significant
  */
 function generateRenovationImpactInsight(result: any): string {
   if (!result) return 'Renovation impact data is not available.';
 
-  const totalProps = (result.Y?.count || 0) + (result.N?.count || 0) + (result['0.5']?.count || 0);
+  const high = result.High || result.Y || {};
+  const mid = result.Mid || result['0.5'] || {};
+  const low = result.Low || result.N || {};
+  const totalProps = (high.count || 0) + (mid.count || 0) + (low.count || 0);
+  const premiumHigh = result.premiumHighvsLow ?? result.premiumYvsN ?? 0;
+  const premiumMid = result.premiumMidvsLow ?? result.premium05vsN ?? 0;
 
-  let insight = `Of ${totalProps} properties analyzed, ${result.N?.count || 0} are original condition, `;
-  insight += `${result['0.5']?.count || 0} have partial updates, and ${result.Y?.count || 0} are fully renovated. `;
+  let insight = `Of ${totalProps} properties analyzed: `;
+  insight += `${low.count || 0} score low (avg ${(low.avgScore || 0).toFixed(1)}/10), `;
+  insight += `${mid.count || 0} score mid (avg ${(mid.avgScore || 0).toFixed(1)}/10), `;
+  insight += `${high.count || 0} score high (avg ${(high.avgScore || 0).toFixed(1)}/10). `;
 
-  insight += `Fully renovated homes command $${(result.Y?.avgPricePerSqft || 0).toFixed(0)}/sqft vs `;
-  insight += `$${(result.N?.avgPricePerSqft || 0).toFixed(0)}/sqft for original condition—`;
-  insight += `a ${(result.premiumYvsN || 0).toFixed(1)}% premium worth $${((result.Y?.avgPrice || 0) - (result.N?.avgPrice || 0)).toFixed(0)} on average. `;
+  insight += `High-condition homes command $${(high.avgPricePerSqft || 0).toFixed(0)}/sqft vs `;
+  insight += `$${(low.avgPricePerSqft || 0).toFixed(0)}/sqft for low-condition—`;
+  insight += `a ${premiumHigh.toFixed(1)}% premium worth $${((high.avgPrice || 0) - (low.avgPrice || 0)).toFixed(0)} on average. `;
 
-  if ((result['0.5']?.count || 0) > 0) {
-    insight += `Partial renovations yield $${(result['0.5']?.avgPricePerSqft || 0).toFixed(0)}/sqft `;
-    insight += `(${(result.premium05vsN || 0).toFixed(1)}% premium), demonstrating strong ROI for cosmetic improvements.`;
+  if ((mid.count || 0) > 0) {
+    insight += `Mid-range renovations yield $${(mid.avgPricePerSqft || 0).toFixed(0)}/sqft `;
+    insight += `(${premiumMid.toFixed(1)}% premium), demonstrating strong ROI for cosmetic improvements.`;
   }
 
   // Add recommendation if premium is significant
-  if ((result.premiumYvsN || 0) > 15) {
-    insight += `\n\n**RECOMMENDATION:** With a ${(result.premiumYvsN || 0).toFixed(1)}% renovation premium, `;
-    insight += `buyers acquiring original-condition properties should model improvement costs of $30-50/sqft `;
+  if (premiumHigh > 15) {
+    insight += `\n\n**RECOMMENDATION:** With a ${premiumHigh.toFixed(1)}% renovation premium, `;
+    insight += `buyers acquiring low-condition properties should model improvement costs of $30-50/sqft `;
     insight += `for kitchen/bath updates to capture this value spread.`;
   }
 
@@ -776,8 +783,11 @@ function generateExpectedNOIInsight(result: any): string {
 
   const capRatePct = ((result.capRate || 0) * 100).toFixed(2);
   const cashOnCash = (result.capRate || 0) * 1.3; // Rough estimate assuming 75% LTV
+  const renoContext = result.renoScore
+    ? ` (renovation score ${result.renoScore}/10, ${result.renoRecency || 'Mid'} recency, ${((result.multiplierUsed || 0) * 100).toFixed(2)}% rate)`
+    : '';
 
-  let insight = `Leasing this property at $${(result.monthlyRent || 0).toFixed(0)}/month generates `;
+  let insight = `Leasing this property at $${(result.monthlyRent || 0).toFixed(0)}/month${renoContext} generates `;
   insight += `$${(result.annualIncome || 0).toFixed(0)} in annual gross income. After operating expenses of `;
   insight += `$${(result.operatingExpenses || 0).toFixed(0)} (35% of income for property tax, insurance, `;
   insight += `maintenance, vacancy), annual NOI is $${(result.annualNOI || 0).toFixed(0)}. `;
@@ -814,12 +824,15 @@ function generateImprovedNOIInsight(result: any): string {
   const noiIncreasePct = result.currentNOI ? ((result.noiIncrease / result.currentNOI) * 100).toFixed(1) : '0';
   const roiPct = (result.roi || 0).toFixed(1);
 
-  let insight = `Upgrading from original condition (N) to partial renovation (0.5 score) increases `;
+  const fromScore = result.currentScore ?? 2;
+  const toScore = result.improvedScore ?? 5;
+
+  let insight = `Upgrading renovation score from ${fromScore}/10 to ${toScore}/10 increases `;
   insight += `annual NOI from $${(result.currentNOI || 0).toFixed(0)} to $${(result.improvedNOI || 0).toFixed(0)}—`;
   insight += `a $${(result.noiIncrease || 0).toFixed(0)} gain (${noiIncreasePct}%). `;
 
-  insight += `With estimated improvement costs of $${(result.improvementCost || 0).toFixed(0)} `;
-  insight += `(paint, flooring, updated fixtures), the payback period is ${(result.paybackPeriod || 0).toFixed(1)} years `;
+  insight += `With estimated improvement costs of $${(result.improvementCost || 0).toLocaleString()} `;
+  insight += `(scaled to renovation scope), the payback period is ${(result.paybackPeriod || 0).toFixed(1)} years `;
   insight += `through incremental rent increases alone. `;
 
   insight += `The ${roiPct}% annual ROI on improvements makes this a compelling value-add play `;
@@ -828,8 +841,8 @@ function generateImprovedNOIInsight(result: any): string {
   // Add recommendation if payback is strong
   if ((result.paybackPeriod || 0) < 4 && (result.roi || 0) > 15) {
     insight += `\n\n**RECOMMENDATION:** With ${(result.paybackPeriod || 0).toFixed(1)}-year payback and ${roiPct}% ROI, `;
-    insight += `cosmetic improvements are highly advisable. Budget breakdown: $8-10k flooring (LVP throughout), `;
-    insight += `$3-4k paint (interior), $2-3k fixtures/hardware (kitchen/bath). Total investment of $15-18k `;
+    insight += `improvements from score ${fromScore} to ${toScore} are highly advisable. `;
+    insight += `Estimated investment of $${(result.improvementCost || 0).toLocaleString()} `;
     insight += `boosts rent by $${((result.noiIncrease || 0) / 12).toFixed(0)}/month and adds $${
       ((result.noiIncrease || 0) / 0.065).toFixed(0)
     } in resale value (6.5% cap rate). `;

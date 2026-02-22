@@ -124,7 +124,7 @@ export interface PropertyDataForAnalysis {
 }
 
 /**
- * Column definitions for Analysis sheet (40 columns A-AO)
+ * Column definitions for Analysis sheet (30 columns A-AD)
  */
 const ANALYSIS_COLUMNS = {
   // Column A
@@ -159,7 +159,7 @@ const ANALYSIS_COLUMNS = {
   DAYS_ON_MARKET: 'AA',
   DWELLING_TYPE: 'AB',
   SUBDIVISION_NAME: 'AC',
-  // Property Radar columns (AD-AO) removed - now in separate PropertyRadar template
+  RENO_YEAR_EST: 'AD', // MANUAL - estimated year of last renovation (e.g. 2018)
 } as const
 
 /**
@@ -358,7 +358,7 @@ function addHeaderRow(sheet: ExcelJS.Worksheet): void {
     'DAYS_ON_MARKET',                     // AA
     'DWELLING_TYPE',                      // AB
     'SUBDIVISION_NAME',                   // AC
-    // Property Radar columns removed - now in separate PropertyRadar template
+    'RENO_YEAR_EST',                      // AD - MANUAL: estimated renovation year (e.g. 2018)
   ]
 
   const headerRow = sheet.getRow(1)
@@ -586,7 +586,8 @@ function addPropertyRow(
     row.getCell(ANALYSIS_COLUMNS.SUBDIVISION_NAME).value = rawData['Subdivision'] || mcao?.subdivision || 'N/A'
   }
 
-  // Columns AD-AO removed - now in separate PropertyRadar template
+  // Column AD: RENO_YEAR_EST (MANUAL - leave blank for user to fill)
+  row.getCell(ANALYSIS_COLUMNS.RENO_YEAR_EST).value = ''
 }
 
 /**
@@ -670,7 +671,7 @@ function formatAnalysisSheet(sheet: ExcelJS.Worksheet): void {
     { width: 12 },  // AA - DAYS_ON_MARKET
     { width: 15 },  // AB - DWELLING_TYPE
     { width: 20 },  // AC - SUBDIVISION_NAME
-    // Property Radar columns removed - now in separate PropertyRadar template
+    { width: 15 },  // AD - RENO_YEAR_EST
   ]
 
   // Apply consistent formatting for specific columns

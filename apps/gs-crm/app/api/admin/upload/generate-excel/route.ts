@@ -28,8 +28,8 @@ import { requireAdmin } from '@/lib/api/admin-auth'
 
 const LOG_PREFIX = '[Generate Excel]'
 
-// CORRECT template path
-const TEMPLATE_PATH = '/Users/garrettsullivan/Desktop/‼️/RE/RealtyONE/MY LISTINGS/gs-crm-template.xlsx'
+// Template path - resolve from project root where gs-crm-template.xlsx lives
+const TEMPLATE_PATH = path.join(process.cwd(), 'gs-crm-template.xlsx')
 
 export async function PUT(req: NextRequest) {
   const startTime = Date.now()

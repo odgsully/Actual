@@ -50,7 +50,8 @@ export interface PropertyData {
   MLS_MCAO_DISCREPENCY_CONCAT: string
   IS_RENTAL: string // Y/N
   AGENCY_PHONE: string
-  RENOVATE_SCORE: string // Y/N/0.5
+  RENOVATE_SCORE: number | string // 1-10 numeric, or legacy Y/N/0.5
+  RENO_YEAR_EST?: number | string // estimated renovation year (e.g. 2018), optional
   PROPERTY_RADAR_COMP_YN: string // Y/N
   IN_MLS: string // Y/N
   IN_MCAO: string // Y/N
@@ -62,6 +63,112 @@ export interface PropertyData {
   DAYS_ON_MARKET: number
   DWELLING_TYPE: string
   SUBDIVISION_NAME: string
+}
+
+// ============================================================================
+// RENOVATION SCORING UTILITIES (1-10 scale with renovation year recency)
+// ============================================================================
+
+/**
+ * Normalize any RENOVATE_SCORE value to an integer 1-10.
+ * Handles legacy Y/N/0.5, numeric values, Excel quirks (0.5 as number), and bad input.
+ */
+export function normalizeRenoScore(raw: any): number {
+  if (raw === null || raw === undefined || raw === '') return 2
+
+  // Handle numeric values directly (Excel often stores as number)
+  if (typeof raw === 'number') {
+    if (raw === 0.5) return 5 // legacy 0.5
+    if (raw === 0) return 1
+    if (raw >= 1 && raw <= 10) return Math.round(raw)
+    return Math.max(1, Math.min(10, Math.round(raw))) // clamp
+  }
+
+  // Handle string values
+  const str = String(raw).trim().toUpperCase()
+  if (str === 'Y') return 7
+  if (str === 'N') return 2
+  if (str === '0.5') return 5
+
+  // Try parsing as number
+  const parsed = parseFloat(str)
+  if (!isNaN(parsed) && parsed === 0.5) return 5
+  if (!isNaN(parsed) && parsed >= 1 && parsed <= 10) return Math.round(parsed)
+
+  return 2 // unrecognized input defaults to unrenovated
+}
+
+/**
+ * Compute renovation recency category from estimated renovation year.
+ * Missing/invalid defaults to 'Mid' (neutral — no penalty for unknowns).
+ */
+export function getRenoRecency(renoYear: any): 'Fresh' | 'Mid' | 'Dated' {
+  const year = Number(renoYear)
+  if (isNaN(year) || year < 1900) return 'Mid' // missing/invalid = neutral default
+  const currentYear = new Date().getFullYear()
+  if (year > currentYear + 2) return 'Fresh' // under-renovation / future
+  const age = currentYear - year
+  if (age <= 3) return 'Fresh'
+  if (age <= 10) return 'Mid'
+  return 'Dated'
+}
+
+/**
+ * Map a normalized 1-10 score to a tier for chart grouping.
+ */
+export function getRenoTier(score: number): 'High' | 'Mid' | 'Low' {
+  if (score >= 7) return 'High'
+  if (score >= 4) return 'Mid'
+  return 'Low'
+}
+
+/**
+ * 2D NOI multiplier: score (1-10) × renovation recency.
+ * Returns monthly rent-to-value ratio (e.g. 0.0065 = 0.65%).
+ */
+export function getNoiMultiplier(score: number, renoYear: any): number {
+  const recency = getRenoRecency(renoYear)
+  const s = Math.round(Math.max(1, Math.min(10, score)))
+
+  // Lookup table: score range → [Fresh, Mid, Dated]
+  const table: Record<string, [number, number, number]> = {
+    '1-2':  [0.0045, 0.0045, 0.0045],
+    '3-4':  [0.0050, 0.0048, 0.0046],
+    '5-6':  [0.0058, 0.0055, 0.0050],
+    '7-8':  [0.0065, 0.0060, 0.0053],
+    '9-10': [0.0070, 0.0065, 0.0055],
+  }
+
+  let key: string
+  if (s <= 2) key = '1-2'
+  else if (s <= 4) key = '3-4'
+  else if (s <= 6) key = '5-6'
+  else if (s <= 8) key = '7-8'
+  else key = '9-10'
+
+  const [fresh, mid, dated] = table[key]
+  if (recency === 'Fresh') return fresh
+  if (recency === 'Mid') return mid
+  return dated
+}
+
+/**
+ * Estimate improvement cost based on score range.
+ * Costs scale nonlinearly — upgrading from 7→10 costs far more than 2→5.
+ */
+export function estimateImprovementCost(fromScore: number, toScore: number): number {
+  const costPerPoint: Record<number, number> = {
+    1: 4000, 2: 5000, 3: 7000, 4: 10000, 5: 15000,
+    6: 20000, 7: 30000, 8: 45000, 9: 60000, 10: 0,
+  }
+
+  let total = 0
+  const from = Math.max(1, Math.min(10, Math.round(fromScore)))
+  const to = Math.max(1, Math.min(10, Math.round(toScore)))
+  for (let i = from; i < to; i++) {
+    total += costPerPoint[i] || 15000
+  }
+  return total
 }
 
 /**
@@ -146,18 +253,35 @@ export interface STRAnalysisResultLease {
   premiumPercentage: number
 }
 
+interface RenoTierMetricsSale { count: number; avgPrice: number; avgPricePerSqft: number; avgScore: number }
+interface RenoTierMetricsLease { count: number; avgMonthlyRent: number; avgAnnualRent: number; avgScore: number }
+
 export interface RenovationImpactResult {
-  Y: { count: number; avgPrice: number; avgPricePerSqft: number }
-  N: { count: number; avgPrice: number; avgPricePerSqft: number }
-  '0.5': { count: number; avgPrice: number; avgPricePerSqft: number }
+  // Primary tier keys (1-10 scale)
+  High: RenoTierMetricsSale
+  Mid: RenoTierMetricsSale
+  Low: RenoTierMetricsSale
+  premiumHighvsLow: number
+  premiumMidvsLow: number
+  // Backward-compat aliases (deprecated — use High/Mid/Low)
+  Y: RenoTierMetricsSale
+  N: RenoTierMetricsSale
+  '0.5': RenoTierMetricsSale
   premiumYvsN: number
   premium05vsN: number
 }
 
 export interface RenovationImpactResultLease {
-  Y: { count: number; avgMonthlyRent: number; avgAnnualRent: number }
-  N: { count: number; avgMonthlyRent: number; avgAnnualRent: number }
-  '0.5': { count: number; avgMonthlyRent: number; avgAnnualRent: number }
+  // Primary tier keys (1-10 scale)
+  High: RenoTierMetricsLease
+  Mid: RenoTierMetricsLease
+  Low: RenoTierMetricsLease
+  premiumHighvsLow: number
+  premiumMidvsLow: number
+  // Backward-compat aliases (deprecated — use High/Mid/Low)
+  Y: RenoTierMetricsLease
+  N: RenoTierMetricsLease
+  '0.5': RenoTierMetricsLease
   premiumYvsN: number
   premium05vsN: number
 }
@@ -322,6 +446,9 @@ export interface ExpectedNOIResult {
   operatingExpenses: number
   annualNOI: number
   capRate: number
+  renoScore: number
+  renoRecency: 'Fresh' | 'Mid' | 'Dated'
+  multiplierUsed: number
 }
 
 export interface ImprovedNOIResult {
@@ -331,6 +458,9 @@ export interface ImprovedNOIResult {
   improvementCost: number
   paybackPeriod: number
   roi: number
+  currentScore: number
+  improvedScore: number
+  scoreDelta: number
 }
 
 // ============================================================================
@@ -351,8 +481,11 @@ export async function generateAllBreakupsAnalyses(
   console.log(`${LOG_PREFIX} Starting all breakups analyses (v2 - 26 analyses)`)
 
   // Read property data from Analysis sheet
-  const properties = readAnalysisSheet(workbook)
+  const { properties, warnings } = readAnalysisSheet(workbook)
   console.log(`${LOG_PREFIX} Read ${properties.length} properties from Analysis sheet`)
+  if (warnings.length > 0) {
+    console.warn(`${LOG_PREFIX} Validation warnings:\n  ${warnings.join('\n  ')}`)
+  }
 
   if (properties.length === 0) {
     throw new Error('No properties found in Analysis sheet')
@@ -587,74 +720,78 @@ export function analyzeSTR_Lease(properties: PropertyData[]): STRAnalysisResultL
 }
 
 /**
- * Analysis 4A: RENOVATE_SCORE Impact (Y vs N vs 0.5) - Sale Market
- * Analyze impact of renovation status on sale property values
+ * Analysis 4A: Renovation Score Impact (High/Mid/Low tiers) - Sale Market
+ * Analyze impact of renovation quality on sale property values
  */
 export function analyzeRenovationImpact_Sale(properties: PropertyData[]): RenovationImpactResult {
   const saleProps = filterSaleProperties(properties)
-  const renovated = saleProps.filter((p) => p.RENOVATE_SCORE === 'Y')
-  const notRenovated = saleProps.filter((p) => p.RENOVATE_SCORE === 'N')
-  const partial = saleProps.filter((p) => p.RENOVATE_SCORE === '0.5')
+  const highTier = saleProps.filter((p) => getRenoTier(normalizeRenoScore(p.RENOVATE_SCORE)) === 'High')
+  const midTier = saleProps.filter((p) => getRenoTier(normalizeRenoScore(p.RENOVATE_SCORE)) === 'Mid')
+  const lowTier = saleProps.filter((p) => getRenoTier(normalizeRenoScore(p.RENOVATE_SCORE)) === 'Low')
 
-  const calculateMetrics = (props: PropertyData[]) => {
+  const calculateMetrics = (props: PropertyData[]): RenoTierMetricsSale => {
     const prices = props.map((p) => p.SALE_PRICE).filter((x) => !isNaN(x))
     const pricesPerSqft = props.map((p) => p.SALE_PRICE / p.SQFT).filter((x) => !isNaN(x) && isFinite(x))
+    const scores = props.map((p) => normalizeRenoScore(p.RENOVATE_SCORE))
     return {
       count: props.length,
       avgPrice: calculateAverage(prices),
       avgPricePerSqft: calculateAverage(pricesPerSqft),
+      avgScore: calculateAverage(scores),
     }
   }
 
-  const metricsY = calculateMetrics(renovated)
-  const metricsN = calculateMetrics(notRenovated)
-  const metrics05 = calculateMetrics(partial)
+  const metricsHigh = calculateMetrics(highTier)
+  const metricsLow = calculateMetrics(lowTier)
+  const metricsMid = calculateMetrics(midTier)
 
-  const premiumYvsN = metricsN.avgPrice > 0 ? ((metricsY.avgPrice - metricsN.avgPrice) / metricsN.avgPrice) * 100 : 0
-  const premium05vsN = metricsN.avgPrice > 0 ? ((metrics05.avgPrice - metricsN.avgPrice) / metricsN.avgPrice) * 100 : 0
+  const premiumHighvsLow = metricsLow.avgPrice > 0 ? ((metricsHigh.avgPrice - metricsLow.avgPrice) / metricsLow.avgPrice) * 100 : 0
+  const premiumMidvsLow = metricsLow.avgPrice > 0 ? ((metricsMid.avgPrice - metricsLow.avgPrice) / metricsLow.avgPrice) * 100 : 0
 
   return {
-    Y: metricsY,
-    N: metricsN,
-    '0.5': metrics05,
-    premiumYvsN,
-    premium05vsN,
+    High: metricsHigh, Mid: metricsMid, Low: metricsLow,
+    premiumHighvsLow, premiumMidvsLow,
+    // Backward-compat aliases
+    Y: metricsHigh, N: metricsLow, '0.5': metricsMid,
+    premiumYvsN: premiumHighvsLow, premium05vsN: premiumMidvsLow,
   }
 }
 
 /**
- * Analysis 4B: RENOVATE_SCORE Impact (Y vs N vs 0.5) - Lease Market
- * Analyze impact of renovation status on lease property rents
+ * Analysis 4B: Renovation Score Impact (High/Mid/Low tiers) - Lease Market
+ * Analyze impact of renovation quality on lease property rents
  */
 export function analyzeRenovationImpact_Lease(properties: PropertyData[]): RenovationImpactResultLease {
   const leaseProps = filterLeaseProperties(properties)
-  const renovated = leaseProps.filter((p) => p.RENOVATE_SCORE === 'Y')
-  const notRenovated = leaseProps.filter((p) => p.RENOVATE_SCORE === 'N')
-  const partial = leaseProps.filter((p) => p.RENOVATE_SCORE === '0.5')
+  const highTier = leaseProps.filter((p) => getRenoTier(normalizeRenoScore(p.RENOVATE_SCORE)) === 'High')
+  const midTier = leaseProps.filter((p) => getRenoTier(normalizeRenoScore(p.RENOVATE_SCORE)) === 'Mid')
+  const lowTier = leaseProps.filter((p) => getRenoTier(normalizeRenoScore(p.RENOVATE_SCORE)) === 'Low')
 
-  const calculateMetrics = (props: PropertyData[]) => {
+  const calculateMetrics = (props: PropertyData[]): RenoTierMetricsLease => {
     const monthlyRents = props.map((p) => p.SALE_PRICE).filter((x) => !isNaN(x))
     const annualRents = props.map((p) => p.SALE_PRICE * 12).filter((x) => !isNaN(x))
+    const scores = props.map((p) => normalizeRenoScore(p.RENOVATE_SCORE))
     return {
       count: props.length,
       avgMonthlyRent: calculateAverage(monthlyRents),
       avgAnnualRent: calculateAverage(annualRents),
+      avgScore: calculateAverage(scores),
     }
   }
 
-  const metricsY = calculateMetrics(renovated)
-  const metricsN = calculateMetrics(notRenovated)
-  const metrics05 = calculateMetrics(partial)
+  const metricsHigh = calculateMetrics(highTier)
+  const metricsLow = calculateMetrics(lowTier)
+  const metricsMid = calculateMetrics(midTier)
 
-  const premiumYvsN = metricsN.avgMonthlyRent > 0 ? ((metricsY.avgMonthlyRent - metricsN.avgMonthlyRent) / metricsN.avgMonthlyRent) * 100 : 0
-  const premium05vsN = metricsN.avgMonthlyRent > 0 ? ((metrics05.avgMonthlyRent - metricsN.avgMonthlyRent) / metricsN.avgMonthlyRent) * 100 : 0
+  const premiumHighvsLow = metricsLow.avgMonthlyRent > 0 ? ((metricsHigh.avgMonthlyRent - metricsLow.avgMonthlyRent) / metricsLow.avgMonthlyRent) * 100 : 0
+  const premiumMidvsLow = metricsLow.avgMonthlyRent > 0 ? ((metricsMid.avgMonthlyRent - metricsLow.avgMonthlyRent) / metricsLow.avgMonthlyRent) * 100 : 0
 
   return {
-    Y: metricsY,
-    N: metricsN,
-    '0.5': metrics05,
-    premiumYvsN,
-    premium05vsN,
+    High: metricsHigh, Mid: metricsMid, Low: metricsLow,
+    premiumHighvsLow, premiumMidvsLow,
+    // Backward-compat aliases
+    Y: metricsHigh, N: metricsLow, '0.5': metricsMid,
+    premiumYvsN: premiumHighvsLow, premium05vsN: premiumMidvsLow,
   }
 }
 
@@ -1167,13 +1304,13 @@ export function analyzeActiveVsPending_Lease(properties: PropertyData[]): Active
 // ============================================================================
 
 /**
- * Analysis 17A: Δ $/sqft (Y RENOVATION_SCORE vs N) - Sale Market
+ * Analysis 17A: Δ $/sqft (High vs Low renovation tier) - Sale Market
  * Calculate price per square foot differential for renovated sale properties
  */
 export function calculateRenovationDelta_Sale(properties: PropertyData[]): RenovationDeltaResult {
   const saleProps = filterSaleProperties(properties)
-  const renovated = saleProps.filter((p) => p.RENOVATE_SCORE === 'Y')
-  const notRenovated = saleProps.filter((p) => p.RENOVATE_SCORE === 'N')
+  const renovated = saleProps.filter((p) => getRenoTier(normalizeRenoScore(p.RENOVATE_SCORE)) === 'High')
+  const notRenovated = saleProps.filter((p) => getRenoTier(normalizeRenoScore(p.RENOVATE_SCORE)) === 'Low')
 
   const avgSqftY = calculateAverage(renovated.map((p) => p.SALE_PRICE / p.SQFT).filter((x) => !isNaN(x) && isFinite(x)))
   const avgSqftN = calculateAverage(notRenovated.map((p) => p.SALE_PRICE / p.SQFT).filter((x) => !isNaN(x) && isFinite(x)))
@@ -1190,13 +1327,13 @@ export function calculateRenovationDelta_Sale(properties: PropertyData[]): Renov
 }
 
 /**
- * Analysis 17B: Δ rent/sqft (Y RENOVATION_SCORE vs N) - Lease Market
+ * Analysis 17B: Δ rent/sqft (High vs Low renovation tier) - Lease Market
  * Calculate rent per square foot differential for renovated lease properties
  */
 export function calculateRenovationDelta_Lease(properties: PropertyData[]): RenovationDeltaResultLease {
   const leaseProps = filterLeaseProperties(properties)
-  const renovated = leaseProps.filter((p) => p.RENOVATE_SCORE === 'Y')
-  const notRenovated = leaseProps.filter((p) => p.RENOVATE_SCORE === 'N')
+  const renovated = leaseProps.filter((p) => getRenoTier(normalizeRenoScore(p.RENOVATE_SCORE)) === 'High')
+  const notRenovated = leaseProps.filter((p) => getRenoTier(normalizeRenoScore(p.RENOVATE_SCORE)) === 'Low')
 
   const avgRentSqftY = calculateAverage(renovated.map((p) => p.SALE_PRICE / p.SQFT).filter((x) => !isNaN(x) && isFinite(x)))
   const avgRentSqftN = calculateAverage(notRenovated.map((p) => p.SALE_PRICE / p.SQFT).filter((x) => !isNaN(x) && isFinite(x)))
@@ -1218,13 +1355,13 @@ export function calculateRenovationDelta_Lease(properties: PropertyData[]): Reno
 }
 
 /**
- * Analysis 18A: Δ $/sqft (0.5 vs N) - Sale Market
+ * Analysis 18A: Δ $/sqft (Mid vs Low renovation tier) - Sale Market
  * Calculate impact of partial renovations on sale properties
  */
 export function calculatePartialRenovationDelta_Sale(properties: PropertyData[]): PartialRenovationDeltaResult {
   const saleProps = filterSaleProperties(properties)
-  const partial = saleProps.filter((p) => p.RENOVATE_SCORE === '0.5')
-  const notRenovated = saleProps.filter((p) => p.RENOVATE_SCORE === 'N')
+  const partial = saleProps.filter((p) => getRenoTier(normalizeRenoScore(p.RENOVATE_SCORE)) === 'Mid')
+  const notRenovated = saleProps.filter((p) => getRenoTier(normalizeRenoScore(p.RENOVATE_SCORE)) === 'Low')
 
   const avgSqft05 = calculateAverage(partial.map((p) => p.SALE_PRICE / p.SQFT).filter((x) => !isNaN(x) && isFinite(x)))
   const avgSqftN = calculateAverage(notRenovated.map((p) => p.SALE_PRICE / p.SQFT).filter((x) => !isNaN(x) && isFinite(x)))
@@ -1241,13 +1378,13 @@ export function calculatePartialRenovationDelta_Sale(properties: PropertyData[])
 }
 
 /**
- * Analysis 18B: Δ rent/sqft (0.5 vs N) - Lease Market
+ * Analysis 18B: Δ rent/sqft (Mid vs Low renovation tier) - Lease Market
  * Calculate impact of partial renovations on lease properties
  */
 export function calculatePartialRenovationDelta_Lease(properties: PropertyData[]): PartialRenovationDeltaResultLease {
   const leaseProps = filterLeaseProperties(properties)
-  const partial = leaseProps.filter((p) => p.RENOVATE_SCORE === '0.5')
-  const notRenovated = leaseProps.filter((p) => p.RENOVATE_SCORE === 'N')
+  const partial = leaseProps.filter((p) => getRenoTier(normalizeRenoScore(p.RENOVATE_SCORE)) === 'Mid')
+  const notRenovated = leaseProps.filter((p) => getRenoTier(normalizeRenoScore(p.RENOVATE_SCORE)) === 'Low')
 
   const avgRentSqft05 = calculateAverage(partial.map((p) => p.SALE_PRICE / p.SQFT).filter((x) => !isNaN(x) && isFinite(x)))
   const avgRentSqftN = calculateAverage(notRenovated.map((p) => p.SALE_PRICE / p.SQFT).filter((x) => !isNaN(x) && isFinite(x)))
@@ -1381,20 +1518,15 @@ export function analyzeDistributionTails_Lease(properties: PropertyData[]): Dist
 
 /**
  * Analysis 21: Expected Annual NOI Leasing
- * Project net operating income from rental strategy
+ * Project net operating income from rental strategy using 2D multiplier (score × recency)
  */
 export function calculateExpectedNOI(property: PropertyData): ExpectedNOIResult {
   const salePrice = property.SALE_PRICE
-  const renovateScore = property.RENOVATE_SCORE
+  const numericScore = normalizeRenoScore(property.RENOVATE_SCORE)
+  const recency = getRenoRecency(property.RENO_YEAR_EST)
+  const multiplier = getNoiMultiplier(numericScore, property.RENO_YEAR_EST)
 
-  // Rental rate multipliers based on renovation status
-  const multipliers: Record<string, number> = {
-    Y: 0.0065, // 0.65% monthly
-    '0.5': 0.0055, // 0.55% monthly
-    N: 0.0045, // 0.45% monthly
-  }
-
-  const monthlyRent = salePrice * (multipliers[renovateScore] || multipliers.N)
+  const monthlyRent = salePrice * multiplier
   const annualIncome = monthlyRent * 12
 
   // Operating expenses (35% of income)
@@ -1409,16 +1541,27 @@ export function calculateExpectedNOI(property: PropertyData): ExpectedNOIResult 
     operatingExpenses,
     annualNOI,
     capRate,
+    renoScore: numericScore,
+    renoRecency: recency,
+    multiplierUsed: multiplier,
   }
 }
 
 /**
- * Analysis 22: Expected NOI with Cosmetic Improvements
- * Project NOI after upgrading from N to 0.5 renovation score
+ * Analysis 22: Expected NOI with Renovation Improvements
+ * Project NOI after upgrading renovation score by up to 3 points with scaled costs
  */
-export function calculateImprovedNOI(property: PropertyData, improvementCost: number = 15000): ImprovedNOIResult {
-  const currentNOI = calculateExpectedNOI({ ...property, RENOVATE_SCORE: 'N' })
-  const improvedNOI = calculateExpectedNOI({ ...property, RENOVATE_SCORE: '0.5' })
+export function calculateImprovedNOI(property: PropertyData): ImprovedNOIResult {
+  const currentScore = normalizeRenoScore(property.RENOVATE_SCORE)
+  const improvedScore = Math.min(currentScore + 3, 10)
+  const improvementCost = estimateImprovementCost(currentScore, improvedScore)
+
+  const currentNOI = calculateExpectedNOI(property)
+  const improvedNOI = calculateExpectedNOI({
+    ...property,
+    RENOVATE_SCORE: improvedScore,
+    RENO_YEAR_EST: new Date().getFullYear(), // model as fresh renovation
+  })
 
   const noiIncrease = improvedNOI.annualNOI - currentNOI.annualNOI
   const paybackPeriod = noiIncrease > 0 ? improvementCost / noiIncrease : 0
@@ -1431,6 +1574,9 @@ export function calculateImprovedNOI(property: PropertyData, improvementCost: nu
     improvementCost,
     paybackPeriod,
     roi,
+    currentScore,
+    improvedScore,
+    scoreDelta: improvedScore - currentScore,
   }
 }
 
@@ -1439,15 +1585,17 @@ export function calculateImprovedNOI(property: PropertyData, improvementCost: nu
 // ============================================================================
 
 /**
- * Read property data from Analysis sheet
+ * Read property data from Analysis sheet.
+ * Returns properties with normalized RENOVATE_SCORE (1-10) and validation warnings.
  */
-function readAnalysisSheet(workbook: ExcelJS.Workbook): PropertyData[] {
+function readAnalysisSheet(workbook: ExcelJS.Workbook): { properties: PropertyData[]; warnings: string[] } {
   const sheet = workbook.getWorksheet('Analysis')
   if (!sheet) {
     throw new Error('Analysis sheet not found in workbook')
   }
 
   const properties: PropertyData[] = []
+  const warnings: string[] = []
 
   // Get headers from row 1
   const headers: string[] = []
@@ -1471,11 +1619,35 @@ function readAnalysisSheet(workbook: ExcelJS.Workbook): PropertyData[] {
 
     // Only add if row has data (check if Item column exists)
     if (rowData['Item']) {
+      // Validate and normalize RENOVATE_SCORE
+      const rawScore = rowData['RENOVATE_SCORE']
+      const normalized = normalizeRenoScore(rawScore)
+      if (rawScore !== null && rawScore !== undefined && rawScore !== '') {
+        const rawStr = String(rawScore).trim()
+        const isLegacy = /^[YyNn]$/.test(rawStr) || rawStr === '0.5'
+        const isNumeric = !isNaN(Number(rawStr)) && Number(rawStr) >= 1 && Number(rawStr) <= 10
+        if (!isLegacy && !isNumeric && !(typeof rawScore === 'number' && rawScore === 0.5)) {
+          warnings.push(`Row ${rowNum}: RENOVATE_SCORE '${rawStr}' not recognized, defaulted to ${normalized}`)
+        }
+      }
+      rowData['RENOVATE_SCORE'] = normalized
+
+      // Validate RENO_YEAR_EST if present
+      const rawYear = rowData['RENO_YEAR_EST']
+      if (rawYear !== null && rawYear !== undefined && rawYear !== '') {
+        const yearNum = Number(rawYear)
+        const currentYear = new Date().getFullYear()
+        if (isNaN(yearNum) || yearNum < 1950 || yearNum > currentYear + 5) {
+          warnings.push(`Row ${rowNum}: RENO_YEAR_EST '${rawYear}' invalid, will use Mid recency default`)
+          rowData['RENO_YEAR_EST'] = undefined
+        }
+      }
+
       properties.push(rowData as PropertyData)
     }
   }
 
-  return properties
+  return { properties, warnings }
 }
 
 /**

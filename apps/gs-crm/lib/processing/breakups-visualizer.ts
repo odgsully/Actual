@@ -320,27 +320,30 @@ async function generateAnalysis3(data: any, outputDir: string, analysisId: strin
  * Enhanced with dual-axis, data labels, and premium display
  */
 async function generateAnalysis4(data: any, outputDir: string, analysisId: string | number, analysisName: string): Promise<SingleVisualizationResult> {
-  const premiumYvsN = data?.premiumYvsN || 0;
-  const premium05vsN = data?.premium05vsN || 0;
+  const high = data?.High || data?.Y || {};
+  const mid = data?.Mid || data?.['0.5'] || {};
+  const low = data?.Low || data?.N || {};
+  const premiumHigh = data?.premiumHighvsLow ?? data?.premiumYvsN ?? 0;
+  const premiumMid = data?.premiumMidvsLow ?? data?.premium05vsN ?? 0;
 
   const config = {
     type: 'bar',
     data: {
       labels: [
-        `Renovated (${data.Y.count})`,
-        `Partial (${data['0.5'].count})`,
-        `Not Renovated (${data.N.count})`
+        `High (${high.count || 0}, avg ${(high.avgScore || 0).toFixed(1)}/10)`,
+        `Mid (${mid.count || 0}, avg ${(mid.avgScore || 0).toFixed(1)}/10)`,
+        `Low (${low.count || 0}, avg ${(low.avgScore || 0).toFixed(1)}/10)`
       ],
       datasets: [
         {
           label: 'Price per SqFt ($)',
           data: [
-            data.Y.avgPricePerSqft,
-            data['0.5'].avgPricePerSqft,
-            data.N.avgPricePerSqft
+            high.avgPricePerSqft || 0,
+            mid.avgPricePerSqft || 0,
+            low.avgPricePerSqft || 0
           ],
           backgroundColor: [
-            getThresholdColor(premiumYvsN, 'roi'),
+            getThresholdColor(premiumHigh, 'roi'),
             CHART_COLORS.secondary,
             CHART_COLORS.neutral
           ],
@@ -351,7 +354,7 @@ async function generateAnalysis4(data: any, outputDir: string, analysisId: strin
     options: {
       title: {
         display: true,
-        text: `Renovation ROI Analysis | Full Premium: ${premiumYvsN.toFixed(1)}% | Partial Premium: ${premium05vsN.toFixed(1)}%`,
+        text: `Renovation Score Analysis | High Premium: ${premiumHigh.toFixed(1)}% | Mid Premium: ${premiumMid.toFixed(1)}%`,
         fontSize: 18,
         fontStyle: 'bold',
       },
@@ -1077,7 +1080,7 @@ async function generateAnalysis21(data: any, outputDir: string, analysisId: stri
     options: {
       title: {
         display: true,
-        text: `Expected NOI Waterfall | Cap Rate: ${capRate.toFixed(2)}% | Cash-on-Cash: ${cashOnCash.toFixed(2)}% | Monthly Rent: $${monthlyRent.toLocaleString()}`,
+        text: `Expected NOI Waterfall | Cap Rate: ${capRate.toFixed(2)}% | Monthly Rent: $${monthlyRent.toLocaleString()}${data?.renoScore ? ` | Reno: ${data.renoScore}/10 (${data.renoRecency})` : ''}`,
         fontSize: 18,
         fontStyle: 'bold',
       },
@@ -1137,7 +1140,7 @@ async function generateAnalysis22(data: any, outputDir: string, analysisId: stri
     options: {
       title: {
         display: true,
-        text: `Cosmetic Improvement ROI Waterfall | Payback: ${paybackPeriod.toFixed(1)} yrs | ROI: ${roi.toFixed(1)}% | NPV: $${npv.toLocaleString()}`,
+        text: `Renovation ROI Waterfall | Payback: ${paybackPeriod.toFixed(1)} yrs | ROI: ${roi.toFixed(1)}%${data?.currentScore ? ` | Score: ${data.currentScore}→${data.improvedScore}/10` : ''} | Cost: $${improvementCost.toLocaleString()}`,
         fontSize: 18,
         fontStyle: 'bold',
       },
