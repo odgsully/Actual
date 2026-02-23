@@ -12,7 +12,7 @@ cd Actual
 npm install
 
 # Start development
-npm run dev:gsrealty    # Primary app on port 3004
+npm run dev:gs-crm      # Primary app on port 3004
 npm run dev             # All apps in parallel
 ```
 
@@ -54,17 +54,17 @@ cp .env.sample .env.local
 
 ## Development Workflow
 
-### Working on gsrealty-client (Primary App)
+### Working on gs-crm (Primary App)
 
 ```bash
 # Start development server
-npm run dev:gsrealty
+npm run dev:gs-crm
 
 # Run tests
-npm run test --workspace=apps/gsrealty-client
+npm run test --workspace=apps/gs-crm
 
 # Type check
-npm run typecheck --workspace=apps/gsrealty-client
+npm run typecheck --workspace=apps/gs-crm
 ```
 
 ### Working on Shared Packages
@@ -124,10 +124,10 @@ const { data } = await supabase.from('clients').select('*');
 Before writing database code, check [DATABASE_OWNERSHIP.md](./docs/DATABASE_OWNERSHIP.md).
 
 ```typescript
-// In gsrealty-client, you CAN:
+// In gs-crm, you CAN:
 await supabase.from('clients').insert({...});  // ✅ You own this
 
-// In gsrealty-client, you CANNOT:
+// In gs-crm, you CANNOT:
 await supabase.from('properties').insert({...});  // ❌ wabbit-re owns this
 ```
 
@@ -237,7 +237,7 @@ npm run build
 ### 1. Running the Wrong App's Script
 
 ```bash
-# You're in gsrealty-client but running wabbit-re script
+# You're in gs-crm but running wabbit-re script
 # This can modify tables you don't own!
 
 # Always check:

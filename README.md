@@ -7,7 +7,7 @@ A Turborepo monorepo containing multiple applications deployed to separate domai
 ```
 Actual/
 ├── apps/
-│   ├── gsrealty-client/    # Real estate CRM (port 3004)
+│   ├── gs-crm/             # Real estate CRM (port 3004)
 │   ├── wabbit-re/          # Property ranking platform (port 3000)
 │   ├── wabbit/             # Gesture-driven content ranking (port 3002)
 │   ├── gs-site/            # Personal dashboard hub (port 3003)
@@ -45,7 +45,7 @@ npm run dev
 # Run a specific app
 npm run dev -w wabbit-re      # Property ranking on :3000
 npm run dev -w gs-site         # Dashboard on :3003
-npm run dev -w gsrealty-client # CRM on :3004
+npm run dev -w gs-crm          # CRM on :3004
 npm run dev -w growthadvisory  # Marketing site on :3005
 ```
 
@@ -68,9 +68,9 @@ npm run db:migrate -w wabbit-re
 npm run db:seed -w wabbit-re
 npm run db:seed-demo -w wabbit-re
 
-# gsrealty-client database scripts
-npm run db:migrate -w gsrealty-client
-npm run db:apply-rls -w gsrealty-client
+# gs-crm database scripts
+npm run db:migrate -w gs-crm
+npm run db:apply-rls -w gs-crm
 ```
 
 ## Deployment
@@ -154,7 +154,7 @@ Property scraping, ranking, and evaluation platform for Maricopa County, Arizona
 
 Tile-based personal dashboard with integrations (Notion, GitHub, LIFX, etc.). Tile definitions are fully local in `lib/data/tiles.ts`.
 
-### gsrealty-client (Real Estate CRM)
+### gs-crm (Real Estate CRM)
 
 **Port:** 3004
 

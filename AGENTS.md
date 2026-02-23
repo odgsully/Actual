@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 This repository is a Turborepo monorepo.
-- `apps/`: deployable Next.js apps (`wabbit-re`, `gsrealty-client`, `gs-site`, `growthadvisory`, plus early `wabbit` work).
+- `apps/`: deployable Next.js apps (`wabbit-re`, `gs-crm`, `gs-site`, `growthadvisory`, plus early `wabbit` work).
 - `packages/`: shared workspace packages (`auth`, `supabase`, `ui`, `utils`).
 - `docs/`: architecture, deployment, and operational references.
 - Root config: `turbo.json`, `package.json`, `.env.sample`, Vercel configs.
@@ -19,9 +19,9 @@ Run from repo root unless noted.
 - `npm run format`: Prettier write pass for JS/TS/CSS/JSON/MD.
 
 Target one app with workspace flags, for example:
-- `npm run dev -w gsrealty-client`
+- `npm run dev -w gs-crm`
 - `npm run test -w gs-site`
-- `npm run test:e2e -w gsrealty-client`
+- `npm run test:e2e -w gs-crm`
 
 ## Coding Style & Naming Conventions
 - Language: TypeScript-first in apps/packages.
@@ -32,15 +32,15 @@ Target one app with workspace flags, for example:
 - Prefer path aliases (for example `@/lib/...`) within each app.
 
 ## Testing Guidelines
-- Unit/integration: Jest (`apps/gsrealty-client`, `apps/gs-site`, `apps/wabbit-re`).
-- E2E: Playwright in `apps/gsrealty-client/tests/e2e`.
+- Unit/integration: Jest (`apps/gs-crm`, `apps/gs-site`, `apps/wabbit-re`).
+- E2E: Playwright in `apps/gs-crm/tests/e2e`.
 - Test file patterns: `*.test.ts` / `*.test.tsx`; keep tests near source (`__tests__`) or in app-level `tests/`.
 - Before opening a PR, run: `npm run lint`, `npm run typecheck`, `npm run test`, and `npm run build`.
 
 ## Commit & Pull Request Guidelines
 Recent history follows Conventional Commit style (`docs:`, `fix(scope):`, `chore(scope):`). Use:
 - `type(scope): concise summary`
-- Example: `fix(gsrealty): correct map test db script reference`
+- Example: `fix(gs-crm): correct map test db script reference`
 
 PRs should include:
 - Clear description of what changed and why.
