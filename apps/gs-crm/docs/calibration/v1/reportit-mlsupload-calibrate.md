@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Document the end-to-end workflow for building a vision AI renovation scoring pipeline that auto-populates Column R (`RENOVATE_SCORE`) in the ReportIt Analysis sheet. This replaces the current manual Y/N/0.5 entry with a 1-10 score + renovation year estimate derived from MLS property photos.
+Document the end-to-end workflow for building a vision AI renovation scoring pipeline that auto-populates Column R (`RENOVATE_SCORE`) and Column AD (`RENO_YEAR_EST`) in the ReportIt Analysis sheet. This replaces the current manual Y/N/0.5 entry with a 1-10 score + renovation year estimate derived from MLS property photos via Claude's native PDF vision API.
 
 ---
 
@@ -119,9 +119,9 @@ Document the end-to-end workflow for building a vision AI renovation scoring pip
 
 ---
 
-### Step 4: Design the Calibration Set
+### Step 4: Design the Calibration Set (v2 — 55-Slot Matrix)
 
-**Goal:** Build a stratified 40-property calibration set that covers all dwelling types, price tiers, and renovation quality levels.
+**Goal:** Build a stratified 55-property calibration set that covers all dwelling types, price tiers, and renovation quality levels. A separate 55-property evaluation set (Step 4b) measures final accuracy.
 
 **Design principles:**
 
@@ -129,69 +129,99 @@ Document the end-to-end workflow for building a vision AI renovation scoring pip
 2. **Bias anchors:** Properties where price and renovation quality are mismatched (most important for calibration accuracy)
 3. **Tier 3 oversampling:** "Full Cosmetic Flip" (score 5-6) gets the most samples because the boundary between competent flip and quality renovation is the hardest visual distinction
 4. **Geographic diversity is NOT a separate dimension** — the vision model scores materials/finishes which are location-agnostic. City is noted but not a stratification axis.
+5. **Condo folded into Apartment** — in Maricopa County MLS data, "Condo" and "Apartment" share identical photo characteristics and renovation patterns. The dwelling-detector maps both to `apartment`. Separating them wastes calibration slots on a distinction the vision model cannot see.
 
-**Renovation quality tiers (5-tier system):**
+**5-Tier Visual Definition Table:**
 
-| Tier | Score | Label | Key Markers |
-|------|-------|-------|-------------|
-| 1 | 1-2 | Original/Dated | Popcorn ceilings, oak cabinets, laminate counters, brass fixtures |
-| 2 | 3-4 | Partial Update | 1-2 rooms updated, mismatched finishes |
-| 3 | 5-6 | Full Cosmetic Flip | New paint/floors throughout, stock cabinets, builder-grade |
-| 4 | 7-8 | High-Quality Reno | Custom cabinets, designer tile, upgraded appliances |
-| 5 | 9-10 | Luxury/Custom | Architect-designed, premium materials, smart home |
+| Tier | Score | Label | Key Visual Markers |
+|------|-------|-------|--------------------|
+| T1 | 1-2 | Original/Dated | Honey oak cabinets, brass fixtures, popcorn ceilings, post-form laminate counters, almond fiberglass tub surround, 12x12 almond ceramic tile, coil-top range |
+| T2 | 3-4 | Partial Update | 1-2 rooms updated (usually kitchen), mismatched finishes, new paint but original cabinets/fixtures, fresh carpet over original tile |
+| T3 | 5-6 | Full Cosmetic Flip | White shaker cabinets (builder-grade), quartz or granite counters, LVP flooring throughout, subway tile backsplash, brushed nickel fixtures, stainless appliances |
+| T4 | 7-8 | High-Quality Reno | Custom cabinets, designer tile (zellige, large-format), upgraded appliances (5-burner, French door), frameless glass shower, matte black or brushed brass fixtures |
+| T5 | 9-10 | Luxury/Custom | Architect-designed, waterfall edge counters, professional-range appliances, smart home visible, premium natural stone, custom millwork |
 
-**40-property distribution:**
+**55-property distribution by dwelling type:**
 
 | Dwelling Type | Count | Price Coverage |
 |--------------|-------|---------------|
-| Apartment | 6 | $100K–$350K |
-| Condo | 6 | $150K–$550K |
-| Townhouse | 6 | $250K–$650K |
-| SFR | 18 | $250K–$2.5M |
-| Ultra-Lux SFR | 4 | $2.5M+ |
+| Apartment | 12 | $100K-$400K |
+| SFR | 18 | $250K-$2.5M |
+| Townhouse | 6 | $250K-$650K |
+| Ultra-Lux | 5 | $2.5M+ |
+| Multifamily | 12 | $200K-$1.5M (2-12 units) |
 
-**7 bias anchor properties** (most critical for calibration):
-- #3: Cheap condo, high-quality reno
-- #11: Cheap SFR, high-quality reno
-- #17: Expensive SFR, partial update only
-- #21: $1.2M+ SFR, original/dated
-- #25: $2.5M+ ultra-lux, dated (single most important anchor)
-- #31: Cheap townhouse, high-quality reno
-- #37: $100-200K apartment, high-quality reno
+**Note:** "Apartment" includes both Condo and Apartment MLS dwelling types. Multifamily covers duplexes, triplexes, fourplexes, and small apartment buildings (5-12 units). Multifamily properties use modified room weights (Exterior 25%) — see `docs/calibration/vision/multifamily-scoring-guide.md`.
 
-**Quality tier distribution:**
+**10 bias anchor properties** (most critical for calibration):
 
-| Tier | Count | % |
-|------|-------|---|
-| Tier 1 — Original | 6 | 15% |
-| Tier 2 — Partial | 5 | 12.5% |
-| Tier 3 — Full Flip | 12 | 30% |
-| Tier 4 — High-Quality | 9 | 22.5% |
-| Tier 5 — Luxury | 8 | 20% |
+| Slot | Description | Why It Matters |
+|------|-------------|----------------|
+| #3 | Cheap apartment, high-quality reno | Tests price-independent scoring |
+| #10 | Budget SFR, full cosmetic flip | T3/T4 boundary at low price |
+| #18 | Expensive SFR, partial update only | High price should not inflate score |
+| #22 | $1.2M+ SFR, original/dated | Anchors T1 at high price |
+| #26 | $2.5M+ ultra-lux, dated interior | Single most important anchor — luxury exterior, dated interior |
+| #33 | Multifamily duplex, high-quality reno | Tests per-unit scoring accuracy |
+| #38 | Budget apartment, luxury flip | T4/T5 boundary in unexpected type |
+| #41 | Fourplex, mixed-condition units | Tests mixed-condition flag accuracy |
+| #47 | Townhouse, over-improved for comp set | Tests against type-ceiling bias |
+| #48 | Small apt building, cosmetic flip | Tests multifamily Exterior 25% weight |
+
+**Tier count distribution:**
+
+| Tier | Count | % | Purpose |
+|------|-------|---|---------|
+| T1 (1-2) | 9 | 16% | Baseline dated properties |
+| T2 (3-4) | 9 | 16% | Partial updates, boundary testing |
+| T3 (5-6) | 17 | 31% | Heaviest band — most common flip quality |
+| T4 (7-8) | 13 | 24% | Quality renovation, over-improvement traps |
+| T5 (9-10) | 7 | 13% | Luxury/custom ceiling |
+
+---
+
+### Step 4b: Design the Evaluation Set (Held-Out)
+
+**Goal:** Create a separate 55-property set used once for final accuracy measurement. Never used during prompt tuning.
+
+**Design principles:**
+
+1. **Same stratification as calibration set** — identical dwelling type counts, tier distribution, and bias anchor strategy
+2. **Zero overlap** — no property appears in both sets. Source from different MLS listings, different addresses.
+3. **Sealed until evaluation** — raters score the evaluation set at the same time as the calibration set (to avoid calibration-set familiarity bias), but evaluation scores are not revealed to the prompt engineer until after calibration is complete
+4. **One-shot measurement** — the evaluation set is scored by the tuned AI exactly once. If you re-tune and re-score, the evaluation set is contaminated and must be replaced.
+
+**Why a held-out set matters:** Without separation, accuracy measured on the calibration set will be inflated because the prompt was tuned on those exact properties. The evaluation set gives a realistic estimate of how the pipeline performs on unseen properties.
+
+**Sourcing:** Both sets are sourced simultaneously from FlexMLS. The `Renovation_Calibration_55_v2_Template.xlsx` contains two sheets: "Calibration Set" (55 rows) and "Evaluation Set" (55 rows), with identical column structure.
 
 ---
 
 ### Step 5: Create Calibration Template (XLSX)
 
-**Goal:** Provide a structured spreadsheet for manually sourcing and scoring the 40 properties from FlexMLS.
+**Goal:** Provide a structured spreadsheet for manually sourcing and scoring the 55 calibration + 55 evaluation properties from FlexMLS.
 
-**Template location:** `[comps folder]/Renovation_Calibration_40_Template.xlsx`
+**Template location:** `[comps folder]/Renovation_Calibration_55_v2_Template.xlsx`
 
-**4 sheets:**
-1. **Calibration Set** — 40 pre-populated rows with property specs to fill, scoring columns, photo checklist
-2. **Scoring Rubric** — 5-tier reference with visual markers and example materials
-3. **Room Priority** — Weighted room importance (kitchen 25%, bath 20%, exterior 15%)
-4. **FlexMLS Search Tips** — Maricopa County neighborhoods/ZIPs for each slot
+**Dual-set structure — 5 sheets:**
+1. **Calibration Set** — 55 pre-populated rows with property specs to fill, scoring columns, photo checklist
+2. **Evaluation Set** — 55 pre-populated rows, identical structure, separate properties
+3. **Scoring Rubric** — 5-tier reference with visual markers and example materials (matches the Visual Definition Table from Step 4)
+4. **Room Priority** — Weighted room importance: kitchen 35%, primary bath 25%, flooring 15%, exterior 10%, secondary bath 10%, general finishes 5% (residential); modified weights for multifamily (exterior 25%)
+5. **FlexMLS Search Tips** — Maricopa County neighborhoods/ZIPs for each slot
 
 **Columns to fill from FlexMLS:**
 - MLS #, Full Address, City, ZIP
 - List Price, Sale Price, Sqft, Year Built, Beds, Baths
+- Dwelling Type, Property Type, Total Units (for multifamily)
 - Your Reno Score (1-10), Reno Year Estimate
 - Sub-scores: Kitchen, Bath, Exterior, Design Cohesion (all 1-10)
 - Key Indicators / Notes
 - Photo checklist (has kitchen/bath/exterior photo?)
 
-**Fill order:** Start with the 7 bias anchor properties — they're the most impactful for calibration accuracy.
+**Fill order:** Start with the 10 bias anchor properties — they're the most impactful for calibration accuracy.
+
+**Generator script:** `scripts/generate-calibration-v2-template.mjs` produces the template XLSX with pre-populated slot numbers, dwelling types, and tier targets.
 
 ---
 
@@ -225,23 +255,24 @@ Each rater receives **3 files**:
 
 | File | Purpose |
 |------|---------|
-| `Renovation_Calibration_40_Template.xlsx` | Template to fill in scores (Sheet 1), scoring rubric reference (Sheet 2), room priority weights (Sheet 3) |
-| `Calibration_40_7PhotoFlyer.pdf` | Single 40-page PDF exported from FlexMLS — one property per page, page N = row N in the XLSX |
-| Brief instructions (email/message) | "Score each property independently using the rubric in Sheet 2. Don't discuss with others until we reconcile." |
+| `Renovation_Calibration_55_v2_Template.xlsx` | Template to fill in scores (Sheets 1-2), scoring rubric reference (Sheet 3), room priority weights (Sheet 4) |
+| `Calibration_55_7PhotoFlyer.pdf` + `Evaluation_55_7PhotoFlyer.pdf` | Two PDFs — 55 pages each, exported from FlexMLS. Page N = row N+1 in the corresponding XLSX sheet. |
+| Brief instructions (email/message) | "Score each property independently using the rubric in Sheet 3. Don't discuss with others until we reconcile." |
 
-**How to create the 40-page PDF:**
-1. In FlexMLS, select all 40 properties from your calibration set
+**How to create the 55-page PDFs:**
+1. In FlexMLS, select all 55 calibration properties
 2. Export as **7-Photo Flyer** format (the same template validated in Step 1)
 3. FlexMLS will generate a single PDF with one property per page
-4. Verify page count = 40 and page order matches XLSX row order
-5. If FlexMLS has an export limit per batch, export in batches and merge with a PDF tool
+4. Verify page count = 55 and page order matches XLSX row order
+5. Repeat for the 55 evaluation properties
+6. If FlexMLS has an export limit per batch, export in batches and merge with a PDF tool
 
 **Critical: Page-to-row alignment.** Page 1 of the PDF must correspond to Row 2 (property #1) of the XLSX. If you export in batches or reorder, verify the addresses match before distributing.
 
 #### Round 1: Independent Scoring (No Discussion)
 
 1. All 3 raters receive the rater package above
-2. Each person scores all 40 properties independently using the 7-Photo Flyer PDF
+2. Each person scores all 55 calibration properties AND all 55 evaluation properties independently using the 7-Photo Flyer PDFs
 3. **No talking about scores, no comparing notes** — independence is critical
 4. Each rater fills in: Overall Reno Score (1-10), Reno Year Estimate, Kitchen/Bath/Exterior/Design Cohesion sub-scores, Key Indicators, and Photo checklist
 5. Save as separate files: `Calibration_Rater1.xlsx`, `Calibration_Rater2.xlsx`, `Calibration_Rater3.xlsx`
@@ -256,7 +287,7 @@ Combine the 3 spreadsheets and calculate agreement for each property:
 | **Acceptable** | Spread of 2 points | Use median, flag for review |
 | **Disagreement** | Spread of 3+ points | Requires Round 3 reconciliation |
 
-**Target metric:** Krippendorff's alpha of 0.7+ across all 40 properties indicates solid ground truth. Below 0.6 suggests the rubric needs clarification before proceeding.
+**Target metric:** Krippendorff's alpha of 0.7+ across all 55 calibration properties indicates solid ground truth. Below 0.6 suggests the rubric needs clarification before proceeding.
 
 ```
 Example:
@@ -267,28 +298,28 @@ Example:
 
 #### Krippendorff's Alpha — The Math Behind Calibration
 
-Krippendorff's alpha (α) measures inter-rater reliability for any number of raters, any number of items, and handles ordinal/interval data (which renovation scores are). It's the standard metric for annotation quality in ML training data.
+Krippendorff's alpha (a) measures inter-rater reliability for any number of raters, any number of items, and handles ordinal/interval data (which renovation scores are). It's the standard metric for annotation quality in ML training data.
 
 **The formula:**
 
 ```
-α = 1 - (D_observed / D_expected)
+a = 1 - (D_observed / D_expected)
 ```
 
 Where:
 - **D_observed** = actual disagreement among raters (how much they differ)
 - **D_expected** = disagreement expected by chance (if raters scored randomly)
-- **α = 1.0** → perfect agreement
-- **α = 0.0** → agreement no better than random chance
-- **α < 0** → systematic disagreement (worse than random — raters are actively contradicting each other)
+- **a = 1.0** = perfect agreement
+- **a = 0.0** = agreement no better than random chance
+- **a < 0** = systematic disagreement (worse than random — raters are actively contradicting each other)
 
 **For interval/ordinal data (our 1-10 scores), disagreement is calculated as squared difference:**
 
 ```
-D_observed = (1 / n_pairs) × Σ (score_i - score_j)²
+D_observed = (1 / n_pairs) x SUM (score_i - score_j)^2
     for all rater pairs (i, j) on the same property
 
-D_expected = (1 / n_total_pairs) × Σ (score_i - score_j)²
+D_expected = (1 / n_total_pairs) x SUM (score_i - score_j)^2
     for all possible score pairs across ALL properties and raters
 ```
 
@@ -304,36 +335,36 @@ Property  Rater1  Rater2  Rater3
 
 Step 1: Calculate D_observed
   For each property, compute all pairwise squared differences:
-    #1: (6-7)² + (6-6)² + (7-6)² = 1 + 0 + 1 = 2
-    #2: (3-3)² + (3-4)² + (3-4)² = 0 + 1 + 1 = 2
-    #3: (8-7)² + (8-8)² + (7-8)² = 1 + 0 + 1 = 2
-    #4: (2-4)² + (2-3)² + (4-3)² = 4 + 1 + 1 = 6
-    #5: (5-5)² + (5-6)² + (5-6)² = 0 + 1 + 1 = 2
+    #1: (6-7)^2 + (6-6)^2 + (7-6)^2 = 1 + 0 + 1 = 2
+    #2: (3-3)^2 + (3-4)^2 + (3-4)^2 = 0 + 1 + 1 = 2
+    #3: (8-7)^2 + (8-8)^2 + (7-8)^2 = 1 + 0 + 1 = 2
+    #4: (2-4)^2 + (2-3)^2 + (4-3)^2 = 4 + 1 + 1 = 6
+    #5: (5-5)^2 + (5-6)^2 + (5-6)^2 = 0 + 1 + 1 = 2
 
   Total pairwise disagreement = 2+2+2+6+2 = 14
-  Number of pairs = 5 properties × 3 pairs each = 15
+  Number of pairs = 5 properties x 3 pairs each = 15
   D_observed = 14/15 = 0.933
 
 Step 2: Calculate D_expected
   Pool all 15 scores: [6,7,6, 3,3,4, 8,7,8, 2,4,3, 5,5,6]
   Compute squared differences for ALL possible pairs from the pool.
-  Mean = 4.8, Variance across all pooled scores ≈ 3.64
-  D_expected = 2 × variance = 7.28
-  (For interval data, D_expected = 2× the variance of all pooled scores)
+  Mean = 4.8, Variance across all pooled scores ~ 3.64
+  D_expected = 2 x variance = 7.28
+  (For interval data, D_expected = 2x the variance of all pooled scores)
 
 Step 3: Compute alpha
-  α = 1 - (0.933 / 7.28) = 1 - 0.128 = 0.872
+  a = 1 - (0.933 / 7.28) = 1 - 0.128 = 0.872
 ```
 
-**α = 0.872 → Strong agreement.** The calibration data is reliable.
+**a = 0.872 = Strong agreement.** The calibration data is reliable.
 
 **Interpretation thresholds for renovation scoring:**
 
-| Alpha (α) | Interpretation | Action |
+| Alpha (a) | Interpretation | Action |
 |-----------|---------------|--------|
 | **0.80+** | Strong agreement — ground truth is reliable | Proceed to AI calibration |
-| **0.67–0.79** | Acceptable — usable but some properties need review | Reconcile 3+ point disagreements, re-check rubric clarity |
-| **0.50–0.66** | Weak — raters are interpreting the rubric differently | Stop. Re-train raters on rubric, discuss examples, re-score |
+| **0.67-0.79** | Acceptable — usable but some properties need review | Reconcile 3+ point disagreements, re-check rubric clarity |
+| **0.50-0.66** | Weak — raters are interpreting the rubric differently | Stop. Re-train raters on rubric, discuss examples, re-score |
 | **< 0.50** | Poor — scores are nearly random | Rubric is broken or raters aren't qualified. Redesign rubric. |
 
 **Computing alpha in practice:**
@@ -356,7 +387,7 @@ print(f"Krippendorff's alpha: {alpha:.3f}")
 # Output: Krippendorff's alpha: 0.872
 ```
 
-**Run this after Round 1 (independent scoring) and before Round 3 (reconciliation).** If α ≥ 0.67, proceed to reconciliation of individual disagreements. If α < 0.67, the problem is systemic — the rubric itself needs work before reconciling individual properties.
+**Run this after Round 1 (independent scoring) and before Round 3 (reconciliation).** If a >= 0.67, proceed to reconciliation of individual disagreements. If a < 0.67, the problem is systemic — the rubric itself needs work before reconciling individual properties.
 
 #### Per-Property Disagreement Score
 
@@ -382,8 +413,8 @@ print(property_disagreement(scores_prop_1))  # 0.67 — acceptable
 
 | Disagreement Score | Spread | Action |
 |-------------------|--------|--------|
-| 0.0–0.67 | All within 1 pt | High confidence — use median |
-| 0.67–2.0 | Spread of 2 pts | Acceptable — use median, flag |
+| 0.0-0.67 | All within 1 pt | High confidence — use median |
+| 0.67-2.0 | Spread of 2 pts | Acceptable — use median, flag |
 | 2.0+ | Spread of 3+ pts | Reconciliation required |
 
 #### Round 3: Reconciliation (Only for 3+ Point Disagreements)
@@ -391,7 +422,7 @@ print(property_disagreement(scores_prop_1))  # 0.67 — acceptable
 1. Sit down together and review ONLY the disagreement properties
 2. Each rater explains their score — disagreements typically fall into one of three categories:
    - **Missed detail:** Someone didn't notice a feature in the photos (easy fix — re-score)
-   - **Different room weighting:** One person weighted the kitchen heavily, another weighted the exterior (normalize using the Room Priority weights from Sheet 3)
+   - **Different room weighting:** One person weighted the kitchen heavily, another weighted the exterior (normalize using the Room Priority weights from Sheet 4)
    - **Genuinely ambiguous:** The property doesn't clearly fit a tier (replace with a clearer example from FlexMLS)
 3. Reach consensus score, or replace the property with a less ambiguous example
 4. Document the reconciliation reasoning in the Notes column
@@ -401,165 +432,234 @@ print(property_disagreement(scores_prop_1))  # 0.67 — acceptable
 1. For high-confidence and acceptable properties: use the **median** of the 3 scores
 2. For reconciled properties: use the **consensus** score
 3. Replaced properties: new property gets scored by all 3 raters (repeat Round 1-2 for just those)
-4. Save final ground truth as `Calibration_GroundTruth_Final.xlsx`
+4. Save final ground truth as `Calibration_GroundTruth_Final_v2.xlsx`
 
-**Expected outcomes for 40 properties:**
-- ~25-30 high confidence (within 1 point)
-- ~6-10 acceptable (spread of 2)
-- ~3-5 disagreements requiring reconciliation
-- ~1-2 replacements
+**Expected outcomes for 55 calibration properties:**
+- ~35-40 high confidence (within 1 point)
+- ~10-12 acceptable (spread of 2)
+- ~4-6 disagreements requiring reconciliation
+- ~1-3 replacements
+
+**Expected outcomes for 55 evaluation properties:** Similar distribution. Reconcile these too, but seal the final scores until after calibration-phase prompt tuning is complete.
 
 #### Practical Timeline
 
 | Phase | Time | Who |
 |-------|------|-----|
-| Rater 1 fills template | 2-3 hours | You (can start immediately) |
+| Rater 1 fills both sets (110 properties) | 5-7 hours | You (can start immediately) |
 | Distribute to Raters 2 & 3 | 3-5 days elapsed | Waiting on others |
-| Calculate agreement | 1 hour | You (automated with script) |
-| Reconciliation meeting | 1 hour | All 3 raters |
+| Calculate agreement (both sets) | 2 hours | You (automated with script) |
+| Reconciliation meeting | 2 hours | All 3 raters |
 | Final assembly | 30 min | You |
 
-**Shortcut path:** Fill it out yourself first, get the pipeline working end-to-end with single-rater scores. Then before production use, run the 3-rater protocol on the same 40 properties and swap in the median scores. This way you're not blocked waiting on other people, but you get the quality boost before it matters.
+**Shortcut path:** Fill it out yourself first, get the pipeline working end-to-end with single-rater scores. Then before production use, run the 3-rater protocol on the same 55+55 properties and swap in the median scores. This way you're not blocked waiting on other people, but you get the quality boost before it matters.
 
 ---
 
-### Step 7: AI Scoring & Prompt Calibration (PENDING)
+### Step 7: AI Scoring & Prompt Calibration
 
-**Goal:** Run the vision AI pipeline against the 40 calibration properties and tune the prompt until accuracy meets threshold.
+**Goal:** Tune the vision AI prompt on the 55-property calibration set, then measure accuracy on the 55-property held-out evaluation set.
 
-**Process:**
-1. Export each property as a 7-Photo Flyer from FlexMLS
-2. Run the extraction pipeline on all 40 PDFs
-3. Send extracted images to vision API with renovation scoring prompt
-4. Compare AI scores vs multi-rater ground truth (median scores)
-5. Calculate accuracy: % of properties within 1 point of ground truth
-6. Analyze systematic errors (does the AI consistently over/under-score a dwelling type or tier?)
-7. Adjust prompt if accuracy < 80%
-8. Re-run and iterate (expect 2-3 rounds of prompt tuning)
+#### Calibration Phase (Tune on Cal Set)
 
-**Accuracy targets:**
-- Within 1 point of ground truth: **80%+** (32/40 properties)
-- Within 2 points: **95%+** (38/40 properties)
+1. Export all 55 calibration properties as 7-Photo Flyer PDFs from FlexMLS
+2. Run the scoring pipeline (`scorePropertiesFromPDFs`) against the calibration PDF
+3. Compare AI scores vs multi-rater ground truth (median scores)
+4. Calculate accuracy: % of properties within 1 point of ground truth
+5. Analyze systematic errors by dwelling type, tier, and bias anchor performance
+6. Adjust prompt in `lib/processing/renovation-scoring/prompts.ts` if accuracy < 80%
+7. Re-run and iterate (expect 2-3 rounds of prompt tuning)
+
+**Calibration accuracy targets (on cal set):**
+- Within 1 point of ground truth: **80%+** (44/55 properties)
+- Within 2 points: **95%+** (52/55 properties)
 - Mean absolute error: **< 1.0 points**
 
+**Per-dwelling-type targets:**
+- SFR (n=18): within 1pt on 80%+
+- Apartment (n=12): within 1pt on 80%+
+- Multifamily (n=12): within 1pt on 75%+ (harder due to mixed-condition units)
+- Townhouse (n=6): within 1pt on 4/6 minimum
+- Ultra-Lux (n=5): within 1pt on 3/5 minimum
+
 **If accuracy is below target, check for:**
-- Dwelling type bias (e.g., consistently scores condos higher than SFRs at same quality)
+- Dwelling type bias (e.g., consistently scores apartments higher than SFRs at same quality)
 - Price tier bias (e.g., scores luxury properties higher regardless of actual renovation)
 - Room coverage gaps (e.g., properties without kitchen photos get unreliable scores)
+- Era fingerprint confusion (e.g., conflating Travertine Era with Current Flip materials)
+
+#### Evaluation Phase (Measure on Held-Out Eval Set)
+
+1. **Freeze the prompt** — no more changes after this point
+2. Run the frozen pipeline against the 55-property evaluation PDF exactly once
+3. Compare AI scores vs evaluation ground truth
+4. Report final accuracy metrics
+
+**Evaluation accuracy targets (on eval set):**
+- Within 1 point of ground truth: **75%+** (42/55 properties)
+- Within 2 points: **90%+** (50/55 properties)
+- Mean absolute error: **< 1.2 points**
+
+Evaluation targets are intentionally lower than calibration targets because the eval set is unseen.
+
+**Power analysis caveat:** Townhouse (n=6) and Ultra-Lux (n=5) have small sample sizes. Per-type accuracy on these sub-groups is directional, not statistically significant. If either sub-group shows > 2-point mean absolute error, expand the calibration set for that type before production use.
 
 ---
 
-### Step 8: Integrate into gs-crm ReportIt (PENDING)
+### Step 8: Vision AI Pipeline Architecture (IMPLEMENTED)
 
-**Target:** MLS Upload page in gs-crm
+**Status:** Core pipeline implemented in Phases 6-8C. Replaces the manual Steps 4-6 scoring workflow for initial deployment; manual calibration remains the ground-truth reference for prompt tuning.
 
-**Pipeline architecture:**
-1. User uploads 7-Photo Flyer PDF (may contain 100-150 properties, one per page)
-2. PyMuPDF extracts images + text per page
-3. Filter branding images (aspect ratio < 0.7)
-4. Batch images per property (address from text extraction)
-5. Send each property's photos to vision API
-6. Parse JSON response for renovation score + year estimate
-7. Auto-populate Column R (RENOVATE_SCORE) in Analysis sheet
-8. Continue to existing 26-analysis ReportIt pipeline
+**Target:** MLS Upload page in gs-crm (`app/admin/upload/page.tsx`)
+
+#### Architecture Decision: Claude Native PDF (No Image Extraction)
+
+The original plan (Steps 2-3) validated PyMuPDF-based image extraction. The implemented pipeline takes a fundamentally different approach: **Claude's `document` content type accepts raw PDF buffers directly.** This eliminates the entire image extraction layer.
+
+- **No PyMuPDF, no Pillow, no base64 encoding** — PDF bytes go straight to the API
+- **No branding image filtering needed** — Claude sees the full page and ignores non-property-photo elements
+- **PDF splitting uses `pdf-lib`** (pure JS, no native binaries) instead of PyMuPDF (Python + WASM)
+- **Text extraction uses `unpdf`** for address parsing from the text layer
+
+This decision removed all Python dependencies, WASM binaries, and native module deployment risks from the Vercel function.
+
+#### 8-File Renovation Scoring Module
+
+All vision scoring code lives in `lib/processing/renovation-scoring/`:
+
+| File | Purpose |
+|------|---------|
+| `index.ts` | Orchestrator — `scorePropertiesFromPDFs()` async generator that yields SSE progress events |
+| `types.ts` | All TypeScript interfaces: `PropertyScore`, `ScoringResult`, `ScoringProgress`, `DwellingTypeInfo`, `PDFChunk`, `AddressMatch`, etc. |
+| `pdf-splitter.ts` | Concatenates multiple PDFs into one, splits into chunks (max 100 pages/chunk) using `pdf-lib` |
+| `text-extractor.ts` | Extracts text per page via `unpdf`, parses Arizona addresses with regex (AZ-specific + broad street pattern) |
+| `address-mapper.ts` | Progressive address matching: exact -> normalized -> street_number_name -> claude_detected. Builds indexed lookup from MLSRow data. |
+| `dwelling-detector.ts` | Classifies properties as residential/multifamily from structured MLS fields (Property Type, Total Units, Project Type, remarks regex). No LLM call needed. |
+| `prompts.ts` | Builds dwelling-type-aware scoring prompts. Residential prompt (kitchen 35%, bath 25%) vs multifamily prompt (exterior 25%, kitchen 25%). Includes era fingerprints and per-door pricing context. |
+| `vision-scorer.ts` | Sends PDF chunks to Claude Sonnet via `@anthropic-ai/sdk`. Handles batching (`p-limit` concurrency), retry on JSON parse / out-of-range errors, score clamping, and multifamily unit-level parsing. |
+
+#### Dwelling Type Detection
+
+Dwelling type is detected from structured CSV fields without an LLM call:
+
+1. **Property Type = "MultiFamily"** -> check `totalUnits` for sub-type (duplex/triplex/fourplex/small_apt)
+2. **Project Type** -> map FlexMLS enum to sub-type
+3. **Remarks regex** -> catch hidden multifamily ("duplex" mentioned in remarks but dwelling type is blank)
+4. **Dwelling Type field** -> map "Single Family - Detached", "Apartment", "Condo" (mapped to apartment), "Townhouse", "Patio Home"
+5. **Default** -> residential SFR
+
+This is an architectural decision: structured MLS fields are more reliable than vision-based dwelling classification, and it's free (no API call).
+
+#### SSE Streaming Pattern
+
+The `score-pdf` API route (`app/api/admin/upload/score-pdf/route.ts`) returns a `ReadableStream` with `text/event-stream` content type. Progress events are emitted at each pipeline stage:
+
+1. `downloading` — fetching PDFs from Supabase Storage
+2. `pdf_concatenating` / `pdf_splitting` — merging and chunking PDFs
+3. `text_extracting` — parsing addresses from text layer
+4. `address_mapping` — matching to CSV data
+5. `dwelling_detecting` — classifying property types
+6. `scoring_batch` / `scoring_property` — Claude vision API calls
+7. `scoring_complete` — final results with stats
+8. `error` — on failure
+
+Keepalive comments (`: keepalive\n\n`) are sent every 20 seconds to prevent Cloudflare/Vercel idle-read timeout (100 seconds). The `maxDuration` is set to 300 seconds (5 min, Vercel Pro plan).
+
+#### Address Matching (Dual Source)
+
+Address matching uses two independent sources for maximum coverage:
+
+1. **Primary: `unpdf` text extraction** — parses the PDF text layer for Arizona addresses (regex-based). Runs before vision scoring. Progressive matching: exact -> normalized (stripped punctuation, standardized directionals/suffixes) -> street number + name only.
+2. **Fallback: Claude-detected address** — the scoring prompt asks Claude to return `detected_address` for each page. After scoring completes, any unmatched pages are re-checked against the CSV using Claude's address output.
+
+This dual approach handles cases where the PDF text layer is malformed or missing (scanned PDFs) and cases where `unpdf` regex misparses a non-standard address format.
+
+#### Pipeline Flow (End-to-End)
+
+```
+User uploads 7-Photo Flyer PDFs (up to 4 files)
+    |-> Client uploads to Supabase Storage (bypasses Vercel 4.5MB body limit)
+    |-> Client sends storage paths + CSV property data to score-pdf API
+    |
+score-pdf API (SSE stream):
+    |-> Download PDFs from Supabase Storage
+    |-> pdf-lib: concatenate + split into chunks (max 100 pages/chunk)
+    |-> unpdf: extract text, parse addresses per page
+    |-> address-mapper: match to CSV rows (exact/normalized/street)
+    |-> dwelling-detector: classify each property from MLS fields
+    |-> vision-scorer: send PDF chunks to Claude Sonnet (5 concurrent)
+    |       |-> Build dwelling-type-aware prompt (residential or multifamily)
+    |       |-> Claude returns JSON array of scored properties
+    |       |-> Validate + clamp scores, parse room breakdowns
+    |       |-> Retry once on JSON parse or out-of-range errors
+    |-> address-mapper: re-match unmatched pages using Claude-detected addresses
+    |-> Emit scoring_complete with all PropertyScore results
+    |
+Client receives scores, populates RENOVATE_SCORE + RENO_YEAR_EST columns
+```
 
 **Processing estimates at scale (125 properties):**
 
 | Phase | Time | Cost |
 |-------|------|------|
-| PDF extraction | ~40 sec | Free |
-| Vision API (10 concurrent) | ~4-6 min | ~$3.00 (Sonnet) |
-| Total | ~5-7 min | ~$3.00 |
+| PDF upload to Supabase | ~10-30 sec | Free |
+| PDF split + text extraction | ~5-10 sec | Free |
+| Vision API (5 concurrent chunks) | ~3-5 min | ~$3.00 (Sonnet) |
+| Total | ~4-6 min | ~$3.00 |
 
 ---
 
-## Extending the Calibration Set
+## Extending the Calibration Set (v2 Plan)
 
-### Breaking Up Ultra-Luxury (Future)
+### Adding Properties to Existing Types
 
-The current calibration set has 4 ultra-luxury properties all in a single $2.5M+ bucket. For more granular scoring at the high end, expand to:
+To improve accuracy for a specific dwelling type:
+1. Add 4-6 properties to both calibration and evaluation sets (maintain symmetry)
+2. Focus on the tier boundaries where the model struggles (typically T2/T3 and T4/T5)
+3. Include at least 1 new bias anchor per expansion
+4. Re-run calibration phase only; re-score evaluation set only if prompt changed materially
 
-| Slot | Price Range | Count | Reno Tiers |
-|------|------------|-------|------------|
-| Ultra-Lux Tier 1 | $2.5M–$3.5M | 4 | Dated, Flip, High-Quality, Luxury |
-| Ultra-Lux Tier 2 | $3.5M–$5M | 4 | Dated, Flip, High-Quality, Luxury |
-| Ultra-Lux Tier 3 | $5M+ | 3-4 | Dated, High-Quality, Pinnacle |
-
-This would add 8-12 properties (bringing total to 48-52) and is recommended if the pipeline will regularly process luxury markets.
-
-**Key bias anchors to add:**
-- Dated $3.5M–$5M property (original 2000s McMansion never updated)
-- Dated $5M+ property (1990s Paradise Valley estate)
-
-**When to do this:** After the initial 40-property calibration proves the pipeline works. Don't expand until Step 6 is complete and accuracy is validated.
-
-### Adding New Dwelling Types (Future)
+### Adding New Dwelling Types
 
 To add a new dwelling type (e.g., Mobile Home, Patio Home):
-1. Add 4-6 properties spanning 2 price tiers
+1. Add 6-8 properties to both calibration and evaluation sets spanning 2+ price tiers
 2. Include at least 1 bias anchor (over-improved for type)
-3. Include Tier 3 (Full Flip) — always the most important tier to calibrate
-4. Re-run calibration and check for type-specific scoring drift
+3. Include T3 (Full Cosmetic Flip) — always the most important tier to calibrate
+4. Add dwelling-type-specific prompt variant in `prompts.ts` if room weights differ
+5. Add detection logic in `dwelling-detector.ts`
+6. Re-run full calibration + evaluation cycle
 
 ### Repeating This Process for a Different Market
 
 To replicate for a market outside Maricopa County:
-1. Confirm FlexMLS is the MLS system (parser is FlexMLS-specific)
-2. Adjust price tiers to match local market ranges
-3. Update FlexMLS Search Tips sheet with local neighborhoods
-4. Keep the same dwelling type x quality tier matrix
-5. Re-calibrate with 40 local properties (scores may need prompt adjustment for regional architectural styles)
+1. Confirm FlexMLS is the MLS system (text-extractor regex is FlexMLS-specific)
+2. Update address regex in `text-extractor.ts` for the target state
+3. Adjust price tiers to match local market ranges
+4. Update era fingerprints in `prompts.ts` for regional architectural styles
+5. Update FlexMLS Search Tips sheet with local neighborhoods
+6. Keep the same dwelling type x quality tier matrix
+7. Re-calibrate with 55+55 local properties
 
 ---
 
 ## Technical Reference
 
-### Libraries Required
-- `PyMuPDF` (fitz) — PDF image extraction + text extraction + page rendering
-- `openpyxl` — Excel read/write for template and Analysis sheet
-- `Pillow` (PIL) — Image preprocessing (resize, format conversion, base64 encoding)
-- `anthropic` or `openai` — Vision API client
+### Libraries (Implemented)
+- `pdf-lib` — PDF concatenation, splitting, page count (pure JS, no native binaries)
+- `unpdf` — PDF text extraction for address parsing
+- `@anthropic-ai/sdk` — Claude vision API client (Sonnet model)
+- `p-limit` — Concurrency control for parallel API calls
+- `exceljs` (in generate-excel route) — Excel read/write for Analysis sheet
 
-### Branding Image Filter
-```python
-# Filter out agent headshots / brokerage logos
-if img_width / img_height < 0.7:
-    skip  # Tall portrait = branding, not property photo
-```
+### Legacy Libraries (From Feasibility Testing, NOT in Production)
+- `PyMuPDF` (fitz) — Validated in Step 2 but replaced by Claude native PDF
+- `Pillow` (PIL) — Not needed; no image preprocessing required
+- `openpyxl` — Python Excel library; replaced by `exceljs` in TypeScript
 
-### Image Preprocessing for Vision API
-```python
-# Skip tiny images (logos, icons)
-if img.width < 200 or img.height < 200:
-    return None
-
-# Resize large images to control API token cost
-if max(img.width, img.height) > 1568:
-    ratio = 1568 / max(img.width, img.height)
-    img = img.resize((int(img.width * ratio), int(img.height * ratio)))
-
-# Convert to JPEG, base64 encode for API
-buffer = io.BytesIO()
-img.convert("RGB").save(buffer, format="JPEG", quality=85)
-return base64.b64encode(buffer.getvalue()).decode()
-```
-
-### Vision API Prompt (to be calibrated in Step 6)
-```
-Analyze these property photos and provide:
-1. Renovation Quality Score (1-10)
-2. Estimated Renovation Year
-3. Key Indicators (3-5 specific visual elements)
-4. Room Type per photo
-
-Respond in JSON format.
-```
-
-### Cost Model
-- Claude Sonnet: ~$0.025/property (6 images + prompt)
-- Claude Haiku: ~$0.005/property
-- Two-pass (Haiku screen → Sonnet detail on top 30%): ~$0.013/property avg
-- 125 properties: $1.65–$3.50 depending on approach
+### Cost Model (Implemented — Single-Pass Sonnet)
+- Claude Sonnet: ~$0.025/property (full PDF page + prompt)
+- 125 properties: ~$3.00
+- No two-pass approach needed — calibration testing showed single-pass with detailed rubric-in-prompt is sufficient (max 0.7pt deviation)
 
 ---
 
@@ -567,13 +667,19 @@ Respond in JSON format.
 
 | File | Path |
 |------|------|
-| Calibration Template | `[comps folder]/Renovation_Calibration_40_Template.xlsx` |
+| Calibration Template (v2) | `[comps folder]/Renovation_Calibration_55_v2_Template.xlsx` |
+| Template Generator Script | `apps/gs-crm/scripts/generate-calibration-v2-template.mjs` |
 | Edge Cases & Gotchas | `apps/gs-crm/docs/calibration/v1/reportit-calibrate-edge-cases.md` |
 | This Document | `apps/gs-crm/docs/calibration/v1/reportit-mlsupload-calibrate.md` |
+| v2 Calibration Improvements | `apps/gs-crm/docs/calibration/v2/50improved-calibrate.md` |
+| Combined Cal+Vision Plan | `apps/gs-crm/docs/calibration/vision/combined-calibration-vision-plan.md` |
+| Multifamily Scoring Guide | `apps/gs-crm/docs/calibration/vision/multifamily-scoring-guide.md` |
 | ReportIt Field Mapping | `apps/gs-crm/docs/reference/REPORTIT_FIELD_MAPPING.md` |
-| ReportIt Upload API | `apps/gs-crm/app/api/admin/reportit/upload/route.ts` |
+| Renovation Scoring Module | `apps/gs-crm/lib/processing/renovation-scoring/` (8 files) |
+| Score PDF API | `apps/gs-crm/app/api/admin/upload/score-pdf/route.ts` |
+| Upload PDF API | `apps/gs-crm/app/api/admin/upload/upload-pdf/route.ts` |
+| MLS Upload Page | `apps/gs-crm/app/admin/upload/page.tsx` |
 | Sample PDFs | `[comps folder]/pdfoutputs/` |
-| Extracted Images (temp) | `/tmp/pdf_image_extraction/` |
 
 ---
 
@@ -588,3 +694,18 @@ Respond in JSON format.
 | Defer ultra-luxury breakup to $5M | Validate pipeline on 40-property set first; expand only if processing luxury markets regularly | 2026-02-18 |
 | Multi-rater calibration (3 raters) | Median of 3 independent scores eliminates individual bias, surfaces ambiguous properties; agent + appraiser + contractor is ideal mix | 2026-02-18 |
 | Single-rater first, multi-rater before production | Don't block pipeline development waiting on others; upgrade ground truth before real client use | 2026-02-18 |
+| Expand from 40 to 55 calibration slots | Added Multifamily (12) dwelling type; increased Apartment from 6 to 12 (absorbing Condo); increased Ultra-Lux from 4 to 5 | 2026-02-19 |
+| Fold Condo into Apartment | MLS "Condo" and "Apartment" have identical photo characteristics; dwelling-detector already maps both to `apartment`; separate calibration slots waste limited sample budget | 2026-02-19 |
+| Add held-out evaluation set (55 properties) | Calibration-set accuracy is inflated because prompt was tuned on it; held-out set gives realistic production accuracy estimate | 2026-02-19 |
+| 10 bias anchors (up from 7) | Added multifamily-specific anchors (#33 duplex, #41 fourplex mixed-condition, #48 small apt) for new dwelling type coverage | 2026-02-19 |
+| Tier count distribution: T3 heaviest at 31% | Most Maricopa County flipped inventory lands in T3 (5-6); getting this boundary right has the highest real-world impact | 2026-02-19 |
+| Claude native PDF over PyMuPDF image extraction | Eliminates Python deps, WASM binaries, and branding-filter logic; Claude sees the whole page and handles layout natively | 2026-02-19 |
+| pdf-lib for PDF splitting (not PyMuPDF) | Pure JS library, zero native binaries, works in Vercel serverless functions without WASM configuration | 2026-02-19 |
+| unpdf for text extraction (address parsing only) | Lightweight text layer extraction; address regex handles 95%+ of FlexMLS Arizona addresses; Claude fallback covers the rest | 2026-02-19 |
+| Dual address matching (unpdf + Claude-detected) | Text layer parsing misses some addresses (scanned PDFs, non-standard formats); Claude sees the visual address on the page as fallback | 2026-02-19 |
+| Dwelling type from structured fields (no LLM call) | MLS Property Type, Total Units, and Project Type are reliable enums; saves API cost and latency vs. vision-based classification | 2026-02-19 |
+| SSE streaming for progress (not polling) | Cloudflare 100-sec idle timeout would kill a synchronous POST; SSE with keepalive comments prevents timeout without job queue infrastructure | 2026-02-19 |
+| Single-pass Sonnet (not two-pass Haiku+Sonnet) | Step 3 showed max 0.7pt deviation; detailed rubric-in-prompt eliminates need for pre-screening pass; halves API cost | 2026-02-19 |
+| Upload PDFs to Supabase Storage (not Vercel body) | Vercel has 4.5MB body limit on all plans; 30-125 property PDFs are 10-80MB; Supabase signed upload URLs bypass the limit | 2026-02-19 |
+| Multifamily exterior weight 25% (up from 10%) | Exterior condition drives rental income, tenant quality, and rent premiums; more impactful than in residential context | 2026-02-19 |
+| Power analysis caveat for TH/Ultra-Lux | n=6 and n=5 are too small for per-type statistical significance; report as directional only | 2026-02-19 |

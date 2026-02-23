@@ -25,34 +25,49 @@ The rental rate estimation is based on the property's sale price and renovation 
 monthlyRent = salePrice × renovationMultiplier
 ```
 
-#### Renovation Multipliers
+#### Renovation Multipliers (Score x Recency)
 
-| RENOVATE_SCORE | Monthly Multiplier | Annual Rate | Description |
-|----------------|-------------------|-------------|-------------|
-| **Y** (Yes) | 0.0065 | 7.8% | Fully renovated property |
-| **0.5** (Partial) | 0.0055 | 6.6% | Partially renovated property |
-| **N** (No) | 0.0045 | 5.4% | Not renovated property |
+The system uses a 2D lookup: the normalized 1-10 renovation score combined with renovation recency (derived from `RENO_YEAR_EST`).
+
+| Score Range | Tier | Fresh (<=3yr) | Mid (4-10yr) | Dated (>10yr) |
+|-------------|------|---------------|--------------|---------------|
+| **9-10** | High | 0.0070 | 0.0065 | 0.0055 |
+| **7-8** | High | 0.0065 | 0.0060 | 0.0053 |
+| **5-6** | Mid | 0.0058 | 0.0055 | 0.0050 |
+| **3-4** | Low | 0.0050 | 0.0048 | 0.0046 |
+| **1-2** | Low | 0.0045 | 0.0045 | 0.0045 |
+
+**Legacy coercion:** Y→7, 0.5→5, N→2. Missing RENO_YEAR_EST defaults to 'Mid' recency.
 
 #### Implementation
 
 ```javascript
-function estimateMonthlyRent(salePrice, renovateScore) {
-  const multipliers = {
-    'Y': 0.0065,    // Premium for fully renovated
-    '0.5': 0.0055,  // Mid-range for partial renovation
-    'N': 0.0045,    // Base rate for unrenovated
-    'default': 0.0050 // Fallback if score unknown
+function getNoiMultiplier(score, renoYear) {
+  const recency = getRenoRecency(renoYear); // 'Fresh' | 'Mid' | 'Dated'
+  const s = Math.round(Math.max(1, Math.min(10, score)));
+
+  const table = {
+    '1-2':  [0.0045, 0.0045, 0.0045],
+    '3-4':  [0.0050, 0.0048, 0.0046],
+    '5-6':  [0.0058, 0.0055, 0.0050],
+    '7-8':  [0.0065, 0.0060, 0.0053],
+    '9-10': [0.0070, 0.0065, 0.0055],
   };
 
-  const multiplier = multipliers[renovateScore] || multipliers['default'];
+  // Select row by score range, column by recency
+  const [fresh, mid, dated] = table[rangeKey(s)];
+  return recency === 'Fresh' ? fresh : recency === 'Mid' ? mid : dated;
+}
+
+function estimateMonthlyRent(salePrice, score, renoYear) {
+  const multiplier = getNoiMultiplier(score, renoYear);
   return Math.round(salePrice * multiplier);
 }
 
-// Example calculations
-// $400,000 property:
-// - Renovated (Y): $400,000 × 0.0065 = $2,600/month
-// - Partial (0.5): $400,000 × 0.0055 = $2,200/month
-// - Not renovated (N): $400,000 × 0.0045 = $1,800/month
+// Example calculations ($400,000 property):
+// - Score 8, reno 2024 (High+Fresh): $400,000 × 0.0065 = $2,600/month
+// - Score 5, reno 2019 (Mid+Mid):    $400,000 × 0.0055 = $2,200/month
+// - Score 2, any recency (Low):      $400,000 × 0.0045 = $1,800/month
 ```
 
 ---
@@ -106,18 +121,20 @@ function getAdjustedExpenseRatio(propertyType, renovateScore, age) {
     'Multi-Family': +0.05
   };
 
-  // Renovation score adjustments
+  // Renovation tier adjustments (score 1-10 mapped to tier)
+  // High (7-10): -0.05, Mid (4-6): 0, Low (1-3): +0.05
   const renovationAdjustments = {
-    'Y': -0.05,   // Lower maintenance for renovated
-    '0.5': 0,     // No adjustment for partial
-    'N': +0.05    // Higher maintenance for unrenovated
+    'High': -0.05,   // Lower maintenance for high-score renovations
+    'Mid': 0,        // No adjustment for mid-tier
+    'Low': +0.05     // Higher maintenance for low-score / unrenovated
   };
+  const renoTier = score >= 7 ? 'High' : score >= 4 ? 'Mid' : 'Low';
 
   // Age adjustments
   const ageAdjustment = age > 20 ? 0.02 : 0; // 2% increase for older properties
 
   ratio += typeAdjustments[propertyType] || 0;
-  ratio += renovationAdjustments[renovateScore] || 0;
+  ratio += renovationAdjustments[renoTier] || 0;
   ratio += ageAdjustment;
 
   // Ensure ratio stays within reasonable bounds
@@ -317,17 +334,19 @@ function calculateROI(property, holdingPeriod = 5) {
 
 ### 7. NOI with Cosmetic Improvements
 
-Calculates the impact of upgrading from RENOVATE_SCORE 'N' to '0.5'.
+Calculates the impact of upgrading from a Low-tier score to a Mid-tier score (e.g., score 2 to score 5).
 
 ```javascript
-function calculateImprovedNOI(property, improvementCost = 15000) {
-  // Current NOI (not renovated)
-  const currentProperty = {...property, renovateScore: 'N'};
-  const currentNOI = calculateNOI(currentProperty);
+function calculateImprovedNOI(property, fromScore = 2, toScore = 5) {
+  const improvementCost = estimateImprovementCost(fromScore, toScore);
 
-  // Improved NOI (partially renovated)
-  const improvedProperty = {...property, renovateScore: '0.5'};
-  const improvedNOI = calculateNOI(improvedProperty);
+  // Current NOI (low-tier score)
+  const currentMultiplier = getNoiMultiplier(fromScore, property.renoYear);
+  const currentNOI = calculateNOIWithMultiplier(property, currentMultiplier);
+
+  // Improved NOI (mid-tier score, fresh recency since just renovated)
+  const improvedMultiplier = getNoiMultiplier(toScore, new Date().getFullYear());
+  const improvedNOI = calculateNOIWithMultiplier(property, improvedMultiplier);
 
   // Calculate improvements
   const monthlyRentIncrease = improvedNOI.monthlyRent - currentNOI.monthlyRent;
@@ -385,17 +404,19 @@ function calculateImprovedNOI(property, improvementCost = 15000) {
 
 ### 8. Full Renovation Analysis
 
-Analyzes upgrade from RENOVATE_SCORE 'N' to 'Y'.
+Analyzes upgrade from a Low-tier score to a High-tier score (e.g., score 2 to score 8).
 
 ```javascript
-function calculateFullRenovationNOI(property, renovationCost = 35000) {
-  // Current NOI (not renovated)
-  const currentProperty = {...property, renovateScore: 'N'};
-  const currentNOI = calculateNOI(currentProperty);
+function calculateFullRenovationNOI(property, fromScore = 2, toScore = 8) {
+  const renovationCost = estimateImprovementCost(fromScore, toScore);
 
-  // Fully renovated NOI
-  const renovatedProperty = {...property, renovateScore: 'Y'};
-  const renovatedNOI = calculateNOI(renovatedProperty);
+  // Current NOI (low-tier score)
+  const currentMultiplier = getNoiMultiplier(fromScore, property.renoYear);
+  const currentNOI = calculateNOIWithMultiplier(property, currentMultiplier);
+
+  // Fully renovated NOI (high-tier, fresh recency)
+  const renovatedMultiplier = getNoiMultiplier(toScore, new Date().getFullYear());
+  const renovatedNOI = calculateNOIWithMultiplier(property, renovatedMultiplier);
 
   // Value addition
   const estimatedValueIncrease = renovationCost * 1.5; // 150% of cost
@@ -585,19 +606,19 @@ Prepare data for NOI visualization charts.
 ```javascript
 function prepareNOIChartData(properties) {
   return {
-    // Bar chart: NOI by renovation score
+    // Bar chart: NOI by renovation tier
     noiByRenovation: {
-      labels: ['Not Renovated', 'Partial', 'Fully Renovated'],
+      labels: ['Low (1-3)', 'Mid (4-6)', 'High (7-10)'],
       datasets: [{
         label: 'Annual NOI',
         data: [
-          properties.filter(p => p.renovateScore === 'N')
+          properties.filter(p => p.renovateScore <= 3)
                    .map(p => calculateNOI(p).netOperatingIncome)
                    .reduce((sum, noi, _, arr) => sum + noi / arr.length, 0),
-          properties.filter(p => p.renovateScore === '0.5')
+          properties.filter(p => p.renovateScore >= 4 && p.renovateScore <= 6)
                    .map(p => calculateNOI(p).netOperatingIncome)
                    .reduce((sum, noi, _, arr) => sum + noi / arr.length, 0),
-          properties.filter(p => p.renovateScore === 'Y')
+          properties.filter(p => p.renovateScore >= 7)
                    .map(p => calculateNOI(p).netOperatingIncome)
                    .reduce((sum, noi, _, arr) => sum + noi / arr.length, 0)
         ],
@@ -642,7 +663,8 @@ function prepareNOIChartData(properties) {
 // Example: Complete NOI analysis for a property
 const property = {
   salePrice: 425000,
-  renovateScore: '0.5',
+  renovateScore: 5,       // Mid-tier (was '0.5')
+  renoYear: 2019,         // Mid recency (7yr old reno)
   propertyType: 'Single Family',
   age: 15,
   annualTax: 4250,
@@ -680,15 +702,19 @@ console.log('Market position:', comparison.market.subjectPosition);
 ```javascript
 describe('NOI Calculations', () => {
   test('rental rate calculation', () => {
-    expect(estimateMonthlyRent(400000, 'Y')).toBe(2600);
-    expect(estimateMonthlyRent(400000, '0.5')).toBe(2200);
-    expect(estimateMonthlyRent(400000, 'N')).toBe(1800);
+    // High tier + Fresh recency
+    expect(estimateMonthlyRent(400000, 8, 2024)).toBe(2600);
+    // Mid tier + Mid recency
+    expect(estimateMonthlyRent(400000, 5, 2019)).toBe(2200);
+    // Low tier (recency irrelevant)
+    expect(estimateMonthlyRent(400000, 2, null)).toBe(1800);
   });
 
   test('NOI calculation', () => {
     const property = {
       salePrice: 400000,
-      renovateScore: 'Y',
+      renovateScore: 8,
+      renoYear: 2024,
       propertyType: 'Condo',
       age: 10
     };
@@ -702,10 +728,11 @@ describe('NOI Calculations', () => {
   test('improvement analysis', () => {
     const property = {
       salePrice: 400000,
-      renovateScore: 'N'
+      renovateScore: 2,
+      renoYear: null
     };
 
-    const improvement = calculateImprovedNOI(property, 15000);
+    const improvement = calculateImprovedNOI(property, 2, 5);
     expect(improvement.improvements.noiIncrease).toBeGreaterThan(0);
     expect(improvement.metrics.paybackPeriod).toBeLessThan(10);
   });

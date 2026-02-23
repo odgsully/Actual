@@ -1,3 +1,7 @@
+// Note (Feb 2026): RENOVATE_SCORE upgraded from Y/N/0.5 to 1-10 numeric + RENO_YEAR_EST.
+// Vision AI auto-scoring via FlexMLS PDF pipeline now available.
+// See docs/calibration/ for current schema and docs/reference/vision-scoring-pipeline.md for the AI pipeline reference.
+
 /**
  * Example Usage of Break-ups PDF Generator
  *

@@ -123,32 +123,34 @@ function analyzeSTR(properties) {
 
 ---
 
-### 4. RENOVATE_SCORE Impact (Y vs N vs 0.5)
+### 4. RENOVATE_SCORE Impact (High vs Mid vs Low Tier)
 
-**Purpose:** Analyze impact of renovation status on property values
+**Purpose:** Analyze impact of renovation score tiers on property values
+
+**Tiers:** High (score 7-10), Mid (score 4-6), Low (score 1-3)
 
 **Calculation:**
 ```javascript
 function analyzeRenovationImpact(properties) {
-  const renovated = properties.filter(p => p.RENOVATE_SCORE === 'Y');
-  const notRenovated = properties.filter(p => p.RENOVATE_SCORE === 'N');
-  const partial = properties.filter(p => p.RENOVATE_SCORE === '0.5');
+  const high = properties.filter(p => p.RENOVATE_SCORE >= 7);
+  const mid = properties.filter(p => p.RENOVATE_SCORE >= 4 && p.RENOVATE_SCORE <= 6);
+  const low = properties.filter(p => p.RENOVATE_SCORE <= 3);
 
   const analysis = {
-    Y: calculateMetrics(renovated),
-    N: calculateMetrics(notRenovated),
-    '0.5': calculateMetrics(partial)
+    High: calculateMetrics(high),
+    Mid: calculateMetrics(mid),
+    Low: calculateMetrics(low)
   };
 
   return {
     ...analysis,
-    premiumYvsN: ((analysis.Y.avgPrice - analysis.N.avgPrice) / analysis.N.avgPrice) * 100,
-    premium05vsN: ((analysis['0.5'].avgPrice - analysis.N.avgPrice) / analysis.N.avgPrice) * 100
+    premiumHighVsLow: ((analysis.High.avgPrice - analysis.Low.avgPrice) / analysis.Low.avgPrice) * 100,
+    premiumMidVsLow: ((analysis.Mid.avgPrice - analysis.Low.avgPrice) / analysis.Low.avgPrice) * 100
   };
 }
 ```
 
-**Visualization:** Multi-series line chart showing price trends
+**Visualization:** Multi-series line chart showing price trends by tier
 **Key Insights:** ROI on renovations, optimal renovation strategy
 
 ---
@@ -560,25 +562,25 @@ function analyzeActiveVsPending(properties) {
 
 ---
 
-### 17. Δ $/sqft (Y RENOVATION_SCORE vs N)
+### 17. Δ $/sqft (High vs Low Tier)
 
-**Purpose:** Calculate price per square foot differential for renovated properties
+**Purpose:** Calculate price per square foot differential between high-score and low-score renovations
 
 **Calculation:**
 ```javascript
 function calculateRenovationDelta(properties) {
-  const renovated = properties.filter(p => p.RENOVATE_SCORE === 'Y');
-  const notRenovated = properties.filter(p => p.RENOVATE_SCORE === 'N');
+  const high = properties.filter(p => p.RENOVATE_SCORE >= 7);
+  const low = properties.filter(p => p.RENOVATE_SCORE <= 3);
 
-  const avgSqftY = calculateAverage(renovated.map(p => p.SALE_PRICE / p.SQFT));
-  const avgSqftN = calculateAverage(notRenovated.map(p => p.SALE_PRICE / p.SQFT));
+  const avgSqftHigh = calculateAverage(high.map(p => p.SALE_PRICE / p.SQFT));
+  const avgSqftLow = calculateAverage(low.map(p => p.SALE_PRICE / p.SQFT));
 
   return {
-    renovatedAvg: avgSqftY,
-    notRenovatedAvg: avgSqftN,
-    delta: avgSqftY - avgSqftN,
-    percentageIncrease: ((avgSqftY - avgSqftN) / avgSqftN) * 100,
-    roiEstimate: calculateROI(avgSqftY - avgSqftN, estimatedRenovationCost)
+    highTierAvg: avgSqftHigh,
+    lowTierAvg: avgSqftLow,
+    delta: avgSqftHigh - avgSqftLow,
+    percentageIncrease: ((avgSqftHigh - avgSqftLow) / avgSqftLow) * 100,
+    roiEstimate: calculateROI(avgSqftHigh - avgSqftLow, estimateImprovementCost(2, 8))
   };
 }
 ```
@@ -588,25 +590,25 @@ function calculateRenovationDelta(properties) {
 
 ---
 
-### 18. Δ $/sqft (0.5 vs N)
+### 18. Δ $/sqft (Mid vs Low Tier)
 
-**Purpose:** Calculate impact of partial renovations
+**Purpose:** Calculate impact of mid-tier renovations compared to unrenovated
 
 **Calculation:**
 ```javascript
 function calculatePartialRenovationDelta(properties) {
-  const partial = properties.filter(p => p.RENOVATE_SCORE === '0.5');
-  const notRenovated = properties.filter(p => p.RENOVATE_SCORE === 'N');
+  const mid = properties.filter(p => p.RENOVATE_SCORE >= 4 && p.RENOVATE_SCORE <= 6);
+  const low = properties.filter(p => p.RENOVATE_SCORE <= 3);
 
-  const avgSqft05 = calculateAverage(partial.map(p => p.SALE_PRICE / p.SQFT));
-  const avgSqftN = calculateAverage(notRenovated.map(p => p.SALE_PRICE / p.SQFT));
+  const avgSqftMid = calculateAverage(mid.map(p => p.SALE_PRICE / p.SQFT));
+  const avgSqftLow = calculateAverage(low.map(p => p.SALE_PRICE / p.SQFT));
 
   return {
-    partialAvg: avgSqft05,
-    notRenovatedAvg: avgSqftN,
-    delta: avgSqft05 - avgSqftN,
-    percentageIncrease: ((avgSqft05 - avgSqftN) / avgSqftN) * 100,
-    costBenefit: calculateCostBenefit(avgSqft05 - avgSqftN, partialRenovationCost)
+    midTierAvg: avgSqftMid,
+    lowTierAvg: avgSqftLow,
+    delta: avgSqftMid - avgSqftLow,
+    percentageIncrease: ((avgSqftMid - avgSqftLow) / avgSqftLow) * 100,
+    costBenefit: calculateCostBenefit(avgSqftMid - avgSqftLow, estimateImprovementCost(2, 5))
   };
 }
 ```
@@ -689,16 +691,13 @@ function analyzeDistributionTails(properties) {
 ```javascript
 function calculateExpectedNOI(property) {
   const salePrice = property.SALE_PRICE;
-  const renovateScore = property.RENOVATE_SCORE;
+  const score = normalizeRenoScore(property.RENOVATE_SCORE);
+  const renoYear = property.RENO_YEAR_EST;
 
-  // Rental rate multipliers
-  const multipliers = {
-    'Y': 0.0065,   // 0.65% monthly
-    '0.5': 0.0055, // 0.55% monthly
-    'N': 0.0045    // 0.45% monthly
-  };
+  // 2D multiplier: score (1-10) × recency (Fresh/Mid/Dated)
+  const multiplier = getNoiMultiplier(score, renoYear);
 
-  const monthlyRent = salePrice * multipliers[renovateScore];
+  const monthlyRent = salePrice * multiplier;
   const annualIncome = monthlyRent * 12;
 
   // Operating expenses (35% of income)
@@ -722,13 +721,14 @@ function calculateExpectedNOI(property) {
 
 ### 22. Expected NOI with Cosmetic Improvements
 
-**Purpose:** Project NOI after upgrading from N to 0.5 renovation score
+**Purpose:** Project NOI after upgrading from Low-tier to Mid-tier renovation score (e.g., score 2 to score 5)
 
 **Calculation:**
 ```javascript
-function calculateImprovedNOI(property, improvementCost = 15000) {
-  const currentNOI = calculateExpectedNOI({...property, RENOVATE_SCORE: 'N'});
-  const improvedNOI = calculateExpectedNOI({...property, RENOVATE_SCORE: '0.5'});
+function calculateImprovedNOI(property, fromScore = 2, toScore = 5) {
+  const improvementCost = estimateImprovementCost(fromScore, toScore);
+  const currentNOI = calculateExpectedNOI({...property, RENOVATE_SCORE: fromScore, RENO_YEAR_EST: null});
+  const improvedNOI = calculateExpectedNOI({...property, RENOVATE_SCORE: toScore, RENO_YEAR_EST: new Date().getFullYear()});
 
   const noiIncrease = improvedNOI.annualNOI - currentNOI.annualNOI;
   const paybackPeriod = improvementCost / noiIncrease;
@@ -784,7 +784,7 @@ function calculateImprovedNOI(property, improvementCost = 15000) {
 
 ### Data Requirements
 - Minimum 10 properties for meaningful analysis
-- Complete RENOVATE_SCORE entries for analyses 4, 17, 18, 21, 22
+- Complete RENOVATE_SCORE entries (integer 1-10) for analyses 4, 17, 18, 21, 22
 - Property Radar comp data for analyses 9, 10
 - Valid dates for time-based analyses
 

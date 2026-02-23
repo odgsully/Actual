@@ -218,8 +218,9 @@ Upload_Mozingo_2024-10-23-1430.xlsx
 ├── MLS-Comps (all 4 uploads combined)
 ├── Full-MCAO-API (API response data)
 └── Analysis (40 columns, A-AO)
-    - Column R: RENOVATE_SCORE (blank)
-    - Columns S-AO: Property Radar fields (blank)
+    - Column R: RENOVATE_SCORE (blank, integer 1-10)
+    - Column AD: RENO_YEAR_EST (blank, integer year)
+    - Columns S, AE-AP: Property Radar fields (blank)
 ```
 
 ---
@@ -235,25 +236,32 @@ Upload_Mozingo_2024-10-23-1430.xlsx
 
 **RENOVATE_SCORE (Column R):**
 - Review each property
-- Assign score based on condition:
-  - "Y" = Fully renovated
-  - "0.5" = Partially renovated
-  - "N" = Not renovated
+- Assign integer score 1-10 based on renovation condition:
+  - 8-10 = Fully renovated / like-new finishes
+  - 5-7  = Partially renovated / updated but dated elements
+  - 1-4  = Not renovated / original condition
+- Legacy values (Y/N/0.5) are auto-coerced: Y→7, 0.5→5, N→2
+
+**RENO_YEAR_EST (Column AD):**
+- Estimated year of most recent renovation (e.g., 2022)
+- Leave blank if unknown or not renovated
+- Used with RENOVATE_SCORE for 2D NOI multiplier lookup
 
 **PROPERTY_RADAR-COMP-Y-N (Column S):**
 - Mark "Y" if property is a valid comp
 - Mark "N" if not a valid comp
 
-**Property Radar Comps (Columns AD-AO):**
+**Property Radar Comps (Columns AE-AP):**
 - Enter up to 12 Property Radar comp addresses/APNs
 - Format: Full address or APN
 
 **Example Manual Entry:**
 ```
-Column R (RENOVATE_SCORE): Y, N, 0.5, Y, N, ...
-Column S (PR-COMP-Y-N): Y, Y, N, Y, N, ...
-Column AD (PR-comp-1): "4620 N 68TH ST 155"
-Column AE (PR-comp-2): "173-35-362"
+Column R  (RENOVATE_SCORE): 7, 2, 5, 8, 3, ...
+Column S  (PR-COMP-Y-N): Y, Y, N, Y, N, ...
+Column AD (RENO_YEAR_EST): 2022, , 2019, 2023, , ...
+Column AE (PR-comp-1): "4620 N 68TH ST 155"
+Column AF (PR-comp-2): "173-35-362"
 ...
 ```
 
@@ -291,7 +299,7 @@ cd /Users/garrettsullivan/Desktop/‼️/RE/Pending-Bin/
 ```
 
 **File Validation:**
-- Ensure RENOVATE_SCORE column has values
+- Ensure RENOVATE_SCORE column has values (integers 1-10)
 - Verify at least some Property Radar comps entered
 - Check file naming convention
 
@@ -433,8 +441,8 @@ Break-ups-Mozingo.zip
 │   ├── 14_recent_direct_indirect.png
 │   ├── 15_active_vs_closed.png
 │   ├── 16_active_vs_pending.png
-│   ├── 17_renovation_delta_y_n.png
-│   ├── 18_renovation_delta_05_n.png
+│   ├── 17_renovation_delta_high_low.png
+│   ├── 18_renovation_delta_mid_low.png
 │   ├── 19_interquartile_range.png
 │   ├── 20_distribution_tails.png
 │   ├── 21_expected_noi.png
@@ -489,9 +497,12 @@ const errorHandlers = {
 ```javascript
 const validationRules = {
   renovateScore: {
-    values: ['Y', 'N', '0.5'],
+    type: 'integer',
+    min: 1,
+    max: 10,
     required: true,
-    message: "RENOVATE_SCORE must be Y, N, or 0.5"
+    legacyCoerce: { 'Y': 7, '0.5': 5, 'N': 2 },
+    message: "RENOVATE_SCORE must be an integer 1-10 (legacy Y/N/0.5 auto-coerced)"
   },
   propertyRadarComp: {
     format: /^[\d\w\s,]+$/,

@@ -1,5 +1,10 @@
 # PropertyRadar Template Split - October 24, 2025
 
+> **Note (Feb 2026):** RENOVATE_SCORE upgraded from Y/N/0.5 to 1-10 numeric + RENO_YEAR_EST.
+> Vision AI auto-scoring via FlexMLS PDF pipeline now available. See
+> `docs/calibration/` for current schema and `docs/reference/vision-scoring-pipeline.md`
+> for the AI pipeline reference.
+
 ## Overview
 
 Property Radar columns (formerly AD-AO in Analysis sheet) have been moved to a separate Excel template and download option. This provides a cleaner Upload output and dedicated PropertyRadar workflow.

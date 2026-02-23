@@ -200,8 +200,9 @@ This document provides comprehensive field mapping specifications for the Report
 #### Column R: RENOVATE_SCORE
 - **Field Name:** RENOVATE_SCORE
 - **Source:** MANUAL
-- **Type:** String
-- **Values:** "Y", "N", "0.5"
+- **Type:** Number
+- **Values:** Integer 1-10 (legacy Y/N/0.5 auto-coerced: Y→7, 0.5→5, N→2)
+- **Tiers:** High (7-10), Mid (4-6), Low (1-3)
 - **Description:** Manual entry field - left blank for initial upload
 - **Note:** User enters this value manually in Excel before ReportIt upload
 
@@ -281,10 +282,12 @@ This document provides comprehensive field mapping specifications for the Report
 
 #### Column AB: DWELLING_TYPE
 - **Field Name:** DWELLING_TYPE
-- **Source:** MCAO
-- **MCAO Field:** Column Q 'PropertyType'
+- **Source:** MLS / MCAO (varies by CSV type)
 - **Type:** String
 - **Values:** "Single Family", "Condo", "Townhouse", "Mobile Home", etc.
+- **Residential CSVs:** Sourced from MLS field `Dwelling Type`
+- **Multifamily CSVs:** Derived from `Property Type` + `Total # of Units`
+- **Fallback:** MCAO Column Q 'PropertyType'
 
 #### Column AC: SUBDIVISION_NAME
 - **Field Name:** SUBDIVISION_NAME
@@ -293,19 +296,28 @@ This document provides comprehensive field mapping specifications for the Report
 - **Type:** String
 - **Example:** "CAMELBACK HOUSE"
 
-#### Columns AD-AO: Property Radar Comparisons (Manual)
-- **Column AD:** Property-Radar-comp-1
-- **Column AE:** Property-Radar-comp-2
-- **Column AF:** Property-Radar-comp-3
-- **Column AG:** Property-Radar-comp-4
-- **Column AH:** Property-Radar-comp-5
-- **Column AI:** Property-Radar-comp-6
-- **Column AJ:** Property-Radar-comp-7
-- **Column AK:** Property-Radar-comp-8
-- **Column AL:** Property-Radar-comp-9
-- **Column AM:** Property-Radar-comp-10
-- **Column AN:** Property-Radar-comp-11
-- **Column AO:** Property-Radar-comp-12
+#### Column AD: RENO_YEAR_EST
+- **Field Name:** RENO_YEAR_EST
+- **Source:** MANUAL
+- **Type:** Number
+- **Values:** Integer year (e.g., 2022) or null
+- **Description:** Estimated year of most recent renovation. Used with RENOVATE_SCORE for 2D NOI multiplier lookup (Score x Recency).
+- **Recency buckets:** Fresh (<=3yr), Mid (4-10yr), Dated (>10yr)
+- **Note:** Left blank for initial upload; blank defaults to 'Mid' recency (neutral)
+
+#### Columns AE-AP: Property Radar Comparisons (Manual)
+- **Column AE:** Property-Radar-comp-1
+- **Column AF:** Property-Radar-comp-2
+- **Column AG:** Property-Radar-comp-3
+- **Column AH:** Property-Radar-comp-4
+- **Column AI:** Property-Radar-comp-5
+- **Column AJ:** Property-Radar-comp-6
+- **Column AK:** Property-Radar-comp-7
+- **Column AL:** Property-Radar-comp-8
+- **Column AM:** Property-Radar-comp-9
+- **Column AN:** Property-Radar-comp-10
+- **Column AO:** Property-Radar-comp-11
+- **Column AP:** Property-Radar-comp-12
 
 **All Property Radar columns:**
 - **Source:** MANUAL
