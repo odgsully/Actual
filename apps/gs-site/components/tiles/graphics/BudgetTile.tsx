@@ -15,9 +15,13 @@ import {
   Building2,
   Check,
   AlertCircle,
+  Link2,
+  RefreshCw,
+  Unlink,
 } from 'lucide-react';
 import { useBudgetData, useBudgetSummary } from '@/hooks/useBudgetData';
 import { useBudgetAccounts, useBudgetImport } from '@/hooks/useBudgetImport';
+import { usePlaidAccounts, usePlaidLink } from '@/hooks/usePlaid';
 import type {
   BudgetCategory,
   CreateEntryPayload,
@@ -847,11 +851,15 @@ function ImportTab() {
 }
 
 /**
- * Accounts Tab - Manage linked accounts
+ * Accounts Tab - Manage linked accounts (manual + Plaid)
  */
 function AccountsTab() {
   const { accounts, isLoading, addAccount, isAddingAccount } = useBudgetAccounts();
+  const { items: plaidItems, isLoading: isPlaidLoading, unlink, isUnlinking, sync, isSyncing } = usePlaidAccounts();
+  const { createLinkToken, isCreatingToken, exchangeToken, isExchanging } = usePlaidLink();
   const [showAddForm, setShowAddForm] = useState(false);
+  const [plaidError, setPlaidError] = useState<string | null>(null);
+  const [syncSuccess, setSyncSuccess] = useState<string | null>(null);
   const [formData, setFormData] = useState<{
     name: string;
     institution: 'discover' | 'firstbank';
@@ -863,6 +871,72 @@ function AccountsTab() {
     accountType: 'credit',
     lastFour: '',
   });
+
+  const handleConnectBank = useCallback(async () => {
+    setPlaidError(null);
+    try {
+      const { linkToken } = await createLinkToken();
+
+      // Dynamically import react-plaid-link to avoid SSR issues
+      const { usePlaidLink: createPlaidLink } = await import('react-plaid-link');
+
+      // We need to open Plaid Link imperatively
+      // Since react-plaid-link requires a hook, we use the window approach
+      const Plaid = (window as any).Plaid;
+      if (!Plaid) {
+        // Load the Plaid Link script if not already loaded
+        await new Promise<void>((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://cdn.plaid.com/link/v2/stable/link-initialize.js';
+          script.onload = () => resolve();
+          script.onerror = () => reject(new Error('Failed to load Plaid Link'));
+          document.head.appendChild(script);
+        });
+      }
+
+      const handler = (window as any).Plaid.create({
+        token: linkToken,
+        onSuccess: async (publicToken: string) => {
+          try {
+            await exchangeToken(publicToken);
+            setSyncSuccess('Bank connected successfully!');
+            setTimeout(() => setSyncSuccess(null), 3000);
+          } catch (err) {
+            setPlaidError(err instanceof Error ? err.message : 'Failed to connect bank');
+          }
+        },
+        onExit: (err: any) => {
+          if (err) {
+            setPlaidError(err.display_message || 'Connection cancelled');
+          }
+        },
+      });
+
+      handler.open();
+    } catch (err) {
+      setPlaidError(err instanceof Error ? err.message : 'Failed to start bank connection');
+    }
+  }, [createLinkToken, exchangeToken]);
+
+  const handleSync = useCallback(async (itemId: string) => {
+    setSyncSuccess(null);
+    try {
+      const result = await sync(itemId);
+      setSyncSuccess(`Synced: ${result.result?.added || 0} new transactions`);
+      setTimeout(() => setSyncSuccess(null), 3000);
+    } catch (err) {
+      setPlaidError(err instanceof Error ? err.message : 'Sync failed');
+    }
+  }, [sync]);
+
+  const handleUnlink = useCallback(async (itemId: string, institutionName: string) => {
+    if (!confirm(`Disconnect ${institutionName}? This will not delete imported transactions.`)) return;
+    try {
+      await unlink(itemId);
+    } catch (err) {
+      setPlaidError(err instanceof Error ? err.message : 'Failed to disconnect');
+    }
+  }, [unlink]);
 
   const handleAddAccount = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -876,58 +950,169 @@ function AccountsTab() {
   };
 
   return (
-    <div className="p-4 space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h3 className="font-medium">Linked Accounts</h3>
-        <button
-          onClick={() => setShowAddForm(true)}
-          className="flex items-center gap-2 px-3 py-1.5 text-sm bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 rounded-lg transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Add Account
-        </button>
-      </div>
-
-      {/* Account List */}
-      {isLoading ? (
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-        </div>
-      ) : accounts.length === 0 ? (
-        <div className="text-center py-8 text-muted-foreground">
-          <Building2 className="w-12 h-12 mx-auto mb-3 opacity-50" />
-          <p>No accounts linked yet</p>
-          <p className="text-sm mt-1">Add an account to start importing statements</p>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {accounts.map((account) => (
-            <div
-              key={account.id}
-              className="flex items-center justify-between p-4 bg-card border border-border rounded-lg"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center">
-                  <Building2 className="w-5 h-5 text-emerald-500" />
-                </div>
-                <div>
-                  <p className="font-medium">{account.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {account.institution === 'discover' ? 'Discover' : 'First Bank'} •{' '}
-                    {account.accountType} {account.lastFour && `• ****${account.lastFour}`}
-                  </p>
-                </div>
-              </div>
-              {account.isDefault && (
-                <span className="px-2 py-1 text-xs bg-emerald-500/10 text-emerald-500 rounded">
-                  Default
-                </span>
-              )}
-            </div>
-          ))}
+    <div className="p-4 space-y-6">
+      {/* Status Messages */}
+      {plaidError && (
+        <div className="flex items-center gap-2 p-3 bg-red-500/10 text-red-500 rounded-lg text-sm">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          {plaidError}
+          <button onClick={() => setPlaidError(null)} className="ml-auto"><X className="w-3 h-3" /></button>
         </div>
       )}
+      {syncSuccess && (
+        <div className="flex items-center gap-2 p-3 bg-emerald-500/10 text-emerald-500 rounded-lg text-sm">
+          <Check className="w-4 h-4 flex-shrink-0" />
+          {syncSuccess}
+        </div>
+      )}
+
+      {/* Connected Banks (Plaid) */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-medium">Connected Banks</h3>
+          <button
+            onClick={handleConnectBank}
+            disabled={isCreatingToken || isExchanging}
+            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 rounded-lg transition-colors disabled:opacity-50"
+          >
+            {isCreatingToken || isExchanging ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Link2 className="w-4 h-4" />
+            )}
+            Connect Bank
+          </button>
+        </div>
+
+        {isPlaidLoading ? (
+          <div className="flex items-center justify-center py-4">
+            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : plaidItems.length === 0 ? (
+          <div className="text-center py-6 text-muted-foreground border border-dashed border-border rounded-lg">
+            <Link2 className="w-8 h-8 mx-auto mb-2 opacity-50" />
+            <p className="text-sm">No banks connected yet</p>
+            <p className="text-xs mt-1">Connect your bank to auto-sync transactions</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {plaidItems.map((item) => (
+              <div
+                key={item.id}
+                className="p-4 bg-card border border-border rounded-lg"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center">
+                      <Building2 className="w-5 h-5 text-blue-500" />
+                    </div>
+                    <div>
+                      <p className="font-medium">{item.institutionName || 'Connected Bank'}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {item.accounts.length} account{item.accounts.length !== 1 ? 's' : ''}
+                        {item.lastSynced && ` • Last synced ${new Date(item.lastSynced).toLocaleDateString()}`}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => handleSync(item.id)}
+                      disabled={isSyncing}
+                      className="p-2 hover:bg-muted rounded-lg transition-colors"
+                      title="Sync now"
+                    >
+                      <RefreshCw className={`w-4 h-4 text-muted-foreground ${isSyncing ? 'animate-spin' : ''}`} />
+                    </button>
+                    <button
+                      onClick={() => handleUnlink(item.id, item.institutionName || 'this bank')}
+                      disabled={isUnlinking}
+                      className="p-2 hover:bg-red-500/10 rounded-lg transition-colors"
+                      title="Disconnect"
+                    >
+                      <Unlink className="w-4 h-4 text-muted-foreground hover:text-red-500" />
+                    </button>
+                  </div>
+                </div>
+                {/* Show individual accounts */}
+                {item.accounts.length > 0 && (
+                  <div className="mt-3 pl-13 space-y-1">
+                    {item.accounts.map((acct) => (
+                      <div key={acct.id} className="flex items-center justify-between text-sm pl-12">
+                        <span className="text-muted-foreground">
+                          {acct.name} {acct.mask && `(****${acct.mask})`}
+                        </span>
+                        {acct.currentBalance !== null && (
+                          <span className="font-mono text-xs">
+                            ${Number(acct.currentBalance).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {item.status !== 'active' && (
+                  <div className="mt-2 flex items-center gap-1 text-xs text-yellow-500">
+                    <AlertTriangle className="w-3 h-3" />
+                    {item.status === 'login_required' ? 'Re-authentication needed' : `Status: ${item.status}`}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Divider */}
+      <div className="border-t border-border" />
+
+      {/* Manual Accounts */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-medium text-sm text-muted-foreground">Manual Accounts (CSV Import)</h3>
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 rounded-lg transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Add Manual
+          </button>
+        </div>
+
+        {isLoading ? (
+          <div className="flex items-center justify-center py-4">
+            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : accounts.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-2">No manual accounts</p>
+        ) : (
+          <div className="space-y-2">
+            {accounts.map((account) => (
+              <div
+                key={account.id}
+                className="flex items-center justify-between p-3 bg-card border border-border rounded-lg"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                    <Building2 className="w-4 h-4 text-emerald-500" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">{account.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {account.institution === 'discover' ? 'Discover' : 'First Bank'} •{' '}
+                      {account.accountType} {account.lastFour && `• ****${account.lastFour}`}
+                    </p>
+                  </div>
+                </div>
+                {account.isDefault && (
+                  <span className="px-2 py-1 text-xs bg-emerald-500/10 text-emerald-500 rounded">
+                    Default
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Add Account Form */}
       {showAddForm && (
@@ -936,7 +1121,7 @@ function AccountsTab() {
             onSubmit={handleAddAccount}
             className="bg-card border border-border rounded-xl p-6 w-full max-w-md m-4"
           >
-            <h3 className="text-lg font-semibold mb-4">Add Account</h3>
+            <h3 className="text-lg font-semibold mb-4">Add Manual Account</h3>
 
             <div className="space-y-4">
               <div>

@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in NOT THIS REPOSITORY but rather /Users/garrettsullivan/Desktop/AUTOMATE/Vibe Code/Wabbit/clients/sullivan_realestate/Actual.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in NOT THIS REPOSITORY but rather /Users/garrettsullivan/Projects/sullivan_realestate/Actual.
 
 ## Common Development Commands
 

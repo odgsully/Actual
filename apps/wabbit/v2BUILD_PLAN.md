@@ -1093,7 +1093,7 @@ function getProgressColor(pct: number): string {
 
 | # | Task | Deliverable |
 |---|------|-------------|
-| 3.1 | Glassmorphism design system | `index.css` — glass classes (ref: gsrealty-client) |
+| 3.1 | Glassmorphism design system | `index.css` — glass classes (ref: gs-crm) |
 | 3.2 | Three-column layout | `AppLayout.tsx` — desktop grid, tablet collapse, mobile hamburger |
 | 3.3 | Wabb settings popup | `WabbSettingsPopup.tsx` — gear icon → 6-tab modal |
 | 3.4 | Top bar | `TopBar.tsx` — Wabb title, "12 of 45", settings gear |
