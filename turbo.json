@@ -17,7 +17,9 @@
     "GOOGLE_CLIENT_ID",
     "GOOGLE_CLIENT_SECRET",
     "VITE_SUPABASE_URL",
-    "VITE_SUPABASE_ANON_KEY"
+    "VITE_SUPABASE_ANON_KEY",
+    "DEPLOY_TARGET",
+    "ANTHROPIC_API_KEY"
   ],
   "tasks": {
     "build": {
