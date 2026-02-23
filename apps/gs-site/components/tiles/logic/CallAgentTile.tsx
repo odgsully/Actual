@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { Phone, ExternalLink } from 'lucide-react';
 import { WarningBorderTrail } from '../WarningBorderTrail';
 import type { Tile } from '@/lib/types/tiles';
+import { getAgentProfilePicUrl } from '@/lib/utils/storage-urls';
 
 // ============================================================
 // Types
@@ -30,31 +31,31 @@ const AGENT_PROFILES: Record<string, AgentProfile> = {
   'daniel': {
     name: 'Daniel',
     role: 'Backend',
-    image: '/agent-team/profile-pics/daniel-park.png',
+    image: getAgentProfilePicUrl('daniel-park.png'),
     phoneNumber: '+1 623-323-6043',
   },
   'morgan': {
     name: 'Morgan',
     role: 'Executive Assistant',
-    image: '/agent-team/profile-pics/Morgan.png',
+    image: getAgentProfilePicUrl('morgan.png'),
     phoneNumber: '+1 623-323-6043',
   },
   'victoria': {
     name: 'Victoria',
     role: 'Research',
-    image: '/agent-team/profile-pics/victoria-chen.png',
+    image: getAgentProfilePicUrl('victoria-chen.png'),
     phoneNumber: '+1 623-323-6043',
   },
   'emily': {
     name: 'Emily',
     role: 'Strategic EA',
-    image: '/agent-team/profile-pics/emily-liu.png',
+    image: getAgentProfilePicUrl('emily-liu.png'),
     phoneNumber: '+1 623-323-6043',
   },
   'sarah': {
     name: 'Sarah',
     role: 'Frontend',
-    image: '/agent-team/profile-pics/sarah-williams.png',
+    image: getAgentProfilePicUrl('sarah-williams.png'),
     phoneNumber: '+1 623-323-6043',
   },
 };

@@ -51,3 +51,11 @@ ngrok_recovery_codes.txt
 
 # Temp outputs
 scheduler/output/
+
+# Profile pics (hosted in Supabase Storage)
+profile-pics/
+public/agent-team/profile-pics/
+agent-team/profile-pics/
+
+# Backup files
+*.backup
