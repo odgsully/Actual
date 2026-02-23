@@ -71,7 +71,7 @@ Rather than relying solely on `unpdf` text extraction for addresses, the scoring
 
 | File | Purpose |
 |------|---------|
-| `docs/toggle-llmauto-and-calibration.md` | **This file** — full implementation plan for permanent reference |
+| `apps/gs-crm/docs/calibration/vision/toggle-llmauto-and-calibration.md` | **This file** — full implementation plan for permanent reference |
 | `apps/gs-crm/docs/reference/vision-scoring-pipeline.md` | Technical reference: module architecture, prompt design, SSE streaming pattern, cost model, troubleshooting |
 | `apps/gs-crm/docs/reference/VISION_SCORING_PROJECT_SCOPE.md` | Overall project scope: what, why, how it fits into ReportIt, current status, future calibration path |
 
@@ -295,7 +295,7 @@ interface ScoringFailure {
 
 ## Implementation Sequence
 
-1. Write plan to `docs/toggle-llmauto-and-calibration.md`
+1. Write plan to `apps/gs-crm/docs/calibration/vision/toggle-llmauto-and-calibration.md`
 2. Install dependencies (`@anthropic-ai/sdk`, `unpdf`, `p-limit`)
 3. Create `lib/processing/renovation-scoring/types.ts`
 4. Create `lib/processing/renovation-scoring/pdf-splitter.ts`

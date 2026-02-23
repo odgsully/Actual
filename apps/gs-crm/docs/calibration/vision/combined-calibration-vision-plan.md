@@ -6,8 +6,8 @@
 
 This document merges two interdependent plans into a single authoritative reference:
 
-- **Plan A** (`apps/gs-crm/50improved-calibrate.md`): A 22-file documentation cleanup that brings all calibration docs, code strings, and schema references in sync with the v2 calibration matrix (55 calibration + 55 evaluation = 110 properties, 5 dwelling types, 10 bias anchors).
-- **Plan B** (`docs/toggle-llmauto-and-calibration.md`): A vision AI pipeline that auto-scores `RENOVATE_SCORE` (Column R) and `RENO_YEAR_EST` (Column AD) in the Analysis sheet by sending FlexMLS 7-Photo Flyer PDFs to Claude's vision API.
+- **Plan A** (`apps/gs-crm/docs/calibration/v2/50improved-calibrate.md`): A 22-file documentation cleanup that brings all calibration docs, code strings, and schema references in sync with the v2 calibration matrix (55 calibration + 55 evaluation = 110 properties, 5 dwelling types, 10 bias anchors).
+- **Plan B** (`apps/gs-crm/docs/calibration/vision/toggle-llmauto-and-calibration.md`): A vision AI pipeline that auto-scores `RENOVATE_SCORE` (Column R) and `RENO_YEAR_EST` (Column AD) in the Analysis sheet by sending FlexMLS 7-Photo Flyer PDFs to Claude's vision API.
 
 ### Why Combine
 
@@ -19,7 +19,7 @@ The renovation scoring system was originally binary (Y/N with a 0.5 partial). It
 
 ### Historical Context
 
-`apps/gs-crm/50improved-calibrate.md` remains in the repo as historical context for how the v2 matrix was derived from the original 40-slot design. `docs/toggle-llmauto-and-calibration.md` remains as the original vision pipeline plan.
+`apps/gs-crm/docs/calibration/v2/50improved-calibrate.md` remains in the repo as historical context for how the v2 matrix was derived from the original 40-slot design. `apps/gs-crm/docs/calibration/vision/toggle-llmauto-and-calibration.md` remains as the original vision pipeline plan.
 
 ---
 
@@ -176,8 +176,8 @@ For residential CSVs:
 Before executing any phase, verify filesystem assumptions that the plan depends on:
 
 ```bash
-# 1. Verify calibration v1 source files exist
-ls apps/gs-crm/docs/calibration/v1/calibration40.md
+# 1. Verify calibration v1 source files exist (calibration40.md was renamed to calibration-guide.md in Phase 0)
+ls apps/gs-crm/docs/calibration/v1/calibration-guide.md
 ls apps/gs-crm/docs/calibration/v1/reportit-mlsupload-calibrate.md
 ls apps/gs-crm/docs/calibration/v1/reportit-calibrate-edge-cases.md
 ls apps/gs-crm/docs/calibration/v1/calibrate-edge-cases.md
@@ -190,7 +190,7 @@ grep -n "interface MLSRow" apps/gs-crm/lib/types/mls-data.ts
 
 | Check | Result | Impact |
 |-------|--------|--------|
-| v1/ source files | All 4 exist at `docs/calibration/v1/` | Phase 0 rename is valid |
+| v1/ source files | All 4 exist at `docs/calibration/v1/` (`calibration40.md` already renamed to `calibration-guide.md`) | Phase 0 rename is **already done** — skip or treat as no-op |
 | `DOCUMENTATION/` folder | **Does not exist** | Phase 4A (delete 5 duplicates) is a **no-op** — skip entirely |
 | Root `calibrate-edge-cases.md` | **Does not exist** at root — already in `docs/calibration/v1/` | Phase 2B `git rm` of root stray is a **no-op** — the merge source is `docs/calibration/v1/calibrate-edge-cases.md` |
 | `MLSRow` interface | Confirmed at `lib/types/mls-data.ts:49` | Phase 6C dependency is valid |
@@ -384,20 +384,26 @@ Files:
 **Duration:** 10 min | **Depends on:** Phases 1-4
 
 ```bash
-# Should return zero matches in active docs/code
-grep -r "Y/N/0.5" apps/gs-crm/
+# Should return zero matches in active docs/code (except backward-compat comments)
+grep -r "Y/N/0.5" apps/gs-crm/ --include="*.ts" --include="*.tsx" --include="*.md"
 # Acceptable: only in backward-compat comments in breakups-generator.ts
 
-grep -r "calibration40" apps/gs-crm/
-# Should be zero
+grep -r "calibration40" apps/gs-crm/ --include="*.ts" --include="*.tsx" --include="*.md"
+# Should be zero — file was renamed to calibration-guide.md
 
 grep -r '"Condo"' apps/gs-crm/docs/calibration/
 # Should be zero (as dwelling type)
 
-# Verify old paths no longer referenced
-grep -r "docs/calibration/v1/reportit-mlsupload-calibrate.md" apps/gs-crm/
-grep -r "docs/calibration/v1/calibration40.md" apps/gs-crm/
-grep -r "docs/calibration/v1/reportit-calibrate-edge-cases.md" apps/gs-crm/
+# Verify OLD/STALE paths are no longer referenced anywhere
+# These are pre-rename/pre-move paths that should have been updated by Phases 0-4
+grep -rn "apps/gs-crm/50improved-calibrate.md" apps/gs-crm/
+# Should be zero — correct path is apps/gs-crm/docs/calibration/v2/50improved-calibrate.md
+
+grep -rn "docs/toggle-llmauto-and-calibration.md" apps/gs-crm/ | grep -v "docs/calibration/vision/toggle-llmauto-and-calibration.md"
+# Should be zero — correct path includes the full vision/ prefix
+
+grep -rn "calibration40\.md" apps/gs-crm/
+# Should be zero — renamed to calibration-guide.md in Phase 0
 ```
 
 Run `npm run build` in gs-crm to confirm string-only changes don't break the build.
@@ -443,26 +449,31 @@ Add `ANTHROPIC_API_KEY=sk-ant-...` to `.env.local` and Vercel Dashboard.
 
 **File 1:** `apps/gs-crm/lib/types/mls-data.ts` — Update `MLSRow` interface
 
+> **NOTE:** `propertyType` already exists in `MLSRow` (line 71) and in the csv-processor parser (line 311).
+> Do NOT re-add it — only add the truly missing fields below.
+
 Add these fields to the `MLSRow` TypeScript interface:
 
 ```typescript
-propertyType?: string      // 'Rental' (residential) or 'MultiFamily'
+// propertyType already exists at line 71 — DO NOT DUPLICATE
 cardFormat?: string        // '' (residential) or 'Multiple Dwellings' (multifamily)
 totalUnits?: number        // Unit count for multifamily (2, 3, 4, 6-24+)
 dwellingType?: string      // 'Single Family - Detached', 'Apartment', etc. — empty for multifamily CSVs
+projectType?: string       // Used by vision pipeline for dwelling type classification
 ```
 
 **This step is mandatory** — without it, the parser changes below cause TypeScript build failure.
 
 **File 2:** `apps/gs-crm/lib/processing/csv-processor.ts` (line 311)
 
-Add fields to `MLSRow` parsing:
+Add fields to `MLSRow` parsing (after the existing `propertyType` line):
 
 ```typescript
-propertyType: row['Property Type'] || 'Residential',
+// propertyType already parsed at line 311 — DO NOT DUPLICATE
 cardFormat: row['Card Format'] || '',
 totalUnits: parseInt(row['Total # of Units']) || undefined,
 dwellingType: row['Dwelling Type'] || '',  // Empty for multifamily CSVs
+projectType: row['Project Type'] || '',
 ```
 
 **File 3:** `apps/gs-crm/lib/processing/analysis-sheet-generator.ts` (lines 564-576)
@@ -936,7 +947,7 @@ interface ScoringFailure {
 
 | File | Phase | Purpose |
 |------|-------|---------|
-| `docs/combined-calibration-vision-plan.md` | Pre-work | **This file** |
+| `apps/gs-crm/docs/calibration/vision/combined-calibration-vision-plan.md` | Pre-work | **This file** |
 | `apps/gs-crm/docs/calibration/` (directory) | 0 | Calibration docs subfolder |
 | `apps/gs-crm/docs/calibration/v2/multifamily-scoring-guide.md` | 2 | Standalone multifamily scoring reference |
 | `apps/gs-crm/lib/processing/renovation-scoring/types.ts` | 6 | TypeScript interfaces |
@@ -956,7 +967,7 @@ interface ScoringFailure {
 
 | From | To | Phase |
 |------|-----|-------|
-| `docs/calibration/v1/calibration40.md` | `docs/calibration/v1/calibration-guide.md` | 0 |
+| `docs/calibration/v1/calibration40.md` | `docs/calibration/v1/calibration-guide.md` | 0 (**already done** — no-op) |
 
 ### Files Modified
 
@@ -999,8 +1010,8 @@ All paths above are relative to `apps/gs-crm/`.
 
 | File | Reason |
 |------|--------|
-| `apps/gs-crm/50improved-calibrate.md` | Historical context — documents how v2 matrix was derived |
-| `docs/toggle-llmauto-and-calibration.md` | Historical context — original vision pipeline plan |
+| `apps/gs-crm/docs/calibration/v2/50improved-calibrate.md` | Historical context — documents how v2 matrix was derived |
+| `apps/gs-crm/docs/calibration/vision/toggle-llmauto-and-calibration.md` | Historical context — original vision pipeline plan |
 | `apps/gs-crm/lib/processing/breakups-generator.ts` | Already handles 1-10 + legacy coercion. No changes needed |
 
 ---
