@@ -75,7 +75,10 @@ export async function getCampaignsWithMetrics(): Promise<{
     const campaignsWithMetrics: CampaignWithMetrics[] = (campaigns ?? []).map((campaign) => {
       const leads = campaignLeads?.filter((l) => l.campaign_id === campaign.id) ?? []
       const leadsCount = leads.length
-      const conversions = leads.filter((l) => l.client?.status === 'active').length
+      const conversions = leads.filter((l) => {
+        const client = Array.isArray(l.client) ? l.client[0] : l.client
+        return client?.status === 'active'
+      }).length
       const totalRevenue = leads.reduce((sum, l) => sum + (Number(l.conversion_value) || 0), 0)
       const spent = Number(campaign.spent) || 0
       const roi = spent > 0 ? ((totalRevenue - spent) / spent) * 100 : 0
@@ -164,6 +167,7 @@ export async function getCampaignSpendSummary(): Promise<{
 }
 
 export interface SpendByTypeData {
+  [key: string]: string | number
   type: string
   label: string
   budget: number
