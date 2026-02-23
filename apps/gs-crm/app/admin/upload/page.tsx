@@ -44,6 +44,10 @@ export default function UploadPage() {
   const [loadingResLease3Yr, setLoadingResLease3Yr] = useState(false)
   const [generating, setGenerating] = useState(false)
 
+  // Scoring mode toggle (Stage 1: vision greyed out, calibrated is default)
+  // Stage 2: change default to 'vision' once pipeline is deployed and validated
+  const [scoringMode, setScoringMode] = useState<'vision' | 'calibrated'>('calibrated')
+
   // Errors
   const [subjectError, setSubjectError] = useState<string | null>(null)
   const [res15Error, setRes15Error] = useState<string | null>(null)
@@ -250,6 +254,32 @@ export default function UploadPage() {
         <p className="text-white/60 mt-1">
           Upload MLS comp files and generate populated Excel template for ReportIt analysis
         </p>
+      </div>
+
+      {/* Scoring Mode Toggle */}
+      <div className="glass-card p-4">
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-medium text-white/60">Scoring Mode:</span>
+          <div className="flex rounded-xl overflow-hidden border border-white/20">
+            <button
+              onClick={() => setScoringMode('calibrated')}
+              className={`px-4 py-2 text-sm font-medium transition-all duration-700 ease-out ${
+                scoringMode === 'calibrated'
+                  ? 'bg-white/15 text-white border-r border-white/30'
+                  : 'bg-white/5 text-white/60 border-r border-white/20 hover:bg-white/10'
+              }`}
+            >
+              Calibrated Scoring
+            </button>
+            <button
+              disabled
+              className="px-4 py-2 text-sm font-medium text-white/30 cursor-not-allowed bg-white/5"
+              title="Coming soon — vision pipeline in development"
+            >
+              AI Vision Scoring
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Client Selection */}
@@ -681,7 +711,7 @@ export default function UploadPage() {
               <strong>Output file:</strong> Upload_{clientName || 'Client'}_{new Date().toISOString().slice(0, 10).replace(/-/g, '-')}-{String(new Date().getHours()).padStart(2, '0')}{String(new Date().getMinutes()).padStart(2, '0')}.xlsx
             </p>
             <p className="text-sm text-blue-300 mt-1">
-              This file will be ready for manual RENOVATE_SCORE entry before ReportIt processing
+              This file includes RENOVATE_SCORE (1-10) and RENO_YEAR_EST columns for ReportIt processing
             </p>
           </div>
         )}
@@ -707,7 +737,7 @@ export default function UploadPage() {
           <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-400/30 rounded-xl">
             <p className="font-semibold text-yellow-300">Next Steps after Download:</p>
             <ol className="list-decimal list-inside mt-2 text-yellow-400">
-              <li>Open the Excel file and fill in RENOVATE_SCORE column (Y/N/0.5)</li>
+              <li>Review AI-scored RENOVATE_SCORE (Column R, 1-10) — adjust any scores and fill blanks for unscored properties. Optionally add/verify RENO_YEAR_EST (Column AD).</li>
               <li>Add Property Radar comp data if available</li>
               <li>Save as Complete_LastName_Timestamp.xlsx</li>
               <li>Upload to ReportIt for comprehensive analysis</li>
