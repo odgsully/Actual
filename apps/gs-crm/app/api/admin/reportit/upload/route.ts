@@ -689,7 +689,7 @@ function generatePartialRenovationDeltaInsight(result: any): string {
   const deltaAbs = Math.abs(result.delta || 0);
   const roiEst = result.notRenovatedAvg ? (deltaAbs / 20) * 100 : 0; // Assuming $20/sqft for partial updates
 
-  let insight = `Partial renovations (0.5 score) yield $${(result.partialAvg || 0).toFixed(2)}/sqft vs `;
+  let insight = `Mid-tier renovations (score 4-6) yield $${(result.partialAvg || 0).toFixed(2)}/sqft vs `;
   insight += `$${(result.notRenovatedAvg || 0).toFixed(2)}/sqft for original condition—`;
   insight += `a $${deltaAbs.toFixed(2)}/sqft gain (${(result.percentageIncrease || 0).toFixed(1)}%). `;
 

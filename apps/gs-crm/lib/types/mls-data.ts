@@ -108,6 +108,12 @@ export interface MLSRow {
 
   // Raw data (for debugging)
   rawData?: Record<string, any>;        // Original CSV row
+
+  // Vision pipeline fields (Phase 6C)
+  cardFormat?: string;       // '' (residential) or 'Multiple Dwellings' (multifamily)
+  totalUnits?: number;       // Unit count for multifamily (2, 3, 4, 6-24+)
+  dwellingType?: string;     // 'Single Family - Detached', 'Apartment', etc. — empty for multifamily CSVs
+  projectType?: string;      // Used by vision pipeline for dwelling type classification
 }
 
 // ============================================================================

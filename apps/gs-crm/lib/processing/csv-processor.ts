@@ -334,6 +334,12 @@ function parseRowToMLSRow(row: any, subjectProperty?: SubjectProperty): MLSRow {
     listingAgent: row['Listing Agent'] || null,
     listingAgency: row['Agency Name'] || null,
     rawData: row,
+
+    // Vision pipeline fields (Phase 6C)
+    cardFormat: row['Card Format'] || '',
+    totalUnits: parseInt(row['Total # of Units']) || undefined,
+    dwellingType: row['Dwelling Type'] || '',
+    projectType: row['Project Type'] || '',
   };
 
   return mlsRow;

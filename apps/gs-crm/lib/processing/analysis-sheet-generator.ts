@@ -572,7 +572,11 @@ function addPropertyRow(
         rawData['Dwelling Type'] || 'N/A'
     }
   } else {
-    row.getCell(ANALYSIS_COLUMNS.DWELLING_TYPE).value = rawData['Dwelling Type'] || mcao?.propertyType || 'N/A'
+    const dwellingValue = rawData['Dwelling Type']
+      || rawData['Property Type']
+      || mcao?.propertyType
+      || 'N/A';
+    row.getCell(ANALYSIS_COLUMNS.DWELLING_TYPE).value = dwellingValue
   }
 
   // Column AC: SUBDIVISION_NAME - For Subject Property, use SubdivisionName
