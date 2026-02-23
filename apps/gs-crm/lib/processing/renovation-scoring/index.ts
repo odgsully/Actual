@@ -1,0 +1,204 @@
+import { MLSRow } from '@/lib/types/mls-data';
+import {
+  ScoringProgress,
+  ScoringResult,
+  VisionScoringOptions,
+  PropertyScore,
+  ScoringFailure,
+} from './types';
+import { concatenateAndSplitPDFs } from './pdf-splitter';
+import { extractAddressesFromPDF } from './text-extractor';
+import { matchAddressesToProperties, addClaudeDetectedMatches } from './address-mapper';
+import { detectDwellingTypes } from './dwelling-detector';
+import { scoreWithVision } from './vision-scorer';
+
+export type { ScoringProgress, ScoringResult, VisionScoringOptions, PropertyScore } from './types';
+export { detectDwellingType, detectDwellingTypes } from './dwelling-detector';
+export { buildScoringPrompt } from './prompts';
+
+/**
+ * Score properties from PDF buffers using Claude's vision API.
+ *
+ * Full pipeline:
+ * 1. Concatenate + split PDFs into chunks
+ * 2. Extract text and parse addresses from each chunk
+ * 3. Match addresses to CSV property data
+ * 4. Detect dwelling types for prompt selection
+ * 5. Send chunks to Claude for vision scoring
+ * 6. Match Claude-detected addresses for any unmatched pages
+ * 7. Yield progress events throughout for SSE streaming
+ *
+ * @param pdfBuffers - Array of PDF file buffers (up to 4 FlexMLS 7-Photo Flyers)
+ * @param propertyData - MLSRow array from CSV parsing
+ * @param options - Scoring options (concurrency, batch size, retries)
+ * @yields ScoringProgress events for SSE streaming
+ */
+export async function* scorePropertiesFromPDFs(
+  pdfBuffers: Buffer[],
+  propertyData: MLSRow[],
+  options: VisionScoringOptions = {}
+): AsyncGenerator<ScoringProgress> {
+  try {
+    // Step 1: Concatenate and split PDFs
+    yield {
+      type: 'pdf_concatenating',
+      message: `Concatenating ${pdfBuffers.length} PDF file(s)...`,
+      current: 0,
+      total: pdfBuffers.length,
+    };
+
+    const { chunks, totalPages } = await concatenateAndSplitPDFs(pdfBuffers);
+
+    if (totalPages === 0) {
+      yield {
+        type: 'error',
+        message: 'No pages found in uploaded PDFs',
+        error: 'No pages found in uploaded PDFs',
+      };
+      return;
+    }
+
+    yield {
+      type: 'pdf_splitting',
+      message: `Split into ${chunks.length} chunk(s), ${totalPages} total pages`,
+      current: chunks.length,
+      total: chunks.length,
+    };
+
+    // Step 2: Extract text and addresses from each chunk
+    yield {
+      type: 'text_extracting',
+      message: 'Extracting text from PDF pages...',
+      current: 0,
+      total: totalPages,
+    };
+
+    const allAddresses = new Map<number, string>();
+
+    for (const chunk of chunks) {
+      const chunkAddresses = await extractAddressesFromPDF(chunk.buffer, chunk.startPage);
+      for (const [page, addr] of Array.from(chunkAddresses.entries())) {
+        allAddresses.set(page, addr);
+      }
+    }
+
+    yield {
+      type: 'text_extracting',
+      message: `Extracted addresses from ${allAddresses.size} of ${totalPages} pages`,
+      current: allAddresses.size,
+      total: totalPages,
+    };
+
+    // Step 3: Match addresses to CSV data
+    yield {
+      type: 'address_mapping',
+      message: 'Matching addresses to property data...',
+      current: 0,
+      total: allAddresses.size,
+    };
+
+    let addressMatches = matchAddressesToProperties(allAddresses, propertyData);
+
+    yield {
+      type: 'address_mapping',
+      message: `Matched ${addressMatches.size} of ${allAddresses.size} addresses to CSV data`,
+      current: addressMatches.size,
+      total: allAddresses.size,
+    };
+
+    // Step 4: Detect dwelling types
+    yield {
+      type: 'dwelling_detecting',
+      message: 'Detecting dwelling types...',
+      current: 0,
+      total: propertyData.length,
+    };
+
+    const dwellingInfoMap = detectDwellingTypes(propertyData);
+
+    yield {
+      type: 'dwelling_detecting',
+      message: `Classified ${dwellingInfoMap.size} properties`,
+      current: dwellingInfoMap.size,
+      total: propertyData.length,
+    };
+
+    // Step 5: Score with Claude vision API
+    yield {
+      type: 'scoring_batch',
+      message: `Scoring ${chunks.length} chunk(s) with Claude vision API...`,
+      current: 0,
+      total: chunks.length,
+    };
+
+    const { scores, failures } = await scoreWithVision(
+      chunks,
+      addressMatches,
+      dwellingInfoMap,
+      options
+    );
+
+    // Step 6: Try to match Claude-detected addresses for unmatched pages
+    const claudeAddresses = new Map<number, string>();
+    for (const score of scores) {
+      if (score.detectedAddress) {
+        claudeAddresses.set(score.pageNumber, score.detectedAddress);
+      }
+    }
+
+    addressMatches = addClaudeDetectedMatches(addressMatches, claudeAddresses, propertyData);
+
+    // Update scores with matched MLS numbers
+    for (const score of scores) {
+      const match = Array.from(addressMatches.values()).find(
+        (m) => m.extractedAddress === score.detectedAddress || m.matchedAddress === score.address
+      );
+      if (match?.mlsRow) {
+        score.mlsNumber = match.mlsRow.mlsNumber;
+        score.address = match.mlsRow.address;
+      }
+    }
+
+    // Build unmatched list
+    const matchedAddresses = new Set(scores.map((s) => s.detectedAddress));
+    const unmatched = Array.from(allAddresses.values()).filter((addr) => !matchedAddresses.has(addr));
+
+    // Build final result
+    const result: ScoringResult = {
+      scores,
+      failures,
+      unmatched,
+      stats: {
+        total: totalPages,
+        scored: scores.length,
+        failed: failures.length,
+        unmatched: unmatched.length,
+      },
+    };
+
+    // Yield individual property scores
+    for (const score of scores) {
+      yield {
+        type: 'scoring_property',
+        message: `Scored: ${score.address} → ${score.renovationScore}/10`,
+        propertyAddress: score.address,
+        score: score.renovationScore,
+      };
+    }
+
+    // Final completion event
+    yield {
+      type: 'scoring_complete',
+      message: `Scoring complete: ${scores.length} scored, ${failures.length} failed, ${unmatched.length} unmatched`,
+      current: scores.length,
+      total: totalPages,
+      result,
+    };
+  } catch (error: any) {
+    yield {
+      type: 'error',
+      message: error.message || 'Scoring pipeline failed',
+      error: error.message || 'Unknown error',
+    };
+  }
+}
