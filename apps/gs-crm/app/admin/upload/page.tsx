@@ -48,6 +48,14 @@ export default function UploadPage() {
   // Stage 2: change default to 'vision' once pipeline is deployed and validated
   const [scoringMode, setScoringMode] = useState<'vision' | 'calibrated'>('calibrated')
 
+  // Vision scoring state (8C)
+  const [res15Pdf, setRes15Pdf] = useState<{ path: string; pages: number } | null>(null)
+  const [resLease15Pdf, setResLease15Pdf] = useState<{ path: string; pages: number } | null>(null)
+  const [res3YrPdf, setRes3YrPdf] = useState<{ path: string; pages: number } | null>(null)
+  const [resLease3YrPdf, setResLease3YrPdf] = useState<{ path: string; pages: number } | null>(null)
+  const [scoringProgress, setScoringProgress] = useState<string | null>(null)
+  const [visionScores, setVisionScores] = useState<any[] | null>(null)
+
   // Errors
   const [subjectError, setSubjectError] = useState<string | null>(null)
   const [res15Error, setRes15Error] = useState<string | null>(null)
@@ -182,17 +190,154 @@ export default function UploadPage() {
     }
   }
 
+  // Handle PDF upload for vision scoring
+  const handlePdfUpload = async (file: File, type: 'res15' | 'resLease15' | 'res3Yr' | 'resLease3Yr') => {
+    if (!selectedClientId) {
+      alert('Please select a client first')
+      return
+    }
+
+    try {
+      // Get signed upload URL
+      const urlRes = await fetch('/api/admin/upload/upload-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientId: selectedClientId,
+          files: [{ fileName: file.name, contentType: 'application/pdf', fileSize: file.size }],
+        }),
+      })
+
+      if (!urlRes.ok) {
+        const err = await urlRes.json()
+        alert(err.error || 'Failed to get upload URL')
+        return
+      }
+
+      const { uploadUrls } = await urlRes.json()
+      const { signedUrl, storagePath, token } = uploadUrls[0]
+
+      // Upload to Supabase Storage
+      await fetch(signedUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/pdf', 'x-upsert': 'true' },
+        body: file,
+      })
+
+      // Store path in state (page count estimated from file size, ~50KB per page)
+      const estimatedPages = Math.max(1, Math.round(file.size / 50000))
+      const pdfInfo = { path: storagePath, pages: estimatedPages }
+
+      const setters: Record<string, any> = {
+        res15: setRes15Pdf,
+        resLease15: setResLease15Pdf,
+        res3Yr: setRes3YrPdf,
+        resLease3Yr: setResLease3YrPdf,
+      }
+      setters[type](pdfInfo)
+    } catch (error) {
+      alert('Error uploading PDF')
+    }
+  }
+
   // Generate final Excel report with timestamp naming
   const handleGenerateReport = async () => {
-    // Check if we have the required files
     if (!residential15Mile || !residentialLease15Mile || !residential3YrDirect || !residentialLease3YrDirect) {
       alert('Please upload all 4 MLS comp files')
       return
     }
 
     setGenerating(true)
+    setScoringProgress(null)
+    setVisionScores(null)
 
     try {
+      let scores: any[] | undefined = undefined
+
+      // Vision scoring path
+      const uploadedPdfs = [res15Pdf, resLease15Pdf, res3YrPdf, resLease3YrPdf].filter(Boolean)
+      if (scoringMode === 'vision' && uploadedPdfs.length > 0) {
+        // Cost estimate
+        const totalPages = uploadedPdfs.reduce((sum, p) => sum + (p?.pages || 0), 0)
+        const estimatedCost = (totalPages * 0.025).toFixed(2)
+        const confirmed = window.confirm(
+          `Vision scoring will process ~${totalPages} pages.\nEstimated cost: ~$${estimatedCost}\n\nProceed?`
+        )
+        if (!confirmed) {
+          setGenerating(false)
+          return
+        }
+
+        setScoringProgress('Starting vision scoring...')
+
+        // Collect all property data for dwelling type detection
+        const allPropertyData = [
+          ...(residential15Mile?.data || []),
+          ...(residentialLease15Mile?.data || []),
+          ...(residential3YrDirect?.data || []),
+          ...(residentialLease3YrDirect?.data || []),
+        ]
+
+        // Call score-pdf SSE endpoint
+        const sseRes = await fetch('/api/admin/upload/score-pdf', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            storagePaths: uploadedPdfs.map(p => p!.path),
+            propertyData: allPropertyData,
+          }),
+        })
+
+        if (!sseRes.ok || !sseRes.body) {
+          setScoringProgress('Vision scoring failed')
+        } else {
+          // Read SSE stream
+          const reader = sseRes.body.getReader()
+          const decoder = new TextDecoder()
+          let buffer = ''
+
+          while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
+
+            buffer += decoder.decode(value, { stream: true })
+            const lines = buffer.split('\n')
+            buffer = lines.pop() || ''
+
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6).trim()
+                if (data === '[DONE]') continue
+                try {
+                  const event = JSON.parse(data)
+                  setScoringProgress(event.message || event.type)
+                  if (event.type === 'scoring_complete' && event.result) {
+                    scores = event.result.scores.map((s: any) => ({
+                      address: s.address,
+                      score: s.renovationScore,
+                      renoYear: s.renoYearEstimate,
+                      confidence: s.confidence,
+                      dwellingType: s.propertySubtype || 'residential',
+                    }))
+                    setVisionScores(scores || null)
+                    setScoringProgress(
+                      `Scored ${event.result.stats.scored}/${event.result.stats.total} properties` +
+                      (event.result.stats.failed > 0 ? ` (${event.result.stats.failed} failed)` : '')
+                    )
+                  }
+                  if (event.type === 'error') {
+                    setScoringProgress(`Error: ${event.error || event.message}`)
+                  }
+                } catch {
+                  // Skip non-JSON lines (keepalive comments)
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // Generate Excel (with or without vision scores)
       const response = await fetch('/api/admin/upload/generate-excel', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -204,7 +349,6 @@ export default function UploadPage() {
           residentialLease3YrDirect: residentialLease3YrDirect.data,
           mcaoData: subjectData || null,
           clientName: clientName || 'Client',
-          // Subject Property Manual Inputs for Analysis Row 2
           subjectManualInputs: {
             bedrooms: subjectBedrooms ? parseFloat(subjectBedrooms) : undefined,
             bathrooms: subjectBathrooms ? parseFloat(subjectBathrooms) : undefined,
@@ -214,6 +358,7 @@ export default function UploadPage() {
             dwellingType: subjectDwellingType || undefined,
             yearBuilt: subjectYearBuilt ? parseInt(subjectYearBuilt) : undefined,
           },
+          visionScores: scores,
         }),
       })
 
@@ -222,13 +367,10 @@ export default function UploadPage() {
         const url = window.URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
-
-        // Generate filename: "Upload_LastName_YYYY-MM-DD-HHMM.xlsx"
         const now = new Date()
         const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`
         const lastName = (clientName || 'Client').split(' ')[0].replace(/[^a-zA-Z0-9]/g, '')
         a.download = `Upload_${lastName}_${timestamp}.xlsx`
-
         document.body.appendChild(a)
         a.click()
         window.URL.revokeObjectURL(url)
@@ -272,9 +414,12 @@ export default function UploadPage() {
               Calibrated Scoring
             </button>
             <button
-              disabled
-              className="px-4 py-2 text-sm font-medium text-white/30 cursor-not-allowed bg-white/5"
-              title="Coming soon — vision pipeline in development"
+              onClick={() => setScoringMode('vision')}
+              className={`px-4 py-2 text-sm font-medium transition-all duration-700 ease-out ${
+                scoringMode === 'vision'
+                  ? 'bg-white/15 text-white border-l border-white/30'
+                  : 'bg-white/5 text-white/60 border-l border-white/20 hover:bg-white/10'
+              }`}
             >
               AI Vision Scoring
             </button>
@@ -564,6 +709,23 @@ export default function UploadPage() {
               </p>
             </div>
           )}
+          {scoringMode === 'vision' && (
+            <label className="block w-full px-4 py-4 border-2 border-dashed border-purple-400/30 rounded-xl hover:border-purple-400/50 bg-purple-500/5 cursor-pointer transition-colors text-center">
+              <Upload className="w-5 h-5 text-purple-400/60 mx-auto mb-1" />
+              <span className="text-sm text-purple-300/60">
+                {res15Pdf ? `PDF uploaded (${res15Pdf.pages} pages)` : '7-Photo Flyer PDF (optional)'}
+              </span>
+              <input
+                type="file"
+                accept=".pdf"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) handlePdfUpload(file, 'res15')
+                }}
+                className="hidden"
+              />
+            </label>
+          )}
         </div>
 
         {/* Residential Lease 1.5 Mile */}
@@ -597,6 +759,23 @@ export default function UploadPage() {
                 ✓ Processed {residentialLease15Mile.propertiesCount} properties
               </p>
             </div>
+          )}
+          {scoringMode === 'vision' && (
+            <label className="block w-full px-4 py-4 border-2 border-dashed border-purple-400/30 rounded-xl hover:border-purple-400/50 bg-purple-500/5 cursor-pointer transition-colors text-center">
+              <Upload className="w-5 h-5 text-purple-400/60 mx-auto mb-1" />
+              <span className="text-sm text-purple-300/60">
+                {resLease15Pdf ? `PDF uploaded (${resLease15Pdf.pages} pages)` : '7-Photo Flyer PDF (optional)'}
+              </span>
+              <input
+                type="file"
+                accept=".pdf"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) handlePdfUpload(file, 'resLease15')
+                }}
+                className="hidden"
+              />
+            </label>
           )}
         </div>
       </div>
@@ -643,6 +822,23 @@ export default function UploadPage() {
               </p>
             </div>
           )}
+          {scoringMode === 'vision' && (
+            <label className="block w-full px-4 py-4 border-2 border-dashed border-purple-400/30 rounded-xl hover:border-purple-400/50 bg-purple-500/5 cursor-pointer transition-colors text-center">
+              <Upload className="w-5 h-5 text-purple-400/60 mx-auto mb-1" />
+              <span className="text-sm text-purple-300/60">
+                {res3YrPdf ? `PDF uploaded (${res3YrPdf.pages} pages)` : '7-Photo Flyer PDF (optional)'}
+              </span>
+              <input
+                type="file"
+                accept=".pdf"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) handlePdfUpload(file, 'res3Yr')
+                }}
+                className="hidden"
+              />
+            </label>
+          )}
         </div>
 
         {/* Residential Lease 3yr Direct */}
@@ -677,6 +873,23 @@ export default function UploadPage() {
               </p>
             </div>
           )}
+          {scoringMode === 'vision' && (
+            <label className="block w-full px-4 py-4 border-2 border-dashed border-purple-400/30 rounded-xl hover:border-purple-400/50 bg-purple-500/5 cursor-pointer transition-colors text-center">
+              <Upload className="w-5 h-5 text-purple-400/60 mx-auto mb-1" />
+              <span className="text-sm text-purple-300/60">
+                {resLease3YrPdf ? `PDF uploaded (${resLease3YrPdf.pages} pages)` : '7-Photo Flyer PDF (optional)'}
+              </span>
+              <input
+                type="file"
+                accept=".pdf"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) handlePdfUpload(file, 'resLease3Yr')
+                }}
+                className="hidden"
+              />
+            </label>
+          )}
         </div>
       </div>
 
@@ -704,6 +917,12 @@ export default function UploadPage() {
             <span>{generating ? 'Generating...' : 'Generate & Download'}</span>
           </button>
         </div>
+
+        {scoringProgress && (
+          <div className="mt-4 p-3 bg-purple-500/10 border border-purple-400/30 rounded-xl">
+            <p className="text-sm text-purple-300">{scoringProgress}</p>
+          </div>
+        )}
 
         {allDataReady && (
           <div className="mt-4 p-3 bg-blue-500/10 border border-blue-400/30 rounded-xl">

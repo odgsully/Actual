@@ -48,7 +48,8 @@ export async function PUT(req: NextRequest) {
       residentialLease3YrDirect,
       mcaoData,
       clientName,
-      subjectManualInputs
+      subjectManualInputs,
+      visionScores,  // Optional vision AI scoring results
     } = body
 
     console.log(`${LOG_PREFIX} Starting Excel generation for client: ${clientName}`)
@@ -184,6 +185,53 @@ export async function PUT(req: NextRequest) {
       address: p.address,
     }))
     await generateAnalysisSheet(workbook, propertiesForAnalysis, subjectManualInputs)
+
+    // Step 7b: Write vision scores to Analysis sheet (if provided)
+    if (visionScores && Array.isArray(visionScores) && visionScores.length > 0) {
+      const analysisSheet = workbook.getWorksheet('Analysis')
+      if (analysisSheet) {
+        let written = 0
+        let unmatched = 0
+        let skipped = 0
+
+        for (const vs of visionScores) {
+          if (!vs.address || typeof vs.score !== 'number') continue
+
+          // Find matching row by fuzzy address match against Column B
+          const normalizedVsAddr = vs.address.toUpperCase().replace(/[.,#]/g, '').replace(/\s+/g, ' ').trim()
+          let matchedRow: ExcelJS.Row | null = null
+
+          analysisSheet.eachRow((row, rowNumber) => {
+            if (rowNumber <= 2) return // Skip header rows
+            const cellAddr = row.getCell('B').value?.toString() || ''
+            const normalizedCellAddr = cellAddr.toUpperCase().replace(/[.,#]/g, '').replace(/\s+/g, ' ').trim()
+            if (normalizedCellAddr === normalizedVsAddr || normalizedCellAddr.includes(normalizedVsAddr) || normalizedVsAddr.includes(normalizedCellAddr)) {
+              if (!matchedRow) matchedRow = row
+            }
+          })
+
+          if (!matchedRow) {
+            unmatched++
+            continue
+          }
+
+          // Only write if cell is currently empty
+          const currentScore = (matchedRow as ExcelJS.Row).getCell('R').value
+          if (currentScore !== null && currentScore !== undefined && currentScore !== '') {
+            skipped++
+            continue
+          }
+
+          (matchedRow as ExcelJS.Row).getCell('R').value = vs.score
+          if (vs.renoYear) {
+            (matchedRow as ExcelJS.Row).getCell('AD').value = vs.renoYear
+          }
+          written++
+        }
+
+        console.log(`${LOG_PREFIX} Vision scores: ${written} written, ${unmatched} unmatched, ${skipped} skipped (cell not empty)`)
+      }
+    }
 
     // Step 8: Generate buffer
     const buffer = await workbook.xlsx.writeBuffer()
