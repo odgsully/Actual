@@ -16,6 +16,15 @@ export type { ScoringProgress, ScoringResult, VisionScoringOptions, PropertyScor
 export { detectDwellingType, detectDwellingTypes } from './dwelling-detector';
 export { buildScoringPrompt } from './prompts';
 
+/** Normalize address for comparison (strip punctuation, extra whitespace, uppercase) */
+function normalizeForComparison(addr: string): string {
+  return addr
+    .toUpperCase()
+    .replace(/[.,#]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 /**
  * Score properties from PDF buffers using Claude's vision API.
  *
@@ -124,6 +133,10 @@ export async function* scorePropertiesFromPDFs(
     };
 
     // Step 5: Score with Claude vision API
+    // Use a progress queue so onProgress events from scoreWithVision can be
+    // yielded by the generator after the scoring call completes per-chunk.
+    const progressQueue: ScoringProgress[] = [];
+
     yield {
       type: 'scoring_batch',
       message: `Scoring ${chunks.length} chunk(s) with Claude vision API...`,
@@ -135,8 +148,18 @@ export async function* scorePropertiesFromPDFs(
       chunks,
       addressMatches,
       dwellingInfoMap,
-      options
+      {
+        ...options,
+        onProgress: (event: ScoringProgress) => {
+          progressQueue.push(event);
+        },
+      }
     );
+
+    // Yield any per-property progress events collected during scoring
+    for (const event of progressQueue) {
+      yield event;
+    }
 
     // Step 6: Try to match Claude-detected addresses for unmatched pages
     const claudeAddresses = new Map<number, string>();
@@ -159,9 +182,13 @@ export async function* scorePropertiesFromPDFs(
       }
     }
 
-    // Build unmatched list
-    const matchedAddresses = new Set(scores.map((s) => s.detectedAddress));
-    const unmatched = Array.from(allAddresses.values()).filter((addr) => !matchedAddresses.has(addr));
+    // Build unmatched list — normalize both sides before comparing
+    const matchedAddressesNorm = new Set(
+      scores.map((s) => normalizeForComparison(s.detectedAddress || ''))
+    );
+    const unmatched = Array.from(allAddresses.values()).filter(
+      (addr) => !matchedAddressesNorm.has(normalizeForComparison(addr))
+    );
 
     // Build final result
     const result: ScoringResult = {
@@ -175,16 +202,6 @@ export async function* scorePropertiesFromPDFs(
         unmatched: unmatched.length,
       },
     };
-
-    // Yield individual property scores
-    for (const score of scores) {
-      yield {
-        type: 'scoring_property',
-        message: `Scored: ${score.address} → ${score.renovationScore}/10`,
-        propertyAddress: score.address,
-        score: score.renovationScore,
-      };
-    }
 
     // Final completion event
     yield {

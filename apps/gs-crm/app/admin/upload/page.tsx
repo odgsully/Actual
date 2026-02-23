@@ -218,11 +218,16 @@ export default function UploadPage() {
       const { signedUrl, storagePath, token } = uploadUrls[0]
 
       // Upload to Supabase Storage
-      await fetch(signedUrl, {
+      const uploadResponse = await fetch(signedUrl, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/pdf', 'x-upsert': 'true' },
         body: file,
       })
+
+      if (!uploadResponse.ok) {
+        alert(`PDF upload failed: ${uploadResponse.statusText}`)
+        return
+      }
 
       // Store path in state (page count estimated from file size, ~50KB per page)
       const estimatedPages = Math.max(1, Math.round(file.size / 50000))

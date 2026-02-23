@@ -4,6 +4,7 @@ import { MLSRow } from '@/lib/types/mls-data';
 import {
   PropertyScore,
   ScoringFailure,
+  ScoringProgress,
   DwellingTypeInfo,
   RoomScore,
   UnitScore,
@@ -98,6 +99,12 @@ async function scoreBatch(
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
+      // Build prompt text — add constraint reminder on retries
+      let promptText = prompt;
+      if (attempt > 0) {
+        promptText += '\n\nIMPORTANT: Your previous response had issues. Please respond ONLY with a valid JSON array. All renovation_score values MUST be integers between 1 and 10 inclusive.';
+      }
+
       const response = await client.messages.create({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 4096,
@@ -116,9 +123,7 @@ async function scoreBatch(
               },
               {
                 type: 'text',
-                text: attempt > 0
-                  ? `${prompt}\n\nIMPORTANT: Your previous response was not valid JSON. Please respond ONLY with a valid JSON array.`
-                  : prompt,
+                text: promptText,
               },
             ],
           },
@@ -144,7 +149,11 @@ async function scoreBatch(
         throw new Error('Response is not a JSON array');
       }
 
-      // Process each scored property
+      // Process each scored property — track out-of-range for retry
+      let hasOutOfRange = false;
+      const batchScores: PropertyScore[] = [];
+      const batchFailures: ScoringFailure[] = [];
+
       for (const raw of parsed) {
         const pageNumber = batch.pageNumbers[0]; // Approximate -- refined by address matching
 
@@ -152,7 +161,8 @@ async function scoreBatch(
           if (raw.renovation_score >= 0.5 && raw.renovation_score <= 10.5) {
             raw.renovation_score = clampScore(raw.renovation_score);
           } else {
-            failures.push({
+            hasOutOfRange = true;
+            batchFailures.push({
               pageNumber,
               address: raw.detected_address || null,
               reason: 'score_out_of_range',
@@ -198,9 +208,17 @@ async function scoreBatch(
           };
         }
 
-        scores.push(score);
+        batchScores.push(score);
       }
 
+      // If we got out-of-range scores and have retries left, retry the entire batch
+      if (hasOutOfRange && attempt < maxRetries) {
+        continue;
+      }
+
+      // Accept results (final attempt or no out-of-range issues)
+      scores.push(...batchScores);
+      failures.push(...batchFailures);
       return { scores, failures };
 
     } catch (error: any) {
@@ -245,6 +263,9 @@ export async function scoreWithVision(
   const allScores: PropertyScore[] = [];
   const allFailures: ScoringFailure[] = [];
 
+  // Create a single Anthropic client to share across all concurrent tasks
+  const client = new Anthropic();
+
   const tasks = pdfChunks.map(chunk => {
     const pageNumbers = Array.from(
       { length: chunk.pageCount },
@@ -252,7 +273,6 @@ export async function scoreWithVision(
     );
 
     return limit(async () => {
-      const client = new Anthropic();
       const batch: BatchInput = {
         pdfBuffer: chunk.buffer,
         pageNumbers,
@@ -263,6 +283,18 @@ export async function scoreWithVision(
       const { scores, failures } = await scoreBatch(client, batch, options);
       allScores.push(...scores);
       allFailures.push(...failures);
+
+      // Invoke progress callback after each chunk completes
+      if (options.onProgress) {
+        for (const score of scores) {
+          options.onProgress({
+            type: 'scoring_property',
+            message: `Scored: ${score.address} → ${score.renovationScore}/10`,
+            propertyAddress: score.address,
+            score: score.renovationScore,
+          });
+        }
+      }
     });
   });
 

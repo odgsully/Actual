@@ -38,7 +38,18 @@ export function detectDwellingType(row: MLSRow): DwellingTypeInfo {
     const unitCount = row.totalUnits || 2;
     const perDoorPrice = row.listPrice ? Math.round(row.listPrice / unitCount) : undefined;
 
-    // Try Project Type first for sub-type
+    // Derive from unit count first (more reliable integer field)
+    if (row.totalUnits) {
+      return {
+        category: 'multifamily',
+        subType: subTypeFromUnitCount(row.totalUnits),
+        unitCount,
+        perDoorPrice,
+        detectionSource: 'unit_count',
+      };
+    }
+
+    // Then try Project Type for sub-type (string enum, less reliable)
     if (row.projectType) {
       const mapped = PROJECT_TYPE_MAP[row.projectType];
       if (mapped) {
@@ -52,17 +63,6 @@ export function detectDwellingType(row: MLSRow): DwellingTypeInfo {
       }
     }
 
-    // Derive from unit count
-    if (row.totalUnits) {
-      return {
-        category: 'multifamily',
-        subType: subTypeFromUnitCount(row.totalUnits),
-        unitCount,
-        perDoorPrice,
-        detectionSource: 'unit_count',
-      };
-    }
-
     // Property Type alone confirms multifamily
     return {
       category: 'multifamily',
@@ -74,13 +74,14 @@ export function detectDwellingType(row: MLSRow): DwellingTypeInfo {
   }
 
   // === CHECK REMARKS FOR HIDDEN MULTIFAMILY ===
-  if (row.remarks) {
+  // Only check remarks when dwelling type is not already known from structured fields
+  if (row.remarks && (!row.dwellingType || row.dwellingType === '')) {
     const match = row.remarks.match(MULTIFAMILY_REMARKS_REGEX);
     if (match) {
       const keyword = match[1].toLowerCase().replace(/[\s-]/g, '');
       let subType: DwellingSubType = 'duplex';
       if (keyword.includes('triplex') || keyword.includes('tri')) subType = 'triplex';
-      else if (keyword.includes('fourplex') || keyword.includes('4plex') || keyword.includes('fourplex')) subType = 'fourplex';
+      else if (keyword.includes('fourplex') || keyword.includes('4plex')) subType = 'fourplex';
 
       const unitCount = subType === 'duplex' ? 2 : subType === 'triplex' ? 3 : 4;
       const perDoorPrice = row.listPrice ? Math.round(row.listPrice / unitCount) : undefined;

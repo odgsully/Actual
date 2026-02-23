@@ -96,8 +96,7 @@ export async function POST(req: NextRequest) {
                 })}\n\n`
               )
             )
-            clearInterval(keepalive)
-            controller.close()
+            // Don't close here — let finally block handle cleanup
             return
           }
 
@@ -144,7 +143,11 @@ export async function POST(req: NextRequest) {
         )
       } finally {
         clearInterval(keepalive)
-        controller.close()
+        try {
+          controller.close()
+        } catch {
+          // Stream may already be closed
+        }
       }
     },
   })

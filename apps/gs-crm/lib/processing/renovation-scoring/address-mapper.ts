@@ -27,6 +27,11 @@ function normalizeAddress(address: string): string {
     .replace(/\bCOURT\b/g, 'CT')
     .replace(/\bCIRCLE\b/g, 'CIR')
     .replace(/\bPLACE\b/g, 'PL')
+    .replace(/\bTRAIL\b/g, 'TRL')
+    .replace(/\bPARKWAY\b/g, 'PKWY')
+    .replace(/\bTERRACE\b/g, 'TER')
+    .replace(/\bHIGHWAY\b/g, 'HWY')
+    .replace(/\bWAY\b/g, 'WAY')
     // Remove state and zip for matching
     .replace(/,?\s*AZ\s*\d{5}(-\d{4})?$/, '')
     .trim();
@@ -37,8 +42,8 @@ function normalizeAddress(address: string): string {
  */
 function extractStreetNumberAndName(address: string): string | null {
   const normalized = normalizeAddress(address);
-  // Match: number + directional? + street name
-  const match = normalized.match(/^(\d+\s+[NSEW]?\s*[\w]+(?:\s+[\w]+)?)/);
+  // Match: number + directional? + multi-word street name (up to 5 words)
+  const match = normalized.match(/^(\d+\s+[NSEW]?\s*[\w]+(?:\s+[\w]+){0,4})/);
   return match ? match[1].trim() : null;
 }
 

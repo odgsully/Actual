@@ -200,13 +200,23 @@ export async function PUT(req: NextRequest) {
           // Find matching row by fuzzy address match against Column B
           const normalizedVsAddr = vs.address.toUpperCase().replace(/[.,#]/g, '').replace(/\s+/g, ' ').trim()
           let matchedRow: ExcelJS.Row | null = null
+          const MIN_INCLUDES_LENGTH = 10 // Minimum chars for substring matching to avoid false positives
 
           analysisSheet.eachRow((row, rowNumber) => {
             if (rowNumber <= 2) return // Skip header rows
+            if (matchedRow) return // Already found a match
             const cellAddr = row.getCell('B').value?.toString() || ''
             const normalizedCellAddr = cellAddr.toUpperCase().replace(/[.,#]/g, '').replace(/\s+/g, ' ').trim()
-            if (normalizedCellAddr === normalizedVsAddr || normalizedCellAddr.includes(normalizedVsAddr) || normalizedVsAddr.includes(normalizedCellAddr)) {
-              if (!matchedRow) matchedRow = row
+            // Prefer exact normalized match
+            if (normalizedCellAddr === normalizedVsAddr) {
+              matchedRow = row
+            // Fall back to includes only with minimum length threshold
+            } else if (
+              normalizedVsAddr.length >= MIN_INCLUDES_LENGTH &&
+              normalizedCellAddr.length >= MIN_INCLUDES_LENGTH &&
+              (normalizedCellAddr.includes(normalizedVsAddr) || normalizedVsAddr.includes(normalizedCellAddr))
+            ) {
+              matchedRow = row
             }
           })
 
