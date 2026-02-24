@@ -263,9 +263,18 @@ export default function UploadPage() {
         return
       }
 
-      // Store path in state (page count estimated from file size, ~50KB per page)
-      const estimatedPages = Math.max(1, Math.round(file.size / 50000))
-      const pdfInfo = { path: storagePath, pages: estimatedPages }
+      // Read actual page count from PDF
+      let actualPages = 1
+      try {
+        const { PDFDocument } = await import('pdf-lib')
+        const arrayBuffer = await file.arrayBuffer()
+        const pdfDoc = await PDFDocument.load(arrayBuffer)
+        actualPages = pdfDoc.getPageCount()
+      } catch {
+        // Fallback to size estimate if pdf-lib fails
+        actualPages = Math.max(1, Math.round(file.size / 50000))
+      }
+      const pdfInfo = { path: storagePath, pages: actualPages }
 
       const setters: Record<string, any> = {
         res15: setRes15Pdf,

@@ -191,9 +191,13 @@ export async function POST(req: NextRequest) {
           message: `Downloaded ${pdfBuffers.length} PDF(s), starting scoring pipeline...`,
         })
 
-        // Estimate total pages (rough: ~50KB per page) for cost estimate
-        const totalSizeBytes = pdfBuffers.reduce((sum, buf) => sum + buf.length, 0)
-        const estimatedPages = Math.max(1, Math.round(totalSizeBytes / 50000))
+        // Get actual page count from PDFs
+        const { getPDFPageCount } = await import('@/lib/processing/renovation-scoring/pdf-splitter')
+        let totalPages = 0
+        for (const buf of pdfBuffers) {
+          totalPages += await getPDFPageCount(buf)
+        }
+        const estimatedPages = Math.max(1, totalPages)
         const estimatedCost = estimatedPages * 0.025
 
         // Create batch record
