@@ -11,19 +11,11 @@ import { extractAddressesFromPDF } from './text-extractor';
 import { matchAddressesToProperties, addClaudeDetectedMatches } from './address-mapper';
 import { detectDwellingTypes } from './dwelling-detector';
 import { scoreWithVision } from './vision-scorer';
+import { normalizeAddress } from '@/lib/utils/normalize-address';
 
 export type { ScoringProgress, ScoringResult, VisionScoringOptions, PropertyScore } from './types';
 export { detectDwellingType, detectDwellingTypes } from './dwelling-detector';
 export { buildScoringPrompt } from './prompts';
-
-/** Normalize address for comparison (strip punctuation, extra whitespace, uppercase) */
-function normalizeForComparison(addr: string): string {
-  return addr
-    .toUpperCase()
-    .replace(/[.,#]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
 
 /**
  * Score properties from PDF buffers using Claude's vision API.
@@ -144,7 +136,7 @@ export async function* scorePropertiesFromPDFs(
       total: chunks.length,
     };
 
-    const { scores, failures } = await scoreWithVision(
+    const { scores, failures, usage } = await scoreWithVision(
       chunks,
       addressMatches,
       dwellingInfoMap,
@@ -184,10 +176,10 @@ export async function* scorePropertiesFromPDFs(
 
     // Build unmatched list — normalize both sides before comparing
     const matchedAddressesNorm = new Set(
-      scores.map((s) => normalizeForComparison(s.detectedAddress || ''))
+      scores.map((s) => normalizeAddress(s.detectedAddress || ''))
     );
     const unmatched = Array.from(allAddresses.values()).filter(
-      (addr) => !matchedAddressesNorm.has(normalizeForComparison(addr))
+      (addr) => !matchedAddressesNorm.has(normalizeAddress(addr))
     );
 
     // Build final result
@@ -201,6 +193,7 @@ export async function* scorePropertiesFromPDFs(
         failed: failures.length,
         unmatched: unmatched.length,
       },
+      usage,
     };
 
     // Final completion event

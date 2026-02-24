@@ -194,6 +194,11 @@ export interface ScoringResult {
     /** Address did not match any CSV row */
     unmatched: number;
   };
+  /** Actual API token usage (if available) */
+  usage?: {
+    inputTokens: number;
+    outputTokens: number;
+  };
 }
 
 // ============================================================================

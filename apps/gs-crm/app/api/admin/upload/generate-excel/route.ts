@@ -25,6 +25,8 @@ import type {
   UploadGenerationMetadata
 } from '@/lib/types/mls-data'
 import { requireAdmin } from '@/lib/api/admin-auth'
+import { getScoresByBatch } from '@/lib/database/vision-scores'
+import { normalizeAddress } from '@/lib/utils/normalize-address'
 
 const LOG_PREFIX = '[Generate Excel]'
 
@@ -49,8 +51,28 @@ export async function PUT(req: NextRequest) {
       mcaoData,
       clientName,
       subjectManualInputs,
-      visionScores,  // Optional vision AI scoring results
+      visionScores: rawVisionScores,  // Optional vision AI scoring results
+      batchId,       // Optional batch ID to fetch scores from DB
     } = body
+
+    // Resolve vision scores: prefer inline, fall back to DB via batchId
+    let visionScores = rawVisionScores
+    if ((!visionScores || visionScores.length === 0) && batchId) {
+      console.log(`${LOG_PREFIX} No inline visionScores, fetching from DB via batchId: ${batchId}`)
+      const { scores, error: scoresError } = await getScoresByBatch(auth.supabase, batchId)
+      if (scoresError) {
+        console.error(`${LOG_PREFIX} Failed to fetch scores from DB:`, scoresError)
+      } else if (scores.length > 0) {
+        visionScores = scores.map(s => ({
+          address: s.address,
+          score: s.renovation_score,
+          renoYear: s.reno_year_estimate,
+          confidence: s.confidence,
+          dwellingType: s.dwelling_subtype || 'residential',
+        }))
+        console.log(`${LOG_PREFIX} Loaded ${visionScores.length} scores from DB`)
+      }
+    }
 
     console.log(`${LOG_PREFIX} Starting Excel generation for client: ${clientName}`)
     console.log(`${LOG_PREFIX} Property counts:`, {
@@ -198,7 +220,7 @@ export async function PUT(req: NextRequest) {
           if (!vs.address || typeof vs.score !== 'number') continue
 
           // Find matching row by fuzzy address match against Column B
-          const normalizedVsAddr = vs.address.toUpperCase().replace(/[.,#]/g, '').replace(/\s+/g, ' ').trim()
+          const normalizedVsAddr = normalizeAddress(vs.address)
           let matchedRow: ExcelJS.Row | null = null
           const MIN_INCLUDES_LENGTH = 10 // Minimum chars for substring matching to avoid false positives
 
@@ -206,7 +228,7 @@ export async function PUT(req: NextRequest) {
             if (rowNumber <= 2) return // Skip header rows
             if (matchedRow) return // Already found a match
             const cellAddr = row.getCell('B').value?.toString() || ''
-            const normalizedCellAddr = cellAddr.toUpperCase().replace(/[.,#]/g, '').replace(/\s+/g, ' ').trim()
+            const normalizedCellAddr = normalizeAddress(cellAddr)
             // Prefer exact normalized match
             if (normalizedCellAddr === normalizedVsAddr) {
               matchedRow = row

@@ -3,7 +3,13 @@
  *
  * POST /api/admin/upload/score-pdf
  * Downloads PDFs from Supabase Storage, runs vision scoring pipeline,
- * and streams SSE progress events.
+ * streams SSE progress events, and persists results to database.
+ *
+ * Persistence features:
+ * - Creates a scoring batch record before processing
+ * - Checks cache for already-scored addresses (skip = $0)
+ * - Saves scores incrementally per-chunk (survives timeout)
+ * - Records token usage for cost tracking
  */
 
 import { NextRequest } from 'next/server'
@@ -11,15 +17,27 @@ import { requireAdmin } from '@/lib/api/admin-auth'
 import { scorePropertiesFromPDFs } from '@/lib/processing/renovation-scoring'
 import type { MLSRow } from '@/lib/types/mls-data'
 import type { VisionScoringOptions } from '@/lib/processing/renovation-scoring'
+import {
+  createScoringBatch,
+  updateBatchStatus,
+  saveScoresIncremental,
+  saveFailures,
+  getCachedScores,
+  recoverStaleBatches,
+  type VisionScoreRow,
+} from '@/lib/database/vision-scores'
 
 export const maxDuration = 300 // 5 min (Vercel Pro plan)
 export const dynamic = 'force-dynamic'
 
 const BUCKET_NAME = 'reportit-pdfs'
+const VISION_MODEL = 'claude-sonnet-4-20250514'
 
 interface ScorePDFRequest {
-  storagePaths: string[] // Supabase Storage paths to PDF files
-  propertyData: MLSRow[] // Parsed CSV property data
+  storagePaths: string[]
+  propertyData: MLSRow[]
+  clientId: string
+  forceRescore?: boolean
   options?: VisionScoringOptions
 }
 
@@ -27,7 +45,7 @@ export async function POST(req: NextRequest) {
   // Auth check
   const auth = await requireAdmin()
   if (!auth.success) return auth.response
-  const { supabase } = auth
+  const { supabase, user } = auth
 
   let body: ScorePDFRequest
   try {
@@ -39,7 +57,7 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const { storagePaths, propertyData, options } = body
+  const { storagePaths, propertyData, clientId, forceRescore, options } = body
 
   if (!storagePaths || storagePaths.length === 0) {
     return new Response(
@@ -55,30 +73,99 @@ export async function POST(req: NextRequest) {
     )
   }
 
+  if (!clientId) {
+    return new Response(
+      JSON.stringify({ error: 'clientId is required' }),
+      { status: 400, headers: { 'Content-Type': 'application/json' } }
+    )
+  }
+
   // Create SSE stream
   const encoder = new TextEncoder()
   const stream = new ReadableStream({
     async start(controller) {
-      // Keepalive interval to prevent Cloudflare/Vercel idle timeout
       const keepalive = setInterval(() => {
         try {
           controller.enqueue(encoder.encode(': keepalive\n\n'))
         } catch {
-          // Stream may already be closed
           clearInterval(keepalive)
         }
       }, 20_000)
 
+      function emit(data: Record<string, any>) {
+        try {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`))
+        } catch {
+          // Stream may be closed
+        }
+      }
+
+      let batchId: string | null = null
+
       try {
+        // Recover any stale batches
+        await recoverStaleBatches(supabase)
+
+        // Cache check (unless force-rescore)
+        let cachedScores: VisionScoreRow[] = []
+        if (!forceRescore) {
+          const allAddresses = propertyData.map(p => p.address).filter(Boolean)
+          const cacheResult = await getCachedScores(supabase, clientId, allAddresses)
+          cachedScores = cacheResult.scores || []
+        }
+
+        emit({
+          type: 'cache_check',
+          message: forceRescore
+            ? 'Force rescore: skipping cache'
+            : `Found ${cachedScores.length} cached scores, ${propertyData.length - cachedScores.length} may need scoring`,
+          cached: cachedScores.length,
+          toScore: propertyData.length - cachedScores.length,
+        })
+
+        // If 100% cached and not force-rescoring, skip the pipeline entirely
+        if (!forceRescore && cachedScores.length > 0 && cachedScores.length >= propertyData.length) {
+          emit({
+            type: 'scoring_complete',
+            message: `All ${cachedScores.length} scores loaded from cache ($0 cost)`,
+            current: cachedScores.length,
+            total: cachedScores.length,
+            batchId: cachedScores[0]?.batch_id || null,
+            fromCache: true,
+            result: {
+              scores: cachedScores.map(s => ({
+                address: s.address,
+                detectedAddress: s.detected_address,
+                mlsNumber: s.mls_number,
+                pageNumber: s.page_number,
+                renovationScore: s.renovation_score,
+                renoYearEstimate: s.reno_year_estimate,
+                confidence: s.confidence,
+                eraBaseline: s.era_baseline,
+                reasoning: s.reasoning,
+                rooms: s.rooms || [],
+              })),
+              failures: [],
+              unmatched: [],
+              stats: {
+                total: cachedScores.length,
+                scored: cachedScores.length,
+                failed: 0,
+                unmatched: 0,
+              },
+            },
+          })
+
+          emit({ type: 'done' })
+          controller.enqueue(encoder.encode('data: [DONE]\n\n'))
+          return
+        }
+
         // Download PDFs from Supabase Storage
-        controller.enqueue(
-          encoder.encode(
-            `data: ${JSON.stringify({
-              type: 'downloading',
-              message: `Downloading ${storagePaths.length} PDF(s) from storage...`,
-            })}\n\n`
-          )
-        )
+        emit({
+          type: 'downloading',
+          message: `Downloading ${storagePaths.length} PDF(s) from storage...`,
+        })
 
         const pdfBuffers: Buffer[] = []
         for (const path of storagePaths) {
@@ -87,16 +174,11 @@ export async function POST(req: NextRequest) {
             .download(path)
 
           if (error || !data) {
-            controller.enqueue(
-              encoder.encode(
-                `data: ${JSON.stringify({
-                  type: 'error',
-                  message: `Failed to download ${path}: ${error?.message || 'Unknown error'}`,
-                  error: error?.message,
-                })}\n\n`
-              )
-            )
-            // Don't close here — let finally block handle cleanup
+            emit({
+              type: 'error',
+              message: `Failed to download ${path}: ${error?.message || 'Unknown error'}`,
+              error: error?.message,
+            })
             return
           }
 
@@ -104,25 +186,69 @@ export async function POST(req: NextRequest) {
           pdfBuffers.push(Buffer.from(arrayBuffer))
         }
 
-        controller.enqueue(
-          encoder.encode(
-            `data: ${JSON.stringify({
-              type: 'downloading',
-              message: `Downloaded ${pdfBuffers.length} PDF(s), starting scoring pipeline...`,
-            })}\n\n`
-          )
-        )
+        emit({
+          type: 'downloading',
+          message: `Downloaded ${pdfBuffers.length} PDF(s), starting scoring pipeline...`,
+        })
 
-        // Run scoring pipeline — yields progress events
-        // Use .next() loop instead of for-await-of to avoid downlevelIteration
-        // issues with the es5 target in tsconfig
+        // Estimate total pages (rough: ~50KB per page) for cost estimate
+        const totalSizeBytes = pdfBuffers.reduce((sum, buf) => sum + buf.length, 0)
+        const estimatedPages = Math.max(1, Math.round(totalSizeBytes / 50000))
+        const estimatedCost = estimatedPages * 0.025
+
+        // Create batch record
+        const batchResult = await createScoringBatch(supabase, {
+          clientId,
+          storagePaths,
+          totalPages: estimatedPages,
+          estimatedCost,
+          createdBy: user.id,
+        })
+
+        if (batchResult.batch) {
+          batchId = batchResult.batch.id
+        }
+
+        // Run scoring pipeline
         const pipeline = scorePropertiesFromPDFs(pdfBuffers, propertyData, options)
         let iterResult = await pipeline.next()
 
         while (!iterResult.done) {
-          controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify(iterResult.value)}\n\n`)
-          )
+          const event = iterResult.value
+
+          // Emit the event to the client
+          emit(event)
+
+          // Incremental persistence: save scores as they come in
+          if (batchId && event.type === 'scoring_complete' && event.result) {
+            const { scores, failures, usage } = event.result
+
+            // Save all scores
+            if (scores.length > 0) {
+              await saveScoresIncremental(supabase, batchId, clientId, scores, VISION_MODEL)
+            }
+
+            // Save failures
+            if (failures.length > 0) {
+              await saveFailures(supabase, batchId, failures)
+            }
+
+            // Update batch with final stats
+            await updateBatchStatus(supabase, batchId, 'complete', {
+              totalScored: scores.length,
+              totalFailed: failures.length,
+              totalUnmatched: event.result.unmatched?.length || 0,
+              totalInputTokens: usage?.inputTokens || 0,
+              totalOutputTokens: usage?.outputTokens || 0,
+            })
+
+            // Re-emit with batchId so client can reference it
+            emit({
+              ...event,
+              batchId,
+            })
+          }
+
           iterResult = await pipeline.next()
         }
 
@@ -132,15 +258,17 @@ export async function POST(req: NextRequest) {
         const message =
           error instanceof Error ? error.message : 'Scoring pipeline failed'
         console.error('[score-pdf] Pipeline error:', error)
-        controller.enqueue(
-          encoder.encode(
-            `data: ${JSON.stringify({
-              type: 'error',
-              message,
-              error: message,
-            })}\n\n`
-          )
-        )
+
+        // Mark batch as failed if we have one
+        if (batchId) {
+          await updateBatchStatus(supabase, batchId, 'error', undefined, message)
+        }
+
+        emit({
+          type: 'error',
+          message,
+          error: message,
+        })
       } finally {
         clearInterval(keepalive)
         try {

@@ -55,6 +55,8 @@ export default function UploadPage() {
   const [resLease3YrPdf, setResLease3YrPdf] = useState<{ path: string; pages: number } | null>(null)
   const [scoringProgress, setScoringProgress] = useState<string | null>(null)
   const [visionScores, setVisionScores] = useState<any[] | null>(null)
+  const [batchId, setBatchId] = useState<string | null>(null)
+  const [cacheInfo, setCacheInfo] = useState<{ cached: number; toScore: number } | null>(null)
 
   // Errors
   const [subjectError, setSubjectError] = useState<string | null>(null)
@@ -73,6 +75,38 @@ export default function UploadPage() {
     }
     loadClients()
   }, [])
+
+  // Hydrate cached vision scores when client is selected in vision mode
+  useEffect(() => {
+    if (!selectedClientId || scoringMode !== 'vision') {
+      setBatchId(null)
+      setCacheInfo(null)
+      return
+    }
+
+    fetch(`/api/admin/upload/scores?clientId=${selectedClientId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.scores?.length > 0) {
+          setBatchId(data.batch?.id || null)
+          setVisionScores(data.scores.map((s: any) => ({
+            address: s.address,
+            score: s.renovation_score,
+            renoYear: s.reno_year_estimate,
+            confidence: s.confidence,
+            dwellingType: s.dwelling_subtype || 'residential',
+          })))
+          setScoringProgress(`Loaded ${data.scores.length} cached scores from previous run`)
+        } else {
+          setBatchId(null)
+          setVisionScores(null)
+          setScoringProgress(null)
+        }
+      })
+      .catch(() => {
+        // Silently fail — cache is optional
+      })
+  }, [selectedClientId, scoringMode])
 
   // Handle click outside to close dropdown
   useEffect(() => {
@@ -255,6 +289,7 @@ export default function UploadPage() {
     setGenerating(true)
     setScoringProgress(null)
     setVisionScores(null)
+    setCacheInfo(null)
 
     try {
       let scores: any[] | undefined = undefined
@@ -290,6 +325,7 @@ export default function UploadPage() {
           body: JSON.stringify({
             storagePaths: uploadedPdfs.map(p => p!.path),
             propertyData: allPropertyData,
+            clientId: selectedClientId,
           }),
         })
 
@@ -316,17 +352,22 @@ export default function UploadPage() {
                 try {
                   const event = JSON.parse(data)
                   setScoringProgress(event.message || event.type)
+                  if (event.type === 'cache_check') {
+                    setCacheInfo({ cached: event.cached || 0, toScore: event.toScore || 0 })
+                  }
                   if (event.type === 'scoring_complete' && event.result) {
+                    if (event.batchId) setBatchId(event.batchId)
                     scores = event.result.scores.map((s: any) => ({
                       address: s.address,
-                      score: s.renovationScore,
-                      renoYear: s.renoYearEstimate,
+                      score: s.renovationScore ?? s.renovation_score,
+                      renoYear: s.renoYearEstimate ?? s.reno_year_estimate,
                       confidence: s.confidence,
-                      dwellingType: s.propertySubtype || 'residential',
+                      dwellingType: s.propertySubtype || s.dwelling_subtype || 'residential',
                     }))
                     setVisionScores(scores || null)
+                    const costInfo = event.fromCache ? ' ($0 - from cache)' : ''
                     setScoringProgress(
-                      `Scored ${event.result.stats.scored}/${event.result.stats.total} properties` +
+                      `Scored ${event.result.stats.scored}/${event.result.stats.total} properties${costInfo}` +
                       (event.result.stats.failed > 0 ? ` (${event.result.stats.failed} failed)` : '')
                     )
                   }
@@ -364,6 +405,7 @@ export default function UploadPage() {
             yearBuilt: subjectYearBuilt ? parseInt(subjectYearBuilt) : undefined,
           },
           visionScores: scores,
+          batchId: batchId,
         }),
       })
 
@@ -926,6 +968,23 @@ export default function UploadPage() {
         {scoringProgress && (
           <div className="mt-4 p-3 bg-purple-500/10 border border-purple-400/30 rounded-xl">
             <p className="text-sm text-purple-300">{scoringProgress}</p>
+          </div>
+        )}
+
+        {visionScores && batchId && !generating && (
+          <div className="mt-2 p-3 bg-green-500/10 border border-green-400/30 rounded-xl">
+            <p className="text-sm text-green-300">
+              {visionScores.length} scores saved in database (batch {batchId.slice(0, 8)}...)
+              — Excel can be regenerated for free
+            </p>
+          </div>
+        )}
+
+        {cacheInfo && cacheInfo.cached > 0 && (
+          <div className="mt-2 p-3 bg-blue-500/10 border border-blue-400/30 rounded-xl">
+            <p className="text-sm text-blue-300">
+              Cache: {cacheInfo.cached} already scored, {cacheInfo.toScore} new
+            </p>
           </div>
         )}
 

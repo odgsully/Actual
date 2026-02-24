@@ -74,9 +74,11 @@ async function scoreBatch(
   client: Anthropic,
   batch: BatchInput,
   options: VisionScoringOptions
-): Promise<{ scores: PropertyScore[]; failures: ScoringFailure[] }> {
+): Promise<{ scores: PropertyScore[]; failures: ScoringFailure[]; usage: { inputTokens: number; outputTokens: number } }> {
   const scores: PropertyScore[] = [];
   const failures: ScoringFailure[] = [];
+  let totalInputTokens = 0;
+  let totalOutputTokens = 0;
 
   // Determine dominant dwelling type for prompt selection
   // Use the first matched property's dwelling info, or default to residential
@@ -129,6 +131,12 @@ async function scoreBatch(
           },
         ],
       });
+
+      // Track token usage
+      if (response.usage) {
+        totalInputTokens += response.usage.input_tokens || 0;
+        totalOutputTokens += response.usage.output_tokens || 0;
+      }
 
       // Extract text content from response
       const textBlock = response.content.find(b => b.type === 'text');
@@ -219,7 +227,7 @@ async function scoreBatch(
       // Accept results (final attempt or no out-of-range issues)
       scores.push(...batchScores);
       failures.push(...batchFailures);
-      return { scores, failures };
+      return { scores, failures, usage: { inputTokens: totalInputTokens, outputTokens: totalOutputTokens } };
 
     } catch (error: any) {
       if (attempt < maxRetries) {
@@ -240,11 +248,11 @@ async function scoreBatch(
         });
       }
 
-      return { scores, failures };
+      return { scores, failures, usage: { inputTokens: totalInputTokens, outputTokens: totalOutputTokens } };
     }
   }
 
-  return { scores, failures };
+  return { scores, failures, usage: { inputTokens: totalInputTokens, outputTokens: totalOutputTokens } };
 }
 
 /**
@@ -256,12 +264,14 @@ export async function scoreWithVision(
   addressMatches: Map<number, AddressMatch>,
   dwellingInfoMap: Map<string, DwellingTypeInfo>,
   options: VisionScoringOptions = {}
-): Promise<{ scores: PropertyScore[]; failures: ScoringFailure[] }> {
+): Promise<{ scores: PropertyScore[]; failures: ScoringFailure[]; usage: { inputTokens: number; outputTokens: number } }> {
   const concurrency = options.concurrency ?? DEFAULT_CONCURRENCY;
   const limit = pLimit(concurrency);
 
   const allScores: PropertyScore[] = [];
   const allFailures: ScoringFailure[] = [];
+  let aggInputTokens = 0;
+  let aggOutputTokens = 0;
 
   // Create a single Anthropic client to share across all concurrent tasks
   const client = new Anthropic();
@@ -280,9 +290,11 @@ export async function scoreWithVision(
         dwellingInfoMap,
       };
 
-      const { scores, failures } = await scoreBatch(client, batch, options);
+      const { scores, failures, usage } = await scoreBatch(client, batch, options);
       allScores.push(...scores);
       allFailures.push(...failures);
+      aggInputTokens += usage.inputTokens;
+      aggOutputTokens += usage.outputTokens;
 
       // Invoke progress callback after each chunk completes
       if (options.onProgress) {
@@ -300,5 +312,5 @@ export async function scoreWithVision(
 
   await Promise.all(tasks);
 
-  return { scores: allScores, failures: allFailures };
+  return { scores: allScores, failures: allFailures, usage: { inputTokens: aggInputTokens, outputTokens: aggOutputTokens } };
 }
