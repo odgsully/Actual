@@ -252,14 +252,16 @@ export interface ScoringProgress {
  * All fields are optional with sensible defaults.
  */
 export interface VisionScoringOptions {
-  /** Maximum number of parallel Claude API calls. Default: 5. */
+  /** Maximum number of parallel API calls. Default: 5. */
   concurrency?: number;
-  /** Number of PDF pages to send per Claude Vision call. Default: 5. */
+  /** Number of PDF pages to send per vision call. Default: 5. */
   pagesPerBatch?: number;
   /** Number of retry attempts per property on failure. Default: 1. */
   maxRetries?: number;
   /** Callback invoked on each progress event for SSE streaming */
   onProgress?: (progress: ScoringProgress) => void;
+  /** Vision scoring provider. Default: 'gemini'. */
+  scoringProvider?: 'gemini' | 'claude';
 }
 
 // ============================================================================

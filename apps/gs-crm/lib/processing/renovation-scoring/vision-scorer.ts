@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 import pLimit from 'p-limit';
 import { MLSRow } from '@/lib/types/mls-data';
 import {
@@ -18,6 +19,9 @@ const DEFAULT_CONCURRENCY = 5;
 const DEFAULT_PAGES_PER_BATCH = 5;
 const DEFAULT_MAX_RETRIES = 1;
 const CURRENT_YEAR = new Date().getFullYear();
+
+const GEMINI_MODEL = 'gemini-2.5-flash-preview-05-20';
+const CLAUDE_MODEL = 'claude-sonnet-4-20250514';
 
 interface BatchInput {
   pdfBuffer: Buffer;
@@ -68,9 +72,199 @@ function parseRoomScores(raw: { type: string; observations: string; score: numbe
 }
 
 /**
+ * Parse raw JSON scores into validated PropertyScore objects.
+ * Shared by both Gemini and Claude scoring paths.
+ */
+function parseRawScores(
+  parsed: (RawResidentialScore | RawMultifamilyScore)[],
+  batch: BatchInput,
+  dwellingInfo: DwellingTypeInfo
+): { scores: PropertyScore[]; failures: ScoringFailure[]; hasOutOfRange: boolean } {
+  const scores: PropertyScore[] = [];
+  const failures: ScoringFailure[] = [];
+  let hasOutOfRange = false;
+
+  for (const raw of parsed) {
+    const pageNumber = batch.pageNumbers[0];
+
+    if (!isValidScore(raw.renovation_score)) {
+      if (raw.renovation_score >= 0.5 && raw.renovation_score <= 10.5) {
+        raw.renovation_score = clampScore(raw.renovation_score);
+      } else {
+        hasOutOfRange = true;
+        failures.push({
+          pageNumber,
+          address: raw.detected_address || null,
+          reason: 'score_out_of_range',
+          detail: `Score ${raw.renovation_score} is outside valid range 1-10`,
+        });
+        continue;
+      }
+    }
+
+    if (!isValidRenoYear(raw.reno_year_estimate)) {
+      raw.reno_year_estimate = null;
+    }
+
+    const score: PropertyScore = {
+      address: raw.detected_address,
+      detectedAddress: raw.detected_address,
+      pageNumber,
+      renovationScore: clampScore(raw.renovation_score),
+      renoYearEstimate: raw.reno_year_estimate,
+      confidence: raw.confidence || 'medium',
+      eraBaseline: raw.era_baseline || '',
+      reasoning: raw.reasoning || '',
+      rooms: parseRoomScores(raw.rooms || []),
+    };
+
+    // Add multifamily-specific fields
+    const mf = raw as RawMultifamilyScore;
+    if (mf.unit_scores) {
+      score.unitScores = mf.unit_scores.map(u => ({
+        unit: u.unit,
+        rooms: parseRoomScores(u.rooms || []),
+        score: clampScore(u.score),
+      }));
+      score.unitsShown = mf.units_shown;
+      score.mixedConditionFlag = mf.mixed_condition_flag;
+      score.propertySubtype = dwellingInfo.subType;
+      score.perDoorPrice = mf.per_door_price || undefined;
+    }
+    if (mf.exterior) {
+      score.exterior = {
+        observations: mf.exterior.observations || '',
+        score: clampScore(mf.exterior.score),
+      };
+    }
+
+    scores.push(score);
+  }
+
+  return { scores, failures, hasOutOfRange };
+}
+
+/**
+ * Resolve the dominant dwelling type for prompt selection.
+ */
+function resolveDwellingInfo(batch: BatchInput): DwellingTypeInfo {
+  for (const [, match] of Array.from(batch.addressMatches.entries())) {
+    if (match.mlsRow) {
+      return detectDwellingType(match.mlsRow);
+    }
+  }
+  return {
+    category: 'residential',
+    subType: 'sfr',
+    unitCount: 1,
+    detectionSource: 'default',
+  };
+}
+
+/**
+ * Score a batch of PDF pages using Gemini's vision API.
+ */
+async function scoreBatchGemini(
+  client: GoogleGenerativeAI,
+  batch: BatchInput,
+  options: VisionScoringOptions
+): Promise<{ scores: PropertyScore[]; failures: ScoringFailure[]; usage: { inputTokens: number; outputTokens: number } }> {
+  const scores: PropertyScore[] = [];
+  const failures: ScoringFailure[] = [];
+  let totalInputTokens = 0;
+  let totalOutputTokens = 0;
+
+  const dwellingInfo = resolveDwellingInfo(batch);
+  const { system, prompt } = buildScoringPrompt(dwellingInfo);
+  const maxRetries = options.maxRetries ?? DEFAULT_MAX_RETRIES;
+
+  const model = client.getGenerativeModel({
+    model: GEMINI_MODEL,
+    systemInstruction: system,
+    generationConfig: {
+      responseMimeType: 'application/json',
+      maxOutputTokens: 4096,
+    },
+  });
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      let promptText = prompt;
+      if (attempt > 0) {
+        promptText += '\n\nIMPORTANT: Your previous response had issues. Please respond ONLY with a valid JSON array. All renovation_score values MUST be integers between 1 and 10 inclusive.';
+      }
+
+      const result = await model.generateContent([
+        {
+          inlineData: {
+            mimeType: 'application/pdf',
+            data: batch.pdfBuffer.toString('base64'),
+          },
+        },
+        promptText,
+      ]);
+
+      const response = result.response;
+
+      // Track token usage
+      const usage = response.usageMetadata;
+      if (usage) {
+        totalInputTokens += usage.promptTokenCount || 0;
+        totalOutputTokens += usage.candidatesTokenCount || 0;
+      }
+
+      // Parse JSON response
+      let jsonText = response.text().trim();
+      const jsonMatch = jsonText.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (jsonMatch) {
+        jsonText = jsonMatch[1].trim();
+      }
+
+      const parsed: (RawResidentialScore | RawMultifamilyScore)[] = JSON.parse(jsonText);
+
+      if (!Array.isArray(parsed)) {
+        throw new Error('Response is not a JSON array');
+      }
+
+      const { scores: batchScores, failures: batchFailures, hasOutOfRange } = parseRawScores(parsed, batch, dwellingInfo);
+
+      if (hasOutOfRange && attempt < maxRetries) {
+        continue;
+      }
+
+      scores.push(...batchScores);
+      failures.push(...batchFailures);
+      return { scores, failures, usage: { inputTokens: totalInputTokens, outputTokens: totalOutputTokens } };
+
+    } catch (error: any) {
+      if (attempt < maxRetries) {
+        continue;
+      }
+
+      const reason = error.message?.includes('JSON')
+        ? 'json_parse_error' as const
+        : 'api_error' as const;
+
+      for (const pageNum of batch.pageNumbers) {
+        failures.push({
+          pageNumber: pageNum,
+          address: null,
+          reason,
+          detail: error.message || 'Unknown error',
+        });
+      }
+
+      return { scores, failures, usage: { inputTokens: totalInputTokens, outputTokens: totalOutputTokens } };
+    }
+  }
+
+  return { scores, failures, usage: { inputTokens: totalInputTokens, outputTokens: totalOutputTokens } };
+}
+
+/**
  * Score a batch of PDF pages using Claude's vision API.
  */
-async function scoreBatch(
+async function scoreBatchClaude(
   client: Anthropic,
   batch: BatchInput,
   options: VisionScoringOptions
@@ -80,35 +274,19 @@ async function scoreBatch(
   let totalInputTokens = 0;
   let totalOutputTokens = 0;
 
-  // Determine dominant dwelling type for prompt selection
-  // Use the first matched property's dwelling info, or default to residential
-  let dwellingInfo: DwellingTypeInfo = {
-    category: 'residential',
-    subType: 'sfr',
-    unitCount: 1,
-    detectionSource: 'default',
-  };
-
-  for (const [, match] of Array.from(batch.addressMatches.entries())) {
-    if (match.mlsRow) {
-      dwellingInfo = detectDwellingType(match.mlsRow);
-      break;
-    }
-  }
-
+  const dwellingInfo = resolveDwellingInfo(batch);
   const { system, prompt } = buildScoringPrompt(dwellingInfo);
   const maxRetries = options.maxRetries ?? DEFAULT_MAX_RETRIES;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      // Build prompt text — add constraint reminder on retries
       let promptText = prompt;
       if (attempt > 0) {
         promptText += '\n\nIMPORTANT: Your previous response had issues. Please respond ONLY with a valid JSON array. All renovation_score values MUST be integers between 1 and 10 inclusive.';
       }
 
       const response = await client.messages.create({
-        model: 'claude-sonnet-4-20250514',
+        model: CLAUDE_MODEL,
         max_tokens: 4096,
         system,
         messages: [
@@ -157,84 +335,21 @@ async function scoreBatch(
         throw new Error('Response is not a JSON array');
       }
 
-      // Process each scored property — track out-of-range for retry
-      let hasOutOfRange = false;
-      const batchScores: PropertyScore[] = [];
-      const batchFailures: ScoringFailure[] = [];
+      const { scores: batchScores, failures: batchFailures, hasOutOfRange } = parseRawScores(parsed, batch, dwellingInfo);
 
-      for (const raw of parsed) {
-        const pageNumber = batch.pageNumbers[0]; // Approximate -- refined by address matching
-
-        if (!isValidScore(raw.renovation_score)) {
-          if (raw.renovation_score >= 0.5 && raw.renovation_score <= 10.5) {
-            raw.renovation_score = clampScore(raw.renovation_score);
-          } else {
-            hasOutOfRange = true;
-            batchFailures.push({
-              pageNumber,
-              address: raw.detected_address || null,
-              reason: 'score_out_of_range',
-              detail: `Score ${raw.renovation_score} is outside valid range 1-10`,
-            });
-            continue;
-          }
-        }
-
-        if (!isValidRenoYear(raw.reno_year_estimate)) {
-          raw.reno_year_estimate = null; // Silently null out invalid years
-        }
-
-        const score: PropertyScore = {
-          address: raw.detected_address,
-          detectedAddress: raw.detected_address,
-          pageNumber,
-          renovationScore: clampScore(raw.renovation_score),
-          renoYearEstimate: raw.reno_year_estimate,
-          confidence: raw.confidence || 'medium',
-          eraBaseline: raw.era_baseline || '',
-          reasoning: raw.reasoning || '',
-          rooms: parseRoomScores(raw.rooms || []),
-        };
-
-        // Add multifamily-specific fields
-        const mf = raw as RawMultifamilyScore;
-        if (mf.unit_scores) {
-          score.unitScores = mf.unit_scores.map(u => ({
-            unit: u.unit,
-            rooms: parseRoomScores(u.rooms || []),
-            score: clampScore(u.score),
-          }));
-          score.unitsShown = mf.units_shown;
-          score.mixedConditionFlag = mf.mixed_condition_flag;
-          score.propertySubtype = dwellingInfo.subType;
-          score.perDoorPrice = mf.per_door_price || undefined;
-        }
-        if (mf.exterior) {
-          score.exterior = {
-            observations: mf.exterior.observations || '',
-            score: clampScore(mf.exterior.score),
-          };
-        }
-
-        batchScores.push(score);
-      }
-
-      // If we got out-of-range scores and have retries left, retry the entire batch
       if (hasOutOfRange && attempt < maxRetries) {
         continue;
       }
 
-      // Accept results (final attempt or no out-of-range issues)
       scores.push(...batchScores);
       failures.push(...batchFailures);
       return { scores, failures, usage: { inputTokens: totalInputTokens, outputTokens: totalOutputTokens } };
 
     } catch (error: any) {
       if (attempt < maxRetries) {
-        continue; // Retry
+        continue;
       }
 
-      // Final failure
       const reason = error.message?.includes('JSON')
         ? 'json_parse_error' as const
         : 'api_error' as const;
@@ -256,7 +371,8 @@ async function scoreBatch(
 }
 
 /**
- * Score properties from PDF chunks using Claude vision API.
+ * Score properties from PDF chunks using vision API.
+ * Supports both Gemini (default) and Claude providers.
  * Handles batching, concurrency, retries, and validation.
  */
 export async function scoreWithVision(
@@ -266,6 +382,7 @@ export async function scoreWithVision(
   options: VisionScoringOptions = {}
 ): Promise<{ scores: PropertyScore[]; failures: ScoringFailure[]; usage: { inputTokens: number; outputTokens: number } }> {
   const concurrency = options.concurrency ?? DEFAULT_CONCURRENCY;
+  const provider = options.scoringProvider ?? 'gemini';
   const limit = pLimit(concurrency);
 
   const allScores: PropertyScore[] = [];
@@ -273,8 +390,11 @@ export async function scoreWithVision(
   let aggInputTokens = 0;
   let aggOutputTokens = 0;
 
-  // Create a single Anthropic client to share across all concurrent tasks
-  const client = new Anthropic();
+  // Create the appropriate client
+  const claudeClient = provider === 'claude' ? new Anthropic() : null;
+  const geminiClient = provider === 'gemini'
+    ? new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY!)
+    : null;
 
   const tasks = pdfChunks.map(chunk => {
     const pageNumbers = Array.from(
@@ -290,7 +410,10 @@ export async function scoreWithVision(
         dwellingInfoMap,
       };
 
-      const { scores, failures, usage } = await scoreBatch(client, batch, options);
+      const { scores, failures, usage } = provider === 'gemini'
+        ? await scoreBatchGemini(geminiClient!, batch, options)
+        : await scoreBatchClaude(claudeClient!, batch, options);
+
       allScores.push(...scores);
       allFailures.push(...failures);
       aggInputTokens += usage.inputTokens;

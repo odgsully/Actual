@@ -129,9 +129,12 @@ export async function* scorePropertiesFromPDFs(
     // yielded by the generator after the scoring call completes per-chunk.
     const progressQueue: ScoringProgress[] = [];
 
+    const provider = options.scoringProvider ?? 'gemini';
+    const providerLabel = provider === 'gemini' ? 'Gemini 2.5 Flash' : 'Claude Sonnet 4';
+
     yield {
       type: 'scoring_batch',
-      message: `Scoring ${chunks.length} chunk(s) with Claude vision API...`,
+      message: `Scoring ${chunks.length} chunk(s) with ${providerLabel} vision API...`,
       current: 0,
       total: chunks.length,
     };

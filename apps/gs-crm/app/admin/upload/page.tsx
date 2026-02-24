@@ -47,6 +47,7 @@ export default function UploadPage() {
   // Scoring mode toggle (Stage 1: vision greyed out, calibrated is default)
   // Stage 2: change default to 'vision' once pipeline is deployed and validated
   const [scoringMode, setScoringMode] = useState<'vision' | 'calibrated'>('calibrated')
+  const [scoringProvider, setScoringProvider] = useState<'gemini' | 'claude'>('gemini')
 
   // Vision scoring state (8C)
   const [res15Pdf, setRes15Pdf] = useState<{ path: string; pages: number } | null>(null)
@@ -306,11 +307,13 @@ export default function UploadPage() {
       // Vision scoring path
       const uploadedPdfs = [res15Pdf, resLease15Pdf, res3YrPdf, resLease3YrPdf].filter(Boolean)
       if (scoringMode === 'vision' && uploadedPdfs.length > 0) {
-        // Cost estimate
+        // Cost estimate (Gemini ~$0.002/page, Claude ~$0.025/page)
         const totalPages = uploadedPdfs.reduce((sum, p) => sum + (p?.pages || 0), 0)
-        const estimatedCost = (totalPages * 0.025).toFixed(2)
+        const costPerPage = scoringProvider === 'gemini' ? 0.002 : 0.025
+        const providerLabel = scoringProvider === 'gemini' ? 'Gemini 2.5 Flash' : 'Claude Sonnet 4'
+        const estimatedCost = (totalPages * costPerPage).toFixed(2)
         const confirmed = window.confirm(
-          `Vision scoring will process ~${totalPages} pages.\nEstimated cost: ~$${estimatedCost}\n\nProceed?`
+          `Vision scoring (${providerLabel}) will process ~${totalPages} pages.\nEstimated cost: ~$${estimatedCost}\n\nProceed?`
         )
         if (!confirmed) {
           setGenerating(false)
@@ -335,6 +338,7 @@ export default function UploadPage() {
             storagePaths: uploadedPdfs.map(p => p!.path),
             propertyData: allPropertyData,
             clientId: selectedClientId,
+            options: { scoringProvider },
           }),
         })
 
@@ -480,6 +484,35 @@ export default function UploadPage() {
               AI Vision Scoring
             </button>
           </div>
+          {scoringMode === 'vision' && (
+            <div className="flex items-center gap-3 ml-4 pl-4 border-l border-white/20">
+              <span className="text-sm text-white/40">Model:</span>
+              <div className="flex rounded-lg overflow-hidden border border-white/15">
+                <button
+                  onClick={() => setScoringProvider('gemini')}
+                  className={`px-3 py-1.5 text-xs font-medium transition-all duration-700 ease-out ${
+                    scoringProvider === 'gemini'
+                      ? 'bg-blue-500/20 text-blue-300 border-r border-blue-400/30'
+                      : 'bg-white/5 text-white/40 border-r border-white/15 hover:bg-white/10'
+                  }`}
+                >
+                  Gemini 2.5 Flash
+                  <span className="ml-1 text-[10px] text-green-400/70">~$0.002/pg</span>
+                </button>
+                <button
+                  onClick={() => setScoringProvider('claude')}
+                  className={`px-3 py-1.5 text-xs font-medium transition-all duration-700 ease-out ${
+                    scoringProvider === 'claude'
+                      ? 'bg-orange-500/20 text-orange-300 border-l border-orange-400/30'
+                      : 'bg-white/5 text-white/40 border-l border-white/15 hover:bg-white/10'
+                  }`}
+                >
+                  Claude Sonnet 4
+                  <span className="ml-1 text-[10px] text-white/30">~$0.025/pg</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

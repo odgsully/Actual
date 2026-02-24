@@ -31,7 +31,10 @@ export const maxDuration = 300 // 5 min (Vercel Pro plan)
 export const dynamic = 'force-dynamic'
 
 const BUCKET_NAME = 'reportit-pdfs'
-const VISION_MODEL = 'claude-sonnet-4-20250514'
+const VISION_MODELS = {
+  gemini: 'gemini-2.5-flash-preview-05-20',
+  claude: 'claude-sonnet-4-20250514',
+} as const
 
 interface ScorePDFRequest {
   storagePaths: string[]
@@ -58,6 +61,8 @@ export async function POST(req: NextRequest) {
   }
 
   const { storagePaths, propertyData, clientId, forceRescore, options } = body
+  const scoringProvider = options?.scoringProvider ?? 'gemini'
+  const VISION_MODEL = VISION_MODELS[scoringProvider]
 
   if (!storagePaths || storagePaths.length === 0) {
     return new Response(
@@ -198,7 +203,8 @@ export async function POST(req: NextRequest) {
           totalPages += await getPDFPageCount(buf)
         }
         const estimatedPages = Math.max(1, totalPages)
-        const estimatedCost = estimatedPages * 0.025
+        const costPerPage = scoringProvider === 'gemini' ? 0.002 : 0.025
+        const estimatedCost = estimatedPages * costPerPage
 
         // Create batch record
         const batchResult = await createScoringBatch(supabase, {
