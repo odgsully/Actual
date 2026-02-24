@@ -757,21 +757,30 @@ export default function UploadPage() {
             </div>
           )}
           {scoringMode === 'vision' && (
-            <label className="block w-full px-4 py-4 border-2 border-dashed border-purple-400/30 rounded-xl hover:border-purple-400/50 bg-purple-500/5 cursor-pointer transition-colors text-center">
-              <Upload className="w-5 h-5 text-purple-400/60 mx-auto mb-1" />
-              <span className="text-sm text-purple-300/60">
-                {res15Pdf ? `PDF uploaded (${res15Pdf.pages} pages)` : '7-Photo Flyer PDF (optional)'}
-              </span>
-              <input
-                type="file"
-                accept=".pdf"
-                onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (file) handlePdfUpload(file, 'res15')
-                }}
-                className="hidden"
-              />
-            </label>
+            <>
+              <label className="block w-full px-4 py-4 border-2 border-dashed border-purple-400/30 rounded-xl hover:border-purple-400/50 bg-purple-500/5 cursor-pointer transition-colors text-center">
+                <Upload className="w-5 h-5 text-purple-400/60 mx-auto mb-1" />
+                <span className="text-sm text-purple-300/60">
+                  {res15Pdf ? `PDF uploaded (${res15Pdf.pages} pages)` : '7-Photo Flyer PDF (optional)'}
+                </span>
+                <input
+                  type="file"
+                  accept=".pdf"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) handlePdfUpload(file, 'res15')
+                  }}
+                  className="hidden"
+                />
+              </label>
+              {res15Pdf && (
+                <div className="bg-purple-500/20 border border-purple-400/30 rounded-xl p-3">
+                  <p className="text-sm text-purple-300">
+                    ✓ PDF ready: ~{res15Pdf.pages} pages
+                  </p>
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -808,21 +817,30 @@ export default function UploadPage() {
             </div>
           )}
           {scoringMode === 'vision' && (
-            <label className="block w-full px-4 py-4 border-2 border-dashed border-purple-400/30 rounded-xl hover:border-purple-400/50 bg-purple-500/5 cursor-pointer transition-colors text-center">
-              <Upload className="w-5 h-5 text-purple-400/60 mx-auto mb-1" />
-              <span className="text-sm text-purple-300/60">
-                {resLease15Pdf ? `PDF uploaded (${resLease15Pdf.pages} pages)` : '7-Photo Flyer PDF (optional)'}
-              </span>
-              <input
-                type="file"
-                accept=".pdf"
-                onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (file) handlePdfUpload(file, 'resLease15')
-                }}
-                className="hidden"
-              />
-            </label>
+            <>
+              <label className="block w-full px-4 py-4 border-2 border-dashed border-purple-400/30 rounded-xl hover:border-purple-400/50 bg-purple-500/5 cursor-pointer transition-colors text-center">
+                <Upload className="w-5 h-5 text-purple-400/60 mx-auto mb-1" />
+                <span className="text-sm text-purple-300/60">
+                  {resLease15Pdf ? `PDF uploaded (${resLease15Pdf.pages} pages)` : '7-Photo Flyer PDF (optional)'}
+                </span>
+                <input
+                  type="file"
+                  accept=".pdf"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) handlePdfUpload(file, 'resLease15')
+                  }}
+                  className="hidden"
+                />
+              </label>
+              {resLease15Pdf && (
+                <div className="bg-purple-500/20 border border-purple-400/30 rounded-xl p-3">
+                  <p className="text-sm text-purple-300">
+                    ✓ PDF ready: ~{resLease15Pdf.pages} pages
+                  </p>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -870,21 +888,30 @@ export default function UploadPage() {
             </div>
           )}
           {scoringMode === 'vision' && (
-            <label className="block w-full px-4 py-4 border-2 border-dashed border-purple-400/30 rounded-xl hover:border-purple-400/50 bg-purple-500/5 cursor-pointer transition-colors text-center">
-              <Upload className="w-5 h-5 text-purple-400/60 mx-auto mb-1" />
-              <span className="text-sm text-purple-300/60">
-                {res3YrPdf ? `PDF uploaded (${res3YrPdf.pages} pages)` : '7-Photo Flyer PDF (optional)'}
-              </span>
-              <input
-                type="file"
-                accept=".pdf"
-                onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (file) handlePdfUpload(file, 'res3Yr')
-                }}
-                className="hidden"
-              />
-            </label>
+            <>
+              <label className="block w-full px-4 py-4 border-2 border-dashed border-purple-400/30 rounded-xl hover:border-purple-400/50 bg-purple-500/5 cursor-pointer transition-colors text-center">
+                <Upload className="w-5 h-5 text-purple-400/60 mx-auto mb-1" />
+                <span className="text-sm text-purple-300/60">
+                  {res3YrPdf ? `PDF uploaded (${res3YrPdf.pages} pages)` : '7-Photo Flyer PDF (optional)'}
+                </span>
+                <input
+                  type="file"
+                  accept=".pdf"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) handlePdfUpload(file, 'res3Yr')
+                  }}
+                  className="hidden"
+                />
+              </label>
+              {res3YrPdf && (
+                <div className="bg-purple-500/20 border border-purple-400/30 rounded-xl p-3">
+                  <p className="text-sm text-purple-300">
+                    ✓ PDF ready: ~{res3YrPdf.pages} pages
+                  </p>
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -921,21 +948,30 @@ export default function UploadPage() {
             </div>
           )}
           {scoringMode === 'vision' && (
-            <label className="block w-full px-4 py-4 border-2 border-dashed border-purple-400/30 rounded-xl hover:border-purple-400/50 bg-purple-500/5 cursor-pointer transition-colors text-center">
-              <Upload className="w-5 h-5 text-purple-400/60 mx-auto mb-1" />
-              <span className="text-sm text-purple-300/60">
-                {resLease3YrPdf ? `PDF uploaded (${resLease3YrPdf.pages} pages)` : '7-Photo Flyer PDF (optional)'}
-              </span>
-              <input
-                type="file"
-                accept=".pdf"
-                onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (file) handlePdfUpload(file, 'resLease3Yr')
-                }}
-                className="hidden"
-              />
-            </label>
+            <>
+              <label className="block w-full px-4 py-4 border-2 border-dashed border-purple-400/30 rounded-xl hover:border-purple-400/50 bg-purple-500/5 cursor-pointer transition-colors text-center">
+                <Upload className="w-5 h-5 text-purple-400/60 mx-auto mb-1" />
+                <span className="text-sm text-purple-300/60">
+                  {resLease3YrPdf ? `PDF uploaded (${resLease3YrPdf.pages} pages)` : '7-Photo Flyer PDF (optional)'}
+                </span>
+                <input
+                  type="file"
+                  accept=".pdf"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) handlePdfUpload(file, 'resLease3Yr')
+                  }}
+                  className="hidden"
+                />
+              </label>
+              {resLease3YrPdf && (
+                <div className="bg-purple-500/20 border border-purple-400/30 rounded-xl p-3">
+                  <p className="text-sm text-purple-300">
+                    ✓ PDF ready: ~{resLease3YrPdf.pages} pages
+                  </p>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
