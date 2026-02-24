@@ -1345,6 +1345,29 @@ export const LOCAL_TILES: Tile[] = [
     "actionDesc": null,
     "priority": "1",
     "typeII": "Form"
+  },
+  {
+    "id": "local-evening-checkin",
+    "name": "Evening Check-In",
+    "menu": [
+      "Org"
+    ],
+    "status": "In progress",
+    "desc": "End-of-day reflection: deep work hours, accomplishments, improvements, day rating",
+    "shadcn": [
+      "Pop-up",
+      "Form"
+    ],
+    "phase": [
+      "Evening"
+    ],
+    "thirdParty": [
+      "Logic"
+    ],
+    "actionWarning": false,
+    "actionDesc": null,
+    "priority": "1",
+    "typeII": "Form"
   }
 ];
 

@@ -307,6 +307,12 @@ const GoalsTile = dynamic(
   { loading: () => <TileSkeleton variant="default" />, ssr: false }
 );
 
+// CRM Stats tile (cross-app metrics popup)
+const CRMStatsTile = dynamic(
+  () => import('./graphics/CRMStatsTile').then(mod => ({ default: mod.CRMStatsTile })),
+  { loading: () => <TileSkeleton variant="graphic" />, ssr: false }
+);
+
 // LIFX Controller tile (smart lighting control)
 const LIFXControllerTile = dynamic(
   () => import('./graphics/LIFXControllerTile').then(mod => ({ default: mod.LIFXControllerTile })),
@@ -582,12 +588,16 @@ const SPECIALIZED_TILES: Array<{
       name.toLowerCase().includes('yc invite'),
     component: YCombinatorInvitesTile,
   },
+  // CRM Stats modal tile (Phase 5 - Cross-app)
+  {
+    match: (name) => name.toLowerCase().includes('gs-clients admin'),
+    component: CRMStatsTile,
+  },
   // Cross-app navigation tiles (Sprint 3)
   {
     match: (name) =>
       name.toLowerCase().includes('jump to wab') ||
       name.toLowerCase() === 'go to my wabbit' ||
-      name.toLowerCase().includes('gs-clients admin') ||
       name.toLowerCase() === 'new gs wab' ||
       name.toLowerCase() === 'wab: task tile' ||
       (name.toLowerCase() === 'crm' && !name.toLowerCase().includes('tag')),
