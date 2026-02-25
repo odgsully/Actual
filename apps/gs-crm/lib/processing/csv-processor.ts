@@ -360,8 +360,25 @@ function buildAddress(row: any): string {
   // House number
   if (row['House Number']) parts.push(row['House Number']);
 
-  // Building number (if exists)
-  if (row['Building Number']) parts.push(row['Building Number']);
+  // Building number — sanitize MLS agent-entered garbage:
+  //   Skip if: duplicate of house number, contains unit prefix (Unit/Apt/Suite),
+  //   or is a directional word (already in Compass field).
+  //   Legitimate numeric building IDs (e.g., "3") are also skipped because they
+  //   are indistinguishable from unit numbers and the Unit # field always exists
+  //   when Building Number is populated in ARMLS data.
+  if (row['Building Number']) {
+    const bldg = row['Building Number'].toString().trim();
+    const houseNum = (row['House Number'] || '').toString().trim();
+    const isDuplicateHouse = bldg === houseNum;
+    const isUnitPrefix = /^(unit|apt|apartment|suite|ste|bldg|building)\b/i.test(bldg);
+    const isDirectional = /^(north|south|east|west|[nsew])$/i.test(bldg);
+    if (!isDuplicateHouse && !isUnitPrefix && !isDirectional) {
+      // Only include if it's a multi-character non-numeric identifier (rare edge case)
+      if (!/^\d+$/.test(bldg)) {
+        parts.push(bldg);
+      }
+    }
+  }
 
   // Compass direction (N, S, E, W)
   if (row['Compass']) parts.push(row['Compass']);
@@ -369,14 +386,14 @@ function buildAddress(row: any): string {
   // Street name
   if (row['Street Name']) parts.push(row['Street Name']);
 
-  // Unit number (if exists)
-  if (row['Unit #']) parts.push(row['Unit #']);
-
   // Street direction suffix
   if (row['St Dir Sfx']) parts.push(row['St Dir Sfx']);
 
   // Street suffix (ST, AVE, RD, etc.)
   if (row['St Suffix']) parts.push(row['St Suffix']);
+
+  // Unit number AFTER suffix (standard postal format: "4610 N 68TH ST 409")
+  if (row['Unit #']) parts.push(row['Unit #']);
 
   return parts.filter(Boolean).join(' ').trim();
 }

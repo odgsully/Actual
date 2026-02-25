@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import type { Tile } from '@/lib/types/tiles';
 import { getImplementedCodebases } from '@/lib/codebase-learn/codebases';
@@ -22,7 +23,7 @@ export function CodebaseLearnTile({ tile, className }: CodebaseLearnTileProps) {
     <Link
       href="/codebase-learn"
       className={cn(
-        'block p-4 rounded-xl border-2 transition-all group',
+        'block p-4 border-2 transition-all group',
         'bg-gradient-to-br from-green-500/10 to-emerald-500/5',
         'border-green-500/30 hover:border-green-400',
         'hover:shadow-lg hover:shadow-green-500/10',
@@ -31,8 +32,14 @@ export function CodebaseLearnTile({ tile, className }: CodebaseLearnTileProps) {
     >
       <div className="flex items-start gap-4">
         {/* Icon */}
-        <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-emerald-600 rounded-xl flex items-center justify-center text-2xl shadow-lg group-hover:scale-110 transition-transform">
-          📚
+        <div className="w-12 h-12 overflow-hidden shadow-lg group-hover:scale-110 transition-transform flex-shrink-0">
+          <Image
+            src="/icons/codebase-duo.png"
+            alt="Codebase Duolingo"
+            width={48}
+            height={48}
+            className="w-full h-full object-cover"
+          />
         </div>
 
         {/* Content */}
@@ -40,19 +47,9 @@ export function CodebaseLearnTile({ tile, className }: CodebaseLearnTileProps) {
           <h3 className="font-semibold text-white group-hover:text-green-400 transition-colors">
             {tile.name || 'Codebase Duolingo'}
           </h3>
-          <p className="text-zinc-400 text-xs mt-0.5 line-clamp-1">
-            Bite-sized codebase lessons
-          </p>
-
-          {/* Stats - compact single line */}
           <div className="flex items-center gap-2 mt-2 text-xs whitespace-nowrap overflow-hidden">
             <span className="text-green-400 font-bold">{implementedCodebases.length}</span>
             <span className="text-zinc-500">codebase</span>
-            <span className="text-zinc-600">·</span>
-            <span className="text-blue-400 font-bold">{totalLessons}</span>
-            <span className="text-zinc-500">lessons</span>
-            <span className="text-zinc-600">·</span>
-            <span className="text-amber-400 font-bold">~{totalLessons * 3}m</span>
           </div>
         </div>
 

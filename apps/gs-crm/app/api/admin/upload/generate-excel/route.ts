@@ -26,7 +26,7 @@ import type {
 } from '@/lib/types/mls-data'
 import { requireAdmin } from '@/lib/api/admin-auth'
 import { getScoresByBatch } from '@/lib/database/vision-scores'
-import { normalizeAddress } from '@/lib/utils/normalize-address'
+import { normalizeAddress, extractStreetCore, extractStreetNumber } from '@/lib/utils/normalize-address'
 
 const LOG_PREFIX = '[Generate Excel]'
 
@@ -215,35 +215,69 @@ export async function PUT(req: NextRequest) {
         let written = 0
         let unmatched = 0
         let skipped = 0
+        const unmatchedAddresses: { raw: string; normalized: string }[] = []
+
+        const validVisionScores = visionScores.filter((vs: any) => vs.address && typeof vs.score === 'number')
+        console.log(`${LOG_PREFIX} Vision merge: ${visionScores.length} total scores, ${validVisionScores.length} with valid address+score`)
 
         for (const vs of visionScores) {
           if (!vs.address || typeof vs.score !== 'number') continue
 
-          // Find matching row by fuzzy address match against Column B
+          // Find matching row by progressive address match against Column B
+          // Tier 1: exact normalized, Tier 2: substring, Tier 3: street core
           const normalizedVsAddr = normalizeAddress(vs.address)
+          const vsStreetCore = extractStreetCore(vs.address)
+          const vsStreetNum = extractStreetNumber(vs.address)
           let matchedRow: ExcelJS.Row | null = null
-          const MIN_INCLUDES_LENGTH = 10 // Minimum chars for substring matching to avoid false positives
+          let tier3Match: ExcelJS.Row | null = null
+          const MIN_INCLUDES_LENGTH = 10
 
           analysisSheet.eachRow((row, rowNumber) => {
             if (rowNumber <= 2) return // Skip header rows
-            if (matchedRow) return // Already found a match
+            if (matchedRow) return // Already found a tier 1/2 match
             const cellAddr = row.getCell('B').value?.toString() || ''
             const normalizedCellAddr = normalizeAddress(cellAddr)
-            // Prefer exact normalized match
+
+            // Tier 1: exact normalized match
             if (normalizedCellAddr === normalizedVsAddr) {
               matchedRow = row
-            // Fall back to includes only with minimum length threshold
-            } else if (
+              return
+            }
+
+            // Tier 2: substring match (with minimum length threshold)
+            if (
               normalizedVsAddr.length >= MIN_INCLUDES_LENGTH &&
               normalizedCellAddr.length >= MIN_INCLUDES_LENGTH &&
               (normalizedCellAddr.includes(normalizedVsAddr) || normalizedVsAddr.includes(normalizedCellAddr))
             ) {
               matchedRow = row
+              return
+            }
+
+            // Tier 3: street core match (street number + name, ignoring unit position)
+            if (!tier3Match && vsStreetCore && vsStreetNum) {
+              const cellStreetCore = extractStreetCore(cellAddr)
+              const cellStreetNum = extractStreetNumber(cellAddr)
+              if (
+                cellStreetNum === vsStreetNum &&
+                cellStreetCore &&
+                cellStreetCore === vsStreetCore
+              ) {
+                tier3Match = row
+              }
             }
           })
 
+          // Use tier 3 match if no tier 1/2 found
+          if (!matchedRow && tier3Match) {
+            matchedRow = tier3Match
+          }
+
           if (!matchedRow) {
             unmatched++
+            if (unmatchedAddresses.length < 5) {
+              unmatchedAddresses.push({ raw: vs.address, normalized: normalizedVsAddr })
+            }
             continue
           }
 
@@ -262,6 +296,51 @@ export async function PUT(req: NextRequest) {
         }
 
         console.log(`${LOG_PREFIX} Vision scores: ${written} written, ${unmatched} unmatched, ${skipped} skipped (cell not empty)`)
+        if (unmatchedAddresses.length > 0) {
+          console.log(`${LOG_PREFIX} First ${unmatchedAddresses.length} unmatched addresses:`)
+          unmatchedAddresses.forEach(({ raw, normalized }) => {
+            console.log(`${LOG_PREFIX}   raw: "${raw}" → normalized: "${normalized}"`)
+          })
+        }
+
+        // Second pass: propagate scores to duplicate addresses
+        // The same property can appear in multiple CSV sources (e.g., 1.5 Mile AND 3yr Direct).
+        // The first occurrence gets the score; duplicates are filled here.
+        const scoredByNormAddr = new Map<string, { score: number; renoYear?: number }>()
+        analysisSheet.eachRow((row, rowNumber) => {
+          if (rowNumber <= 2) return
+          const score = row.getCell('R').value
+          if (score === null || score === undefined || score === '') return
+          const addr = normalizeAddress(row.getCell('B').value?.toString() || '')
+          if (addr && !scoredByNormAddr.has(addr)) {
+            const renoYear = row.getCell('AD').value
+            scoredByNormAddr.set(addr, {
+              score: typeof score === 'number' ? score : Number(score),
+              renoYear: renoYear != null && renoYear !== '' ? Number(renoYear) : undefined,
+            })
+          }
+        })
+
+        let propagated = 0
+        analysisSheet.eachRow((row, rowNumber) => {
+          if (rowNumber <= 2) return
+          const currentScore = row.getCell('R').value
+          if (currentScore !== null && currentScore !== undefined && currentScore !== '') return
+          const addr = normalizeAddress(row.getCell('B').value?.toString() || '')
+          if (!addr) return
+          const existing = scoredByNormAddr.get(addr)
+          if (existing) {
+            row.getCell('R').value = existing.score
+            if (existing.renoYear) {
+              row.getCell('AD').value = existing.renoYear
+            }
+            propagated++
+          }
+        })
+
+        if (propagated > 0) {
+          console.log(`${LOG_PREFIX} Propagated scores to ${propagated} duplicate-address rows`)
+        }
       }
     }
 
@@ -781,12 +860,29 @@ function buildFullAddress(rawData: any, fallback: string): string {
   const parts: string[] = []
 
   if (rawData['House Number']) parts.push(rawData['House Number'])
-  if (rawData['Building Number']) parts.push(rawData['Building Number'])
+
+  // Building number — sanitize unreliable MLS agent-entered data:
+  //   Skip if: duplicate of house number, contains unit prefix, is a directional,
+  //   or is a plain numeric building ID (Unit # always exists when Building Number does)
+  if (rawData['Building Number']) {
+    const bldg = rawData['Building Number'].toString().trim()
+    const houseNum = (rawData['House Number'] || '').toString().trim()
+    const isDuplicateHouse = bldg === houseNum
+    const isUnitPrefix = /^(unit|apt|apartment|suite|ste|bldg|building)\b/i.test(bldg)
+    const isDirectional = /^(north|south|east|west|[nsew])$/i.test(bldg)
+    if (!isDuplicateHouse && !isUnitPrefix && !isDirectional) {
+      if (!/^\d+$/.test(bldg)) {
+        parts.push(bldg)
+      }
+    }
+  }
+
   if (rawData['Compass']) parts.push(rawData['Compass'])
   if (rawData['Street Name']) parts.push(rawData['Street Name'])
-  if (rawData['Unit #']) parts.push(rawData['Unit #'])
   if (rawData['St Dir Sfx']) parts.push(rawData['St Dir Sfx'])
   if (rawData['St Suffix']) parts.push(rawData['St Suffix'])
+  // Unit number AFTER suffix (standard postal format: "4610 N 68TH ST 409")
+  if (rawData['Unit #']) parts.push(rawData['Unit #'])
 
   const street = parts.filter(Boolean).join(' ').trim()
 

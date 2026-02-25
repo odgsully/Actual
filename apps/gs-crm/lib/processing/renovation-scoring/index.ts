@@ -48,7 +48,9 @@ export async function* scorePropertiesFromPDFs(
       total: pdfBuffers.length,
     };
 
-    const { chunks, totalPages } = await concatenateAndSplitPDFs(pdfBuffers);
+    const provider = options.scoringProvider ?? 'gemini';
+    const pagesPerChunk = options.pagesPerBatch ?? (provider === 'gemini' ? 2 : 5);
+    const { chunks, totalPages } = await concatenateAndSplitPDFs(pdfBuffers, pagesPerChunk);
 
     if (totalPages === 0) {
       yield {
@@ -129,7 +131,6 @@ export async function* scorePropertiesFromPDFs(
     // yielded by the generator after the scoring call completes per-chunk.
     const progressQueue: ScoringProgress[] = [];
 
-    const provider = options.scoringProvider ?? 'gemini';
     const providerLabel = provider === 'gemini' ? 'Gemini 2.5 Flash' : 'Claude Sonnet 4';
 
     yield {
@@ -167,10 +168,30 @@ export async function* scorePropertiesFromPDFs(
     addressMatches = addClaudeDetectedMatches(addressMatches, claudeAddresses, propertyData);
 
     // Update scores with matched MLS numbers
+    // Use normalized comparison as fallback when exact string match fails
+    // (Gemini may return slightly different formatting than PDF text extraction)
     for (const score of scores) {
-      const match = Array.from(addressMatches.values()).find(
-        (m) => m.extractedAddress === score.detectedAddress || m.matchedAddress === score.address
-      );
+      const normalizedDetected = normalizeAddress(score.detectedAddress || '');
+      const normalizedScoreAddr = normalizeAddress(score.address || '');
+
+      const match = Array.from(addressMatches.values()).find((m) => {
+        // Tier 1: Exact match (original logic)
+        if (m.extractedAddress === score.detectedAddress) return true;
+        if (m.matchedAddress === score.address) return true;
+
+        // Tier 2: Normalized match (handles casing, punctuation, abbreviation differences)
+        if (normalizedDetected && normalizeAddress(m.extractedAddress || '') === normalizedDetected) return true;
+        if (normalizedScoreAddr && normalizeAddress(m.matchedAddress || '') === normalizedScoreAddr) return true;
+
+        // Tier 3: Match via MLS row address normalization
+        if (m.mlsRow && normalizedDetected) {
+          const normalizedMLS = normalizeAddress(m.mlsRow.address || '');
+          if (normalizedMLS && normalizedMLS === normalizedDetected) return true;
+        }
+
+        return false;
+      });
+
       if (match?.mlsRow) {
         score.mlsNumber = match.mlsRow.mlsNumber;
         score.address = match.mlsRow.address;

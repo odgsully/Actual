@@ -16,11 +16,12 @@ import { detectDwellingType } from './dwelling-detector';
 import { AddressMatch } from './types';
 
 const DEFAULT_CONCURRENCY = 5;
-const DEFAULT_PAGES_PER_BATCH = 5;
+const DEFAULT_PAGES_PER_BATCH = 3; // Gemini needs smaller chunks to avoid output truncation
+const DEFAULT_GEMINI_PAGES_PER_BATCH = 2;
 const DEFAULT_MAX_RETRIES = 1;
 const CURRENT_YEAR = new Date().getFullYear();
 
-const GEMINI_MODEL = 'gemini-2.5-flash-preview-05-20';
+const GEMINI_MODEL = 'gemini-2.5-flash';
 const CLAUDE_MODEL = 'claude-sonnet-4-20250514';
 
 interface BatchInput {
@@ -84,8 +85,11 @@ function parseRawScores(
   const failures: ScoringFailure[] = [];
   let hasOutOfRange = false;
 
-  for (const raw of parsed) {
-    const pageNumber = batch.pageNumbers[0];
+  for (let scoreIdx = 0; scoreIdx < parsed.length; scoreIdx++) {
+    const raw = parsed[scoreIdx];
+    // Assign page numbers sequentially: score[0] → page[0], score[1] → page[1], etc.
+    // Clamp to last page if model returns more scores than pages in the batch
+    const pageNumber = batch.pageNumbers[Math.min(scoreIdx, batch.pageNumbers.length - 1)];
 
     if (!isValidScore(raw.renovation_score)) {
       if (raw.renovation_score >= 0.5 && raw.renovation_score <= 10.5) {
@@ -183,7 +187,7 @@ async function scoreBatchGemini(
     systemInstruction: system,
     generationConfig: {
       responseMimeType: 'application/json',
-      maxOutputTokens: 4096,
+      maxOutputTokens: 16384,
     },
   });
 

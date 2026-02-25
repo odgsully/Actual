@@ -265,13 +265,35 @@ export async function saveScoresIncremental(
   if (scores.length === 0) return { savedCount: 0, error: null }
 
   try {
-    const rows = scores.map(s => ({
+    // Filter out scores with empty/undefined addresses to prevent UNIQUE constraint
+    // violations on address_normalized (multiple empty strings would collide)
+    const validScores = scores.filter(s => {
+      const addr = s.address || s.detectedAddress
+      if (!addr) {
+        console.warn(`${LOG_PREFIX} Skipping score page ${s.pageNumber}: no address`)
+        return false
+      }
+      const normalized = normalizeAddress(addr)
+      if (!normalized) {
+        console.warn(`${LOG_PREFIX} Skipping score page ${s.pageNumber}: normalizeAddress returned empty for "${addr}"`)
+        return false
+      }
+      return true
+    })
+
+    if (validScores.length < scores.length) {
+      console.log(`${LOG_PREFIX} Filtered ${scores.length - validScores.length} scores with empty addresses`)
+    }
+
+    if (validScores.length === 0) return { savedCount: 0, error: null }
+
+    const rows = validScores.map(s => ({
       batch_id: batchId,
       client_id: clientId,
-      address: s.address,
+      address: s.address || s.detectedAddress || '',
       detected_address: s.detectedAddress || null,
       mls_number: s.mlsNumber || null,
-      address_normalized: normalizeAddress(s.address),
+      address_normalized: normalizeAddress(s.address || s.detectedAddress || ''),
       renovation_score: s.renovationScore,
       reno_year_estimate: s.renoYearEstimate,
       confidence: s.confidence,
