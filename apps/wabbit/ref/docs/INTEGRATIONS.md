@@ -133,6 +133,19 @@ Wabbit App (preview, publish, analytics feedback)
 
 Pipeline: Flux reference frame ($0.003) → Kling i2v animation ($0.28) = ~$0.30/node total.
 
+> **Note — Gemini Ecosystem as Preferred Pipeline (Feb 2026)**
+>
+> Google's Gemini ecosystem may be a better fit than fal.ai for the full Remotion pipeline. Key advantages:
+>
+> - **Veo 3.1** (video) is NOT available on fal.ai — only accessible via Google's `@google/genai` SDK or Vertex AI. The fal.ai gateway listed above covers Kling + Wan but not Veo.
+> - **Single API key** covers the entire content pipeline: Gemini 3.1 Pro (script/scene JSON), Veo 3.1 (video clips w/ native audio), Imagen 4 (images), Lyria (music), Gemini TTS (voiceover).
+> - **Native audio sync** — Veo 3.1 bakes dialog + SFX into the MP4, eliminating separate audio alignment in Remotion compositions.
+> - **No adapter needed** — Veo outputs MP4, Remotion's `<OffthreadVideo>` consumes MP4 directly.
+>
+> Limitations: Veo clips max 8s (extendable via chaining), generation latency up to 6 min/clip, preview-tier rate limits, 2-day file retention (must download immediately).
+>
+> If adopting Gemini, update the "AI Clip Generation" row above from `fal.ai` to `@google/genai` (Veo 3.1) + fal.ai (Kling/Wan as fallback).
+
 ### Node Types
 
 `hook` | `text-animation` | `explanation` | `ai-video-clip` | `data-viz` | `b-roll` | `testimonial` | `cta` | `transition-card` | `screen-recording`

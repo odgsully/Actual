@@ -2,7 +2,8 @@
  * PropertyRadar Excel Generator
  *
  * Generates a separate PropertyRadar Excel file from Complete_*.xlsx uploads
- * Reads Property Radar data from Analysis sheet columns S and AD-AO
+ * Reads Property Radar data from Analysis sheet columns AE-AP (31-42) if they exist
+ * Validates column count before copying to prevent writing garbage data
  * Outputs to Upload-template-PropertyRadar.xlsx format (12 columns A-L)
  */
 
@@ -48,33 +49,43 @@ export async function generatePropertyRadarExcel(
   console.log(`${LOG_PREFIX} Reading Analysis sheet with ${analysisSheet.rowCount} rows`)
 
   // Copy PropertyRadar data from Analysis sheet
-  // Analysis columns S (19) and AD-AO (30-41) map to PropertyRadar A-L (1-12)
-  // Note: Column S (PROPERTY_RADAR-COMP-Y-N) is not copied - only AD-AO
+  // PropertyRadar comp columns should be at positions 31-42 (AE-AP) if they exist
+  // If Analysis sheet only has 30 columns (A-AD), these columns won't exist
+  // To populate PropertyRadar export, add 12 comp columns (AE-AP) to the Analysis sheet
+
+  // Detect actual column count from header row
+  const headerRow = analysisSheet.getRow(1)
+  let lastHeaderCol = 0
+  headerRow.eachCell((cell, colNumber) => {
+    if (cell.value) lastHeaderCol = colNumber
+  })
+
+  console.log(`${LOG_PREFIX} Analysis sheet has ${lastHeaderCol} columns (need 42 for PR data)`)
 
   let rowsPopulated = 0
+  const PR_START_COL = 31 // AE = column 31 (first PR comp column, after AD=30)
+  const PR_END_COL = 42   // AP = column 42 (12th PR comp column)
 
-  // Start from row 2 (skip header)
-  for (let sourceRow = 2; sourceRow <= analysisSheet.rowCount; sourceRow++) {
-    const destRow = sourceRow
+  // Only attempt copy if PR columns exist in the Analysis sheet
+  if (lastHeaderCol >= PR_END_COL) {
+    for (let sourceRow = 2; sourceRow <= analysisSheet.rowCount; sourceRow++) {
+      const destRow = sourceRow
+      const itemLabel = analysisSheet.getRow(sourceRow).getCell(1).value
+      if (!itemLabel) continue
 
-    // Read Item label from column A
-    const itemLabel = analysisSheet.getRow(sourceRow).getCell(1).value
+      const targetRow = sheet.getRow(destRow)
 
-    // Only copy rows with data
-    if (!itemLabel) continue
-
-    const targetRow = sheet.getRow(destRow)
-
-    // Copy Property Radar columns AD-AO (30-41) to A-L (1-12)
-    for (let i = 0; i < 12; i++) {
-      const sourceCol = 30 + i // AD = 30, AE = 31, ..., AO = 41
-      const destCol = 1 + i   // A = 1, B = 2, ..., L = 12
-
-      const value = analysisSheet.getRow(sourceRow).getCell(sourceCol).value
-      targetRow.getCell(destCol).value = value || ''
+      for (let i = 0; i < 12; i++) {
+        const sourceCol = PR_START_COL + i
+        const destCol = 1 + i
+        const value = analysisSheet.getRow(sourceRow).getCell(sourceCol).value
+        targetRow.getCell(destCol).value = value || ''
+      }
+      rowsPopulated++
     }
-
-    rowsPopulated++
+  } else {
+    console.warn(`${LOG_PREFIX} Analysis sheet only has ${lastHeaderCol} columns - PropertyRadar comp columns (AE-AP) not found. Export will be empty.`)
+    console.warn(`${LOG_PREFIX} To populate PropertyRadar export, add 12 comp columns (AE-AP) to the Analysis sheet.`)
   }
 
   console.log(`${LOG_PREFIX} Populated ${rowsPopulated} rows in PropertyRadar template`)

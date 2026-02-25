@@ -32,7 +32,7 @@ export const dynamic = 'force-dynamic'
 
 const BUCKET_NAME = 'reportit-pdfs'
 const VISION_MODELS = {
-  gemini: 'gemini-2.5-flash-preview-05-20',
+  gemini: 'gemini-2.5-flash',
   claude: 'claude-sonnet-4-20250514',
 } as const
 
