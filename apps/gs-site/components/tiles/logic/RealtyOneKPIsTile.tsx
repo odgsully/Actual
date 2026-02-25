@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, Fragment } from 'react';
 import { motion } from 'framer-motion';
 import {
   Calculator,
@@ -16,6 +16,9 @@ import {
   PiggyBank,
   X,
   ExternalLink,
+  ChevronDown,
+  ChevronRight,
+  Building,
 } from 'lucide-react';
 import { WarningBorderTrail } from '../WarningBorderTrail';
 import type { Tile } from '@/lib/types/tiles';
@@ -35,6 +38,31 @@ export interface KPIInputs {
   grossVolumeYTD: number;
   transactionsYTD: number;
   gciYTD: number;
+}
+
+export interface AmortizationInputs {
+  totalCost: number;
+  ltv: number;
+  term: number;
+  annualRate: number;
+}
+
+export interface AmortizationRow {
+  period: number;
+  beginningBalance: number;
+  payment: number;
+  interest: number;
+  principal: number;
+  endingBalance: number;
+}
+
+export interface AmortizationYearSummary {
+  year: number;
+  totalPayment: number;
+  totalInterest: number;
+  totalPrincipal: number;
+  endingBalance: number;
+  rows: AmortizationRow[];
 }
 
 export interface KPIResults {
@@ -66,6 +94,98 @@ interface RealtyOneKPIsTileProps {
 // ============================================================
 
 const STORAGE_KEY = 'realtyOneKPIs';
+const AMORT_STORAGE_KEY = 'realtyOneAmortization';
+
+const DEFAULT_AMORT_INPUTS: AmortizationInputs = {
+  totalCost: 690000,
+  ltv: 80,
+  term: 30,
+  annualRate: 6.5,
+};
+
+function saveAmortInputs(inputs: AmortizationInputs) {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(AMORT_STORAGE_KEY, JSON.stringify(inputs));
+  }
+}
+
+function loadAmortInputs(): AmortizationInputs {
+  if (typeof window !== 'undefined') {
+    const stored = localStorage.getItem(AMORT_STORAGE_KEY);
+    if (stored) {
+      try {
+        return { ...DEFAULT_AMORT_INPUTS, ...JSON.parse(stored) };
+      } catch {
+        return DEFAULT_AMORT_INPUTS;
+      }
+    }
+  }
+  return DEFAULT_AMORT_INPUTS;
+}
+
+function calculateAmortization(inputs: AmortizationInputs) {
+  const principal = inputs.totalCost * (inputs.ltv / 100);
+  const periodsPerYear = 12;
+  const totalPayments = inputs.term * periodsPerYear;
+  const monthlyRate = inputs.annualRate / 100 / periodsPerYear;
+  const cashDown = inputs.totalCost - principal;
+
+  // Monthly payment formula: M = P * [r(1+r)^n] / [(1+r)^n - 1]
+  let monthlyPayment = 0;
+  if (monthlyRate > 0 && totalPayments > 0) {
+    const factor = Math.pow(1 + monthlyRate, totalPayments);
+    monthlyPayment = principal * (monthlyRate * factor) / (factor - 1);
+  } else if (totalPayments > 0) {
+    monthlyPayment = principal / totalPayments;
+  }
+
+  // Build full schedule
+  const rows: AmortizationRow[] = [];
+  let balance = principal;
+  for (let i = 1; i <= totalPayments; i++) {
+    const interestPayment = balance * monthlyRate;
+    const principalPayment = monthlyPayment - interestPayment;
+    const endingBalance = Math.max(balance - principalPayment, 0);
+    rows.push({
+      period: i,
+      beginningBalance: balance,
+      payment: monthlyPayment,
+      interest: interestPayment,
+      principal: principalPayment,
+      endingBalance,
+    });
+    balance = endingBalance;
+  }
+
+  // Summarize by year
+  const yearSummaries: AmortizationYearSummary[] = [];
+  for (let y = 0; y < inputs.term; y++) {
+    const start = y * periodsPerYear;
+    const end = Math.min(start + periodsPerYear, rows.length);
+    const yearRows = rows.slice(start, end);
+    if (yearRows.length === 0) break;
+    yearSummaries.push({
+      year: y + 1,
+      totalPayment: yearRows.reduce((s, r) => s + r.payment, 0),
+      totalInterest: yearRows.reduce((s, r) => s + r.interest, 0),
+      totalPrincipal: yearRows.reduce((s, r) => s + r.principal, 0),
+      endingBalance: yearRows[yearRows.length - 1].endingBalance,
+      rows: yearRows,
+    });
+  }
+
+  const totalInterestPaid = rows.reduce((s, r) => s + r.interest, 0);
+
+  return {
+    principal,
+    cashDown,
+    totalPayments,
+    monthlyRate,
+    monthlyPayment,
+    totalInterestPaid,
+    yearSummaries,
+  };
+}
 
 const DEFAULT_INPUTS: KPIInputs = {
   gciGoal: 100000,
@@ -233,7 +353,7 @@ function ProgressBar({ value, label }: { value: number; label: string }) {
 // Modal Component
 // ============================================================
 
-type TabType = 'overview' | 'goals' | 'ytd' | 'results';
+type TabType = 'overview' | 'goals' | 'ytd' | 'results' | 'amortization';
 
 function KPIModal({
   isOpen,
@@ -242,6 +362,8 @@ function KPIModal({
   setInputs,
   results,
   onReset,
+  amortInputs,
+  setAmortInputs,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -249,8 +371,11 @@ function KPIModal({
   setInputs: React.Dispatch<React.SetStateAction<KPIInputs>>;
   results: KPIResults;
   onReset: () => void;
+  amortInputs: AmortizationInputs;
+  setAmortInputs: React.Dispatch<React.SetStateAction<AmortizationInputs>>;
 }) {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [expandedYears, setExpandedYears] = useState<Set<number>>(new Set());
 
   // Handle escape key - MUST be before any early returns (Rules of Hooks)
   useEffect(() => {
@@ -328,6 +453,7 @@ function KPIModal({
           <TabButton tab="goals" label="Goals" />
           <TabButton tab="ytd" label="2026 YTD" />
           <TabButton tab="results" label="Calculator" />
+          <TabButton tab="amortization" label="Amortization" />
         </div>
 
         {/* Content - Scrollable */}
@@ -550,6 +676,154 @@ function KPIModal({
             </div>
           )}
 
+          {/* Amortization Tab */}
+          {activeTab === 'amortization' && (() => {
+            const amort = calculateAmortization(amortInputs);
+            const toggleYear = (year: number) => {
+              setExpandedYears(prev => {
+                const next = new Set(prev);
+                if (next.has(year)) next.delete(year);
+                else next.add(year);
+                return next;
+              });
+            };
+            const handleAmortChange = (key: keyof AmortizationInputs, value: string) => {
+              const numValue = parseFloat(value) || 0;
+              setAmortInputs(prev => ({ ...prev, [key]: numValue }));
+            };
+            return (
+              <div className="max-w-4xl mx-auto space-y-6">
+                {/* Assumptions */}
+                <div>
+                  <h3 className="text-lg font-medium text-foreground flex items-center gap-2">
+                    <Building className="w-5 h-5 text-blue-400" />
+                    Loan Assumptions
+                  </h3>
+                  <p className="text-sm text-muted-foreground mt-1">Edit the highlighted fields to recalculate</p>
+                </div>
+
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Editable: Total Cost */}
+                  <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 space-y-1">
+                    <label className="text-xs text-blue-400 font-medium">Total Cost</label>
+                    <input
+                      type="number"
+                      value={amortInputs.totalCost}
+                      onChange={(e) => handleAmortChange('totalCost', e.target.value)}
+                      className="w-full px-3 py-2 text-lg bg-background border border-border rounded-lg font-mono focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  {/* Editable: LTV */}
+                  <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 space-y-1">
+                    <label className="text-xs text-blue-400 font-medium">LTV (%)</label>
+                    <input
+                      type="number"
+                      value={amortInputs.ltv}
+                      onChange={(e) => handleAmortChange('ltv', e.target.value)}
+                      className="w-full px-3 py-2 text-lg bg-background border border-border rounded-lg font-mono focus:ring-2 focus:ring-blue-500"
+                      step="1"
+                    />
+                  </div>
+                  {/* Editable: Term */}
+                  <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 space-y-1">
+                    <label className="text-xs text-blue-400 font-medium">Term (Years)</label>
+                    <input
+                      type="number"
+                      value={amortInputs.term}
+                      onChange={(e) => handleAmortChange('term', e.target.value)}
+                      className="w-full px-3 py-2 text-lg bg-background border border-border rounded-lg font-mono focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  {/* Editable: Annual Rate */}
+                  <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 space-y-1">
+                    <label className="text-xs text-blue-400 font-medium">Annual Rate (%)</label>
+                    <input
+                      type="number"
+                      value={amortInputs.annualRate}
+                      onChange={(e) => handleAmortChange('annualRate', e.target.value)}
+                      className="w-full px-3 py-2 text-lg bg-background border border-border rounded-lg font-mono focus:ring-2 focus:ring-blue-500"
+                      step="0.125"
+                    />
+                  </div>
+                </div>
+
+                {/* Derived Summary */}
+                <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+                  <div className="bg-accent/50 rounded-xl p-4">
+                    <p className="text-xs text-muted-foreground">Principal</p>
+                    <p className="text-xl font-bold text-foreground tabular-nums">{formatCurrency(amort.principal)}</p>
+                  </div>
+                  <div className="bg-accent/50 rounded-xl p-4">
+                    <p className="text-xs text-muted-foreground">Cash Down</p>
+                    <p className="text-xl font-bold text-foreground tabular-nums">{formatCurrency(amort.cashDown)}</p>
+                  </div>
+                  <div className="bg-accent/50 rounded-xl p-4">
+                    <p className="text-xs text-muted-foreground"># of Payments</p>
+                    <p className="text-xl font-bold text-foreground tabular-nums">{amort.totalPayments}</p>
+                  </div>
+                  <div className="bg-primary/10 rounded-xl p-4">
+                    <p className="text-xs text-muted-foreground">Monthly Payment</p>
+                    <p className="text-xl font-bold text-primary tabular-nums">{formatCurrency(Math.round(amort.monthlyPayment * 100) / 100)}</p>
+                  </div>
+                  <div className="bg-red-500/10 rounded-xl p-4">
+                    <p className="text-xs text-muted-foreground">Total Interest</p>
+                    <p className="text-xl font-bold text-red-400 tabular-nums">{formatCurrency(Math.round(amort.totalInterestPaid))}</p>
+                  </div>
+                </div>
+
+                {/* Yearly Amortization Table */}
+                <div className="border border-border rounded-xl overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-muted/50 text-muted-foreground">
+                        <th className="text-left px-4 py-3 font-medium w-10"></th>
+                        <th className="text-left px-4 py-3 font-medium">Year</th>
+                        <th className="text-right px-4 py-3 font-medium">Payment</th>
+                        <th className="text-right px-4 py-3 font-medium">Interest</th>
+                        <th className="text-right px-4 py-3 font-medium">Principal</th>
+                        <th className="text-right px-4 py-3 font-medium">Balance</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {amort.yearSummaries.map((ys) => {
+                        const isExpanded = expandedYears.has(ys.year);
+                        return (
+                          <Fragment key={`year-${ys.year}`}>
+                            <tr
+                              className="border-t border-border hover:bg-accent/30 cursor-pointer transition-colors"
+                              onClick={() => toggleYear(ys.year)}
+                            >
+                              <td className="px-4 py-2.5 text-muted-foreground">
+                                {isExpanded
+                                  ? <ChevronDown className="w-4 h-4" />
+                                  : <ChevronRight className="w-4 h-4" />}
+                              </td>
+                              <td className="px-4 py-2.5 font-medium text-foreground">Year {ys.year}</td>
+                              <td className="px-4 py-2.5 text-right tabular-nums text-foreground">{formatCurrency(Math.round(ys.totalPayment))}</td>
+                              <td className="px-4 py-2.5 text-right tabular-nums text-red-400">{formatCurrency(Math.round(ys.totalInterest))}</td>
+                              <td className="px-4 py-2.5 text-right tabular-nums text-green-500">{formatCurrency(Math.round(ys.totalPrincipal))}</td>
+                              <td className="px-4 py-2.5 text-right tabular-nums text-foreground font-medium">{formatCurrency(Math.round(ys.endingBalance))}</td>
+                            </tr>
+                            {isExpanded && ys.rows.map((r) => (
+                              <tr key={`period-${r.period}`} className="border-t border-border/50 bg-muted/20">
+                                <td className="px-4 py-1.5"></td>
+                                <td className="px-4 py-1.5 text-muted-foreground text-xs pl-10">Mo {r.period}</td>
+                                <td className="px-4 py-1.5 text-right tabular-nums text-xs text-foreground">{formatCurrency(Math.round(r.payment * 100) / 100)}</td>
+                                <td className="px-4 py-1.5 text-right tabular-nums text-xs text-red-400/70">{formatCurrency(Math.round(r.interest * 100) / 100)}</td>
+                                <td className="px-4 py-1.5 text-right tabular-nums text-xs text-green-500/70">{formatCurrency(Math.round(r.principal * 100) / 100)}</td>
+                                <td className="px-4 py-1.5 text-right tabular-nums text-xs text-foreground">{formatCurrency(Math.round(r.endingBalance * 100) / 100)}</td>
+                              </tr>
+                            ))}
+                          </Fragment>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Results Tab */}
           {activeTab === 'results' && (
             <div className="max-w-3xl mx-auto space-y-6">
@@ -647,11 +921,13 @@ function KPIModal({
  */
 export function RealtyOneKPIsTile({ tile, className }: RealtyOneKPIsTileProps) {
   const [inputs, setInputs] = useState<KPIInputs>(DEFAULT_INPUTS);
+  const [amortInputs, setAmortInputs] = useState<AmortizationInputs>(DEFAULT_AMORT_INPUTS);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     setInputs(loadInputs());
+    setAmortInputs(loadAmortInputs());
     setIsLoaded(true);
   }, []);
 
@@ -660,6 +936,12 @@ export function RealtyOneKPIsTile({ tile, className }: RealtyOneKPIsTileProps) {
       saveInputs(inputs);
     }
   }, [inputs, isLoaded]);
+
+  useEffect(() => {
+    if (isLoaded) {
+      saveAmortInputs(amortInputs);
+    }
+  }, [amortInputs, isLoaded]);
 
   const results = useMemo(() => calculateKPIs(inputs), [inputs]);
 
@@ -727,6 +1009,8 @@ export function RealtyOneKPIsTile({ tile, className }: RealtyOneKPIsTileProps) {
         setInputs={setInputs}
         results={results}
         onReset={handleReset}
+        amortInputs={amortInputs}
+        setAmortInputs={setAmortInputs}
       />
     </>
   );
