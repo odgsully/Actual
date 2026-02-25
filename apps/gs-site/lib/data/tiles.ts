@@ -1347,6 +1347,28 @@ export const LOCAL_TILES: Tile[] = [
     "typeII": "Form"
   },
   {
+    "id": "local-notebooklm",
+    "name": "NotebookLM",
+    "menu": [
+      "Software"
+    ],
+    "status": "Done",
+    "desc": "",
+    "shadcn": [
+      "Button"
+    ],
+    "phase": [
+      "GS Site Standing"
+    ],
+    "thirdParty": [
+      "Google"
+    ],
+    "actionWarning": false,
+    "actionDesc": null,
+    "priority": "2",
+    "typeII": "Button"
+  },
+  {
     "id": "local-evening-checkin",
     "name": "Evening Check-In",
     "menu": [
