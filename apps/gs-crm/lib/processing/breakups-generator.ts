@@ -220,6 +220,11 @@ export interface BreakupsAnalysisResult {
   distributionTails_Lease: DistributionTailsResult
   expectedNOI: ExpectedNOIResult // Analysis 21: Lease-only
   improvedNOI: ImprovedNOIResult // Analysis 22: Lease-only
+
+  // Metadata
+  metadata?: { totalProperties: number }
+  totalProperties?: number
+  analysisDate?: string
 }
 
 // Individual analysis result types
@@ -591,6 +596,11 @@ export async function generateAllBreakupsAnalyses(
     distributionTails_Lease,
     expectedNOI,
     improvedNOI,
+
+    // Metadata
+    metadata: { totalProperties: properties.length },
+    totalProperties: properties.length,
+    analysisDate: new Date().toISOString(),
   }
 }
 
@@ -1617,6 +1627,20 @@ function readAnalysisSheet(workbook: ExcelJS.Workbook): { properties: PropertyDa
       }
     })
 
+    // Coerce all numeric fields to numbers (ExcelJS may return strings, Dates, or objects)
+    const numericFields = [
+      'SALE_PRICE', 'OG_LIST_PRICE', 'SELLER_BASIS', 'BR', 'BA',
+      'SQFT', 'LOT_SIZE', 'YEAR_BUILT', 'DAYS_ON_MARKET', 'LAT', 'LON',
+    ];
+    for (const field of numericFields) {
+      if (rowData[field] !== undefined && rowData[field] !== '' && rowData[field] !== null) {
+        const n = Number(rowData[field]);
+        rowData[field] = isNaN(n) || !isFinite(n) ? 0 : (field === 'DAYS_ON_MARKET' ? Math.round(n) : n);
+      } else {
+        rowData[field] = 0;
+      }
+    }
+
     // Only add if row has data (check if Item column exists)
     if (rowData['Item']) {
       // Validate and normalize RENOVATE_SCORE
@@ -1654,9 +1678,11 @@ function readAnalysisSheet(workbook: ExcelJS.Workbook): { properties: PropertyDa
  * Calculate average of number array
  */
 export function calculateAverage(values: number[]): number {
-  if (values.length === 0) return 0
-  const sum = values.reduce((acc, val) => acc + val, 0)
-  return sum / values.length
+  // Filter to valid finite numbers to prevent string concatenation and NaN propagation
+  const valid = values.filter((v) => typeof v === 'number' && isFinite(v))
+  if (valid.length === 0) return 0
+  const sum = valid.reduce((acc, val) => acc + val, 0)
+  return sum / valid.length
 }
 
 /**

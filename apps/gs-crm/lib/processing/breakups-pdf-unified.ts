@@ -523,11 +523,11 @@ async function generateAnalysisSections(
 ): Promise<void> {
   // Group analyses by category
   const categories = [
-    { key: 'category-a', name: 'Property Characteristics', ids: [1, 2, 3, 4, 5] },
-    { key: 'category-b', name: 'Market Positioning', ids: [6, 7, 8, 9, 10] },
-    { key: 'category-c', name: 'Time & Location', ids: [11, 12, 13, 14] },
-    { key: 'category-d', name: 'Market Activity', ids: [15, 16] },
-    { key: 'category-e', name: 'Financial Impact', ids: [17, 18, 19, 20, 21, 22] },
+    { key: 'category-a', name: 'Property Characteristics', ids: ['1A', '1B', 2, '3A', '3B', '4A', '4B', 5] as (string | number)[] },
+    { key: 'category-b', name: 'Market Positioning', ids: ['6A', '6B', '7A', '7B', 8, 9, 10] as (string | number)[] },
+    { key: 'category-c', name: 'Time & Location', ids: ['11A', '11B', 12, 13, 14] as (string | number)[] },
+    { key: 'category-d', name: 'Market Activity', ids: ['15A', '15B', '16A', '16B'] as (string | number)[] },
+    { key: 'category-e', name: 'Financial Impact', ids: ['17A', '17B', '18A', '18B', '19A', '19B', '20A', '20B', 21, 22] as (string | number)[] },
   ];
 
   for (const category of categories) {
@@ -591,7 +591,9 @@ async function generateAnalysisSections(
       }
 
       // Embed chart if available
-      const chartImage = chartImages.get(analysis.id);
+      // Extract base analysis number for chart lookup (e.g., '1A' -> 1, '15B' -> 15)
+      const baseNum = typeof analysis.id === 'string' ? parseInt(analysis.id, 10) : analysis.id;
+      const chartImage = chartImages.get(baseNum);
       if (chartImage) {
         const chartScale = 0.8;
         const chartDims = chartImage.scale(chartScale);
@@ -819,27 +821,36 @@ function addWrappedText(
 }
 
 function wrapText(text: string, font: any, fontSize: number, maxWidth: number): string[] {
-  const words = text.split(' ');
-  const lines: string[] = [];
-  let currentLine = '';
+  // Split on newlines first to handle \n characters (pdf-lib WinAnsi can't encode them)
+  const paragraphs = text.split(/\n/);
+  const allLines: string[] = [];
 
-  for (const word of words) {
-    const testLine = currentLine ? `${currentLine} ${word}` : word;
-    const width = font.widthOfTextAtSize(testLine, fontSize);
+  for (const paragraph of paragraphs) {
+    if (paragraph.trim() === '') {
+      allLines.push('');
+      continue;
+    }
+    const words = paragraph.split(' ');
+    let currentLine = '';
 
-    if (width > maxWidth && currentLine) {
-      lines.push(currentLine);
-      currentLine = word;
-    } else {
-      currentLine = testLine;
+    for (const word of words) {
+      const testLine = currentLine ? `${currentLine} ${word}` : word;
+      const width = font.widthOfTextAtSize(testLine, fontSize);
+
+      if (width > maxWidth && currentLine) {
+        allLines.push(currentLine);
+        currentLine = word;
+      } else {
+        currentLine = testLine;
+      }
+    }
+
+    if (currentLine) {
+      allLines.push(currentLine);
     }
   }
 
-  if (currentLine) {
-    lines.push(currentLine);
-  }
-
-  return lines;
+  return allLines;
 }
 
 async function loadChartImages(

@@ -29,41 +29,54 @@ const stat = promisify(fs.stat)
  * Represents the complete analysis data for a property dataset
  */
 export interface BreakupsAnalysisResult {
-  // Property Characteristics (5 analyses)
-  bedroomDistribution: any
-  hoaComparison: any
-  garageAnalysis: any
-  poolAnalysis: any
-  architecturalStyle: any
+  // Category A: Property Characteristics
+  brDistribution_Sale: any
+  brDistribution_Lease: any
+  hoaAnalysis: any
+  strAnalysis_Sale: any
+  strAnalysis_Lease: any
+  renovationImpact_Sale: any
+  renovationImpact_Lease: any
+  compsClassification: any
 
-  // Market Positioning (5 analyses)
-  pricePerSqftComparison: any
-  priceRangeDistribution: any
-  sqftRangeDistribution: any
-  lotSizeAnalysis: any
-  yearBuiltTrends: any
+  // Category B: Market Positioning
+  sqftVariance_Sale: any
+  sqftVariance_Lease: any
+  priceVariance_Sale: any
+  priceVariance_Lease: any
+  leaseVsSale: any
+  propertyRadarComps: any
+  individualPRComps: any
 
-  // Time & Location (4 analyses)
-  daysOnMarketAnalysis: any
-  listingStatusBreakdown: any
-  geographicDistribution: any
-  proximityToAmenities: any
+  // Category C: Time & Location
+  brPrecision_Sale: any
+  brPrecision_Lease: any
+  timeFrames: any
+  directVsIndirect: any
+  recentDirectVsIndirect: any
 
-  // Market Activity (2 analyses)
-  listingVolumeByMonth: any
-  seasonalPriceVariation: any
+  // Category D: Market Activity
+  activeVsClosed_Sale: any
+  activeVsClosed_Lease: any
+  activeVsPending_Sale: any
+  activeVsPending_Lease: any
 
-  // Financial Impact (6 analyses)
-  hoaImpactOnPrice: any
-  garageImpactOnPrice: any
-  poolImpactOnPrice: any
-  sqftImpactOnPrice: any
-  ageImpactOnPrice: any
-  improvedNetOperatingIncome: any
+  // Category E: Financial Impact
+  renovationDelta_Sale: any
+  renovationDelta_Lease: any
+  partialRenovationDelta_Sale: any
+  partialRenovationDelta_Lease: any
+  interquartileRanges_Sale: any
+  interquartileRanges_Lease: any
+  distributionTails_Sale: any
+  distributionTails_Lease: any
+  expectedNOI: any
+  improvedNOI: any
 
   // Metadata
-  totalProperties: number
-  analysisDate: string
+  metadata?: { totalProperties: number }
+  totalProperties?: number
+  analysisDate?: string
   clientName?: string
 }
 
@@ -156,66 +169,66 @@ export function createReadmeFile(analysisResults: BreakupsAnalysisResult): strin
   return `BREAKUPS ANALYSIS REPORT
 Generated: ${timestamp}
 Client: ${analysisResults.clientName || 'N/A'}
-Total Properties Analyzed: ${analysisResults.totalProperties || 0}
+Total Properties Analyzed: ${analysisResults.metadata?.totalProperties || analysisResults.totalProperties || 0}
 
 ================================================================================
 CONTENTS
 ================================================================================
 
 1. Breakups_Analysis_Complete.xlsx
-   Enhanced Excel file with all property data and 22 analysis columns
-   - Complete property listings
+   Enhanced Excel file with all property data and 26 analysis columns
+   - Complete property listings with sale and lease splits
    - Market analysis data
    - Financial metrics
-   - Computed statistics
+   - Computed statistics and Analysis_Summary sheet
 
 2. PropertyRadar Export (PropertyRadar_*.xlsx)
    Ready-to-use PropertyRadar import template
-   - Extracted from Analysis sheet columns AD-AO
    - 12 Property Radar comp columns pre-formatted
+   - Populate PROPERTY_RADAR-COMP-Y-N column in Analysis sheet before upload
    - Can be uploaded directly to PropertyRadar platform
 
-3. charts/ (22 Visualization Charts)
-   High-quality PNG images (300 DPI) for presentations
+3. charts/ (26 Visualization Charts)
+   High-quality PNG images for presentations
 
-   Property Characteristics (5):
-   - Bedroom Distribution
-   - HOA Comparison
-   - Garage Analysis
-   - Pool Analysis
-   - Architectural Style Distribution
+   Property Characteristics (8):
+   - 1A/1B: Bedroom Distribution (Sale/Lease)
+   - 2: HOA Analysis
+   - 3A/3B: STR Eligibility (Sale/Lease)
+   - 4A/4B: Renovation Impact (Sale/Lease)
+   - 5: Comps Classification
 
-   Market Positioning (5):
-   - Price per Sqft Comparison
-   - Price Range Distribution
-   - Sqft Range Distribution
-   - Lot Size Analysis
-   - Year Built Trends
+   Market Positioning (7):
+   - 6A/6B: Square Footage Variance (Sale/Lease)
+   - 7A/7B: Price Variance (Sale/Lease)
+   - 8: Lease vs Sale Comparison
+   - 9: PropertyRadar Comps
+   - 10: Individual PR Comps
 
-   Time & Location (4):
-   - Days on Market Analysis
-   - Listing Status Breakdown
-   - Geographic Distribution
-   - Proximity to Amenities
+   Time & Location (5):
+   - 11A/11B: Bedroom Precision (Sale/Lease)
+   - 12: Time Frame Analysis
+   - 13: Direct vs Indirect Comps
+   - 14: Recent Direct vs Indirect
 
-   Market Activity (2):
-   - Listing Volume by Month
-   - Seasonal Price Variation
+   Market Activity (4):
+   - 15A/15B: Active vs Closed (Sale/Lease)
+   - 16A/16B: Active vs Pending (Sale/Lease)
 
-   Financial Impact (6):
-   - HOA Impact on Price
-   - Garage Impact on Price
-   - Pool Impact on Price
-   - Sqft Impact on Price
-   - Age Impact on Price
-   - Improved Net Operating Income
+   Financial Impact (10):
+   - 17A/17B: Renovation Delta (Sale/Lease)
+   - 18A/18B: Partial Renovation Delta (Sale/Lease)
+   - 19A/19B: Interquartile Ranges (Sale/Lease)
+   - 20A/20B: Distribution Tails (Sale/Lease)
+   - 21: Expected NOI
+   - 22: Improved NOI
 
 4. reports/ (Professional PDF Report)
    - GSRealty_Analysis_[Address]_[Date].pdf - Comprehensive analysis report with:
      * Professional cover page with branding
      * Hyperlinked table of contents
      * Executive summary
-     * All 22 analyses with embedded charts
+     * All 26 analyses with embedded charts
      * Category-organized sections
 
 5. data/ (Raw Data Exports)
@@ -227,9 +240,9 @@ CONTENTS
 QUICK START GUIDE
 ================================================================================
 
-1. REVIEW EXECUTIVE SUMMARY
-   Open: reports/Executive_Summary.pdf
-   Get overview of key findings and actionable insights
+1. REVIEW ANALYSIS REPORT
+   Open: reports/GSRealty_Analysis_[Address]_[Date].pdf
+   Comprehensive report with executive summary, all 26 analyses, and embedded charts
 
 2. EXPLORE COMPLETE DATA
    Open: Breakups_Analysis_Complete.xlsx
@@ -240,8 +253,8 @@ QUICK START GUIDE
    Use in presentations, reports, or client communications
 
 4. DEEP DIVE ANALYSIS
-   Review detailed PDF reports in reports/ folder
-   Each report focuses on specific analysis category
+   Open the PDF report in reports/ folder
+   Contains all 26 analyses organized by category with embedded charts
 
 5. CUSTOM ANALYSIS
    Use data/property_data.csv for custom spreadsheet work
@@ -309,44 +322,57 @@ export async function exportAnalysisToJSON(
   analysisResults: BreakupsAnalysisResult,
   outputPath: string
 ): Promise<void> {
+  const totalProps = analysisResults.metadata?.totalProperties || analysisResults.totalProperties || 0
   const jsonData = {
     metadata: {
       generatedAt: new Date().toISOString(),
-      totalProperties: analysisResults.totalProperties,
+      totalProperties: totalProps,
       clientName: analysisResults.clientName,
       analysisDate: analysisResults.analysisDate,
     },
     propertyCharacteristics: {
-      bedroomDistribution: analysisResults.bedroomDistribution,
-      hoaComparison: analysisResults.hoaComparison,
-      garageAnalysis: analysisResults.garageAnalysis,
-      poolAnalysis: analysisResults.poolAnalysis,
-      architecturalStyle: analysisResults.architecturalStyle,
+      brDistribution_Sale: analysisResults.brDistribution_Sale,
+      brDistribution_Lease: analysisResults.brDistribution_Lease,
+      hoaAnalysis: analysisResults.hoaAnalysis,
+      strAnalysis_Sale: analysisResults.strAnalysis_Sale,
+      strAnalysis_Lease: analysisResults.strAnalysis_Lease,
+      renovationImpact_Sale: analysisResults.renovationImpact_Sale,
+      renovationImpact_Lease: analysisResults.renovationImpact_Lease,
+      compsClassification: analysisResults.compsClassification,
     },
     marketPositioning: {
-      pricePerSqftComparison: analysisResults.pricePerSqftComparison,
-      priceRangeDistribution: analysisResults.priceRangeDistribution,
-      sqftRangeDistribution: analysisResults.sqftRangeDistribution,
-      lotSizeAnalysis: analysisResults.lotSizeAnalysis,
-      yearBuiltTrends: analysisResults.yearBuiltTrends,
+      sqftVariance_Sale: analysisResults.sqftVariance_Sale,
+      sqftVariance_Lease: analysisResults.sqftVariance_Lease,
+      priceVariance_Sale: analysisResults.priceVariance_Sale,
+      priceVariance_Lease: analysisResults.priceVariance_Lease,
+      leaseVsSale: analysisResults.leaseVsSale,
+      propertyRadarComps: analysisResults.propertyRadarComps,
+      individualPRComps: analysisResults.individualPRComps,
     },
     timeAndLocation: {
-      daysOnMarketAnalysis: analysisResults.daysOnMarketAnalysis,
-      listingStatusBreakdown: analysisResults.listingStatusBreakdown,
-      geographicDistribution: analysisResults.geographicDistribution,
-      proximityToAmenities: analysisResults.proximityToAmenities,
+      brPrecision_Sale: analysisResults.brPrecision_Sale,
+      brPrecision_Lease: analysisResults.brPrecision_Lease,
+      timeFrames: analysisResults.timeFrames,
+      directVsIndirect: analysisResults.directVsIndirect,
+      recentDirectVsIndirect: analysisResults.recentDirectVsIndirect,
     },
     marketActivity: {
-      listingVolumeByMonth: analysisResults.listingVolumeByMonth,
-      seasonalPriceVariation: analysisResults.seasonalPriceVariation,
+      activeVsClosed_Sale: analysisResults.activeVsClosed_Sale,
+      activeVsClosed_Lease: analysisResults.activeVsClosed_Lease,
+      activeVsPending_Sale: analysisResults.activeVsPending_Sale,
+      activeVsPending_Lease: analysisResults.activeVsPending_Lease,
     },
     financialImpact: {
-      hoaImpactOnPrice: analysisResults.hoaImpactOnPrice,
-      garageImpactOnPrice: analysisResults.garageImpactOnPrice,
-      poolImpactOnPrice: analysisResults.poolImpactOnPrice,
-      sqftImpactOnPrice: analysisResults.sqftImpactOnPrice,
-      ageImpactOnPrice: analysisResults.ageImpactOnPrice,
-      improvedNetOperatingIncome: analysisResults.improvedNetOperatingIncome,
+      renovationDelta_Sale: analysisResults.renovationDelta_Sale,
+      renovationDelta_Lease: analysisResults.renovationDelta_Lease,
+      partialRenovationDelta_Sale: analysisResults.partialRenovationDelta_Sale,
+      partialRenovationDelta_Lease: analysisResults.partialRenovationDelta_Lease,
+      interquartileRanges_Sale: analysisResults.interquartileRanges_Sale,
+      interquartileRanges_Lease: analysisResults.interquartileRanges_Lease,
+      distributionTails_Sale: analysisResults.distributionTails_Sale,
+      distributionTails_Lease: analysisResults.distributionTails_Lease,
+      expectedNOI: analysisResults.expectedNOI,
+      improvedNOI: analysisResults.improvedNOI,
     },
   }
 
@@ -383,6 +409,13 @@ export async function exportPropertiesToCSV(properties: any[], outputPath: strin
     const values = headers.map((header) => {
       const value = prop[header]
       if (value === null || value === undefined) return '""'
+      // Serialize dates in UTC to prevent timezone shift (e.g., midnight UTC → previous day in MST)
+      if (value instanceof Date) {
+        const y = value.getUTCFullYear()
+        const m = String(value.getUTCMonth() + 1).padStart(2, '0')
+        const d = String(value.getUTCDate()).padStart(2, '0')
+        return `"${y}-${m}-${d}"`
+      }
       // Escape quotes and wrap in quotes
       const stringValue = String(value).replace(/"/g, '""')
       return `"${stringValue}"`
@@ -399,24 +432,22 @@ export async function exportPropertiesToCSV(properties: any[], outputPath: strin
  * Generates a summary of key metrics from the analysis
  */
 export function createSummaryStats(analysisResults: BreakupsAnalysisResult): any {
+  const totalProps = analysisResults.metadata?.totalProperties || analysisResults.totalProperties || 0
   return {
     overview: {
-      totalProperties: analysisResults.totalProperties,
+      totalProperties: totalProps,
       analysisDate: analysisResults.analysisDate,
       clientName: analysisResults.clientName,
     },
     keyMetrics: {
-      // Extract key metrics from each analysis
-      // This can be expanded based on actual analysis structure
-      bedroomDistribution: analysisResults.bedroomDistribution?.summary || null,
-      hoaComparison: analysisResults.hoaComparison?.summary || null,
-      pricePerSqft: analysisResults.pricePerSqftComparison?.summary || null,
-      daysOnMarket: analysisResults.daysOnMarketAnalysis?.summary || null,
-      improvedNOI: analysisResults.improvedNetOperatingIncome?.summary || null,
+      brDistribution_Sale: analysisResults.brDistribution_Sale?.summary || analysisResults.brDistribution_Sale || null,
+      hoaAnalysis: analysisResults.hoaAnalysis?.summary || analysisResults.hoaAnalysis || null,
+      sqftVariance_Sale: analysisResults.sqftVariance_Sale?.summary || analysisResults.sqftVariance_Sale || null,
+      activeVsClosed_Sale: analysisResults.activeVsClosed_Sale?.summary || analysisResults.activeVsClosed_Sale || null,
+      expectedNOI: analysisResults.expectedNOI?.summary || analysisResults.expectedNOI || null,
+      improvedNOI: analysisResults.improvedNOI?.summary || analysisResults.improvedNOI || null,
     },
     recommendations: {
-      // Placeholder for recommendations
-      // Can be populated based on analysis insights
       topFindings: [],
       actionItems: [],
     },

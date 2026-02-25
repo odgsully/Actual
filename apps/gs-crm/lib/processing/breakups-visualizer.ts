@@ -60,8 +60,44 @@ export async function generateAllVisualizations(
     };
   }
 
-  // Access v2 analyses structure
-  const analyses = analysisResults.analyses || analysisResults;
+  // Access v2 analyses structure — map flat generator keys to numbered visualizer keys
+  const raw = analysisResults.analyses || analysisResults;
+  const analyses: Record<string | number, any> = {
+    '1A': raw.brDistribution_Sale ?? raw['1A'],
+    '1B': raw.brDistribution_Lease ?? raw['1B'],
+    2:    raw.hoaAnalysis ?? raw[2],
+    '3A': raw.strAnalysis_Sale ?? raw['3A'],
+    '3B': raw.strAnalysis_Lease ?? raw['3B'],
+    '4A': raw.renovationImpact_Sale ?? raw['4A'],
+    '4B': raw.renovationImpact_Lease ?? raw['4B'],
+    5:    raw.compsClassification ?? raw[5],
+    '6A': raw.sqftVariance_Sale ?? raw['6A'],
+    '6B': raw.sqftVariance_Lease ?? raw['6B'],
+    '7A': raw.priceVariance_Sale ?? raw['7A'],
+    '7B': raw.priceVariance_Lease ?? raw['7B'],
+    8:    raw.leaseVsSale ?? raw[8],
+    9:    raw.propertyRadarComps ?? raw[9],
+    10:   raw.individualPRComps ?? raw[10],
+    '11A': raw.brPrecision_Sale ?? raw['11A'],
+    '11B': raw.brPrecision_Lease ?? raw['11B'],
+    12:   raw.timeFrames ?? raw[12],
+    13:   raw.directVsIndirect ?? raw[13],
+    14:   raw.recentDirectVsIndirect ?? raw[14],
+    '15A': raw.activeVsClosed_Sale ?? raw['15A'],
+    '15B': raw.activeVsClosed_Lease ?? raw['15B'],
+    '16A': raw.activeVsPending_Sale ?? raw['16A'],
+    '16B': raw.activeVsPending_Lease ?? raw['16B'],
+    '17A': raw.renovationDelta_Sale ?? raw['17A'],
+    '17B': raw.renovationDelta_Lease ?? raw['17B'],
+    '18A': raw.partialRenovationDelta_Sale ?? raw['18A'],
+    '18B': raw.partialRenovationDelta_Lease ?? raw['18B'],
+    '19A': raw.interquartileRanges_Sale ?? raw['19A'],
+    '19B': raw.interquartileRanges_Lease ?? raw['19B'],
+    '20A': raw.distributionTails_Sale ?? raw['20A'],
+    '20B': raw.distributionTails_Lease ?? raw['20B'],
+    21:   raw.expectedNOI ?? raw[21],
+    22:   raw.improvedNOI ?? raw[22],
+  };
 
   // Generate each visualization (v2 - 26 analyses)
   const generators = [

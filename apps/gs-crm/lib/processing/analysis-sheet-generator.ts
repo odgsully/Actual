@@ -493,8 +493,12 @@ function addPropertyRow(
   row.getCell(ANALYSIS_COLUMNS.MLS_MCAO_DISCREPENCY_CONCAT).value =
     calculateDiscrepancy(mlsSqft, mcaoSqft)
 
-  // Column P: IS_RENTAL (MCAO)
-  row.getCell(ANALYSIS_COLUMNS.IS_RENTAL).value = 'N' // Default, could check property type
+  // Column P: IS_RENTAL (derived from MLS sheet + property type)
+  const isRental =
+    rawData._sheetName?.toLowerCase().includes('lease') ||
+    ['Rental', 'Lease'].includes(rawData['Property Type'] || '') ||
+    property.itemLabel?.toLowerCase().includes('lease')
+  row.getCell(ANALYSIS_COLUMNS.IS_RENTAL).value = isRental ? 'Y' : 'N'
 
   // Column Q: AGENCY_PHONE (MLS CSV field "Agency Phone")
   row.getCell(ANALYSIS_COLUMNS.AGENCY_PHONE).value = rawData['Agency Phone'] || 'N/A'
@@ -559,7 +563,7 @@ function addPropertyRow(
   }
 
   // Column AA: DAYS_ON_MARKET (MLS CSV field "Days on Market")
-  row.getCell(ANALYSIS_COLUMNS.DAYS_ON_MARKET).value = rawData['Days on Market'] || ''
+  row.getCell(ANALYSIS_COLUMNS.DAYS_ON_MARKET).value = parseWholeNumber(rawData['Days on Market'])
 
   // Column AB: DWELLING_TYPE - For Subject Property, use manual input first
   if (property.itemLabel === 'Subject Property') {

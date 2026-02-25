@@ -24,6 +24,12 @@ const LOG_PREFIX = '[ReportIt API - Upload]';
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 const UPLOAD_DIR = join(process.cwd(), 'tmp', 'reportit');
 
+/** Guard against NaN/Infinity in formatted output — returns 0 for invalid numbers */
+function safeNum(value: any, fallback = 0): number {
+  const n = Number(value);
+  return isNaN(n) || !isFinite(n) ? fallback : n;
+}
+
 /**
  * Transform analysis results from breakups-generator format to PDF generator format
  * Converts flat structure with individual properties to array-based structure
@@ -210,20 +216,20 @@ function generateRenovationImpactInsight(result: any): string {
   const mid = result.Mid || result['0.5'] || {};
   const low = result.Low || result.N || {};
   const totalProps = (high.count || 0) + (mid.count || 0) + (low.count || 0);
-  const premiumHigh = result.premiumHighvsLow ?? result.premiumYvsN ?? 0;
-  const premiumMid = result.premiumMidvsLow ?? result.premium05vsN ?? 0;
+  const premiumHigh = safeNum(result.premiumHighvsLow ?? result.premiumYvsN);
+  const premiumMid = safeNum(result.premiumMidvsLow ?? result.premium05vsN);
 
   let insight = `Of ${totalProps} properties analyzed: `;
-  insight += `${low.count || 0} score low (avg ${(low.avgScore || 0).toFixed(1)}/10), `;
-  insight += `${mid.count || 0} score mid (avg ${(mid.avgScore || 0).toFixed(1)}/10), `;
-  insight += `${high.count || 0} score high (avg ${(high.avgScore || 0).toFixed(1)}/10). `;
+  insight += `${low.count || 0} score low (avg ${safeNum(low.avgScore).toFixed(1)}/10), `;
+  insight += `${mid.count || 0} score mid (avg ${safeNum(mid.avgScore).toFixed(1)}/10), `;
+  insight += `${high.count || 0} score high (avg ${safeNum(high.avgScore).toFixed(1)}/10). `;
 
-  insight += `High-condition homes command $${(high.avgPricePerSqft || 0).toFixed(0)}/sqft vs `;
-  insight += `$${(low.avgPricePerSqft || 0).toFixed(0)}/sqft for low-condition—`;
-  insight += `a ${premiumHigh.toFixed(1)}% premium worth $${((high.avgPrice || 0) - (low.avgPrice || 0)).toFixed(0)} on average. `;
+  insight += `High-condition homes command $${safeNum(high.avgPricePerSqft).toFixed(0)}/sqft vs `;
+  insight += `$${safeNum(low.avgPricePerSqft).toFixed(0)}/sqft for low-condition—`;
+  insight += `a ${premiumHigh.toFixed(1)}% premium worth $${safeNum((high.avgPrice || 0) - (low.avgPrice || 0)).toFixed(0)} on average. `;
 
   if ((mid.count || 0) > 0) {
-    insight += `Mid-range renovations yield $${(mid.avgPricePerSqft || 0).toFixed(0)}/sqft `;
+    insight += `Mid-range renovations yield $${safeNum(mid.avgPricePerSqft).toFixed(0)}/sqft `;
     insight += `(${premiumMid.toFixed(1)}% premium), demonstrating strong ROI for cosmetic improvements.`;
   }
 
@@ -439,14 +445,16 @@ function generateBRPrecisionInsight(result: any): string {
 
   const totalComps = (result.exact?.count || 0) + (result.within1?.count || 0);
   const exactPct = totalComps > 0 ? (((result.exact?.count || 0) / totalComps) * 100).toFixed(1) : '0';
-  const priceDiff = Math.abs((result.exact?.avgPrice || 0) - (result.within1?.avgPrice || 0));
-  const priceDiffPct = result.within1?.avgPrice ? ((priceDiff / result.within1.avgPrice) * 100).toFixed(1) : '0';
+  const exactAvg = safeNum(result.exact?.avgPrice);
+  const within1Avg = safeNum(result.within1?.avgPrice);
+  const priceDiff = Math.abs(exactAvg - within1Avg);
+  const priceDiffPct = within1Avg > 0 ? ((priceDiff / within1Avg) * 100).toFixed(1) : '0';
 
   let insight = `${result.exact?.count || 0} properties (${exactPct}%) match the subject's exact bedroom count, `;
-  insight += `trading at $${(result.exact?.avgPrice || 0).toFixed(0)} on average. `;
+  insight += `trading at $${exactAvg.toFixed(0)} on average. `;
 
   insight += `Including ±1 BR expands the dataset to ${result.within1?.count || 0} properties `;
-  insight += `averaging $${(result.within1?.avgPrice || 0).toFixed(0)}—`;
+  insight += `averaging $${within1Avg.toFixed(0)}—`;
   insight += `a $${priceDiff.toFixed(0)} (${priceDiffPct}%) ${
     (result.exact?.avgPrice || 0) > (result.within1?.avgPrice || 0) ? 'premium' : 'discount'
   } for exact matches. `;
@@ -506,14 +514,16 @@ function generateDirectVsIndirectInsight(result: any): string {
 
   const totalComps = (result.direct?.count || 0) + (result.indirect?.count || 0);
   const directPct = totalComps > 0 ? (((result.direct?.count || 0) / totalComps) * 100).toFixed(1) : '0';
-  const priceDiff = Math.abs((result.direct?.avgPrice || 0) - (result.indirect?.avgPrice || 0));
-  const priceDiffPct = result.indirect?.avgPrice ? ((priceDiff / result.indirect.avgPrice) * 100).toFixed(1) : '0';
+  const directAvg = safeNum(result.direct?.avgPrice);
+  const indirectAvg = safeNum(result.indirect?.avgPrice);
+  const priceDiff = Math.abs(directAvg - indirectAvg);
+  const priceDiffPct = indirectAvg > 0 ? ((priceDiff / indirectAvg) * 100).toFixed(1) : '0';
 
   let insight = `${result.direct?.count || 0} direct subdivision comps (${directPct}%) average `;
-  insight += `$${(result.direct?.avgPrice || 0).toFixed(0)}, while ${result.indirect?.count || 0} indirect (1.5mi) comps `;
-  insight += `average $${(result.indirect?.avgPrice || 0).toFixed(0)}—`;
+  insight += `$${directAvg.toFixed(0)}, while ${result.indirect?.count || 0} indirect (1.5mi) comps `;
+  insight += `average $${indirectAvg.toFixed(0)}—`;
   insight += `a $${priceDiff.toFixed(0)} (${priceDiffPct}%) ${
-    (result.direct?.avgPrice || 0) > (result.indirect?.avgPrice || 0) ? 'premium' : 'discount'
+    directAvg > indirectAvg ? 'premium' : 'discount'
   } for same-subdivision properties. `;
 
   insight += `The ${((result.reliabilityScore || 0) * 100).toFixed(1)}% reliability score `;
@@ -1012,6 +1022,46 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       const analysisResults = await generateAllBreakupsAnalyses(uploadedWorkbook, {});
       console.log(`${LOG_PREFIX} Analysis complete: 26 analyses generated (v2 with lease/sale differentiation)`);
 
+      // Enhance workbook with analysis summary data
+      let enhancedSummarySheet = uploadedWorkbook.getWorksheet('Analysis_Summary');
+      if (!enhancedSummarySheet) {
+        enhancedSummarySheet = uploadedWorkbook.addWorksheet('Analysis_Summary');
+      } else {
+        enhancedSummarySheet.spliceRows(1, enhancedSummarySheet.rowCount);
+      }
+
+      // Write analysis metadata header
+      const summaryHeaders = ['Analysis ID', 'Analysis Name', 'Category', 'Key Metric', 'Value'];
+      const summaryHeaderRow = enhancedSummarySheet.getRow(1);
+      summaryHeaders.forEach((h, i) => {
+        const cell = summaryHeaderRow.getCell(i + 1);
+        cell.value = h;
+        cell.font = { bold: true };
+      });
+
+      // Write key metrics from each analysis
+      let summaryRowNum = 2;
+      const analysisEntries = Object.entries(analysisResults);
+      for (const [key, value] of analysisEntries) {
+        if (value && typeof value === 'object') {
+          const row = enhancedSummarySheet.getRow(summaryRowNum);
+          row.getCell(1).value = key;
+          row.getCell(2).value = key.replace(/_/g, ' ');
+          row.getCell(3).value = key.includes('Sale') ? 'Sale' : key.includes('Lease') ? 'Lease' : 'Combined';
+          // Try to extract a meaningful metric
+          const v = value as any;
+          if (v.average !== undefined) { row.getCell(4).value = 'Average'; row.getCell(5).value = v.average; }
+          else if (v.count !== undefined) { row.getCell(4).value = 'Count'; row.getCell(5).value = v.count; }
+          else if (v.delta !== undefined) { row.getCell(4).value = 'Delta'; row.getCell(5).value = v.delta; }
+          else { row.getCell(4).value = 'Data'; row.getCell(5).value = JSON.stringify(value).substring(0, 200); }
+          summaryRowNum++;
+        }
+      }
+
+      // Serialize the enhanced workbook
+      const enhancedBuffer = Buffer.from(await uploadedWorkbook.xlsx.writeBuffer());
+      console.log(`${LOG_PREFIX} Enhanced workbook with Analysis_Summary sheet (${enhancedBuffer.length} bytes)`);
+
       // STEP 2: Generate 26 visualization charts
       console.log(`${LOG_PREFIX} [2/4] Generating 26 visualization charts...`);
       console.log(`${LOG_PREFIX} [DEBUG] Analysis results structure:`, Object.keys(analysisResults));
@@ -1084,25 +1134,38 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       // STEP 6: Package everything into a .zip file
       console.log(`${LOG_PREFIX} [6/6] Packaging into downloadable .zip file...`);
 
-      // Read properties from Analysis sheet for CSV export
+      // Read ALL properties from Analysis sheet for CSV export (all 30 columns)
       const analysisSheet = uploadedWorkbook.getWorksheet('Analysis');
       const properties: any[] = [];
       if (analysisSheet) {
+        // Get headers from row 1
+        const csvHeaders: string[] = [];
+        const headerRow = analysisSheet.getRow(1);
+        headerRow.eachCell((cell, colNumber) => {
+          csvHeaders[colNumber - 1] = cell.value?.toString() || `Column_${colNumber}`;
+        });
+
+        // Read all data rows with all columns
         analysisSheet.eachRow((row, rowNumber) => {
           if (rowNumber === 1) return; // Skip header
-          properties.push({
-            item: row.getCell(1).value,
-            address: row.getCell(2).value,
-            apn: row.getCell(3).value,
-            status: row.getCell(4).value,
+          const rowData: any = {};
+          row.eachCell((cell, colNumber) => {
+            const header = csvHeaders[colNumber - 1];
+            if (header) {
+              rowData[header] = cell.value;
+            }
           });
+          // Only add rows that have data
+          if (rowData['Item'] || rowData['FULL_ADDRESS']) {
+            properties.push(rowData);
+          }
         });
       }
 
       const packageResult = await packageBreakupsReport({
         fileId,
         clientName,
-        enhancedExcel: uploadedBuffer,
+        enhancedExcel: enhancedBuffer,
         analysisResults: analysisResults as any, // Type conversion needed
         chartPaths: chartPaths,
         pdfPaths: pdfResult.success ? [pdfResult.filePath] : [], // Single PDF file
