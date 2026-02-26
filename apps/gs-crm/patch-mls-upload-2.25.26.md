@@ -1,6 +1,6 @@
 # MLS Upload Patch Plan (2.25.26)
 
-Status: **In Progress** — Phases 0.5a + 0.5b complete, Phase 1 Milestone 1 (computed metrics) complete, Milestone 2 next
+Status: **In Progress** — Phases 0.5a + 0.5b complete, Phase 1 Milestones 1-3 complete, template strategy + stabilization remaining
 Scope: GS-CRM MLS Upload -> Excel generation -> Breakups insights -> report packaging
 Planning Horizon: 9-week Initiative 1, then reassess Initiative 2
 
@@ -237,20 +237,20 @@ already-parsed data while enrichment consolidation completes in parallel.
 - [x] Add metric-level assertions to golden tests — 20+ assertions across MLS + breakups contexts
 
 ### Milestone 2 (Weeks 5-7): Comp Ranking + Explainability
-- [ ] Add weighted comp similarity scoring with factor-level components
-- [ ] Produce comp tiers (primary/supporting/context)
-- [ ] Ensure deterministic ranking and reproducibility on repeated runs
-- [ ] Add explainability outputs and tests
+- [x] Add weighted comp similarity scoring with factor-level components — 6 factors (distance, price, sqft, age, bedBath, features), configurable weights, null-safe with weight redistribution
+- [x] Produce comp tiers (primary/supporting/context) — score ≥70 primary, ≥40 supporting, <40 context
+- [x] Ensure deterministic ranking and reproducibility on repeated runs — tiebreak by factorsAvailable → lexicographic ID
+- [x] Add explainability outputs and tests — explanation string on every ScoredComp, 30+ factor + ranking assertions in golden tests
 
 ### Milestone 3 (Weeks 7-9): Reconciled Analysis Outputs
-- [ ] Add adjusted/reconciled value outputs with confidence grading
-- [ ] Improve income signals enough to remove circular logic in core outputs
-- [ ] Wire analysis engine outputs into breakups/report surfaces without breaking current flow
+- [x] Add adjusted/reconciled value outputs with confidence grading — reconciled-outputs.ts: ReconciledValueEstimate with 4 confidence grades, range estimates, multi-approach blending
+- [x] Improve income signals enough to remove circular logic in core outputs — market rent derived from actual lease comps (comp-weighted/comp-average), reconcileNOI cross-references modeled vs market, divergence tracking
+- [x] Wire analysis engine outputs into breakups/report surfaces without breaking current flow — reconcileAnalysis() orchestrator takes existing PropertyData[] + optional M2 scores + optional modeled NOI, augments without modifying existing functions
 
 ### Exit Criteria
-- [ ] Pipeline produces explainable ranked comps for subject property
-- [ ] Core metrics and reconciled outputs pass golden dataset assertions
-- [ ] Output is materially more decision-useful than current baseline
+- [x] Pipeline produces explainable ranked comps for subject property (comp-scoring.ts + golden tests)
+- [x] Core metrics and reconciled outputs pass golden dataset assertions (computed-metrics.ts + reconciled-outputs.ts + 80+ assertions)
+- [ ] Output is materially more decision-useful than current baseline (requires live dataset validation)
 
 ---
 
@@ -309,22 +309,25 @@ Keep this minimal and execution-oriented.
 - [x] Phase 1 M1: Field lineage + null behavior documented via JSDoc on all metric types
 
 ### Week 5:
-- [ ] Start Milestone 2 (ranking engine) — needs algorithm design from Opus session
+- [x] Phase 1 M2: comp-scoring.ts — weighted similarity engine (6 factors, configurable weights, null-safe redistribution)
+- [x] Phase 1 M2: comp tier classification (primary ≥70 / supporting ≥40 / context <40)
+- [x] Phase 1 M2: deterministic ranking (score → factorsAvailable → lexicographic tiebreak)
+- [x] Phase 1 M2: explainability (explanation string per comp, factor-level breakdown)
+- [x] Phase 1 M2: 30+ golden test assertions (factor functions, MLS ranking, breakups ranking)
 
-### Week 6:
-- [ ] Continue Milestone 2
-- [ ] Add explainability outputs and tests
+### Week 5 (continued):
+- [x] Phase 1 M3: reconciled-outputs.ts — market rent from actual lease comps, reconciled NOI, multi-approach value estimation
+- [x] Phase 1 M3: confidence grading (high/medium/low/synthetic) with divergence tracking
+- [x] Phase 1 M3: reconcileAnalysis() orchestrator augments existing pipeline without modifying breakups-generator
+- [x] Phase 1 M3: 15+ golden test assertions (market rent, NOI reconciliation, value estimate, full orchestration)
 
-### Week 7:
-- [ ] Complete Milestone 2
-- [ ] Start Milestone 3 (reconciliation/income corrections)
-
-### Week 8:
-- [ ] Continue Milestone 3 integration into report path
-- [ ] Run golden dataset regression suite
+### Weeks 6-8:
+- [ ] Template strategy: append-only evolution, version gate checks
+- [ ] Wire reconciliation into upload route (optional step after breakups analysis)
+- [ ] Run live datasets through pipeline for baseline measurement
+- [ ] Stabilization + defect burn-down
 
 ### Week 9:
-- [ ] Stabilization + defect burn-down
 - [ ] Release and post-release measurement
 - [ ] Reassessment decision for Initiative 2
 
