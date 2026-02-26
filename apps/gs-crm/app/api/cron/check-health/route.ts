@@ -35,11 +35,19 @@ export async function GET(request: NextRequest) {
     const isVercelCron = vercelCronSignature === cronSecret;
     const isManualTrigger = cronSecret && authHeader === `Bearer ${cronSecret}`;
     
-    // If cron secret is set, require authentication
-    if (cronSecret && !isVercelCron && !isManualTrigger) {
-      console.log('Cron auth failed:', { 
+    // Fail-closed: always require authentication
+    if (!cronSecret) {
+      console.error('CRON_SECRET not configured — rejecting request');
+      return NextResponse.json(
+        { error: 'Server misconfiguration' },
+        { status: 500 }
+      );
+    }
+
+    if (!isVercelCron && !isManualTrigger) {
+      console.log('Cron auth failed:', {
         hasVercelSignature: !!vercelCronSignature,
-        hasAuthHeader: !!authHeader 
+        hasAuthHeader: !!authHeader
       });
       return NextResponse.json(
         { error: 'Unauthorized' },

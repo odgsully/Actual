@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { requireAdmin } from '@/lib/api/admin-auth';
 import fs from 'fs';
 import path from 'path';
 
@@ -16,6 +17,9 @@ export const dynamic = 'force-dynamic';
  * Run a specific migration file
  */
 export async function POST(request: NextRequest) {
+  const auth = await requireAdmin();
+  if (!auth.success) return auth.response;
+
   // Only allow in development
   if (process.env.NODE_ENV !== 'development') {
     return NextResponse.json(
@@ -136,6 +140,9 @@ export async function POST(request: NextRequest) {
  * Get migration status
  */
 export async function GET() {
+  const auth = await requireAdmin();
+  if (!auth.success) return auth.response;
+
   if (process.env.NODE_ENV !== 'development') {
     return NextResponse.json(
       { error: 'Admin endpoint only available in development' },

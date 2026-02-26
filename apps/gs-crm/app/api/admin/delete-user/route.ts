@@ -1,11 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
-
-// SECURITY WARNING: This endpoint should be protected in production!
-// Add authentication, rate limiting, and logging
+import { requireAdmin } from '@/lib/api/admin-auth'
 
 function getSupabaseAdmin() {
-  // Create admin client with service role key (bypasses RLS)
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -20,14 +17,10 @@ function getSupabaseAdmin() {
 
 export async function DELETE(request: Request) {
   try {
+    const auth = await requireAdmin()
+    if (!auth.success) return auth.response
+
     const supabaseAdmin = getSupabaseAdmin()
-    
-    // IMPORTANT: Add your own authentication here!
-    // For now, we'll check for a simple admin key in headers
-    const adminKey = request.headers.get('X-Admin-Key')
-    if (adminKey !== process.env.ADMIN_DELETE_KEY) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
 
     const { email } = await request.json()
     
@@ -162,11 +155,8 @@ export async function DELETE(request: Request) {
 // GET method to check if user exists
 export async function GET(request: Request) {
   try {
-    // SECURITY: Require admin authentication
-    const adminKey = request.headers.get('X-Admin-Key')
-    if (adminKey !== process.env.ADMIN_DELETE_KEY) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const auth = await requireAdmin()
+    if (!auth.success) return auth.response
 
     const supabaseAdmin = getSupabaseAdmin()
 

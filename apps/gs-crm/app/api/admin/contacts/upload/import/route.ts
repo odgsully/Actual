@@ -15,8 +15,12 @@ import {
   getExistingPhones,
   type FieldMapping,
 } from '@/lib/database/contact-import'
+import { requireAdmin } from '@/lib/api/admin-auth'
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAdmin()
+  if (!auth.success) return auth.response
+
   try {
     const formData = await request.formData()
     const file = formData.get('file') as File | null

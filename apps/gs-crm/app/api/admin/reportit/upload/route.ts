@@ -20,6 +20,8 @@ import { packageBreakupsReport } from '@/lib/processing/breakups-packager';
 import { rateLimiters } from '@/lib/rate-limit';
 import { requireAdmin } from '@/lib/api/admin-auth';
 
+export const maxDuration = 300; // 5 min — Vercel Pro plan
+
 const LOG_PREFIX = '[ReportIt API - Upload]';
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 const UPLOAD_DIR = join(process.cwd(), 'tmp', 'reportit');

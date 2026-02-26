@@ -7,11 +7,15 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { parseFileBuffer } from '@/lib/processing/contact-parser'
+import { requireAdmin } from '@/lib/api/admin-auth'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const MAX_ROWS = 5000
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAdmin()
+  if (!auth.success) return auth.response
+
   try {
     const formData = await request.formData()
     const file = formData.get('file') as File | null

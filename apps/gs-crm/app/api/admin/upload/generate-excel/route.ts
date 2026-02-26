@@ -28,6 +28,8 @@ import { requireAdmin } from '@/lib/api/admin-auth'
 import { getScoresByBatch } from '@/lib/database/vision-scores'
 import { normalizeAddress, extractStreetCore, extractStreetNumber } from '@/lib/utils/normalize-address'
 
+export const maxDuration = 300; // 5 min — Vercel Pro plan
+
 const LOG_PREFIX = '[Generate Excel]'
 
 // Template path - resolve from project root where gs-crm-template.xlsx lives

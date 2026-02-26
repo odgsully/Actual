@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Upload, Download, Search, AlertCircle, CheckCircle, FileSpreadsheet, ChevronDown } from 'lucide-react'
+import { Upload, Download, Search, AlertCircle, CheckCircle, FileSpreadsheet, ChevronDown, FileText } from 'lucide-react'
 import { MCAOCategorizedData } from '../../../components/admin/MCAOCategorizedData'
 import { getAllClients, type GSRealtyClient } from '@/lib/database/clients'
 
@@ -58,6 +58,12 @@ export default function UploadPage() {
   const [visionScores, setVisionScores] = useState<any[] | null>(null)
   const [batchId, setBatchId] = useState<string | null>(null)
   const [cacheInfo, setCacheInfo] = useState<{ cached: number; toScore: number } | null>(null)
+
+  // Step 6: Report generation state
+  const [excelBlob, setExcelBlob] = useState<Blob | null>(null)
+  const [reportStatus, setReportStatus] = useState<'idle' | 'generating' | 'complete' | 'error'>('idle')
+  const [reportDownloadUrl, setReportDownloadUrl] = useState<string | null>(null)
+  const [reportError, setReportError] = useState<string | null>(null)
 
   // Errors
   const [subjectError, setSubjectError] = useState<string | null>(null)
@@ -435,6 +441,11 @@ export default function UploadPage() {
         a.click()
         window.URL.revokeObjectURL(url)
         document.body.removeChild(a)
+        // Save blob for optional Step 6 report generation
+        setExcelBlob(blob)
+        setReportStatus('idle')
+        setReportDownloadUrl(null)
+        setReportError(null)
       } else {
         alert('Failed to generate report')
       }
@@ -442,6 +453,38 @@ export default function UploadPage() {
       alert('Error generating report')
     } finally {
       setGenerating(false)
+    }
+  }
+
+  const handleGenerateFullReport = async () => {
+    if (!excelBlob) return
+    setReportStatus('generating')
+    setReportError(null)
+    try {
+      const now = new Date()
+      const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`
+      const lastName = (clientName || 'Client').split(' ')[0].replace(/[^a-zA-Z0-9]/g, '')
+
+      const formData = new FormData()
+      formData.append('file', excelBlob, `Upload_${lastName}_${timestamp}.xlsx`)
+      formData.append('type', 'breakups')
+
+      const response = await fetch('/api/admin/reportit/upload', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error?.message || 'Report generation failed')
+      }
+
+      const data = await response.json()
+      setReportDownloadUrl(data.data.downloadUrl)
+      setReportStatus('complete')
+    } catch (error: any) {
+      setReportError(error.message || 'Failed to generate report')
+      setReportStatus('error')
     }
   }
 
@@ -1078,6 +1121,70 @@ export default function UploadPage() {
         )}
       </div>
 
+      {/* Step 6: Generate Full Report (optional, appears after Excel download) */}
+      {excelBlob && (
+        <div className="glass-card p-6">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="p-2 bg-purple-500/20 rounded-xl">
+              <FileText className="w-5 h-5 text-purple-400" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-white">6. Generate Full Report (Optional)</h2>
+              <p className="text-sm text-white/60">
+                Generate Break-ups analysis package with charts, PDF report, and PropertyRadar export
+              </p>
+            </div>
+          </div>
+
+          {reportStatus === 'idle' && (
+            <button
+              onClick={handleGenerateFullReport}
+              className="w-full py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-medium transition-all duration-700 flex items-center justify-center space-x-2"
+            >
+              <FileText className="w-5 h-5" />
+              <span>Generate Full Report</span>
+            </button>
+          )}
+
+          {reportStatus === 'generating' && (
+            <div className="flex items-center justify-center space-x-3 py-4">
+              <div className="w-5 h-5 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
+              <span className="text-white/80">Generating report... this may take up to 60 seconds</span>
+            </div>
+          )}
+
+          {reportStatus === 'complete' && reportDownloadUrl && (
+            <div className="space-y-3">
+              <div className="p-3 bg-green-500/10 border border-green-400/30 rounded-xl flex items-center space-x-2">
+                <CheckCircle className="w-5 h-5 text-green-400" />
+                <span className="text-green-300 font-medium">Report package ready!</span>
+              </div>
+              <button
+                onClick={() => window.open(reportDownloadUrl, '_blank')}
+                className="w-full py-3 bg-green-600 hover:bg-green-500 text-white rounded-xl font-medium transition-all duration-700 flex items-center justify-center space-x-2"
+              >
+                <Download className="w-5 h-5" />
+                <span>Download Report Package (.zip)</span>
+              </button>
+            </div>
+          )}
+
+          {reportStatus === 'error' && (
+            <div className="space-y-3">
+              <div className="p-3 bg-red-500/10 border border-red-400/30 rounded-xl">
+                <p className="text-red-300">{reportError || 'Report generation failed'}</p>
+              </div>
+              <button
+                onClick={handleGenerateFullReport}
+                className="w-full py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-medium transition-all duration-700"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Instructions */}
       <div className="glass-card p-6">
         <h3 className="text-lg font-bold text-white mb-4">MLS Upload Instructions</h3>
@@ -1095,13 +1202,13 @@ export default function UploadPage() {
             <p className="pl-4">b. Upload Residential Lease 3yr-direct-subdivision-comps (T-36 months, same HOA/subdivision)</p>
           </div>
           <p><strong className="text-white/80">Step 5:</strong> Click Generate to download Upload_LastName_Timestamp.xlsx</p>
+          <p><strong className="text-white/80">Step 6:</strong> (Optional) Click Generate Full Report for Break-ups analysis package</p>
           <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-400/30 rounded-xl">
-            <p className="font-semibold text-yellow-300">Next Steps after Download:</p>
+            <p className="font-semibold text-yellow-300">Notes:</p>
             <ol className="list-decimal list-inside mt-2 text-yellow-400">
               <li>Review AI-scored RENOVATE_SCORE (Column R, 1-10) — adjust any scores and fill blanks for unscored properties. Optionally add/verify RENO_YEAR_EST (Column AD).</li>
-              <li>Add Property Radar comp data if available</li>
-              <li>Save as Complete_LastName_Timestamp.xlsx</li>
-              <li>Upload to ReportIt for comprehensive analysis</li>
+              <li>Add Property Radar comp data if available (Columns AE-AP)</li>
+              <li>Use Step 6 above for immediate report generation, or save as Complete_LastName_Timestamp.xlsx and upload to ReportIt manually</li>
             </ol>
           </div>
         </div>
