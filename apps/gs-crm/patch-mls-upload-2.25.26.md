@@ -285,12 +285,17 @@ Keep this minimal and execution-oriented.
 - [ ] Phase -1: Baseline measurement (deferred — requires live enrichment run)
 
 ### Week 2:
+- [x] Phase 0: High-impact output bug fixes (19 bugs: 7 CRITICAL, 8 HIGH, 4 MEDIUM)
+- [x] Phase 0.5a: Unified EnrichmentResult interface + error codes + batch summary (lib/pipeline/enrichment-types.ts)
+- [x] Phase 0.5a: ArcGIS endpoint config + health probes (lib/pipeline/arcgis-config.ts)
 - [ ] Phase -1: Baseline measurement — run 3 real datasets through live pipeline, capture metrics
-- [ ] Complete Phase 0 remaining items (high-impact output bug fixes)
-- [ ] Begin Phase 0.5a enrichment safety hardening + parsing
+- [ ] Phase 0.5a: Wire unified error model into arcgis-lookup.ts, client.ts, batch-apn-lookup.ts
+- [ ] Phase 0.5a: Wire abort thresholds into batch pipeline
+- [ ] Phase 0.5a: Replace hardcoded ArcGIS URLs with config imports + pre-flight health check
+- [ ] Phase 0.5a: Failure persistence to gsrealty_mcao_data table
 
 ### Week 3:
-- [ ] Complete Phase 0.5a (unified error model, abort thresholds, failure persistence, ArcGIS health check)
+- [ ] Complete Phase 0.5a remaining (parsing coverage, status hygiene, data quality scoring)
 - [ ] Begin Phase 0.5b enrichment consolidation
 
 ### Week 4:
