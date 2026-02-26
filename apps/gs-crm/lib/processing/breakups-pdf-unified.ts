@@ -518,7 +518,7 @@ async function generateAnalysisSections(
   boldFont: any,
   regularFont: any,
   analyses: any[],
-  chartImages: Map<number, PDFImage>,
+  chartImages: Map<string, PDFImage>,
   pageReferences: Map<string, number>
 ): Promise<void> {
   // Group analyses by category
@@ -548,7 +548,13 @@ async function generateAnalysisSections(
       if (!analysis) continue;
 
       // Store page reference for this analysis
-      pageReferences.set(`analysis-${id}`, pdfDoc.getPageCount() - 1);
+      // Use base number key (e.g., 'analysis-1') for TOC matching; only set for first variant (A or solo)
+      const idStr = String(id);
+      const baseNumStr = idStr.replace(/[abAB]$/, '');
+      const tocKey = `analysis-${baseNumStr}`;
+      if (!pageReferences.has(tocKey)) {
+        pageReferences.set(tocKey, pdfDoc.getPageCount() - 1);
+      }
 
       // Check if we need a new page
       if (yPosition < 400) { // Need space for analysis + chart
@@ -590,10 +596,9 @@ async function generateAnalysisSections(
         yPosition -= 20;
       }
 
-      // Embed chart if available
-      // Extract base analysis number for chart lookup (e.g., '1A' -> 1, '15B' -> 15)
-      const baseNum = typeof analysis.id === 'string' ? parseInt(analysis.id, 10) : analysis.id;
-      const chartImage = chartImages.get(baseNum);
+      // Embed chart if available — use full ID for lookup (e.g., '1a', '15b', '2')
+      const chartKey = String(analysis.id).toLowerCase();
+      const chartImage = chartImages.get(chartKey);
       if (chartImage) {
         const chartScale = 0.8;
         const chartDims = chartImage.scale(chartScale);
@@ -856,8 +861,8 @@ function wrapText(text: string, font: any, fontSize: number, maxWidth: number): 
 async function loadChartImages(
   pdfDoc: PDFDocument,
   chartPaths: string[]
-): Promise<Map<number, PDFImage>> {
-  const chartMap = new Map<number, PDFImage>();
+): Promise<Map<string, PDFImage>> {
+  const chartMap = new Map<string, PDFImage>();
 
   for (const chartPath of chartPaths) {
     try {
@@ -869,11 +874,11 @@ async function loadChartImages(
       const chartBytes = fs.readFileSync(chartPath);
       const chartImage = await pdfDoc.embedPng(chartBytes);
 
-      // Extract analysis ID from filename (e.g., analysis_01_br_distribution.png -> 1)
+      // Extract analysis ID from filename (e.g., analysis_01a_br_distribution.png -> '1a', analysis_02_hoa.png -> '2')
       const filename = path.basename(chartPath);
-      const match = filename.match(/analysis_(\d+)/);
+      const match = filename.match(/analysis_(\d+[ab]?)/i);
       if (match) {
-        const analysisId = parseInt(match[1], 10);
+        const analysisId = match[1].toLowerCase().replace(/^0+/, '') || '0';
         chartMap.set(analysisId, chartImage);
       }
     } catch (error) {

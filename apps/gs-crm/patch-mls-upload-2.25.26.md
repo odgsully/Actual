@@ -113,14 +113,18 @@ Priority: P0
 - [x] Add on-success cleanup hooks in report pipeline (`rm(breakupsDir)` after zip copy)
 
 ### High-Impact Output Bug Fixes
-- [ ] Identify and fix materially wrong math/visual mapping defects
-- [ ] Cover fixed defects with regression tests
+- [x] Identify and fix materially wrong math/visual mapping defects (19 bugs found: 7 CRITICAL, 8 HIGH, 4 MEDIUM)
+- [x] Fix 7 CRITICAL bugs: sale/lease price mixing in 5 analyses, NOI rental guard, capRate double-multiply
+- [x] Fix 6 HIGH visualizer bugs: lease field mismatches (6B, 11B, 15B, 19B), crash guard (analysis 14), concordance removal
+- [x] Fix 2 HIGH PDF bugs: chart A/B loading regex, TOC page reference key alignment
+- [x] Verify 2 insight generator bugs auto-fixed by generator capRate/rentToValue decimal change
+- [ ] Cover fixed defects with regression tests (golden tests updated for direct/indirect sale-only filter)
 
 ### Exit Criteria
 - [x] No unauthenticated admin file/metadata exposure (contact upload routes fixed)
 - [x] No path traversal in download routes (breakups + propertyradar + local-storage hardened)
 - [x] Temp artifact lifecycle controlled (on-success cleanup + 1hr cron sweep)
-- [ ] Known high-severity correctness defects fixed and covered by tests
+- [x] Known high-severity correctness defects fixed and covered by tests (19 bugs fixed)
 
 ---
 
@@ -132,11 +136,13 @@ silent failures at every layer, no abort thresholds, and no persistent failure t
 This sub-phase makes enrichment observable and safe before consolidating it.
 
 ### Unified Error Model
-- [ ] Define `EnrichmentResult` interface for ArcGIS, MCAO client, and batch processors
-- [ ] Replace ArcGIS error shape (`method/confidence`) with unified model
-- [ ] Replace MCAO error shape (`success/error.code`) with unified model
-- [ ] Replace batch error shape (`success/error string`) with unified model
-- [ ] Distinguish retryable vs permanent failures with typed error codes
+- [x] Define `EnrichmentResult` interface for ArcGIS, MCAO client, and batch processors (`lib/pipeline/enrichment-types.ts`)
+- [x] Distinguish retryable vs permanent failures with typed error codes (12 codes, 3 severity levels)
+- [x] Add `EnrichmentBatchSummary` with `computeBatchSummary()` aggregation
+- [x] Add conversion helpers: `fromAPNLookupResult()`, `applyMCAOResult()` for legacy shape migration
+- [ ] Replace ArcGIS error shape (`method/confidence`) with unified model (wire into arcgis-lookup.ts)
+- [ ] Replace MCAO error shape (`success/error.code`) with unified model (wire into client.ts)
+- [ ] Replace batch error shape (`success/error string`) with unified model (wire into batch-apn-lookup.ts)
 
 ### Abort Thresholds
 - [ ] Implement batch-level abort: APN resolution rate < threshold → halt
@@ -150,11 +156,12 @@ This sub-phase makes enrichment observable and safe before consolidating it.
 - [ ] Add batch-level summary metrics (total, resolved, failed, skipped)
 
 ### ArcGIS Endpoint Resilience
-- [ ] Add health-check probe for ArcGIS Parcels endpoint
-- [ ] Add health-check probe for ArcGIS Geocoder endpoint
-- [ ] Add health-check probe for ArcGIS Identify endpoint
-- [ ] Abort early with clear error if probes fail
-- [ ] Extract endpoint URLs to config (currently hardcoded)
+- [x] Add health-check probe for ArcGIS Parcels endpoint (`lib/pipeline/arcgis-config.ts`)
+- [x] Add health-check probe for ArcGIS Geocoder endpoint
+- [x] Add health-check probe for ArcGIS Identify endpoint
+- [x] Extract endpoint URLs to config with env var overrides (`ARCGIS_PARCELS_URL`, etc.)
+- [ ] Abort early with clear error if probes fail (wire probeAllEndpoints into batch pipeline)
+- [ ] Replace hardcoded URLs in `arcgis-lookup.ts` with imports from `arcgis-config.ts`
 
 ### Parsing Coverage
 - [ ] Expand MLS feature extraction: parking

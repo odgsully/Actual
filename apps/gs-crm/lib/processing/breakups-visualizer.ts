@@ -467,8 +467,8 @@ async function generateAnalysis6(data: any, outputDir: string, analysisId: strin
   // subjectSqft is not returned, calculate from optimalRange (range is 80%-120% of subject)
   const within20Count = data?.within20?.count || 0;
   const outside20Count = data?.outside20?.count || 0;
-  const within20Price = data?.within20?.avgPricePerSqft || 0;
-  const outside20Price = data?.outside20?.avgPricePerSqft || 0;
+  const within20Price = data?.within20?.avgPricePerSqft ?? data?.within20?.avgRentPerSqft ?? 0;
+  const outside20Price = data?.outside20?.avgPricePerSqft ?? data?.outside20?.avgRentPerSqft ?? 0;
   const optimalMin = data?.optimalRange?.min || 0;
   const optimalMax = data?.optimalRange?.max || 0;
 
@@ -591,7 +591,6 @@ async function generateAnalysis8(data: any, outputDir: string, analysisId: strin
 async function generateAnalysis9(data: any, outputDir: string, analysisId: string | number, analysisName: string): Promise<SingleVisualizationResult> {
   const prCount = data?.propertyRadar?.count || 0;
   const standardCount = data?.standard?.count || 0;
-  const concordance = data?.concordance || 0;
   const totalComps = prCount + standardCount;
 
   const config = {
@@ -610,7 +609,7 @@ async function generateAnalysis9(data: any, outputDir: string, analysisId: strin
     options: {
       title: {
         display: true,
-        text: `PropertyRadar Comp Selection | ${totalComps} Total Comps | Concordance: ${concordance.toFixed(1)}%`,
+        text: `PropertyRadar Comp Selection | ${totalComps} Total Comps`,
         fontSize: 18,
         fontStyle: 'bold',
       },
@@ -683,8 +682,8 @@ async function generateAnalysis10(data: any, outputDir: string, analysisId: stri
 async function generateAnalysis11(data: any, outputDir: string, analysisId: string | number, analysisName: string): Promise<SingleVisualizationResult> {
   const exactCount = data?.exact?.count || 0;
   const within1Count = data?.within1?.count || 0;
-  const exactPrice = data?.exact?.avgPrice || 0;
-  const within1Price = data?.within1?.avgPrice || 0;
+  const exactPrice = data?.exact?.avgPrice ?? data?.exact?.avgMonthlyRent ?? 0;
+  const within1Price = data?.within1?.avgPrice ?? data?.within1?.avgMonthlyRent ?? 0;
   const precisionImpact = data?.precisionImpact || 0;
   const totalComps = exactCount + within1Count;
 
@@ -811,13 +810,13 @@ async function generateAnalysis14(data: any, outputDir: string, analysisId: stri
       datasets: [
         {
           label: 'Count',
-          data: [data.recentDirect.count, data.recentIndirect.count],
+          data: [data?.recentDirect?.count || 0, data?.recentIndirect?.count || 0],
           borderColor: CHART_COLORS.primary,
           backgroundColor: CHART_COLORS.primary + '40',
         },
         {
           label: 'Avg Price',
-          data: [data.recentDirect.avgPrice, data.recentIndirect.avgPrice],
+          data: [data?.recentDirect?.avgPrice || 0, data?.recentIndirect?.avgPrice || 0],
           borderColor: CHART_COLORS.secondary,
           backgroundColor: CHART_COLORS.secondary + '40',
         },
@@ -841,8 +840,8 @@ async function generateAnalysis14(data: any, outputDir: string, analysisId: stri
 async function generateAnalysis15(data: any, outputDir: string, analysisId: string | number, analysisName: string): Promise<SingleVisualizationResult> {
   const activeCount = data?.active?.count || 0;
   const closedCount = data?.closed?.count || 0;
-  const activePrice = data?.active?.avgListPrice || 0;
-  const closedPrice = data?.closed?.avgSalePrice || 0;
+  const activePrice = data?.active?.avgListPrice ?? data?.active?.avgListRent ?? 0;
+  const closedPrice = data?.closed?.avgSalePrice ?? data?.closed?.avgLeaseRent ?? 0;
   const absorption = data?.absorptionRate || 0;
 
   const config = {
@@ -989,8 +988,10 @@ async function generateAnalysis18(data: any, outputDir: string, analysisId: stri
  * Enhanced with proper box-and-whisker visualization
  */
 async function generateAnalysis19(data: any, outputDir: string, analysisId: string | number, analysisName: string): Promise<SingleVisualizationResult> {
-  const priceIQR = data?.price?.iqr || 0;
-  const priceSqftIQR = data?.pricePerSqft?.iqr || 0;
+  const priceData = data?.price ?? data?.monthlyRent;
+  const pricePerSqftData = data?.pricePerSqft ?? data?.rentPerSqft;
+  const priceIQR = priceData?.iqr || 0;
+  const priceSqftIQR = pricePerSqftData?.iqr || 0;
   const outliers = data?.outliers || [];
 
   // QuickChart supports Chart.js boxplot plugin
@@ -1008,18 +1009,18 @@ async function generateAnalysis19(data: any, outputDir: string, analysisId: stri
         itemRadius: 3,
         data: [
           {
-            min: data.price.q25 - (priceIQR * 1.5),
-            q1: data.price.q25,
-            median: data.price.median,
-            q3: data.price.q75,
-            max: data.price.q75 + (priceIQR * 1.5),
+            min: (priceData?.q25 || 0) - (priceIQR * 1.5),
+            q1: priceData?.q25 || 0,
+            median: priceData?.median || 0,
+            q3: priceData?.q75 || 0,
+            max: (priceData?.q75 || 0) + (priceIQR * 1.5),
           },
           {
-            min: data.pricePerSqft.q25 - (priceSqftIQR * 1.5),
-            q1: data.pricePerSqft.q25,
-            median: data.pricePerSqft.median,
-            q3: data.pricePerSqft.q75,
-            max: data.pricePerSqft.q75 + (priceSqftIQR * 1.5),
+            min: (pricePerSqftData?.q25 || 0) - (priceSqftIQR * 1.5),
+            q1: pricePerSqftData?.q25 || 0,
+            median: pricePerSqftData?.median || 0,
+            q3: pricePerSqftData?.q75 || 0,
+            max: (pricePerSqftData?.q75 || 0) + (priceSqftIQR * 1.5),
           },
         ],
       }],

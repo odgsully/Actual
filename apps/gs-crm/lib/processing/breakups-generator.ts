@@ -500,7 +500,7 @@ export async function generateAllBreakupsAnalyses(
   const subject = properties[0]
   const subjectSqft = subject.SQFT || subjectProperty?.sqft || 0
   const subjectBR = subject.BR || subjectProperty?.bedrooms || 0
-  const estimatedValue = subject.SALE_PRICE || subjectProperty?.estimatedValue || 0
+  const estimatedValue = (subject.IS_RENTAL === 'Y' ? subjectProperty?.estimatedValue : subject.SALE_PRICE) || subjectProperty?.estimatedValue || 0
 
   // Filter properties by transaction type (v2 differentiation)
   const saleProperties = filterSaleProperties(properties)
@@ -678,7 +678,7 @@ export function analyzeHOA(properties: PropertyData[]): HOAAnalysisResult {
 
   return {
     withHOA: { count: 0, avgPrice: 0, avgHOAFee: 0 },
-    withoutHOA: { count: properties.length, avgPrice: calculateAverage(properties.map((p) => p.SALE_PRICE)) },
+    withoutHOA: { count: filterSaleProperties(properties).length, avgPrice: calculateAverage(filterSaleProperties(properties).map((p) => p.SALE_PRICE)) },
     priceDifferential: 0,
   }
 }
@@ -810,8 +810,10 @@ export function analyzeRenovationImpact_Lease(properties: PropertyData[]): Renov
  * Analyze properties marked as comparables vs non-comparables
  */
 export function analyzeCompsClassification(properties: PropertyData[]): CompsClassificationResult {
-  const comps = properties.filter((p) => p.PROPERTY_RADAR_COMP_YN === 'Y')
-  const nonComps = properties.filter((p) => p.PROPERTY_RADAR_COMP_YN === 'N')
+  // Filter to sale properties only — mixing lease rents with sale prices produces nonsensical averages
+  const saleOnly = properties.filter(p => p.IS_RENTAL !== 'Y')
+  const comps = saleOnly.filter((p) => p.PROPERTY_RADAR_COMP_YN === 'Y')
+  const nonComps = saleOnly.filter((p) => p.PROPERTY_RADAR_COMP_YN === 'N')
 
   const calculateMetrics = (props: PropertyData[]) => {
     const prices = props.map((p) => p.SALE_PRICE).filter((x) => !isNaN(x))
@@ -974,12 +976,12 @@ export function analyzeLeaseVsSale(properties: PropertyData[]): LeaseVsSaleResul
   return {
     lease: {
       avgAnnualPerSqft: avgAnnualRentPerSqft,
-      capRate: capRate * 100, // Convert to percentage
+      capRate, // Raw decimal (e.g. 0.065 for 6.5%) — visualizer handles * 100
     },
     sale: {
       avgPerSqft: avgSalePricePerSqft,
     },
-    rentToValueRatio: rentToValueRatio * 100, // Convert to percentage
+    rentToValueRatio, // Raw decimal — visualizer handles * 100
   }
 }
 
@@ -1082,21 +1084,24 @@ export function analyzeBRPrecision_Lease(properties: PropertyData[], subjectBR: 
  * Compare 3-year vs 1-year market trends
  */
 export function analyzeTimeFrames(properties: PropertyData[]): TimeFramesResult {
+  // Filter to sale properties only — mixing lease rents (~$2k) with sale prices (~$400k) produces nonsensical averages
+  const saleOnly = properties.filter(p => p.IS_RENTAL !== 'Y')
+
   const now = new Date()
   const cutoffDate12 = new Date(now.getTime() - 12 * 30 * 24 * 60 * 60 * 1000) // ~12 months
   const cutoffDate36 = new Date(now.getTime() - 36 * 30 * 24 * 60 * 60 * 1000) // ~36 months
 
-  const t12 = properties.filter((p) => {
+  const t12 = saleOnly.filter((p) => {
     const saleDate = parseDate(p.SALE_DATE)
     return saleDate && saleDate >= cutoffDate12
   })
 
-  const t36 = properties.filter((p) => {
+  const t36 = saleOnly.filter((p) => {
     const saleDate = parseDate(p.SALE_DATE)
     return saleDate && saleDate >= cutoffDate36
   })
 
-  const t36Only = properties.filter((p) => {
+  const t36Only = saleOnly.filter((p) => {
     const saleDate = parseDate(p.SALE_DATE)
     return saleDate && saleDate >= cutoffDate36 && saleDate < cutoffDate12
   })
@@ -1128,8 +1133,10 @@ export function analyzeTimeFrames(properties: PropertyData[]): TimeFramesResult 
  * Compare direct subdivision comps vs 1.5-mile radius comps
  */
 export function analyzeDirectVsIndirect(properties: PropertyData[]): DirectVsIndirectResult {
-  const direct = properties.filter((p) => p.Item.toLowerCase().includes('direct'))
-  const indirect = properties.filter((p) => p.Item.toLowerCase().includes('1.5'))
+  // Filter to sale properties only for price-based averages
+  const saleOnly = properties.filter(p => p.IS_RENTAL !== 'Y')
+  const direct = saleOnly.filter((p) => p.Item.toLowerCase().includes('direct'))
+  const indirect = saleOnly.filter((p) => p.Item.toLowerCase().includes('1.5'))
 
   const directPrices = direct.map((p) => p.SALE_PRICE).filter((x) => !isNaN(x))
   const indirectPrices = indirect.map((p) => p.SALE_PRICE).filter((x) => !isNaN(x))
@@ -1162,8 +1169,10 @@ export function analyzeRecentDirectVsIndirect(properties: PropertyData[]): Recen
     return saleDate && saleDate >= cutoffDate
   })
 
-  const recentDirect = recent.filter((p) => p.Item.toLowerCase().includes('direct'))
-  const recentIndirect = recent.filter((p) => p.Item.toLowerCase().includes('1.5'))
+  // Filter to sale properties only for price-based averages
+  const recentSale = recent.filter(p => p.IS_RENTAL !== 'Y')
+  const recentDirect = recentSale.filter((p) => p.Item.toLowerCase().includes('direct'))
+  const recentIndirect = recentSale.filter((p) => p.Item.toLowerCase().includes('1.5'))
 
   return {
     recentDirect: {
@@ -1536,7 +1545,10 @@ export function calculateExpectedNOI(property: PropertyData): ExpectedNOIResult 
   const recency = getRenoRecency(property.RENO_YEAR_EST)
   const multiplier = getNoiMultiplier(numericScore, property.RENO_YEAR_EST)
 
-  const monthlyRent = salePrice * multiplier
+  // If subject is already a rental, SALE_PRICE is the monthly rent — don't apply multiplier
+  const monthlyRent = property.IS_RENTAL === 'Y'
+    ? salePrice
+    : salePrice * multiplier
   const annualIncome = monthlyRent * 12
 
   // Operating expenses (35% of income)

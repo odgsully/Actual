@@ -248,11 +248,12 @@ describe('Golden Dataset: Data Split Correctness', () => {
     expect(result.rentToValueRatio).toBeDefined()
   })
 
-  test('Direct vs Indirect counts reflect fixture Item values', () => {
+  test('Direct vs Indirect counts reflect fixture Item values (sale only)', () => {
     const result = analyzeDirectVsIndirect(GOLDEN_PROPERTIES)
-    // "Residential Direct Comps" matches 'direct', "1.5 Mile Comps" matches '1.5'
-    const expectedDirect = GOLDEN_PROPERTIES.filter(p => p.Item.toLowerCase().includes('direct')).length
-    const expectedIndirect = GOLDEN_PROPERTIES.filter(p => p.Item.toLowerCase().includes('1.5')).length
+    // Function filters to sale properties only (IS_RENTAL !== 'Y') before matching Item labels
+    const saleOnly = GOLDEN_PROPERTIES.filter(p => p.IS_RENTAL !== 'Y')
+    const expectedDirect = saleOnly.filter(p => p.Item.toLowerCase().includes('direct')).length
+    const expectedIndirect = saleOnly.filter(p => p.Item.toLowerCase().includes('1.5')).length
     expect(result.direct.count).toBe(expectedDirect)
     expect(result.indirect.count).toBe(expectedIndirect)
   })
