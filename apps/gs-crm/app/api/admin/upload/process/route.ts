@@ -30,6 +30,7 @@ import {
   MLSRow,
 } from '@/lib/types/mls-data';
 import { requireAdmin } from '@/lib/api/admin-auth';
+import { validateBody, templateGenerationSchema } from '@/lib/api/schemas';
 
 // ============================================================================
 // Constants
@@ -193,7 +194,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       {
         success: false,
         error: {
-          message: error instanceof Error ? error.message : 'Unknown error occurred',
+          message: 'File processing failed',
           code: 'INTERNAL_ERROR',
         },
       } as ProcessResponse,
@@ -219,7 +220,7 @@ async function processCSVFile(
     return {
       success: false,
       error: {
-        message: parseResult.error.message,
+        message: 'CSV parsing failed',
         code: 'CSV_PARSE_ERROR',
         details: parseResult.stats,
       },
@@ -264,7 +265,7 @@ async function processExcelFile(
     return {
       success: false,
       error: {
-        message: processResult.error.message,
+        message: 'Excel processing failed',
         code: 'EXCEL_PROCESS_ERROR',
         details: processResult.stats,
       },
@@ -311,34 +312,17 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
     const auth = await requireAdmin();
     if (!auth.success) return auth.response;
 
-    const body = await request.json();
-    const { compsData, subjectProperty, mcaoData } = body;
-
-    if (!compsData || !Array.isArray(compsData)) {
+    const validated = await validateBody(request, templateGenerationSchema);
+    if (!validated.success) {
       return NextResponse.json(
         {
           success: false,
-          error: {
-            message: 'Invalid comps data',
-            code: 'INVALID_DATA',
-          },
+          error: { message: validated.error, code: 'VALIDATION_ERROR' },
         } as TemplateResponse,
         { status: 400 }
       );
     }
-
-    if (!subjectProperty) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            message: 'Subject property required',
-            code: 'MISSING_SUBJECT',
-          },
-        } as TemplateResponse,
-        { status: 400 }
-      );
-    }
+    const { compsData, subjectProperty, mcaoData } = validated.data;
 
     console.log(`${LOG_PREFIX} Generating template with ${compsData.length} comps`);
 
@@ -348,9 +332,9 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
     // Populate template
     const result = await populateTemplate(
       templatePath,
-      compsData,
-      subjectProperty,
-      mcaoData
+      compsData as any,
+      subjectProperty as any,
+      mcaoData as any
     );
 
     if (result.error) {
@@ -358,7 +342,7 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
         {
           success: false,
           error: {
-            message: result.error.message,
+            message: 'Template generation failed',
             code: 'TEMPLATE_ERROR',
           },
         } as TemplateResponse,
@@ -390,7 +374,7 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
       {
         success: false,
         error: {
-          message: error instanceof Error ? error.message : 'Unknown error',
+          message: 'Template generation failed',
           code: 'INTERNAL_ERROR',
         },
       } as TemplateResponse,

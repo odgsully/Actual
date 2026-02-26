@@ -11,18 +11,9 @@ import { saveFileToFolder, createClientFolder } from '@/lib/storage/local-storag
 import { recordFileUpload, updateFileLocalPath, updateFileStatus } from '@/lib/database/files'
 import { getClientById } from '@/lib/database/clients'
 import { generateStoragePath, generateFilename } from '@/lib/storage/config'
-import type { FileType, UploadType } from '@/lib/types/storage'
 import { requireAdmin } from '@/lib/api/admin-auth'
-
-interface StoreFileRequest {
-  clientId: string
-  fileName: string
-  fileType: FileType
-  uploadType?: UploadType
-  fileBuffer: string // Base64 encoded
-  contentType: string
-  uploadedBy: string
-}
+import { validateBody, uploadStoreSchema } from '@/lib/api/schemas'
+import { apiError } from '@/lib/api/error-response'
 
 /**
  * POST: Store processed file
@@ -48,17 +39,10 @@ export async function POST(req: NextRequest) {
     const auth = await requireAdmin()
     if (!auth.success) return auth.response
 
-    // Parse request body
-    const body: StoreFileRequest = await req.json()
-    const { clientId, fileName, fileType, uploadType, fileBuffer, contentType, uploadedBy } = body
-
-    // Validate required fields
-    if (!clientId || !fileName || !fileType || !fileBuffer || !uploadedBy) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      )
-    }
+    // Parse and validate request body
+    const result = await validateBody(req, uploadStoreSchema)
+    if (!result.success) return apiError(400, result.error)
+    const { clientId, fileName, fileType, uploadType, fileBuffer, contentType, uploadedBy } = result.data
 
     // Get client details
     const { client, error: clientError } = await getClientById(clientId)

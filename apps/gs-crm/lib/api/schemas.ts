@@ -112,6 +112,38 @@ export const runMigrationSchema = z.object({
 
 export type RunMigrationInput = z.infer<typeof runMigrationSchema>
 
+// ─── reportit/upload ─────────────────────────────────────
+
+export const reportitUploadSchema = z.object({
+  type: z.enum(['breakups', 'propertyradar']),
+})
+
+export type ReportitUploadInput = z.infer<typeof reportitUploadSchema>
+
+// ─── upload/process (template generation) ────────────────
+
+export const templateGenerationSchema = z.object({
+  compsData: z.array(z.record(z.unknown())).min(1, 'At least one comp required'),
+  subjectProperty: z.record(z.unknown()),
+  mcaoData: z.record(z.unknown()).optional(),
+})
+
+export type TemplateGenerationInput = z.infer<typeof templateGenerationSchema>
+
+// ─── upload/store ────────────────────────────────────────
+
+export const uploadStoreSchema = z.object({
+  clientId: z.string().uuid('clientId must be a valid UUID'),
+  fileName: z.string().min(1).max(255).regex(/^[a-zA-Z0-9][a-zA-Z0-9_. -]*$/, 'fileName contains invalid characters'),
+  fileType: z.enum(['csv', 'xlsx', 'html', 'pdf']),
+  uploadType: z.enum(['direct_comps', 'all_scopes', 'half_mile']).optional(),
+  fileBuffer: z.string().min(1, 'fileBuffer is required'),
+  contentType: z.string().min(1),
+  uploadedBy: z.string().uuid('uploadedBy must be a valid UUID'),
+})
+
+export type UploadStoreInput = z.infer<typeof uploadStoreSchema>
+
 // ─── Helper: validate request body ────────────────────────
 
 /**

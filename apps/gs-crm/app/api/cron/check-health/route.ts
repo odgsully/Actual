@@ -274,7 +274,7 @@ export async function GET(request: NextRequest) {
         success: false,
         healthy: false,
         error: 'Health check failed',
-        message: error instanceof Error ? error.message : 'Unknown error'
+        message: 'Internal health check error'
       },
       { status: 500 }
     );

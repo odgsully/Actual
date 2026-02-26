@@ -410,15 +410,7 @@ export class PropertyNotifier {
 
     // In production, use a service like SendGrid, Postmark, or Resend
     // For now, we'll just log it
-    console.log(`Sending email to ${user.email}:`, {
-      subject: `${notifications.length} new property match${notifications.length > 1 ? 'es' : ''}`,
-      properties: notifications.map(n => ({
-        address: n.property.address,
-        price: n.property.listPrice,
-        matchScore: n.matchScore,
-        reason: n.reason
-      }))
-    });
+    console.log(`Sending property notification email (${notifications.length} matches)`);
 
     // TODO: Implement actual email sending
   }

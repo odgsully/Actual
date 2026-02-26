@@ -128,7 +128,7 @@ async function lookupSingleAddress(address: AddressLookup): Promise<LookupResult
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      console.log(`${LOG_PREFIX} Looking up: ${address.address} (attempt ${attempt}/${MAX_RETRIES})`)
+      console.log(`${LOG_PREFIX} Looking up address (attempt ${attempt}/${MAX_RETRIES})`)
 
       // Use new ArcGIS lookup endpoint (public, no auth required)
       const response = await fetch('/api/admin/mcao/arcgis-lookup', {
@@ -142,7 +142,7 @@ async function lookupSingleAddress(address: AddressLookup): Promise<LookupResult
       const result = await response.json()
 
       if (result.success && result.data) {
-        console.log(`${LOG_PREFIX} ✓ Found APN for ${address.address}: ${result.data.apn} (method: ${result.data.method}, confidence: ${result.data.confidence})`)
+        console.log(`${LOG_PREFIX} ✓ APN resolved (method: ${result.data.method}, confidence: ${result.data.confidence})`)
         return {
           address: address.address,
           success: true,
@@ -156,7 +156,7 @@ async function lookupSingleAddress(address: AddressLookup): Promise<LookupResult
         }
       } else {
         lastError = result.error || result.details || 'Unknown error'
-        console.warn(`${LOG_PREFIX} ✗ Failed to find APN for ${address.address}: ${lastError} (method: ${result.method})`)
+        console.warn(`${LOG_PREFIX} ✗ APN lookup failed (method: ${result.method})`)
 
         // Don't retry if it's a "not found" error
         if (lastError.toLowerCase().includes('not found') ||
@@ -167,7 +167,7 @@ async function lookupSingleAddress(address: AddressLookup): Promise<LookupResult
       }
     } catch (error) {
       lastError = error instanceof Error ? error.message : 'Network error'
-      console.error(`${LOG_PREFIX} Error looking up ${address.address}:`, error)
+      console.error(`${LOG_PREFIX} Lookup error:`, error instanceof Error ? error.message : 'Unknown')
     }
 
     // Wait before retry (exponential backoff)

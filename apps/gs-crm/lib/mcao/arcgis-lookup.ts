@@ -61,7 +61,7 @@ export interface APNLookupResult {
  * Main lookup function - tries multiple methods in order
  */
 export async function lookupAPNFromAddress(address: string): Promise<APNLookupResult> {
-  console.log(`${LOG_PREFIX} Looking up APN for: ${address}`)
+  console.log(`${LOG_PREFIX} Starting APN lookup`)
 
   // Pre-filter obviously invalid addresses
   if (shouldSkipAddress(address)) {
@@ -78,7 +78,7 @@ export async function lookupAPNFromAddress(address: string): Promise<APNLookupRe
   try {
     // Normalize address into components
     const components = normalizeAddress(address)
-    console.log(`${LOG_PREFIX} Parsed components:`, components)
+    console.log(`${LOG_PREFIX} Address parsed (city: ${components.city || 'unknown'})`)
 
     // Method 1: Exact WHERE query (street number + name + type + city)
     let result = await tryExactWhereQuery(components)
@@ -112,7 +112,7 @@ export async function lookupAPNFromAddress(address: string): Promise<APNLookupRe
 
   } catch (error) {
     const elapsed = Date.now() - startTime
-    console.error(`${LOG_PREFIX} Error looking up ${address}:`, error)
+    console.error(`${LOG_PREFIX} Lookup error:`, error instanceof Error ? error.message : 'Unknown')
     return {
       apn: null,
       method: 'not_found',
@@ -131,7 +131,7 @@ async function tryExactWhereQuery(components: AddressComponents): Promise<APNLoo
     return { apn: null, method: 'not_found', confidence: 0, notes: 'Missing required components' }
   }
 
-  console.log(`${LOG_PREFIX} Trying exact WHERE: ${where}`)
+  console.log(`${LOG_PREFIX} Trying exact WHERE query`)
 
   const features = await queryParcels(where)
 
@@ -157,7 +157,7 @@ async function tryLooseWhereQuery(components: AddressComponents): Promise<APNLoo
     return { apn: null, method: 'not_found', confidence: 0, notes: 'Missing required components' }
   }
 
-  console.log(`${LOG_PREFIX} Trying loose WHERE: ${where}`)
+  console.log(`${LOG_PREFIX} Trying loose WHERE query`)
 
   const features = await queryParcels(where)
 
@@ -178,7 +178,7 @@ async function tryLooseWhereQuery(components: AddressComponents): Promise<APNLoo
  * Method 3: Geocode address to coords, then identify parcel
  */
 async function tryGeocodeIdentify(address: string): Promise<APNLookupResult> {
-  console.log(`${LOG_PREFIX} Trying geocode + identify for: ${address}`)
+  console.log(`${LOG_PREFIX} Trying geocode + identify`)
 
   const coords = await geocodeAddress(address)
   if (!coords) {
@@ -215,8 +215,7 @@ async function queryParcels(where: string): Promise<ParcelFeature[]> {
   })
 
   const url = `${PARCEL_QUERY_URL}?${params}`
-  console.log(`${LOG_PREFIX} Querying parcels with WHERE: ${where}`)
-  console.log(`${LOG_PREFIX} Full URL: ${url}`)
+  console.log(`${LOG_PREFIX} Querying parcels`)
 
   const response = await fetchWithTimeout(url, TIMEOUT_MS)
   const data = await response.json()
@@ -243,8 +242,7 @@ async function geocodeAddress(address: string): Promise<{ x: number, y: number }
   })
 
   const url = `${GEOCODER_URL}?${params}`
-  console.log(`${LOG_PREFIX} Geocoding address: ${address}`)
-  console.log(`${LOG_PREFIX} Geocode URL: ${url}`)
+  console.log(`${LOG_PREFIX} Geocoding address`)
 
   const response = await fetchWithTimeout(url, TIMEOUT_MS)
   const data = await response.json()

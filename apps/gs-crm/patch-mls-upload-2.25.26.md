@@ -38,9 +38,9 @@ Priority: P0
 - [x] Add Zod schema validation on `run-migration` endpoint
 - [x] Create shared `validateBody()` helper (`lib/api/schemas.ts`)
 - [x] Create structured error envelope utility (`lib/api/error-response.ts`)
-- [ ] Add Zod schema validation on `reportit/upload` endpoint (large — 2000+ lines)
-- [ ] Add Zod schema validation on `upload/process` endpoint
-- [ ] Add Zod schema validation on `upload/store` endpoint
+- [x] Add Zod schema validation on `reportit/upload` endpoint (schema + error leak fix)
+- [x] Add Zod schema validation on `upload/process` endpoint (template PUT wired + 5 error leaks fixed)
+- [x] Add Zod schema validation on `upload/store` endpoint (full body validation + fileName regex blocks traversal)
 
 ### Baseline Measurement
 - [ ] Run 3 real datasets and capture runtime metrics
@@ -90,8 +90,8 @@ Priority: P0
 - [x] Prevent path traversal in `reportit/download/propertyradar` (was CRITICAL — fileId unsanitized)
 - [x] Harden all `local-storage.ts` file operations with `localPath()` traversal guard
 - [x] Sanitize `migrationFile` path in `run-migration` (Zod regex — safe chars + `.sql` only)
-- [ ] Sanitize `fileName` in `upload/store` route (currently unsanitized)
-- [ ] Harden MCAO bulk route temp directory cleanup with base-path verification
+- [x] Sanitize `fileName` in `upload/store` route (Zod regex: `/^[a-zA-Z0-9][a-zA-Z0-9_. -]*$/`)
+- [x] Harden MCAO bulk route temp directory cleanup with `isPathWithinBase()` guard
 
 ### Data Leak Reduction
 - [x] Redact email from `delete-user` log
@@ -102,15 +102,15 @@ Priority: P0
 - [x] Remove address/APN from `arcgis-lookup` API route logs
 - [x] Remove file paths from `local-storage.ts` logs
 - [x] Remove file paths from download route logs
-- [ ] Audit and redact remaining MCAO enrichment logs (`batch-apn-lookup.ts`, `arcgis-lookup.ts` lib)
-- [ ] Audit and redact `property-notifier.ts` email + address logging
-- [ ] Remove internal path leakage from API error responses (`error.message` exposure)
+- [x] Audit and redact remaining MCAO enrichment logs (`batch-apn-lookup.ts`: 4 lines, `arcgis-lookup.ts`: 10 lines + 2 URL logs deleted)
+- [x] Audit and redact `property-notifier.ts` email + address logging (replaced with count-only log)
+- [x] Remove internal path leakage from API error responses (6 routes: reportit/upload, upload/process, mcao/bulk, 3 cron routes)
 
 ### Temp Artifact Hygiene
-- [ ] Enforce cleanup policy for `tmp/reportit` artifacts
-- [ ] Add retention window (e.g., 1 hour max)
-- [ ] Add scheduled cleanup hook
-- [ ] Add on-success cleanup hooks in report pipeline
+- [x] Enforce cleanup policy for `tmp/reportit` artifacts (cron sweep + on-success hook)
+- [x] Add retention window (1 hour max — entries older than 1hr removed by daily-cleanup cron)
+- [x] Add scheduled cleanup hook (daily-cleanup step 6 sweeps reportit + mcao-bulk temp dirs)
+- [x] Add on-success cleanup hooks in report pipeline (`rm(breakupsDir)` after zip copy)
 
 ### High-Impact Output Bug Fixes
 - [ ] Identify and fix materially wrong math/visual mapping defects
@@ -119,7 +119,7 @@ Priority: P0
 ### Exit Criteria
 - [x] No unauthenticated admin file/metadata exposure (contact upload routes fixed)
 - [x] No path traversal in download routes (breakups + propertyradar + local-storage hardened)
-- [ ] Temp artifact lifecycle controlled
+- [x] Temp artifact lifecycle controlled (on-success cleanup + 1hr cron sweep)
 - [ ] Known high-severity correctness defects fixed and covered by tests
 
 ---
@@ -266,13 +266,16 @@ Keep this minimal and execution-oriented.
 
 ### Week 1:
 - [x] Phase -1: Schema validation + error envelopes (6 endpoints wired with Zod)
+- [x] Phase -1: Schema validation on remaining 3 upload endpoints (reportit/upload, upload/process, upload/store)
 - [x] Phase 0: Route security fixes (auth on 9 routes/endpoints)
-- [x] Phase 0: File/path safety (path traversal fixes on 2 download routes + local-storage)
+- [x] Phase 0: File/path safety (path traversal fixes on 2 download routes + local-storage + fileName + MCAO bulk cleanup)
 - [x] Phase 0: Data leak reduction — HIGH severity PII logs fixed (8 files)
+- [x] Phase 0: Data leak reduction — MCAO enrichment logs (batch-apn-lookup + arcgis-lookup + notifier)
+- [x] Phase 0: Error.message exposure fixed in 6 API routes
+- [x] Phase 0: Temp artifact hygiene (on-success cleanup + 1hr cron sweep)
 - [ ] Phase -1: Baseline measurement
 - [ ] Phase -1: Test harness scaffolding
-- [ ] Phase 0: Remaining data leak cleanup (MCAO enrichment logs, notifier logs)
-- [ ] Phase 0: Temp artifact hygiene
+- [ ] Phase -1: Safety thresholds (abort criteria constants)
 
 ### Week 2:
 - [ ] Complete Phase 0 remaining items

@@ -8,6 +8,8 @@ import { createClient } from '@/lib/supabase/client';
 import { getPropertyManager } from '@/lib/database/property-manager';
 import { getImageOptimizer } from '@/lib/storage/image-optimizer';
 import { headers } from 'next/headers';
+import { readdir, stat, rm } from 'fs/promises';
+import { join } from 'path';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -60,7 +62,8 @@ export async function GET(request: NextRequest) {
       oldActivityLogs: 0,
       duplicateProperties: 0,
       oldScrapeHistory: 0,
-      totalFreedSpace: 0
+      totalFreedSpace: 0,
+      tempFilesRemoved: 0
     };
 
     // 1. Clean up sold properties older than 90 days
@@ -133,10 +136,41 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 6. Optimize database (analyze tables for better query performance)
+    // 6. Clean up old temp artifacts (reportit + mcao-bulk)
+    const tempDirs = [
+      join(process.cwd(), 'tmp', 'reportit'),
+      join(process.cwd(), 'tmp', 'reportit', 'breakups'),
+      join(process.cwd(), 'tmp', 'mcao-bulk'),
+    ];
+    let tempFilesRemoved = 0;
+    const ONE_HOUR_MS = 60 * 60 * 1000;
+
+    for (const dir of tempDirs) {
+      try {
+        const entries = await readdir(dir);
+        for (const entry of entries) {
+          const entryPath = join(dir, entry);
+          try {
+            const entryStat = await stat(entryPath);
+            if (Date.now() - entryStat.mtimeMs > ONE_HOUR_MS) {
+              await rm(entryPath, { recursive: true, force: true });
+              tempFilesRemoved++;
+            }
+          } catch {
+            // Entry may have been deleted concurrently
+          }
+        }
+      } catch {
+        // Directory may not exist
+      }
+    }
+
+    cleanupResults.tempFilesRemoved = tempFilesRemoved;
+
+    // 7. Optimize database (analyze tables for better query performance)
     await optimizeDatabase(supabase);
 
-    // 7. Calculate freed space
+    // 8. Calculate freed space
     const storageStats = await imageOptimizer.getStorageStats();
     cleanupResults.totalFreedSpace = cleanupResults.orphanedImages * 
       (storageStats.averageSizeBytes / 1024); // in KB
@@ -166,7 +200,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       { 
         error: 'Cleanup failed',
-        message: error instanceof Error ? error.message : 'Unknown error'
+        message: 'Internal cleanup error'
       },
       { status: 500 }
     );

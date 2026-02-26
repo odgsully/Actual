@@ -7,7 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, mkdir, readFile as fsReadFile } from 'fs/promises';
+import { writeFile, mkdir, readFile as fsReadFile, rm } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
 import * as path from 'path';
@@ -1194,6 +1194,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       // Copy the zip file to the expected location
       await writeFile(filePath, await fsReadFile(packageResult.zipPath));
 
+      // Clean up intermediate breakups directory (zip is already copied)
+      rm(breakupsDir, { recursive: true, force: true }).catch(() => {});
+
       return NextResponse.json(
         {
           success: true,
@@ -1214,7 +1217,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       {
         success: false,
         error: {
-          message: error instanceof Error ? error.message : 'Unknown error occurred',
+          message: 'Report generation failed',
           code: 'INTERNAL_ERROR',
         },
       } as UploadResponse,

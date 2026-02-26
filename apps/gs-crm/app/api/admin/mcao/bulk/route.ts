@@ -7,6 +7,7 @@ import { MCAOClient } from '@/lib/mcao/client'
 import { ExcelGenerator } from '@/lib/mcao/excel-generator'
 import * as XLSX from 'xlsx'
 import { requireAdmin } from '@/lib/api/admin-auth'
+import { isPathWithinBase } from '@/lib/security/path-validation'
 
 export const maxDuration = 300 // 5 minutes (Pro plan max is 800s)
 export const dynamic = 'force-dynamic'
@@ -72,9 +73,7 @@ export async function POST(request: NextRequest) {
     const arrayBuffer = await file.arrayBuffer()
     await writeFile(inputFilePath, Buffer.from(arrayBuffer))
 
-    console.log('Starting Python script for APN lookup...')
-    console.log('Input file:', inputFilePath)
-    console.log('Output directory:', outputDir)
+    console.log('Starting APN lookup processing, session:', sessionId)
 
     // Execute Python script
     const result = await runPythonScript(inputFilePath, outputDir, file.size)
@@ -87,7 +86,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('Python script completed. Output file:', result.outputFile)
+    console.log('APN lookup processing completed')
 
     // Read the generated Excel file
     const apnCompleteBuffer = await readFile(result.outputFile)
@@ -121,7 +120,7 @@ export async function POST(request: NextRequest) {
 
       if (apn && apn.toString().trim()) {
         try {
-          console.log(`Looking up MCAO data for APN: ${apn}`)
+          console.log('Looking up MCAO data for record')
           const mcaoResult = await mcaoClient.lookupByAPN({ apn: apn.toString().trim() })
 
           if (mcaoResult.success && mcaoResult.flattenedData) {
@@ -130,8 +129,8 @@ export async function POST(request: NextRequest) {
             record.error = mcaoResult.error?.message || 'MCAO lookup failed'
           }
         } catch (error) {
-          console.error(`Failed to lookup MCAO data for APN ${apn}:`, error)
-          record.error = error instanceof Error ? error.message : 'Unknown error'
+          console.error('MCAO lookup failed for record:', error instanceof Error ? error.message : 'Unknown')
+          record.error = 'MCAO lookup failed'
         }
       } else {
         record.error = 'No APN available'
@@ -271,7 +270,7 @@ async function runPythonScript(
       } else {
         resolve({
           success: false,
-          error: `Failed to start Python process: ${error.message}`,
+          error: 'Failed to start processing service',
         })
       }
     })
@@ -289,11 +288,10 @@ async function runPythonScript(
 
 async function cleanup(inputFilePath: string | null, outputDir: string | null) {
   try {
-    if (inputFilePath) {
+    if (inputFilePath && isPathWithinBase(inputFilePath, TEMP_DIR)) {
       await unlink(inputFilePath).catch(() => {})
     }
-    if (outputDir) {
-      // Remove all files in output directory
+    if (outputDir && isPathWithinBase(outputDir, TEMP_DIR)) {
       try {
         const files = await readdir(outputDir)
         await Promise.all(files.map(f => unlink(path.join(outputDir, f)).catch(() => {})))
@@ -303,6 +301,6 @@ async function cleanup(inputFilePath: string | null, outputDir: string | null) {
       }
     }
   } catch (error) {
-    console.error('Cleanup error:', error)
+    console.error('Cleanup error:', error instanceof Error ? error.message : 'Unknown')
   }
 }
