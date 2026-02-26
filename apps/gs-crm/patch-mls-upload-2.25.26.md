@@ -1,6 +1,6 @@
 # MLS Upload Patch Plan (2.25.26)
 
-Status: **In Progress** — Phases 0.5a + 0.5b complete, Phase 1 Milestone 1 (computed metrics) next
+Status: **In Progress** — Phases 0.5a + 0.5b complete, Phase 1 Milestone 1 (computed metrics) complete, Milestone 2 next
 Scope: GS-CRM MLS Upload -> Excel generation -> Breakups insights -> report packaging
 Planning Horizon: 9-week Initiative 1, then reassess Initiative 2
 
@@ -228,13 +228,13 @@ Note: Phase 0.5b overlaps with early Milestone 1 work — computed metrics can b
 already-parsed data while enrichment consolidation completes in parallel.
 
 ### Milestone 1 (Weeks 4-5): Computed Metrics Core
-- [ ] Add price-per-sqft (sale/lease)
-- [ ] Add list-to-sale ratio
-- [ ] Add distance-to-subject
-- [ ] Add hold period and seller basis deltas
-- [ ] Add true DOM where available
-- [ ] Define field lineage and null behavior for each derived metric
-- [ ] Add metric-level assertions to golden tests
+- [x] Add price-per-sqft (sale/lease) — `salePricePerSqFt`, `listPricePerSqFt` in computed-metrics.ts
+- [x] Add list-to-sale ratio — `listToSaleRatio` + anomaly flagging, sold-only guard
+- [x] Add distance-to-subject — Haversine re-derived from authoritative lat/lon
+- [x] Add hold period and seller basis deltas — `holdPeriodDays`, `sellerBasisDelta`, `sellerBasisAppreciation` in breakups context
+- [x] Add true DOM where available — `trueDaysOnMarket` = saleDate - listDate, `domDiscrepancy` vs MLS-reported
+- [x] Define field lineage and null behavior for each derived metric — JSDoc on every metric field in types
+- [x] Add metric-level assertions to golden tests — 20+ assertions across MLS + breakups contexts
 
 ### Milestone 2 (Weeks 5-7): Comp Ranking + Explainability
 - [ ] Add weighted comp similarity scoring with factor-level components
@@ -304,11 +304,12 @@ Keep this minimal and execution-oriented.
 
 ### Week 4:
 - [x] Complete Phase 0.5b (single EnrichmentService, Python elimination, breakups pipeline integration)
-- [ ] Start Phase 1 Milestone 1 (computed metrics)
+- [x] Phase 1 M1: computed-metrics.ts module (price/sqft, list-to-sale, distance, hold period, seller basis, true DOM)
+- [x] Phase 1 M1: MLSRow golden fixtures + 20+ metric assertions in pipeline.test.ts
+- [x] Phase 1 M1: Field lineage + null behavior documented via JSDoc on all metric types
 
 ### Week 5:
-- [ ] Complete Milestone 1
-- [ ] Start Milestone 2 (ranking engine)
+- [ ] Start Milestone 2 (ranking engine) — needs algorithm design from Opus session
 
 ### Week 6:
 - [ ] Continue Milestone 2
