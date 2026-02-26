@@ -20,7 +20,7 @@ import type { PropertyMasterListEntry } from '@/lib/types/mls-data'
 
 // Mock the dependencies
 jest.mock('@/lib/mcao/batch-apn-lookup', () => ({
-  batchLookupAPNs: jest.fn().mockResolvedValue([]),
+  batchLookupAPNs: jest.fn().mockResolvedValue({ results: [], summary: { total: 0, resolved: 0, apnOnlyResolved: 0, apnFailed: 0, skipped: 0, retryable: 0, permanent: 0, durationMs: 0, aborted: false } }),
   extractAddressesFromMLSData: jest.fn().mockReturnValue([]),
 }))
 

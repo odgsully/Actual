@@ -10,15 +10,22 @@
  * - Identify: https://gis.mcassessor.maricopa.gov/arcgis/rest/services/Parcels/MapServer/identify
  */
 
+import {
+  ARCGIS_ENDPOINTS,
+  ARCGIS_REQUEST_TIMEOUT_MS,
+  ARCGIS_REQUESTS_PER_SECOND,
+  probeAllEndpoints,
+} from '../pipeline/arcgis-config'
+
 const LOG_PREFIX = '[ArcGIS MCAO Lookup]'
 
-// Public ArcGIS endpoints (NO AUTH REQUIRED)
-const PARCEL_QUERY_URL = 'https://gis.mcassessor.maricopa.gov/arcgis/rest/services/Parcels/MapServer/0/query'
-const GEOCODER_URL = 'https://gis.mcassessor.maricopa.gov/arcgis/rest/services/AssessorCompositeLocator/GeocodeServer/findAddressCandidates'
-const IDENTIFY_URL = 'https://gis.mcassessor.maricopa.gov/arcgis/rest/services/Parcels/MapServer/identify'
+// Use centralized config (env-overridable via arcgis-config.ts)
+const PARCEL_QUERY_URL = ARCGIS_ENDPOINTS.parcels
+const GEOCODER_URL = ARCGIS_ENDPOINTS.geocoder
+const IDENTIFY_URL = ARCGIS_ENDPOINTS.identify
 
-const TIMEOUT_MS = 20000 // 20 seconds
-const REQUESTS_PER_SECOND = 5
+const TIMEOUT_MS = ARCGIS_REQUEST_TIMEOUT_MS
+const REQUESTS_PER_SECOND = ARCGIS_REQUESTS_PER_SECOND
 
 interface AddressComponents {
   number?: string
@@ -498,4 +505,12 @@ export async function sleepForRate(requestsPerSecond: number = REQUESTS_PER_SECO
   const baseMs = 1000 / requestsPerSecond
   const jitter = Math.random() * 150 // 0-150ms jitter
   await new Promise(resolve => setTimeout(resolve, baseMs + jitter))
+}
+
+/**
+ * Pre-flight health check — probe all ArcGIS endpoints before starting a batch.
+ * Returns { healthy, results } — abort if parcels endpoint is down.
+ */
+export async function preflightHealthCheck(timeoutMs?: number) {
+  return probeAllEndpoints(timeoutMs)
 }

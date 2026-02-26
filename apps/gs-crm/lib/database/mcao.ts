@@ -15,6 +15,7 @@ import type {
   MCAODatabaseRecord,
 } from '@/lib/types/mcao-data'
 import { formatAPN, isValidAPN } from '@/lib/types/mcao-data'
+import type { EnrichmentResult, EnrichmentBatchSummary } from '@/lib/pipeline/enrichment-types'
 
 /**
  * Save MCAO data to database
@@ -371,5 +372,94 @@ export async function getMCAODataByPropertyId(propertyId: string): Promise<{
   } catch (error) {
     console.error('[MCAO DB] Error getting data by property ID:', error)
     return { data: null, error: error as Error }
+  }
+}
+
+// ─── Phase 0.5a: Enrichment outcome persistence ─────────────
+
+/**
+ * Save per-record enrichment outcome to gsrealty_mcao_data.
+ * If the record has an APN, upserts with enrichment metadata.
+ * If no APN (failed lookup), logs to enrichment_batches only.
+ */
+export async function saveEnrichmentOutcome(
+  result: EnrichmentResult
+): Promise<{ success: boolean; error: Error | null }> {
+  try {
+    // Skip records with no APN — they can't be keyed in the APN table
+    if (!result.apn) {
+      return { success: true, error: null }
+    }
+
+    const supabase = createSupabaseClient()
+    const formattedAPN = formatAPN(result.apn)
+
+    if (!isValidAPN(formattedAPN)) {
+      // Invalid APN format — log but don't fail the batch
+      console.warn('[MCAO DB] Skipping invalid APN for enrichment save:', result.apn)
+      return { success: true, error: null }
+    }
+
+    const { error } = await supabase
+      .from('gsrealty_mcao_data')
+      .upsert(
+        {
+          apn: formattedAPN,
+          enrichment_success: result.success,
+          enrichment_method: result.method,
+          enrichment_confidence: result.confidence,
+          enrichment_duration_ms: result.durationMs,
+          enrichment_error_code: result.error?.code || null,
+          api_response: result.mcaoData || {},
+          fetched_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'apn' }
+      )
+
+    if (error) throw error
+
+    return { success: true, error: null }
+  } catch (error) {
+    console.error('[MCAO DB] Error saving enrichment outcome:', error)
+    return { success: false, error: error as Error }
+  }
+}
+
+/**
+ * Save batch-level enrichment summary to gsrealty_enrichment_batches.
+ */
+export async function saveBatchSummary(
+  summary: EnrichmentBatchSummary
+): Promise<{ success: boolean; error: Error | null }> {
+  try {
+    const supabase = createSupabaseClient()
+
+    const { error } = await supabase
+      .from('gsrealty_enrichment_batches')
+      .insert({
+        total: summary.total,
+        resolved: summary.resolved,
+        apn_only_resolved: summary.apnOnlyResolved,
+        apn_failed: summary.apnFailed,
+        skipped: summary.skipped,
+        retryable: summary.retryable,
+        permanent: summary.permanent,
+        duration_ms: summary.durationMs,
+        aborted: summary.aborted,
+        abort_reason: summary.abortReason || null,
+      })
+
+    if (error) throw error
+
+    console.log('[MCAO DB] Batch summary saved:', {
+      total: summary.total,
+      resolved: summary.resolved,
+      aborted: summary.aborted,
+    })
+    return { success: true, error: null }
+  } catch (error) {
+    console.error('[MCAO DB] Error saving batch summary:', error)
+    return { success: false, error: error as Error }
   }
 }

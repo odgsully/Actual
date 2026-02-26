@@ -1,16 +1,22 @@
 import * as ExcelJS from 'exceljs'
 import * as XLSX from 'xlsx'
 import Papa from 'papaparse'
-import { lookupAPNFromAddress } from './arcgis-lookup'
+import { lookupAPNFromAddress, preflightHealthCheck } from './arcgis-lookup'
 import { MCAOClient } from './client'
 import { ExcelGenerator } from './excel-generator'
 import { ZipGenerator } from './zip-generator'
+import type { EnrichmentResult, EnrichmentBatchSummary } from '../pipeline/enrichment-types'
+import { fromAPNLookupResult, applyMCAOResult, computeBatchSummary } from '../pipeline/enrichment-types'
+import { evaluateAPNThreshold, evaluateMCAOThreshold } from '../pipeline/thresholds'
+import { saveEnrichmentOutcome, saveBatchSummary } from '../database/mcao'
 
 interface ProcessResult {
   success: boolean
   zipBuffer?: Buffer
   fileName?: string
   error?: string
+  /** Enrichment summary when available */
+  enrichmentSummary?: EnrichmentBatchSummary
 }
 
 interface AddressRecord {
@@ -30,6 +36,19 @@ export class BulkProcessor {
 
   async processFile(file: File): Promise<ProcessResult> {
     try {
+      // Pre-flight: check ArcGIS endpoints before starting
+      const health = await preflightHealthCheck()
+      if (!health.healthy) {
+        const downEndpoints = health.results
+          .filter(r => !r.healthy)
+          .map(r => `${r.endpoint}: ${r.error || 'unreachable'}`)
+          .join('; ')
+        return {
+          success: false,
+          error: `ArcGIS pre-flight failed — ${downEndpoints}`,
+        }
+      }
+
       // Convert file to buffer
       const arrayBuffer = await file.arrayBuffer()
       const buffer = Buffer.from(arrayBuffer)
@@ -44,8 +63,21 @@ export class BulkProcessor {
         }
       }
 
-      // Process each address
-      const processedRecords = await this.processAddresses(records)
+      // Process each address (with unified error model + abort thresholds)
+      const { processedRecords, enrichmentSummary } = await this.processAddresses(records)
+
+      // Persist batch summary to DB (fire-and-forget, don't block output)
+      saveBatchSummary(enrichmentSummary).catch(err =>
+        console.error('[BulkProcessor] Failed to persist batch summary:', err)
+      )
+
+      if (enrichmentSummary.aborted) {
+        return {
+          success: false,
+          error: `Enrichment aborted: ${enrichmentSummary.abortReason}`,
+          enrichmentSummary,
+        }
+      }
 
       // Generate output files
       const excelGenerator = new ExcelGenerator()
@@ -69,6 +101,7 @@ export class BulkProcessor {
         success: true,
         zipBuffer,
         fileName: `MCAO_Bulk_${timestamp}.zip`,
+        enrichmentSummary,
       }
     } catch (error) {
       console.error('Processing error:', error)
@@ -306,19 +339,37 @@ export class BulkProcessor {
     return hasNumber && hasStreetKeyword && trimmed.length > 10
   }
 
-  private async processAddresses(records: AddressRecord[]): Promise<AddressRecord[]> {
+  private async processAddresses(records: AddressRecord[]): Promise<{
+    processedRecords: AddressRecord[]
+    enrichmentSummary: EnrichmentBatchSummary
+  }> {
     const batchSize = 10
     const processedRecords: AddressRecord[] = []
+    const enrichmentResults: EnrichmentResult[] = []
+    const batchStart = Date.now()
+    let aborted = false
+    let abortReason: string | undefined
 
     for (let i = 0; i < records.length; i += batchSize) {
+      if (aborted) break
+
       const batch = records.slice(i, Math.min(i + batchSize, records.length))
 
       // Process batch in parallel
       const batchResults = await Promise.all(
         batch.map(async (record) => {
+          const lookupStart = Date.now()
+
           try {
             // Step 1: Look up APN from address
             const apnResult = await lookupAPNFromAddress(record.address)
+
+            // Convert to unified EnrichmentResult
+            let enrichment = fromAPNLookupResult(
+              record.address,
+              apnResult,
+              Date.now() - lookupStart
+            )
 
             if (apnResult.apn) {
               record.apn = apnResult.apn
@@ -326,20 +377,51 @@ export class BulkProcessor {
               // Step 2: Fetch MCAO data using the APN
               const mcaoResult = await this.mcaoClient.lookupByAPN({ apn: apnResult.apn })
 
+              // Apply MCAO result to enrichment record
+              enrichment = applyMCAOResult(enrichment, {
+                success: mcaoResult.success,
+                flattenedData: mcaoResult.flattenedData as Record<string, unknown> | undefined,
+                error: mcaoResult.error ? {
+                  code: mcaoResult.error.code,
+                  message: mcaoResult.error.message,
+                } : undefined,
+              })
+              enrichment.durationMs = Date.now() - lookupStart
+
               if (mcaoResult.success && mcaoResult.flattenedData) {
                 record.mcaoData = mcaoResult.flattenedData
               } else {
-                // Include APN even if MCAO lookup fails
                 record.error = mcaoResult.error?.message || 'MCAO lookup failed'
               }
             } else {
-              // Include address with blank APN if lookup fails
               record.apn = ''
               record.error = apnResult.notes || 'APN not found'
             }
+
+            // Persist per-record outcome (fire-and-forget)
+            saveEnrichmentOutcome(enrichment).catch(err =>
+              console.error('[BulkProcessor] Failed to persist enrichment outcome:', err)
+            )
+
+            enrichmentResults.push(enrichment)
           } catch (error) {
             record.apn = ''
             record.error = error instanceof Error ? error.message : 'Processing error'
+
+            // Create a failure enrichment result
+            enrichmentResults.push({
+              address: record.address,
+              success: false,
+              apn: null,
+              method: 'not_found',
+              confidence: 0,
+              durationMs: Date.now() - lookupStart,
+              error: {
+                code: 'NETWORK_ERROR',
+                severity: 'retryable',
+                message: error instanceof Error ? error.message : 'Processing error',
+              },
+            })
           }
 
           return record
@@ -348,12 +430,51 @@ export class BulkProcessor {
 
       processedRecords.push(...batchResults)
 
-      // Rate limiting - wait a bit between batches
-      if (i + batchSize < records.length) {
+      // ── Threshold checks after each batch ──
+      const totalProcessed = enrichmentResults.length
+      const apnFailed = enrichmentResults.filter(r => !r.apn).length
+      const mcaoFailed = enrichmentResults.filter(r => r.apn && !r.mcaoData).length
+      const mcaoAttempted = enrichmentResults.filter(r => r.apn).length
+
+      // Check APN resolution threshold
+      const apnCheck = evaluateAPNThreshold(apnFailed, totalProcessed)
+      if (apnCheck.action === 'abort') {
+        console.error(`[BulkProcessor] ${apnCheck.message}`)
+        aborted = true
+        abortReason = apnCheck.message
+        break
+      }
+      if (apnCheck.action === 'warn') {
+        console.warn(`[BulkProcessor] ${apnCheck.message}`)
+      }
+
+      // Check MCAO fetch threshold
+      if (mcaoAttempted > 0) {
+        const mcaoCheck = evaluateMCAOThreshold(mcaoFailed, mcaoAttempted)
+        if (mcaoCheck.action === 'abort') {
+          console.error(`[BulkProcessor] ${mcaoCheck.message}`)
+          aborted = true
+          abortReason = mcaoCheck.message
+          break
+        }
+        if (mcaoCheck.action === 'warn') {
+          console.warn(`[BulkProcessor] ${mcaoCheck.message}`)
+        }
+      }
+
+      // Rate limiting between batches
+      if (i + batchSize < records.length && !aborted) {
         await new Promise(resolve => setTimeout(resolve, 200))
       }
     }
 
-    return processedRecords
+    const enrichmentSummary = computeBatchSummary(
+      enrichmentResults,
+      Date.now() - batchStart,
+      aborted,
+      abortReason
+    )
+
+    return { processedRecords, enrichmentSummary }
   }
 }

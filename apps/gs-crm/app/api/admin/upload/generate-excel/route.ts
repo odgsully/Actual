@@ -143,14 +143,19 @@ export async function PUT(req: NextRequest) {
     if (addressesForLookup.length > 0) {
       try {
         console.log(`${LOG_PREFIX} Starting ArcGIS batch lookup...`)
-        lookupResults = await batchLookupAPNs(addressesForLookup, (progress) => {
+        const batchResult = await batchLookupAPNs(addressesForLookup, (progress) => {
           console.log(`${LOG_PREFIX} Lookup progress: ${progress.percentage}% (${progress.successful}/${progress.total})`)
         })
+        lookupResults = batchResult.results
+
+        if (batchResult.summary.aborted) {
+          console.warn(`${LOG_PREFIX} APN batch aborted: ${batchResult.summary.abortReason}`)
+        }
 
         // Enrich master list with lookup results
         enrichMasterListWithLookupResults(masterList, lookupResults)
 
-        console.log(`${LOG_PREFIX} APN lookup complete: ${lookupResults.filter(r => r.success).length} successful`)
+        console.log(`${LOG_PREFIX} APN lookup complete: ${lookupResults.filter((r: any) => r.success).length} successful (summary: ${batchResult.summary.resolved} resolved, ${batchResult.summary.apnFailed} failed)`)
       } catch (error) {
         console.error(`${LOG_PREFIX} APN lookup failed, continuing without:`, error)
       }

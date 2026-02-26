@@ -6,6 +6,9 @@
  */
 
 import type { MCAOApiResponse } from '@/lib/types/mcao-data'
+import type { EnrichmentResult, EnrichmentBatchSummary } from '@/lib/pipeline/enrichment-types'
+import { computeBatchSummary } from '@/lib/pipeline/enrichment-types'
+import { evaluateAPNThreshold } from '@/lib/pipeline/thresholds'
 
 const LOG_PREFIX = '[Batch APN Lookup]'
 
@@ -28,6 +31,8 @@ export interface LookupResult {
   apn?: string
   mcaoData?: MCAOApiResponse
   error?: string
+  /** Unified enrichment result (when available) */
+  enrichment?: EnrichmentResult
 }
 
 export interface BatchLookupProgress {
@@ -38,13 +43,21 @@ export interface BatchLookupProgress {
   percentage: number
 }
 
+export interface BatchLookupResult {
+  results: LookupResult[]
+  summary: EnrichmentBatchSummary
+}
+
 /**
- * Batch lookup APNs for multiple addresses
+ * Batch lookup APNs for multiple addresses.
+ * Returns both legacy LookupResult[] and unified EnrichmentBatchSummary.
+ * Evaluates APN resolution threshold after each batch — aborts if exceeded.
  */
 export async function batchLookupAPNs(
   addresses: AddressLookup[],
   onProgress?: (progress: BatchLookupProgress) => void
-): Promise<LookupResult[]> {
+): Promise<BatchLookupResult> {
+  const batchStart = Date.now()
   console.log(`${LOG_PREFIX} Starting batch lookup for ${addresses.length} addresses`)
 
   // Filter addresses that need lookup (no existing APN)
@@ -53,19 +66,34 @@ export async function batchLookupAPNs(
 
   console.log(`${LOG_PREFIX} ${needLookup.length} addresses need lookup, ${haveApn.length} already have APNs`)
 
+  // Build enrichment results for pre-existing APNs
+  const enrichmentResults: EnrichmentResult[] = haveApn.map(addr => ({
+    address: addr.address,
+    success: true,
+    apn: addr.existingApn!,
+    method: 'cached' as const,
+    confidence: 1.0,
+    durationMs: 0,
+  }))
+
   if (needLookup.length === 0) {
     console.log(`${LOG_PREFIX} No lookups needed, all addresses have APNs`)
-    return haveApn.map(addr => ({
-      address: addr.address,
-      success: true,
-      apn: addr.existingApn!,
-    }))
+    return {
+      results: haveApn.map(addr => ({
+        address: addr.address,
+        success: true,
+        apn: addr.existingApn!,
+      })),
+      summary: computeBatchSummary(enrichmentResults, Date.now() - batchStart),
+    }
   }
 
   const results: LookupResult[] = []
   let completed = 0
   let successful = 0
   let failed = 0
+  let aborted = false
+  let abortReason: string | undefined
 
   // Add pre-existing APNs to results
   haveApn.forEach(addr => {
@@ -81,6 +109,8 @@ export async function batchLookupAPNs(
   console.log(`${LOG_PREFIX} Processing ${batches.length} batches of ${BATCH_SIZE}`)
 
   for (let i = 0; i < batches.length; i++) {
+    if (aborted) break
+
     const batch = batches[i]
     console.log(`${LOG_PREFIX} Processing batch ${i + 1}/${batches.length}`)
 
@@ -91,7 +121,7 @@ export async function batchLookupAPNs(
       )
     )
 
-    // Collect results
+    // Collect results + build enrichment records
     batchResults.forEach(result => {
       results.push(result)
       completed++
@@ -100,7 +130,37 @@ export async function batchLookupAPNs(
       } else {
         failed++
       }
+
+      // Build unified enrichment result from legacy LookupResult
+      enrichmentResults.push({
+        address: result.address,
+        success: result.success,
+        apn: result.apn || null,
+        method: result.success ? 'exact_where' : 'not_found',
+        confidence: result.success ? 0.9 : 0,
+        durationMs: 0,
+        error: result.error ? {
+          code: 'APN_NOT_FOUND' as const,
+          severity: 'permanent' as const,
+          message: result.error,
+        } : undefined,
+      })
     })
+
+    // ── Threshold check after each batch ──
+    const lookupFailed = enrichmentResults.filter(r => !r.apn).length
+    const totalProcessed = enrichmentResults.length
+    const apnCheck = evaluateAPNThreshold(lookupFailed, totalProcessed)
+
+    if (apnCheck.action === 'abort') {
+      console.error(`${LOG_PREFIX} ${apnCheck.message}`)
+      aborted = true
+      abortReason = apnCheck.message
+      break
+    }
+    if (apnCheck.action === 'warn') {
+      console.warn(`${LOG_PREFIX} ${apnCheck.message}`)
+    }
 
     // Report progress
     if (onProgress) {
@@ -114,9 +174,16 @@ export async function batchLookupAPNs(
     }
   }
 
-  console.log(`${LOG_PREFIX} Batch lookup complete: ${successful} successful, ${failed} failed`)
+  const summary = computeBatchSummary(
+    enrichmentResults,
+    Date.now() - batchStart,
+    aborted,
+    abortReason
+  )
 
-  return results
+  console.log(`${LOG_PREFIX} Batch lookup complete: ${successful} successful, ${failed} failed${aborted ? ' (ABORTED)' : ''}`)
+
+  return { results, summary }
 }
 
 /**
