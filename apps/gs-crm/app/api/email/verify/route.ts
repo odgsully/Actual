@@ -35,15 +35,13 @@ export async function POST(request: NextRequest) {
       The Wabbit Team
     `
 
-    // Log the email for development
-    console.log('=====================================')
-    console.log('VERIFICATION EMAIL (Development Mode)')
-    console.log('=====================================')
-    console.log('To:', email)
-    console.log('Subject: Complete Your Wabbit Account Setup')
-    console.log('Content:', emailContent)
-    console.log('Verification URL:', verificationUrl)
-    console.log('=====================================')
+    // Log email metadata only (no PII in production)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Email Verify] DEV: Sending to:', email)
+      console.log('[Email Verify] DEV: Verification URL:', verificationUrl)
+    } else {
+      console.log('[Email Verify] Verification email queued')
+    }
 
     // In production, integrate with email service here
     // Example with Resend:

@@ -14,6 +14,7 @@
 
 import { NextRequest } from 'next/server'
 import { requireAdmin } from '@/lib/api/admin-auth'
+import { scorePdfSchema, validateBody } from '@/lib/api/schemas'
 import { scorePropertiesFromPDFs } from '@/lib/processing/renovation-scoring'
 import type { MLSRow } from '@/lib/types/mls-data'
 import type { VisionScoringOptions } from '@/lib/processing/renovation-scoring'
@@ -50,40 +51,20 @@ export async function POST(req: NextRequest) {
   if (!auth.success) return auth.response
   const { supabase, user } = auth
 
-  let body: ScorePDFRequest
-  try {
-    body = await req.json()
-  } catch {
+  const parseResult = await validateBody(req, scorePdfSchema)
+  if (!parseResult.success) {
     return new Response(
-      JSON.stringify({ error: 'Invalid JSON body' }),
+      JSON.stringify({ success: false, error: { code: 'BAD_REQUEST', message: parseResult.error } }),
       { status: 400, headers: { 'Content-Type': 'application/json' } }
     )
   }
 
-  const { storagePaths, propertyData, clientId, forceRescore, options } = body
-  const scoringProvider = options?.scoringProvider ?? 'gemini'
-  const VISION_MODEL = VISION_MODELS[scoringProvider]
-
-  if (!storagePaths || storagePaths.length === 0) {
-    return new Response(
-      JSON.stringify({ error: 'No storage paths provided' }),
-      { status: 400, headers: { 'Content-Type': 'application/json' } }
-    )
-  }
-
-  if (!propertyData || propertyData.length === 0) {
-    return new Response(
-      JSON.stringify({ error: 'No property data provided' }),
-      { status: 400, headers: { 'Content-Type': 'application/json' } }
-    )
-  }
-
-  if (!clientId) {
-    return new Response(
-      JSON.stringify({ error: 'clientId is required' }),
-      { status: 400, headers: { 'Content-Type': 'application/json' } }
-    )
-  }
+  const { storagePaths, propertyData: rawPropertyData, clientId, forceRescore, options } = parseResult.data
+  // Cast: Zod validates structure (array of objects), but MLSRow has 30+ fields
+  // that we trust from the client upload pipeline rather than re-validating here.
+  const propertyData = rawPropertyData as unknown as MLSRow[]
+  const scoringProvider = (options as any)?.scoringProvider ?? 'gemini'
+  const VISION_MODEL = VISION_MODELS[scoringProvider as keyof typeof VISION_MODELS] ?? VISION_MODELS.gemini
 
   // Create SSE stream
   const encoder = new TextEncoder()

@@ -18,14 +18,8 @@ import { isValidAPN, formatAPN } from '@/lib/types/mcao-data'
 import { lookupAPNFromAddress } from '@/lib/mcao/arcgis-lookup'
 import { rateLimiters } from '@/lib/rate-limit'
 import { requireAdmin } from '@/lib/api/admin-auth'
-
-interface LookupRequest {
-  apn?: string
-  address?: string // NEW: Support address-based lookup
-  includeHistory?: boolean
-  includeTax?: boolean
-  refresh?: boolean // Force API call, bypass cache
-}
+import { mcaoLookupSchema, validateBody } from '@/lib/api/schemas'
+import { apiError } from '@/lib/api/error-response'
 
 /**
  * POST: Lookup property by APN or ADDRESS
@@ -57,17 +51,9 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // Parse request body
-    const body: LookupRequest = await req.json()
-    const { apn: rawAPN, address, includeHistory, includeTax, refresh } = body
-
-    // Validate that either APN or address is provided
-    if (!rawAPN && !address) {
-      return NextResponse.json(
-        { success: false, error: 'Either APN or address is required' },
-        { status: 400 }
-      )
-    }
+    const parseResult = await validateBody(req, mcaoLookupSchema)
+    if (!parseResult.success) return apiError(400, parseResult.error)
+    const { apn: rawAPN, address, includeHistory, includeTax, refresh } = parseResult.data
 
     let apn: string
     let lookupMethod: string | undefined

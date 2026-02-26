@@ -10,6 +10,23 @@ import fs from 'fs/promises'
 import path from 'path'
 import { STORAGE_CONFIG, generateLocalFolderName } from './config'
 import type { LocalFolderResult, LocalFileSaveResult } from '@/lib/types/storage'
+import { validatePathComponent, isPathWithinBase } from '@/lib/security/path-validation'
+
+/**
+ * Build a validated path within the local storage base directory.
+ * Throws if any component contains traversal sequences or if the
+ * resolved path escapes the base.
+ */
+function localPath(...segments: string[]): string {
+  for (const seg of segments) {
+    validatePathComponent(seg, 'path segment')
+  }
+  const result = path.join(STORAGE_CONFIG.localBasePath, ...segments)
+  if (!isPathWithinBase(result, STORAGE_CONFIG.localBasePath)) {
+    throw new Error('Path traversal detected in local storage operation')
+  }
+  return result
+}
 
 /**
  * Create client folder in local MacOS structure
@@ -25,12 +42,12 @@ export async function createClientFolder(
 ): Promise<LocalFolderResult> {
   try {
     const folderName = generateLocalFolderName(lastName, date)
-    const folderPath = path.join(STORAGE_CONFIG.localBasePath, folderName)
+    const folderPath = localPath(folderName)
 
     // Check if folder already exists
     try {
       await fs.access(folderPath)
-      console.log('[Local Storage] Folder already exists:', folderPath)
+      console.log('[Local Storage] Folder already exists')
       return { folderPath, folderName, error: null }
     } catch {
       // Folder doesn't exist, create it
@@ -39,7 +56,7 @@ export async function createClientFolder(
     // Create folder
     await fs.mkdir(folderPath, { recursive: true })
 
-    console.log('[Local Storage] Folder created:', folderPath)
+    console.log('[Local Storage] Folder created')
     return { folderPath, folderName, error: null }
   } catch (error) {
     console.error('[Local Storage] Error creating folder:', error)
@@ -71,18 +88,18 @@ export async function saveToLocalFolder(
   try {
     // Create folder name format: "LastName MM.YY"
     const folderName = `${clientLastName} ${month}.${year}`
-    const folderPath = path.join(STORAGE_CONFIG.localBasePath, folderName)
+    const folderPath = localPath(folderName)
 
     // Ensure folder exists
     await fs.mkdir(folderPath, { recursive: true })
 
     // Full file path
-    const filePath = path.join(folderPath, fileName)
+    const filePath = localPath(folderName, fileName)
 
     // Write file
     await fs.writeFile(filePath, data)
 
-    console.log('[Local Storage] File saved:', filePath)
+    console.log('[Local Storage] File saved')
     return { path: filePath, error: null }
   } catch (error) {
     console.error('[Local Storage] Error saving file:', error)
@@ -104,18 +121,17 @@ export async function saveFileToFolder(
   data: Buffer
 ): Promise<LocalFileSaveResult> {
   try {
-    const folderPath = path.join(STORAGE_CONFIG.localBasePath, folderName)
+    const folderPath = localPath(folderName)
 
     // Ensure folder exists
     await fs.mkdir(folderPath, { recursive: true })
 
     // Full file path
-    const filePath = path.join(folderPath, fileName)
+    const filePath = localPath(folderName, fileName)
 
     // Write file
     await fs.writeFile(filePath, data)
 
-    console.log('[Local Storage] File saved to folder:', filePath)
     return { path: filePath, error: null }
   } catch (error) {
     console.error('[Local Storage] Error saving file to folder:', error)
@@ -205,7 +221,7 @@ export async function listClientFolders(): Promise<{
  */
 export async function folderExists(folderName: string): Promise<boolean> {
   try {
-    const folderPath = path.join(STORAGE_CONFIG.localBasePath, folderName)
+    const folderPath = localPath(folderName)
     await fs.access(folderPath)
     return true
   } catch {
@@ -225,7 +241,7 @@ export async function fileExistsInFolder(
   fileName: string
 ): Promise<boolean> {
   try {
-    const filePath = path.join(STORAGE_CONFIG.localBasePath, folderName, fileName)
+    const filePath = localPath(folderName, fileName)
     await fs.access(filePath)
     return true
   } catch {
@@ -245,10 +261,9 @@ export async function deleteLocalFile(
   fileName: string
 ): Promise<{ success: boolean; error: Error | null }> {
   try {
-    const filePath = path.join(STORAGE_CONFIG.localBasePath, folderName, fileName)
+    const filePath = localPath(folderName, fileName)
     await fs.unlink(filePath)
 
-    console.log('[Local Storage] File deleted:', filePath)
     return { success: true, error: null }
   } catch (error) {
     console.error('[Local Storage] Error deleting file:', error)
@@ -268,10 +283,9 @@ export async function deleteClientFolder(folderName: string): Promise<{
   error: Error | null
 }> {
   try {
-    const folderPath = path.join(STORAGE_CONFIG.localBasePath, folderName)
+    const folderPath = localPath(folderName)
     await fs.rm(folderPath, { recursive: true, force: true })
 
-    console.log('[Local Storage] Folder deleted:', folderPath)
     return { success: true, error: null }
   } catch (error) {
     console.error('[Local Storage] Error deleting folder:', error)
@@ -291,7 +305,7 @@ export async function getLocalFileStats(
   fileName: string
 ): Promise<{ size: number; created: Date; modified: Date } | null> {
   try {
-    const filePath = path.join(STORAGE_CONFIG.localBasePath, folderName, fileName)
+    const filePath = localPath(folderName, fileName)
     const stats = await fs.stat(filePath)
 
     return {
@@ -317,10 +331,9 @@ export async function readLocalFile(
   fileName: string
 ): Promise<{ buffer: Buffer | null; error: Error | null }> {
   try {
-    const filePath = path.join(STORAGE_CONFIG.localBasePath, folderName, fileName)
+    const filePath = localPath(folderName, fileName)
     const buffer = await fs.readFile(filePath)
 
-    console.log('[Local Storage] File read:', filePath)
     return { buffer, error: null }
   } catch (error) {
     console.error('[Local Storage] Error reading file:', error)
@@ -335,7 +348,7 @@ export async function readLocalFile(
 export async function ensureBasePathExists(): Promise<void> {
   try {
     await fs.mkdir(STORAGE_CONFIG.localBasePath, { recursive: true })
-    console.log('[Local Storage] Base path verified:', STORAGE_CONFIG.localBasePath)
+    console.log('[Local Storage] Base path verified')
   } catch (error) {
     console.error('[Local Storage] Error creating base path:', error)
     throw error

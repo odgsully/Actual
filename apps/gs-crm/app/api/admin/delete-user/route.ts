@@ -1,6 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/api/admin-auth'
+import { deleteUserSchema, validateBody } from '@/lib/api/schemas'
+import { apiError } from '@/lib/api/error-response'
 
 function getSupabaseAdmin() {
   return createClient(
@@ -22,13 +24,11 @@ export async function DELETE(request: Request) {
 
     const supabaseAdmin = getSupabaseAdmin()
 
-    const { email } = await request.json()
-    
-    if (!email) {
-      return NextResponse.json({ error: 'Email is required' }, { status: 400 })
-    }
+    const result = await validateBody(request, deleteUserSchema)
+    if (!result.success) return apiError(400, result.error)
+    const { email } = result.data
 
-    console.log(`Starting deletion process for user: ${email}`)
+    console.log('Starting user deletion process')
 
     // Step 1: Get user ID from user_profiles
     const { data: userProfile, error: profileError } = await supabaseAdmin

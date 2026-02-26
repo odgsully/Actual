@@ -11,6 +11,7 @@ import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
 import { requireAdmin } from '@/lib/api/admin-auth';
+import { validateFileId, safePath } from '@/lib/security/path-validation';
 
 const LOG_PREFIX = '[ReportIt API - Download PropertyRadar]';
 const UPLOAD_DIR = join(process.cwd(), 'tmp', 'reportit');
@@ -27,24 +28,21 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const searchParams = request.nextUrl.searchParams;
     const fileId = searchParams.get('fileId');
 
-    if (!fileId) {
+    // Validate fileId to prevent path traversal
+    let safeFileId: string;
+    try {
+      safeFileId = validateFileId(fileId);
+    } catch {
       return NextResponse.json(
-        {
-          success: false,
-          error: {
-            message: 'File ID required',
-            code: 'NO_FILE_ID',
-          },
-        },
+        { success: false, error: { message: 'Invalid file ID', code: 'INVALID_FILE_ID' } },
         { status: 400 }
       );
     }
 
-    // Construct file path
-    const fileName = `${fileId}.xlsx`;
-    const filePath = join(UPLOAD_DIR, fileName);
+    // Construct safe file path
+    const filePath = safePath(UPLOAD_DIR, `${safeFileId}.xlsx`);
 
-    console.log(`${LOG_PREFIX} Looking for file:`, filePath);
+    console.log(`${LOG_PREFIX} Looking for file (id: ${safeFileId})`);
 
     // Check if file exists
     if (!existsSync(filePath)) {
@@ -63,10 +61,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     // Read file
     const buffer = await readFile(filePath);
 
-    console.log(`${LOG_PREFIX} Serving file:`, {
-      fileId,
-      size: buffer.length,
-    });
+    console.log(`${LOG_PREFIX} Serving file (size: ${buffer.length})`);
 
     // Extract original filename or generate one
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];

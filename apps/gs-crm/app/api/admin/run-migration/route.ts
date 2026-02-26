@@ -6,6 +6,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { requireAdmin } from '@/lib/api/admin-auth';
+import { runMigrationSchema, validateBody } from '@/lib/api/schemas';
+import { apiError } from '@/lib/api/error-response';
 import fs from 'fs';
 import path from 'path';
 
@@ -29,8 +31,9 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const body = await request.json();
-    const { migrationFile = '006_add_image_and_demo_columns.sql' } = body;
+    const result = await validateBody(request, runMigrationSchema);
+    if (!result.success) return apiError(400, result.error);
+    const { migrationFile } = result.data;
 
     // Initialize Supabase admin client
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;

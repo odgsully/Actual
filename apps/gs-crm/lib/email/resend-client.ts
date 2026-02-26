@@ -76,7 +76,7 @@ export async function sendInvitationEmail(
     // Check if Resend is configured
     if (!process.env.RESEND_API_KEY) {
       console.warn('RESEND_API_KEY not configured. Email not sent.');
-      console.log('Would send invitation email to:', params.to);
+      if (process.env.NODE_ENV === 'development') console.log('Would send invitation email to:', params.to);
       console.log('Setup URL:', params.setupUrl);
       return {
         success: true,
@@ -130,7 +130,7 @@ export async function sendPasswordResetEmail(
     // Check if Resend is configured
     if (!process.env.RESEND_API_KEY) {
       console.warn('RESEND_API_KEY not configured. Email not sent.');
-      console.log('Would send password reset email to:', params.to);
+      if (process.env.NODE_ENV === 'development') console.log('Would send password reset email to:', params.to);
       console.log('Reset URL:', params.resetUrl);
       return {
         success: true,
@@ -183,7 +183,7 @@ export async function sendWelcomeEmail(
     // Check if Resend is configured
     if (!process.env.RESEND_API_KEY) {
       console.warn('RESEND_API_KEY not configured. Email not sent.');
-      console.log('Would send welcome email to:', params.to);
+      if (process.env.NODE_ENV === 'development') console.log('Would send welcome email to:', params.to);
       return {
         success: true,
         messageId: 'mock-message-id-dev',

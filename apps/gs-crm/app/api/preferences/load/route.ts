@@ -8,7 +8,7 @@ export async function GET() {
     // Get the current user
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     
-    console.log('[API/preferences/load] User:', user?.email, 'ID:', user?.id)
+    console.log('[API/preferences/load] Auth check:', user ? 'authenticated' : 'failed')
     
     if (userError || !user) {
       console.error('[API/preferences/load] Auth error:', userError)

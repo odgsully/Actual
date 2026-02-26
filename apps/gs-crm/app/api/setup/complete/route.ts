@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
       .eq('id', tempPrefs.id)
 
     // Log successful account creation
-    console.log('Account created successfully for:', tempPrefs.email)
+    console.log('Account created successfully')
 
     return NextResponse.json({
       success: true,

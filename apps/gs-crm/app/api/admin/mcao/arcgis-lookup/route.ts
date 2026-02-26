@@ -31,12 +31,12 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    console.log(`${LOG_PREFIX} Looking up APN for: ${address}`)
+    console.log(`${LOG_PREFIX} Looking up APN (method: arcgis)`)
 
     const result = await lookupAPNFromAddress(address)
 
     if (result.apn) {
-      console.log(`${LOG_PREFIX} ✓ Found APN: ${result.apn} (method: ${result.method}, confidence: ${result.confidence})`)
+      console.log(`${LOG_PREFIX} ✓ Found APN (method: ${result.method}, confidence: ${result.confidence})`)
 
       return NextResponse.json({
         success: true,
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
         }
       })
     } else {
-      console.log(`${LOG_PREFIX} ✗ No APN found for: ${address}`)
+      console.log(`${LOG_PREFIX} ✗ No APN found (method: ${result.method})`)
 
       return NextResponse.json({
         success: false,

@@ -1,6 +1,6 @@
 # MLS Upload Patch Plan (2.25.26)
 
-Status: Updated execution roadmap
+Status: **In Progress** — Phase -1 and Phase 0 active
 Scope: GS-CRM MLS Upload -> Excel generation -> Breakups insights -> report packaging
 Planning Horizon: 9-week Initiative 1, then reassess Initiative 2
 
@@ -15,63 +15,112 @@ Planning Horizon: 9-week Initiative 1, then reassess Initiative 2
 ---
 
 ## Objectives (Initiative 1)
-1. Eliminate security/data leak risks in upload/report paths.
-2. Make enrichment and parsing reliable enough for defensible analytics.
-3. Deliver a real analysis engine (computed metrics + comp ranking + reconciled outputs).
-4. Keep template compatibility stable while moving quickly.
+- [ ] Eliminate security/data leak risks in upload/report paths.
+- [ ] Make enrichment and parsing reliable enough for defensible analytics.
+- [ ] Deliver a real analysis engine (computed metrics + comp ranking + reconciled outputs).
+- [ ] Keep template compatibility stable while moving quickly.
 
 ## Non-Goals (Initiative 1)
-1. Full report narrative redesign.
-2. Deep packaging/visual overhaul beyond correctness and stability.
-3. Broad template ecosystem re-architecture.
+- Full report narrative redesign.
+- Deep packaging/visual overhaul beyond correctness and stability.
+- Broad template ecosystem re-architecture.
 
 ---
 
 ## Phase -1: Pre-Work Guardrails (Week 1)
 Priority: P0
 
-### Workstreams
-1. Contract hardening:
-   - Add strict request-body schema validation on critical endpoints (`generate-excel`, scoring, report upload).
-   - Add structured error envelopes.
-2. Baseline measurement:
-   - Run 3 real datasets and capture runtime, enrichment coverage, failures, output completeness.
-3. Safety thresholds:
-   - Define abort thresholds for enrichment failure (for example: APN unresolved > X%, MCAO failure > Y%).
-4. Test harness scaffolding:
-   - Golden dataset fixtures.
-   - Assertion harness for core metrics and report integrity.
+### Contract Hardening
+- [x] Add Zod schema validation on `generate-excel` endpoint
+- [x] Add Zod schema validation on `score-pdf` endpoint
+- [x] Add Zod schema validation on `mcao/lookup` endpoint
+- [x] Add Zod schema validation on `delete-user` endpoint
+- [x] Add Zod schema validation on `run-migration` endpoint
+- [x] Create shared `validateBody()` helper (`lib/api/schemas.ts`)
+- [x] Create structured error envelope utility (`lib/api/error-response.ts`)
+- [ ] Add Zod schema validation on `reportit/upload` endpoint (large — 2000+ lines)
+- [ ] Add Zod schema validation on `upload/process` endpoint
+- [ ] Add Zod schema validation on `upload/store` endpoint
+
+### Baseline Measurement
+- [ ] Run 3 real datasets and capture runtime metrics
+- [ ] Capture enrichment coverage per dataset (APN resolution %, MCAO fetch %)
+- [ ] Capture failure counts and types per dataset
+- [ ] Capture output completeness (sheets populated, columns filled)
+- [ ] Document baseline metrics in a report
+
+### Safety Thresholds
+- [ ] Define abort threshold for APN unresolved rate (e.g., > X%)
+- [ ] Define abort threshold for MCAO failure rate (e.g., > Y%)
+- [ ] Define abort threshold for parsing failure rate
+- [ ] Codify thresholds as constants (not magic numbers)
+
+### Test Harness Scaffolding
+- [ ] Create golden dataset fixtures from `ref/examples/` samples
+- [ ] Create assertion harness for core metrics
+- [ ] Create assertion harness for report sheet integrity
+- [ ] Add golden test script to `package.json`
 
 ### Exit Criteria
-1. Baseline metrics documented.
-2. Schema guards present on critical write paths.
-3. Abort/continue rules defined and testable.
+- [ ] Baseline metrics documented
+- [x] Schema guards present on critical write paths
+- [ ] Abort/continue rules defined and testable
 
 ---
 
 ## Phase 0: Security + Critical Correctness (Week 1-2)
 Priority: P0
 
-### Workstreams
-1. Route security:
-   - Enforce auth/authorization consistently across upload/download/delete/preview surfaces.
-   - Validate path params and query params strictly.
-2. File/path safety:
-   - Prevent traversal and unsafe file path use in download flows.
-   - Normalize server-side file access patterns.
-3. Data leak reduction:
-   - Redact PII/APN/address in production logs.
-   - Remove internal path leakage from API errors.
-4. Temp artifact hygiene (moved here):
-   - Enforce cleanup policy for `tmp/reportit` artifacts.
-   - Add retention window + scheduled cleanup + on-success cleanup hooks.
-5. High-impact output bug fixes:
-   - Fix materially wrong math/visual mapping defects that can mislead clients.
+### Route Security
+- [x] Add `requireAdmin()` to `contacts/upload/parse` (was unprotected)
+- [x] Add `requireAdmin()` to `contacts/upload/import` (was unprotected)
+- [x] Add `requireAdmin()` to `contacts/upload/preview` (was unprotected)
+- [x] Add `requireAdmin()` to `contacts/upload/history` (was unprotected)
+- [x] Replace `X-Admin-Key` with `requireAdmin()` on `delete-user` endpoint
+- [x] Add `requireAdmin()` to `run-migration` endpoint (was NODE_ENV only)
+- [x] Make cron routes fail-closed when `CRON_SECRET` not set (`check-health`)
+- [x] Make cron routes fail-closed when `CRON_SECRET` not set (`daily-cleanup`)
+- [x] Make cron routes fail-closed when `CRON_SECRET` not set (`hourly-scrape`)
+- [x] Audit remaining `/api/admin/*` routes for auth gaps (subagent audit complete)
+- [x] Validate path params and query params strictly on download routes
+
+### File/Path Safety
+- [x] Create shared path validation utility (`lib/security/path-validation.ts`)
+- [x] Prevent path traversal in `reportit/download/breakups` (was CRITICAL — fileId unsanitized)
+- [x] Prevent path traversal in `reportit/download/propertyradar` (was CRITICAL — fileId unsanitized)
+- [x] Harden all `local-storage.ts` file operations with `localPath()` traversal guard
+- [x] Sanitize `migrationFile` path in `run-migration` (Zod regex — safe chars + `.sql` only)
+- [ ] Sanitize `fileName` in `upload/store` route (currently unsanitized)
+- [ ] Harden MCAO bulk route temp directory cleanup with base-path verification
+
+### Data Leak Reduction
+- [x] Redact email from `delete-user` log
+- [x] Redact email from `preferences/save` and `preferences/load` logs
+- [x] Redact email from `setup/complete` log
+- [x] Wrap email verification content logging in NODE_ENV=development guard
+- [x] Wrap email client (Resend) PII logs in NODE_ENV=development guard
+- [x] Remove address/APN from `arcgis-lookup` API route logs
+- [x] Remove file paths from `local-storage.ts` logs
+- [x] Remove file paths from download route logs
+- [ ] Audit and redact remaining MCAO enrichment logs (`batch-apn-lookup.ts`, `arcgis-lookup.ts` lib)
+- [ ] Audit and redact `property-notifier.ts` email + address logging
+- [ ] Remove internal path leakage from API error responses (`error.message` exposure)
+
+### Temp Artifact Hygiene
+- [ ] Enforce cleanup policy for `tmp/reportit` artifacts
+- [ ] Add retention window (e.g., 1 hour max)
+- [ ] Add scheduled cleanup hook
+- [ ] Add on-success cleanup hooks in report pipeline
+
+### High-Impact Output Bug Fixes
+- [ ] Identify and fix materially wrong math/visual mapping defects
+- [ ] Cover fixed defects with regression tests
 
 ### Exit Criteria
-1. No unauthenticated metadata/file exposure.
-2. Temp artifact lifecycle controlled.
-3. Known high-severity correctness defects fixed and covered by tests.
+- [x] No unauthenticated admin file/metadata exposure (contact upload routes fixed)
+- [x] No path traversal in download routes (breakups + propertyradar + local-storage hardened)
+- [ ] Temp artifact lifecycle controlled
+- [ ] Known high-severity correctness defects fixed and covered by tests
 
 ---
 
@@ -82,36 +131,51 @@ Rationale: Deep-dive revealed 6 enrichment components with 3 inconsistent error 
 silent failures at every layer, no abort thresholds, and no persistent failure tracking.
 This sub-phase makes enrichment observable and safe before consolidating it.
 
-### Workstreams
-1. Unified error model:
-   - Define a single `EnrichmentResult` interface used by ArcGIS lookup, MCAO client, and batch processors.
-   - Replace the 3 current error shapes (ArcGIS `method/confidence`, MCAO `success/error.code`, batch `success/error string`).
-   - Distinguish retryable vs permanent failures with typed error codes.
-2. Abort thresholds (from Phase -1 definitions):
-   - Implement batch-level abort: if APN resolution rate < X% or MCAO fetch rate < Y%, halt and report.
-   - Surface abort reason to caller (API response + UI).
-3. Failure persistence:
-   - Wire enrichment results into `gsrealty_mcao_data` table (exists but unused in pipeline).
-   - Log per-record enrichment outcome (success, skip, failure + reason) to database.
-   - Add batch-level summary metrics (total, resolved, failed, skipped).
-4. ArcGIS endpoint resilience:
-   - Add health-check probe for the 3 hardcoded ArcGIS endpoints before batch runs.
-   - If probe fails, abort early with clear error instead of silently producing empty results.
-   - Extract endpoint URLs to config (currently hardcoded in `arcgis-lookup.ts`).
-5. Parsing coverage:
-   - Expand and normalize key MLS feature extraction currently underused (parking, concessions, HOA details, transaction flags).
-6. Status and record hygiene:
-   - Enforce status class policy (valuation/supporting/context/excluded).
-   - Add deterministic dedupe policy.
-7. Data quality scoring:
-   - Introduce per-record quality score and exclusion reasons.
+### Unified Error Model
+- [ ] Define `EnrichmentResult` interface for ArcGIS, MCAO client, and batch processors
+- [ ] Replace ArcGIS error shape (`method/confidence`) with unified model
+- [ ] Replace MCAO error shape (`success/error.code`) with unified model
+- [ ] Replace batch error shape (`success/error string`) with unified model
+- [ ] Distinguish retryable vs permanent failures with typed error codes
+
+### Abort Thresholds
+- [ ] Implement batch-level abort: APN resolution rate < threshold → halt
+- [ ] Implement batch-level abort: MCAO fetch rate < threshold → halt
+- [ ] Surface abort reason to caller (API response)
+- [ ] Surface abort reason to UI
+
+### Failure Persistence
+- [ ] Wire enrichment results into `gsrealty_mcao_data` table
+- [ ] Log per-record enrichment outcome to database
+- [ ] Add batch-level summary metrics (total, resolved, failed, skipped)
+
+### ArcGIS Endpoint Resilience
+- [ ] Add health-check probe for ArcGIS Parcels endpoint
+- [ ] Add health-check probe for ArcGIS Geocoder endpoint
+- [ ] Add health-check probe for ArcGIS Identify endpoint
+- [ ] Abort early with clear error if probes fail
+- [ ] Extract endpoint URLs to config (currently hardcoded)
+
+### Parsing Coverage
+- [ ] Expand MLS feature extraction: parking
+- [ ] Expand MLS feature extraction: concessions
+- [ ] Expand MLS feature extraction: HOA details
+- [ ] Expand MLS feature extraction: transaction flags
+
+### Status and Record Hygiene
+- [ ] Enforce status class policy (valuation/supporting/context/excluded)
+- [ ] Add deterministic dedupe policy
+
+### Data Quality Scoring
+- [ ] Introduce per-record quality score
+- [ ] Introduce per-record exclusion reasons
 
 ### Exit Criteria
-1. Enrichment failures are observable: per-record and batch-level metrics persisted and surfaced.
-2. Abort thresholds enforced — pipeline halts with clear reason rather than producing garbage output.
-3. ArcGIS health check prevents silent total-failure scenarios.
-4. Bad-status/noisy records no longer contaminate valuation sets.
-5. Parsing coverage materially improved and tested.
+- [ ] Enrichment failures observable: per-record and batch metrics persisted
+- [ ] Abort thresholds enforced
+- [ ] ArcGIS health check prevents silent total-failure
+- [ ] Bad-status/noisy records no longer contaminate valuation sets
+- [ ] Parsing coverage materially improved and tested
 
 ---
 
@@ -122,25 +186,26 @@ Rationale: With safety guardrails from 0.5a in place, consolidate the 3 redundan
 paths and wire enrichment into the breakups pipeline (which currently skips it entirely).
 Overlaps with Milestone 1 start — computed metrics work can proceed in parallel on already-parsed data.
 
-### Workstreams
-1. Consolidate enrichment paths:
-   - Merge TS `bulk-processor.ts`, Python `bulk_apn_lookup.py`, and manual `batch-apn-lookup.ts` + `client.ts` combo into a single `EnrichmentService`.
-   - Single entry point: `enrichBatch(addresses[]) → EnrichmentResult[]`.
-   - Eliminate Python subprocess dependency (migrate remaining logic to TypeScript).
-2. Wire enrichment into breakups pipeline:
-   - `reportit/upload/route.ts` currently accepts pre-enriched data only.
-   - Add optional auto-enrichment step: if APN/MCAO data missing, call `EnrichmentService` before breakups analysis.
-   - Respect abort thresholds from 0.5a — if enrichment fails threshold, return error instead of producing under-enriched report.
-3. Match-back and confidence improvements:
-   - Improve ArcGIS address → APN match-back logic (current loose WHERE query drops street type, causing false matches).
-   - Add confidence filtering: only accept APN matches above configurable threshold (default 0.8).
-   - Propagate confidence scores to downstream consumers.
+### Consolidate Enrichment Paths
+- [ ] Merge `bulk-processor.ts`, `bulk_apn_lookup.py`, `batch-apn-lookup.ts` + `client.ts` into single `EnrichmentService`
+- [ ] Single entry point: `enrichBatch(addresses[]) → EnrichmentResult[]`
+- [ ] Eliminate Python subprocess dependency (migrate logic to TypeScript)
+
+### Wire Enrichment into Breakups Pipeline
+- [ ] Add optional auto-enrichment step in `reportit/upload/route.ts`
+- [ ] If APN/MCAO data missing, call `EnrichmentService` before breakups analysis
+- [ ] Respect abort thresholds — return error if enrichment fails threshold
+
+### Match-Back and Confidence Improvements
+- [ ] Improve ArcGIS address → APN match-back logic (loose WHERE false match issue)
+- [ ] Add confidence filtering: reject APN matches below configurable threshold (default 0.8)
+- [ ] Propagate confidence scores to downstream consumers
 
 ### Exit Criteria
-1. Single enrichment entry point — no redundant paths.
-2. Python subprocess eliminated.
-3. Breakups pipeline auto-enriches when data is missing.
-4. Match confidence filtering prevents low-quality APN associations.
+- [ ] Single enrichment entry point — no redundant paths
+- [ ] Python subprocess eliminated
+- [ ] Breakups pipeline auto-enriches when data is missing
+- [ ] Match confidence filtering prevents low-quality APN associations
 
 ---
 
@@ -152,29 +217,29 @@ Note: Phase 0.5b overlaps with early Milestone 1 work — computed metrics can b
 already-parsed data while enrichment consolidation completes in parallel.
 
 ### Milestone 1 (Weeks 4-5): Computed Metrics Core
-1. Add deterministic computed metrics required for real analysis:
-   - price-per-sqft (sale/lease)
-   - list-to-sale ratio
-   - distance-to-subject
-   - hold period and seller basis deltas
-   - true DOM where available
-2. Define field lineage and null behavior for each derived metric.
-3. Add metric-level assertions to golden tests.
+- [ ] Add price-per-sqft (sale/lease)
+- [ ] Add list-to-sale ratio
+- [ ] Add distance-to-subject
+- [ ] Add hold period and seller basis deltas
+- [ ] Add true DOM where available
+- [ ] Define field lineage and null behavior for each derived metric
+- [ ] Add metric-level assertions to golden tests
 
 ### Milestone 2 (Weeks 5-7): Comp Ranking + Explainability
-1. Add weighted comp similarity scoring with factor-level components.
-2. Produce comp tiers (primary/supporting/context).
-3. Ensure deterministic ranking and reproducibility on repeated runs.
+- [ ] Add weighted comp similarity scoring with factor-level components
+- [ ] Produce comp tiers (primary/supporting/context)
+- [ ] Ensure deterministic ranking and reproducibility on repeated runs
+- [ ] Add explainability outputs and tests
 
 ### Milestone 3 (Weeks 7-9): Reconciled Analysis Outputs
-1. Add adjusted/reconciled value outputs with confidence grading.
-2. Improve income signals enough to remove circular logic in core outputs.
-3. Wire analysis engine outputs into breakups/report surfaces without breaking current flow.
+- [ ] Add adjusted/reconciled value outputs with confidence grading
+- [ ] Improve income signals enough to remove circular logic in core outputs
+- [ ] Wire analysis engine outputs into breakups/report surfaces without breaking current flow
 
 ### Exit Criteria
-1. Pipeline produces explainable ranked comps for subject property.
-2. Core metrics and reconciled outputs pass golden dataset assertions.
-3. Output is materially more decision-useful than current baseline.
+- [ ] Pipeline produces explainable ranked comps for subject property
+- [ ] Core metrics and reconciled outputs pass golden dataset assertions
+- [ ] Output is materially more decision-useful than current baseline
 
 ---
 
@@ -182,96 +247,95 @@ already-parsed data while enrichment consolidation completes in parallel.
 Keep this minimal and execution-oriented.
 
 ### Rules
-1. Append-only template evolution in Initiative 1.
-2. Do not rename or reorder existing required columns/sheets used by current consumers.
-3. Add a lightweight version gate:
-   - required sheet check
-   - required column check
-   - small version marker check
+- [ ] Append-only template evolution in Initiative 1
+- [ ] Do not rename or reorder existing required columns/sheets
+- [ ] Add lightweight version gate: required sheet check
+- [ ] Add lightweight version gate: required column check
+- [ ] Add lightweight version gate: version marker check
 
 ### Controls
-1. Compatibility test for current template + appended fields.
-2. Fail-fast error if template contract missing required components.
+- [ ] Compatibility test for current template + appended fields
+- [ ] Fail-fast error if template contract missing required components
 
 ### Deferred
-1. Full template governance framework/version matrix is deferred to Initiative 2 unless breakage pressure appears.
+- Full template governance framework/version matrix deferred to Initiative 2 unless breakage pressure appears.
 
 ---
 
 ## Initiative 1 Delivery Schedule (9 Weeks)
 
-Week 1:
-1. Phase -1 setup complete.
-2. Start Phase 0 route/file security fixes.
+### Week 1:
+- [x] Phase -1: Schema validation + error envelopes (6 endpoints wired with Zod)
+- [x] Phase 0: Route security fixes (auth on 9 routes/endpoints)
+- [x] Phase 0: File/path safety (path traversal fixes on 2 download routes + local-storage)
+- [x] Phase 0: Data leak reduction — HIGH severity PII logs fixed (8 files)
+- [ ] Phase -1: Baseline measurement
+- [ ] Phase -1: Test harness scaffolding
+- [ ] Phase 0: Remaining data leak cleanup (MCAO enrichment logs, notifier logs)
+- [ ] Phase 0: Temp artifact hygiene
 
-Week 2:
-1. Complete Phase 0.
-2. Begin Phase 0.5a enrichment safety hardening + parsing.
+### Week 2:
+- [ ] Complete Phase 0 remaining items
+- [ ] Begin Phase 0.5a enrichment safety hardening + parsing
 
-Week 3:
-1. Complete Phase 0.5a (unified error model, abort thresholds, failure persistence, ArcGIS health check).
-2. Begin Phase 0.5b enrichment consolidation.
+### Week 3:
+- [ ] Complete Phase 0.5a (unified error model, abort thresholds, failure persistence, ArcGIS health check)
+- [ ] Begin Phase 0.5b enrichment consolidation
 
-Week 4:
-1. Complete Phase 0.5b (single EnrichmentService, Python elimination, breakups pipeline integration).
-2. Start Phase 1 Milestone 1 (computed metrics) — overlaps with late 0.5b work on already-parsed data.
+### Week 4:
+- [ ] Complete Phase 0.5b (single EnrichmentService, Python elimination, breakups pipeline integration)
+- [ ] Start Phase 1 Milestone 1 (computed metrics) — overlaps with late 0.5b
 
-Week 5:
-1. Complete Milestone 1.
-2. Start Milestone 2 (ranking engine).
+### Week 5:
+- [ ] Complete Milestone 1
+- [ ] Start Milestone 2 (ranking engine)
 
-Week 6:
-1. Continue Milestone 2.
-2. Add explainability outputs and tests.
+### Week 6:
+- [ ] Continue Milestone 2
+- [ ] Add explainability outputs and tests
 
-Week 7:
-1. Complete Milestone 2.
-2. Start Milestone 3 (reconciliation/income corrections).
+### Week 7:
+- [ ] Complete Milestone 2
+- [ ] Start Milestone 3 (reconciliation/income corrections)
 
-Week 8:
-1. Continue Milestone 3 integration into report path.
-2. Run golden dataset regression suite.
+### Week 8:
+- [ ] Continue Milestone 3 integration into report path
+- [ ] Run golden dataset regression suite
 
-Week 9:
-1. Stabilization + defect burn-down.
-2. Release and post-release measurement.
-3. Reassessment decision for Initiative 2.
+### Week 9:
+- [ ] Stabilization + defect burn-down
+- [ ] Release and post-release measurement
+- [ ] Reassessment decision for Initiative 2
 
 ---
 
 ## Initiative 2 (Reassess After Week 9)
 Only proceed if Initiative 1 metrics justify expansion.
 
-Candidate scope:
-1. Full report narrative redesign.
-2. Broader income approach sophistication.
-3. Template governance expansion beyond append-only.
-4. Packaging and visualization redesign.
+### Candidate Scope
+- [ ] Full report narrative redesign
+- [ ] Broader income approach sophistication
+- [ ] Template governance expansion beyond append-only
+- [ ] Packaging and visualization redesign
 
-Go/No-Go based on:
-1. Quality lift from baseline.
-2. Error/failure rates.
-3. Analyst/user feedback on decision usefulness.
+### Go/No-Go Criteria
+- [ ] Quality lift from baseline measured
+- [ ] Error/failure rates acceptable
+- [ ] Analyst/user feedback on decision usefulness collected
 
 ---
 
 ## KPI and Acceptance Targets
-1. Security:
-   - 0 unauthenticated file metadata exposures.
-2. Reliability:
-   - APN and MCAO enrichment thresholds meet defined abort criteria.
-3. Analysis quality:
-   - Ranked comp output deterministic.
-   - Core valuation metrics generated for target percentage of valid records.
-4. Stability:
-   - Template compatibility checks pass in CI.
-5. Delivery:
-   - Initiative 1 shipped inside 9 weeks with regression suite green.
+- [ ] Security: 0 unauthenticated file metadata exposures
+- [ ] Reliability: APN and MCAO enrichment thresholds meet defined abort criteria
+- [ ] Analysis quality: Ranked comp output deterministic
+- [ ] Analysis quality: Core valuation metrics generated for target % of valid records
+- [ ] Stability: Template compatibility checks pass in CI
+- [ ] Delivery: Initiative 1 shipped inside 9 weeks with regression suite green
 
 ## Program-Level Definition of Done (Initiative 1)
-1. Security and data-leak blockers are closed.
-2. Parsing/enrichment no longer silently fails.
-3. Analysis outputs are explainable and materially more defensible.
-4. Template updates remain backward-compatible via append-only and version checks.
-5. Baseline-vs-post metrics show clear measurable improvement.
-
+- [ ] Security and data-leak blockers are closed
+- [ ] Parsing/enrichment no longer silently fails
+- [ ] Analysis outputs are explainable and materially more defensible
+- [ ] Template updates remain backward-compatible via append-only and version checks
+- [ ] Baseline-vs-post metrics show clear measurable improvement

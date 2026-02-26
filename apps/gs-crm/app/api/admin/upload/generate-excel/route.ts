@@ -25,6 +25,8 @@ import type {
   UploadGenerationMetadata
 } from '@/lib/types/mls-data'
 import { requireAdmin } from '@/lib/api/admin-auth'
+import { generateExcelSchema, validateBody } from '@/lib/api/schemas'
+import { apiError } from '@/lib/api/error-response'
 import { getScoresByBatch } from '@/lib/database/vision-scores'
 import { normalizeAddress, extractStreetCore, extractStreetNumber } from '@/lib/utils/normalize-address'
 
@@ -43,7 +45,8 @@ export async function PUT(req: NextRequest) {
     const auth = await requireAdmin()
     if (!auth.success) return auth.response
 
-    const body = await req.json()
+    const parseResult = await validateBody(req, generateExcelSchema)
+    if (!parseResult.success) return apiError(400, parseResult.error)
     const {
       subjectProperty,
       residential15Mile,
@@ -53,9 +56,9 @@ export async function PUT(req: NextRequest) {
       mcaoData,
       clientName,
       subjectManualInputs,
-      visionScores: rawVisionScores,  // Optional vision AI scoring results
-      batchId,       // Optional batch ID to fetch scores from DB
-    } = body
+      visionScores: rawVisionScores,
+      batchId,
+    } = parseResult.data
 
     // Resolve vision scores: prefer inline, fall back to DB via batchId
     let visionScores = rawVisionScores
@@ -68,8 +71,8 @@ export async function PUT(req: NextRequest) {
         visionScores = scores.map(s => ({
           address: s.address,
           score: s.renovation_score,
-          renoYear: s.reno_year_estimate,
-          confidence: s.confidence,
+          renoYear: s.reno_year_estimate ?? undefined,
+          confidence: typeof s.confidence === 'number' ? s.confidence : undefined,
           dwellingType: s.dwelling_subtype || 'residential',
         }))
         console.log(`${LOG_PREFIX} Loaded ${visionScores.length} scores from DB`)
