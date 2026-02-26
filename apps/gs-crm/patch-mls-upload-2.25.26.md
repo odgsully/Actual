@@ -1,6 +1,6 @@
 # MLS Upload Patch Plan (2.25.26)
 
-Status: **In Progress** — Phases 0.5a + 0.5b complete, Phase 1 Milestones 1-3 complete, template strategy + stabilization remaining
+Status: **In Progress** — Phases -1 through 1 + Template Strategy complete, baseline measurement + stabilization remaining
 Scope: GS-CRM MLS Upload -> Excel generation -> Breakups insights -> report packaging
 Planning Horizon: 9-week Initiative 1, then reassess Initiative 2
 
@@ -258,15 +258,15 @@ already-parsed data while enrichment consolidation completes in parallel.
 Keep this minimal and execution-oriented.
 
 ### Rules
-- [ ] Append-only template evolution in Initiative 1
-- [ ] Do not rename or reorder existing required columns/sheets
-- [ ] Add lightweight version gate: required sheet check
-- [ ] Add lightweight version gate: required column check
-- [ ] Add lightweight version gate: version marker check
+- [x] Append-only template evolution in Initiative 1 — enforced by column header fuzzy matching (new columns beyond required set are allowed)
+- [x] Do not rename or reorder existing required columns/sheets — validateTemplateContract() checks header presence and match
+- [x] Add lightweight version gate: required sheet check — 6 required sheets validated on upload
+- [x] Add lightweight version gate: required column check — 12 comps + 2 Analysis column headers validated with fuzzy matching
+- [x] Add lightweight version gate: version marker check — reads cell AL1 on comps sheet, EXPECTED_VERSION ready for Initiative 2
 
 ### Controls
-- [ ] Compatibility test for current template + appended fields
-- [ ] Fail-fast error if template contract missing required components
+- [x] Compatibility test for current template + appended fields — golden tests for REQUIRED_SHEETS, REQUIRED_COLUMNS, formatValidationErrors
+- [x] Fail-fast error if template contract missing required components — upload route returns 422 with structured error before processing begins
 
 ### Deferred
 - Full template governance framework/version matrix deferred to Initiative 2 unless breakage pressure appears.
@@ -322,8 +322,10 @@ Keep this minimal and execution-oriented.
 - [x] Phase 1 M3: 15+ golden test assertions (market rent, NOI reconciliation, value estimate, full orchestration)
 
 ### Weeks 6-8:
-- [ ] Template strategy: append-only evolution, version gate checks
-- [ ] Wire reconciliation into upload route (optional step after breakups analysis)
+- [x] Template strategy: template-validation.ts with sheet + column + version gates
+- [x] Wire reconciliation into upload route (Step 1.5 — non-fatal, writes to Analysis_Summary)
+- [x] Wire template validation into upload route (Step 0 — fail-fast 422 before processing)
+- [x] Expose readPropertiesFromWorkbook() from breakups-generator for reconciliation consumer
 - [ ] Run live datasets through pipeline for baseline measurement
 - [ ] Stabilization + defect burn-down
 

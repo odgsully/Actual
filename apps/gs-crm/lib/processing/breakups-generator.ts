@@ -604,6 +604,17 @@ export async function generateAllBreakupsAnalyses(
   }
 }
 
+/**
+ * Read raw PropertyData from the Analysis sheet for downstream consumers
+ * (e.g., reconciled-outputs.ts). Avoids re-parsing the workbook.
+ *
+ * Phase 1 M3: Exposed for reconciliation step in upload route.
+ */
+export function readPropertiesFromWorkbook(workbook: ExcelJS.Workbook): PropertyData[] {
+  const { properties } = readAnalysisSheet(workbook)
+  return properties
+}
+
 // ============================================================================
 // CATEGORY A: PROPERTY CHARACTERISTICS (1-5)
 // ============================================================================

@@ -13,13 +13,15 @@ import { existsSync } from 'fs';
 import * as path from 'path';
 import ExcelJS from 'exceljs';
 import { generatePropertyRadarExcel, generatePropertyRadarFilename } from '@/lib/processing/propertyradar-generator';
-import { generateAllBreakupsAnalyses } from '@/lib/processing/breakups-generator';
+import { generateAllBreakupsAnalyses, readPropertiesFromWorkbook } from '@/lib/processing/breakups-generator';
 import { generateAllVisualizations } from '@/lib/processing/breakups-visualizer';
 import { generateUnifiedPDFReport } from '@/lib/processing/breakups-pdf-unified';
 import { packageBreakupsReport } from '@/lib/processing/breakups-packager';
 import { rateLimiters } from '@/lib/rate-limit';
 import { requireAdmin } from '@/lib/api/admin-auth';
 import { createEnrichmentService } from '@/lib/pipeline/enrichment-service';
+import { reconcileAnalysis } from '@/lib/pipeline/reconciled-outputs';
+import { validateTemplateContract, formatValidationErrors } from '@/lib/pipeline/template-validation';
 
 export const maxDuration = 300; // 5 min — Vercel Pro plan
 
@@ -974,6 +976,20 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     console.log(`${LOG_PREFIX} Workbook loaded with ${uploadedWorkbook.worksheets.length} sheets`);
 
+    // STEP 0: Template contract validation (fail-fast)
+    const templateValidation = validateTemplateContract(uploadedWorkbook);
+    if (!templateValidation.valid) {
+      console.error(`${LOG_PREFIX} Template validation failed:`, templateValidation.errors);
+      return NextResponse.json(
+        { error: 'Template validation failed', details: formatValidationErrors(templateValidation) },
+        { status: 422 }
+      );
+    }
+    if (templateValidation.warnings.length > 0) {
+      console.warn(`${LOG_PREFIX} Template warnings:`, templateValidation.warnings);
+    }
+    console.log(`${LOG_PREFIX} Template validated (version: ${templateValidation.version}, sheets: ${templateValidation.sheetsFound.length})`);
+
     // Generate unique file ID
     const fileId = `${type}_${Date.now()}_${Math.random().toString(36).substring(7)}`;
 
@@ -1117,6 +1133,54 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           else { row.getCell(4).value = 'Data'; row.getCell(5).value = JSON.stringify(value).substring(0, 200); }
           summaryRowNum++;
         }
+      }
+
+      // STEP 1.5: Reconciled analysis (optional — non-fatal)
+      try {
+        console.log(`${LOG_PREFIX} [1.5/6] Running reconciled analysis...`);
+        const reconProperties = readPropertiesFromWorkbook(uploadedWorkbook);
+        if (reconProperties.length > 0) {
+          const reconSubject = reconProperties[0];
+          const reconResult = reconcileAnalysis(
+            reconSubject,
+            reconProperties,
+            undefined, // M2 comp scores not yet wired into breakups flow
+            analysisResults.expectedNOI
+          );
+
+          // Write reconciliation summary to Analysis_Summary sheet
+          if (enhancedSummarySheet) {
+            const reconRow = enhancedSummarySheet.getRow(summaryRowNum++);
+            reconRow.getCell(1).value = 'reconciled_marketRent';
+            reconRow.getCell(2).value = 'Market Rent Estimate';
+            reconRow.getCell(3).value = 'Reconciled';
+            reconRow.getCell(4).value = `${reconResult.marketRent.method} (${reconResult.marketRent.confidence})`;
+            reconRow.getCell(5).value = reconResult.marketRent.monthlyRent;
+
+            const reconNOIRow = enhancedSummarySheet.getRow(summaryRowNum++);
+            reconNOIRow.getCell(1).value = 'reconciled_NOI';
+            reconNOIRow.getCell(2).value = 'Reconciled NOI';
+            reconNOIRow.getCell(3).value = 'Reconciled';
+            reconNOIRow.getCell(4).value = `${reconResult.reconciledNOI.source} (${reconResult.reconciledNOI.confidence})`;
+            reconNOIRow.getCell(5).value = reconResult.reconciledNOI.reconciledNOI;
+
+            if (reconResult.valueEstimate.reconciledValue) {
+              const reconValueRow = enhancedSummarySheet.getRow(summaryRowNum++);
+              reconValueRow.getCell(1).value = 'reconciled_value';
+              reconValueRow.getCell(2).value = 'Reconciled Value Estimate';
+              reconValueRow.getCell(3).value = 'Reconciled';
+              reconValueRow.getCell(4).value = `${reconResult.valueEstimate.confidence}`;
+              reconValueRow.getCell(5).value = reconResult.valueEstimate.reconciledValue;
+            }
+          }
+
+          console.log(`${LOG_PREFIX} Reconciliation complete: market rent $${reconResult.marketRent.monthlyRent}/mo (${reconResult.marketRent.confidence}), NOI $${reconResult.reconciledNOI.reconciledNOI} (${reconResult.reconciledNOI.source})`);
+        } else {
+          console.log(`${LOG_PREFIX} Skipping reconciliation — raw properties not available from analysis`);
+        }
+      } catch (reconError) {
+        // Non-fatal — continue without reconciliation
+        console.warn(`${LOG_PREFIX} Reconciliation failed (continuing without):`, reconError instanceof Error ? reconError.message : 'Unknown');
       }
 
       // Serialize the enhanced workbook

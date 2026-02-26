@@ -60,6 +60,12 @@ import {
   reconcileAnalysis,
 } from '@/lib/pipeline/reconciled-outputs'
 import type { ExpectedNOIResult } from '@/lib/processing/breakups-generator'
+import {
+  validateTemplateContract,
+  formatValidationErrors,
+  REQUIRED_SHEETS,
+  REQUIRED_COLUMNS,
+} from '@/lib/pipeline/template-validation'
 
 // ─── Analysis output structure tests ─────────────────────
 
@@ -1011,5 +1017,57 @@ describe('Reconciled Outputs: Full Reconciliation', () => {
     const result = reconcileAnalysis(subject, GOLDEN_PROPERTIES)
     // Only 2 lease comps in golden set — not enough for 'high'
     expect(result.marketRent.confidence).not.toBe('high')
+  })
+})
+
+// ─── Template Validation ────────────────────────────────────
+
+describe('Template Validation: Constants', () => {
+  test('REQUIRED_SHEETS contains all expected sheets', () => {
+    expect(REQUIRED_SHEETS).toContain('comps')
+    expect(REQUIRED_SHEETS).toContain('Analysis')
+    expect(REQUIRED_SHEETS).toContain('Full_API_call')
+    expect(REQUIRED_SHEETS).toContain('Maricopa')
+    expect(REQUIRED_SHEETS).toContain('.5mile')
+    expect(REQUIRED_SHEETS).toContain('Lot')
+    expect(REQUIRED_SHEETS).toHaveLength(6)
+  })
+
+  test('REQUIRED_COLUMNS has entries for comps and Analysis sheets', () => {
+    expect(REQUIRED_COLUMNS['comps']).toBeDefined()
+    expect(REQUIRED_COLUMNS['Analysis']).toBeDefined()
+    // Comps sheet requires key columns
+    expect(REQUIRED_COLUMNS['comps']['B']).toBe('Address')
+    expect(REQUIRED_COLUMNS['comps']['G']).toBe('Sale Price')
+    expect(REQUIRED_COLUMNS['comps']['N']).toBe('Square Feet')
+    expect(REQUIRED_COLUMNS['comps']['X']).toBe('MLS Number')
+    expect(REQUIRED_COLUMNS['comps']['Y']).toBe('Status')
+  })
+
+  test('formatValidationErrors returns readable string for errors', () => {
+    const result = {
+      valid: false,
+      errors: [
+        { code: 'MISSING_SHEET' as const, message: 'Required sheet "comps" not found', sheet: 'comps' },
+      ],
+      warnings: ['Column header mismatch'],
+      version: 'unknown',
+      sheetsFound: [],
+    }
+    const formatted = formatValidationErrors(result)
+    expect(formatted).toContain('Template validation failed')
+    expect(formatted).toContain('comps')
+    expect(formatted).toContain('Warnings')
+  })
+
+  test('formatValidationErrors returns success for valid result', () => {
+    const result = {
+      valid: true,
+      errors: [],
+      warnings: [],
+      version: 'v1.0',
+      sheetsFound: ['comps', 'Analysis'],
+    }
+    expect(formatValidationErrors(result)).toBe('Template is valid')
   })
 })
