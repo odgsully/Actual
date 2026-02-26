@@ -81,9 +81,27 @@ export interface MLSRow {
   stories: number;                      // Column S - Number of stories
   fireplace: boolean;                   // Column AA - Has fireplace
 
-  // HOA
+  // HOA (expanded Phase 0.5a)
   hoa: boolean;                         // Column T - Has HOA
   hoaFee: number;                       // Column U - Monthly HOA fee
+  hoaPaidFrequency: string | null;      // Monthly, Quarterly, Annual, etc.
+  hoaTransferFee: number | null;        // One-time HOA transfer fee
+
+  // Parking (Phase 0.5a)
+  coveredParkingSpaces: number;         // Covered/carport spaces
+  totalParkingSpaces: number;           // All parking spaces (garage + covered + open)
+  parkingFeatures: string[];            // e.g. ['Garage', 'Covered', 'RV Gate']
+
+  // Concessions (Phase 0.5a)
+  sellerConcessions: number | null;     // Dollar amount of seller concessions
+  buyerIncentives: string | null;       // Freeform incentive description
+
+  // Transaction flags (Phase 0.5a)
+  listingTerms: string[];              // e.g. ['Cash', 'Conventional', 'FHA', 'VA']
+  isShortSale: boolean;
+  isForeclosure: boolean;
+  isREO: boolean;
+  isNewConstruction: boolean;
 
   // Market data
   daysOnMarket: number;                 // Column J - Days on market

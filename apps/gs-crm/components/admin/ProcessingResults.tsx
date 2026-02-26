@@ -14,6 +14,7 @@ export function ProcessingResults({ result, clientName, onNewUpload }: Processin
   const router = useRouter()
 
   if (!result.success) {
+    const isAbort = result.enrichmentSummary?.aborted
     return (
       <div className="bg-white rounded-lg border-2 border-red-300 p-6">
         <div className="flex items-start space-x-4">
@@ -21,10 +22,34 @@ export function ProcessingResults({ result, clientName, onNewUpload }: Processin
             <XCircle className="w-6 h-6 text-red-600" />
           </div>
           <div className="flex-1">
-            <h3 className="text-lg font-bold text-red-900 mb-2">Processing Failed</h3>
+            <h3 className="text-lg font-bold text-red-900 mb-2">
+              {isAbort ? 'Enrichment Aborted' : 'Processing Failed'}
+            </h3>
             <p className="text-sm text-red-700 mb-4">
               {result.message || 'An error occurred while processing your file.'}
             </p>
+
+            {/* Enrichment abort details */}
+            {isAbort && result.enrichmentSummary && (
+              <div className="bg-red-50 rounded-lg p-4 mb-4 border border-red-200">
+                <h4 className="text-sm font-semibold text-red-900 mb-2">Abort Reason:</h4>
+                <p className="text-sm text-red-800 mb-3">{result.enrichmentSummary.abortReason}</p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                  <div className="bg-white/60 rounded px-2 py-1">
+                    <span className="text-red-600 font-medium">Total:</span> {result.enrichmentSummary.total}
+                  </div>
+                  <div className="bg-white/60 rounded px-2 py-1">
+                    <span className="text-green-600 font-medium">Resolved:</span> {result.enrichmentSummary.resolved}
+                  </div>
+                  <div className="bg-white/60 rounded px-2 py-1">
+                    <span className="text-red-600 font-medium">Failed:</span> {result.enrichmentSummary.apnFailed}
+                  </div>
+                  <div className="bg-white/60 rounded px-2 py-1">
+                    <span className="text-amber-600 font-medium">Skipped:</span> {result.enrichmentSummary.skipped}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {result.errors && result.errors.length > 0 && (
               <div className="bg-red-50 rounded-lg p-4 mb-4">
@@ -112,6 +137,31 @@ export function ProcessingResults({ result, clientName, onNewUpload }: Processin
           </div>
         )}
       </div>
+
+      {/* Enrichment Summary (Phase 0.5a) */}
+      {result.enrichmentSummary && !result.enrichmentSummary.aborted && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <h4 className="text-sm font-semibold text-blue-900 mb-2">Enrichment Summary</h4>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+            <div>
+              <span className="text-blue-600 font-medium">Resolved:</span>{' '}
+              <span className="text-blue-900">{result.enrichmentSummary.resolved}/{result.enrichmentSummary.total}</span>
+            </div>
+            <div>
+              <span className="text-red-600 font-medium">Failed:</span>{' '}
+              <span className="text-red-900">{result.enrichmentSummary.apnFailed}</span>
+            </div>
+            <div>
+              <span className="text-amber-600 font-medium">Skipped:</span>{' '}
+              <span className="text-amber-900">{result.enrichmentSummary.skipped}</span>
+            </div>
+            <div>
+              <span className="text-gray-600 font-medium">Duration:</span>{' '}
+              <span className="text-gray-900">{(result.enrichmentSummary.durationMs / 1000).toFixed(1)}s</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Warnings */}
       {result.warnings && result.warnings.length > 0 && (

@@ -1,6 +1,6 @@
 # MLS Upload Patch Plan (2.25.26)
 
-Status: **In Progress** — Phase -1 and Phase 0 active
+Status: **In Progress** — Phase 0.5a complete, Phase 0.5b (enrichment consolidation) next
 Scope: GS-CRM MLS Upload -> Excel generation -> Breakups insights -> report packaging
 Planning Horizon: 9-week Initiative 1, then reassess Initiative 2
 
@@ -105,6 +105,7 @@ Priority: P0
 - [x] Audit and redact remaining MCAO enrichment logs (`batch-apn-lookup.ts`: 4 lines, `arcgis-lookup.ts`: 10 lines + 2 URL logs deleted)
 - [x] Audit and redact `property-notifier.ts` email + address logging (replaced with count-only log)
 - [x] Remove internal path leakage from API error responses (6 routes: reportit/upload, upload/process, mcao/bulk, 3 cron routes)
+- [ ] Add private-note redaction guardrails for MLS fields (`Private Remarks`, `Semi-Private Remarks`) in logs, error payloads, and diagnostics
 
 ### Temp Artifact Hygiene
 - [x] Enforce cleanup policy for `tmp/reportit` artifacts (cron sweep + on-success hook)
@@ -140,49 +141,52 @@ This sub-phase makes enrichment observable and safe before consolidating it.
 - [x] Distinguish retryable vs permanent failures with typed error codes (12 codes, 3 severity levels)
 - [x] Add `EnrichmentBatchSummary` with `computeBatchSummary()` aggregation
 - [x] Add conversion helpers: `fromAPNLookupResult()`, `applyMCAOResult()` for legacy shape migration
-- [ ] Replace ArcGIS error shape (`method/confidence`) with unified model (wire into arcgis-lookup.ts)
-- [ ] Replace MCAO error shape (`success/error.code`) with unified model (wire into client.ts)
-- [ ] Replace batch error shape (`success/error string`) with unified model (wire into batch-apn-lookup.ts)
+- [x] Replace ArcGIS error shape (`method/confidence`) with unified model (wire into arcgis-lookup.ts — converters used at call sites in bulk-processor)
+- [x] Replace MCAO error shape (`success/error.code`) with unified model (wire into client.ts — `applyMCAOResult()` wired in bulk-processor)
+- [x] Replace batch error shape (`success/error string`) with unified model (wire into batch-apn-lookup.ts — returns `BatchLookupResult` with `EnrichmentBatchSummary`)
 
 ### Abort Thresholds
-- [ ] Implement batch-level abort: APN resolution rate < threshold → halt
-- [ ] Implement batch-level abort: MCAO fetch rate < threshold → halt
-- [ ] Surface abort reason to caller (API response)
-- [ ] Surface abort reason to UI
+- [x] Implement batch-level abort: APN resolution rate < threshold → halt (wired in batch-apn-lookup.ts + bulk-processor.ts)
+- [x] Implement batch-level abort: MCAO fetch rate < threshold → halt (wired in bulk-processor.ts)
+- [x] Surface abort reason to caller (API response — `enrichmentSummary.abortReason` in ProcessResult + BatchLookupResult)
+- [x] Surface abort reason to UI (ProcessingResults.tsx shows abort reason, enrichment stats grid, upload-schema extended)
 
 ### Failure Persistence
-- [ ] Wire enrichment results into `gsrealty_mcao_data` table
-- [ ] Log per-record enrichment outcome to database
-- [ ] Add batch-level summary metrics (total, resolved, failed, skipped)
+- [x] Wire enrichment results into `gsrealty_mcao_data` table (migration 005 + `saveEnrichmentOutcome()` in `lib/database/mcao.ts`)
+- [x] Log per-record enrichment outcome to database (fire-and-forget in bulk-processor `processAddresses()`)
+- [x] Add batch-level summary metrics (total, resolved, failed, skipped) (`saveBatchSummary()` → `gsrealty_enrichment_batches` table)
 
 ### ArcGIS Endpoint Resilience
 - [x] Add health-check probe for ArcGIS Parcels endpoint (`lib/pipeline/arcgis-config.ts`)
 - [x] Add health-check probe for ArcGIS Geocoder endpoint
 - [x] Add health-check probe for ArcGIS Identify endpoint
 - [x] Extract endpoint URLs to config with env var overrides (`ARCGIS_PARCELS_URL`, etc.)
-- [ ] Abort early with clear error if probes fail (wire probeAllEndpoints into batch pipeline)
-- [ ] Replace hardcoded URLs in `arcgis-lookup.ts` with imports from `arcgis-config.ts`
+- [x] Abort early with clear error if probes fail (`preflightHealthCheck()` in bulk-processor `processFile()`)
+- [x] Replace hardcoded URLs in `arcgis-lookup.ts` with imports from `arcgis-config.ts`
 
 ### Parsing Coverage
-- [ ] Expand MLS feature extraction: parking
-- [ ] Expand MLS feature extraction: concessions
-- [ ] Expand MLS feature extraction: HOA details
-- [ ] Expand MLS feature extraction: transaction flags
+- [x] Expand MLS feature extraction: parking (coveredParkingSpaces, totalParkingSpaces, parkingFeatures[] in MLSRow + parseFeatures)
+- [x] Expand MLS feature extraction: concessions (sellerConcessions, buyerIncentives in MLSRow + parseFeatures)
+- [x] Expand MLS feature extraction: HOA details (hoaPaidFrequency, hoaTransferFee in MLSRow + parseFeatures)
+- [x] Expand MLS feature extraction: transaction flags (listingTerms[], isShortSale, isForeclosure, isREO, isNewConstruction in MLSRow + parseFeatures)
+- [ ] Restore MLS private-note field preservation in template-based sheets (`Private Remarks`, `Semi-Private Remarks`) for Resi and Lease outputs
+- [ ] Add template version-gate checks for private-note columns on `MLS-Resi-Comps` and `MLS-Lease-Comps` (append-only)
 
 ### Status and Record Hygiene
-- [ ] Enforce status class policy (valuation/supporting/context/excluded)
-- [ ] Add deterministic dedupe policy
+- [x] Enforce status class policy (valuation/supporting/context/excluded) (`lib/pipeline/record-hygiene.ts` — classifyStatus, filterByStatusClass)
+- [x] Add deterministic dedupe policy (`lib/pipeline/record-hygiene.ts` — deduplicateRecords: MLS# primary, addr+zip fallback, tiebreak by status priority → completeness → recency)
 
 ### Data Quality Scoring
-- [ ] Introduce per-record quality score
-- [ ] Introduce per-record exclusion reasons
+- [x] Introduce per-record quality score (`lib/pipeline/record-hygiene.ts` — scoreRecordQuality: 100-point weighted score across 6 factor groups)
+- [x] Introduce per-record exclusion reasons (exclusionReasons[] includes status exclusion, missing address, foreclosure/REO/short sale flags)
+- [ ] Classify private-note fields as sensitive optional data (not required for pass/fail quality score)
 
 ### Exit Criteria
-- [ ] Enrichment failures observable: per-record and batch metrics persisted
-- [ ] Abort thresholds enforced
-- [ ] ArcGIS health check prevents silent total-failure
-- [ ] Bad-status/noisy records no longer contaminate valuation sets
-- [ ] Parsing coverage materially improved and tested
+- [x] Enrichment failures observable: per-record and batch metrics persisted
+- [x] Abort thresholds enforced
+- [x] ArcGIS health check prevents silent total-failure
+- [x] Bad-status/noisy records no longer contaminate valuation sets (status class policy + quality scoring + exclusion reasons)
+- [x] Parsing coverage materially improved and tested (parking, concessions, HOA details, transaction flags extracted)
 
 ---
 
@@ -289,13 +293,13 @@ Keep this minimal and execution-oriented.
 - [x] Phase 0.5a: Unified EnrichmentResult interface + error codes + batch summary (lib/pipeline/enrichment-types.ts)
 - [x] Phase 0.5a: ArcGIS endpoint config + health probes (lib/pipeline/arcgis-config.ts)
 - [ ] Phase -1: Baseline measurement — run 3 real datasets through live pipeline, capture metrics
-- [ ] Phase 0.5a: Wire unified error model into arcgis-lookup.ts, client.ts, batch-apn-lookup.ts
-- [ ] Phase 0.5a: Wire abort thresholds into batch pipeline
-- [ ] Phase 0.5a: Replace hardcoded ArcGIS URLs with config imports + pre-flight health check
-- [ ] Phase 0.5a: Failure persistence to gsrealty_mcao_data table
+- [x] Phase 0.5a: Wire unified error model into arcgis-lookup.ts, client.ts, batch-apn-lookup.ts
+- [x] Phase 0.5a: Wire abort thresholds into batch pipeline
+- [x] Phase 0.5a: Replace hardcoded ArcGIS URLs with config imports + pre-flight health check
+- [x] Phase 0.5a: Failure persistence to gsrealty_mcao_data table (migration 005 + saveEnrichmentOutcome + saveBatchSummary)
 
 ### Week 3:
-- [ ] Complete Phase 0.5a remaining (parsing coverage, status hygiene, data quality scoring)
+- [x] Complete Phase 0.5a remaining (parsing coverage, status hygiene, data quality scoring, abort UI)
 - [ ] Begin Phase 0.5b enrichment consolidation
 
 ### Week 4:

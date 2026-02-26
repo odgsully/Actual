@@ -92,6 +92,17 @@ export const uploadResultSchema = z.object({
   warnings: z.array(z.string()).optional(),
   downloadUrl: z.string().optional(),
   message: z.string().optional(),
+  /** Phase 0.5a: Enrichment batch summary (abort reason, resolution stats) */
+  enrichmentSummary: z.object({
+    total: z.number(),
+    resolved: z.number(),
+    apnFailed: z.number(),
+    skipped: z.number(),
+    retryable: z.number(),
+    durationMs: z.number(),
+    aborted: z.boolean(),
+    abortReason: z.string().optional(),
+  }).optional(),
 })
 
 export type UploadResult = z.infer<typeof uploadResultSchema>

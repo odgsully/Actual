@@ -320,6 +320,18 @@ function parseRowToMLSRow(row: any, subjectProperty?: SubjectProperty): MLSRow {
     fireplace: features.fireplace === 'Y',
     hoa: features.hoa === 'Y',
     hoaFee: features.hoaFee || 0,
+    hoaPaidFrequency: features.hoaPaidFrequency || null,
+    hoaTransferFee: features.hoaTransferFee ?? null,
+    coveredParkingSpaces: features.coveredParkingSpaces || 0,
+    totalParkingSpaces: features.totalParkingSpaces || (parseInt(row['Garage Spaces'], 10) || 0) + (features.coveredParkingSpaces || 0),
+    parkingFeatures: features.parkingFeatures || [],
+    sellerConcessions: features.sellerConcessions ?? null,
+    buyerIncentives: features.buyerIncentives || null,
+    listingTerms: features.listingTerms || [],
+    isShortSale: features.isShortSale || false,
+    isForeclosure: features.isForeclosure || false,
+    isREO: features.isREO || false,
+    isNewConstruction: features.isNewConstruction || false,
     daysOnMarket: parseInt(row['Days on Market'], 10) || 0,
     status,
     statusDisplay: statusToDisplay(status),
@@ -412,8 +424,23 @@ function parseFeatures(featuresString: string): Record<string, any> {
   const features: Record<string, any> = {
     hoa: 'N',
     hoaFee: 0,
+    hoaPaidFrequency: null,
+    hoaTransferFee: null,
     fireplace: 'N',
     pool: 'N',
+    // Parking (Phase 0.5a)
+    coveredParkingSpaces: 0,
+    totalParkingSpaces: 0,
+    parkingFeatures: [] as string[],
+    // Concessions (Phase 0.5a)
+    sellerConcessions: null,
+    buyerIncentives: null,
+    // Transaction flags (Phase 0.5a)
+    listingTerms: [] as string[],
+    isShortSale: false,
+    isForeclosure: false,
+    isREO: false,
+    isNewConstruction: false,
   };
 
   if (!featuresString) return features;
@@ -427,27 +454,78 @@ function parseFeatures(featuresString: string): Record<string, any> {
       const parts = group.split('|');
       if (parts.length !== 3) return;
 
-      const [, subcategory, value] = parts;
+      const [category, subcategory, value] = parts;
+      const catUpper = category.toUpperCase().trim();
+      const subUpper = subcategory.toUpperCase().trim();
 
-      // Extract HOA Y/N
+      // ── HOA ──
       if (subcategory === 'HOA Y/N') {
         features.hoa = value === 'Y' ? 'Y' : 'N';
       }
-
-      // Extract HOA Fee
       if (subcategory === 'HOA Fee') {
         const fee = parseFloat(value);
         if (!isNaN(fee)) features.hoaFee = fee;
       }
+      if (subUpper === 'HOA PAID FREQUENCY' && value) {
+        features.hoaPaidFrequency = value.trim();
+      }
+      if (subUpper === 'HOA TRANSFER FEE') {
+        const fee = parseFloat(value);
+        if (!isNaN(fee)) features.hoaTransferFee = fee;
+      }
 
-      // Extract Fireplace
+      // ── Fireplace ──
       if (subcategory === 'Fireplace YN') {
         features.fireplace = value === 'Y' ? 'Y' : 'N';
       }
 
-      // Extract Pool
+      // ── Pool ──
       if (subcategory.includes('Pool') && value === 'Yes') {
         features.pool = 'Y';
+      }
+
+      // ── Parking (Phase 0.5a) ──
+      if (catUpper === 'PARKING' || subUpper.includes('PARKING') || subUpper.includes('GARAGE')) {
+        // Covered spaces count
+        if (subUpper.includes('COVERED SPACES')) {
+          const n = parseInt(value, 10);
+          if (!isNaN(n)) features.coveredParkingSpaces = n;
+        }
+        // Total spaces count
+        if (subUpper.includes('TOTAL SPACES') || subUpper === '# OF SPACES') {
+          const n = parseInt(value, 10);
+          if (!isNaN(n)) features.totalParkingSpaces = n;
+        }
+        // Parking type features (Garage, Covered, RV Gate, etc.)
+        if (value === 'Y' || value === 'Yes') {
+          features.parkingFeatures.push(subcategory.trim());
+        }
+      }
+
+      // ── Concessions (Phase 0.5a) ──
+      if (subUpper.includes('SELLER CONCESSION')) {
+        const amount = parseFloat(value.replace(/[$,]/g, ''));
+        if (!isNaN(amount)) features.sellerConcessions = amount;
+      }
+      if (subUpper.includes('BUYER INCENTIVE') || subUpper.includes('BUYER CONCESSION')) {
+        features.buyerIncentives = value.trim();
+      }
+
+      // ── Transaction flags (Phase 0.5a) ──
+      if (subUpper === 'LISTING TERMS' && value) {
+        features.listingTerms.push(value.trim());
+      }
+      if (subUpper.includes('SHORT SALE') && (value === 'Y' || value === 'Yes')) {
+        features.isShortSale = true;
+      }
+      if (subUpper.includes('FORECLOSURE') && (value === 'Y' || value === 'Yes')) {
+        features.isForeclosure = true;
+      }
+      if ((subUpper.includes('REO') || subUpper.includes('BANK OWNED')) && (value === 'Y' || value === 'Yes')) {
+        features.isREO = true;
+      }
+      if (subUpper.includes('NEW CONSTRUCTION') && (value === 'Y' || value === 'Yes')) {
+        features.isNewConstruction = true;
       }
     });
   } catch (error) {
