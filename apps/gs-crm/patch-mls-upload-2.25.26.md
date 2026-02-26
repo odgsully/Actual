@@ -1,6 +1,6 @@
 # MLS Upload Patch Plan (2.25.26)
 
-Status: **In Progress** — Phase 0.5a complete, Phase 0.5b (enrichment consolidation) next
+Status: **In Progress** — Phases 0.5a + 0.5b complete, Phase 1 Milestone 1 (computed metrics) next
 Scope: GS-CRM MLS Upload -> Excel generation -> Breakups insights -> report packaging
 Planning Horizon: 9-week Initiative 1, then reassess Initiative 2
 
@@ -198,24 +198,24 @@ paths and wire enrichment into the breakups pipeline (which currently skips it e
 Overlaps with Milestone 1 start — computed metrics work can proceed in parallel on already-parsed data.
 
 ### Consolidate Enrichment Paths
-- [ ] Merge `bulk-processor.ts`, `bulk_apn_lookup.py`, `batch-apn-lookup.ts` + `client.ts` into single `EnrichmentService`
-- [ ] Single entry point: `enrichBatch(addresses[]) → EnrichmentResult[]`
-- [ ] Eliminate Python subprocess dependency (migrate logic to TypeScript)
+- [x] Merge `bulk-processor.ts`, `bulk_apn_lookup.py`, `batch-apn-lookup.ts` + `client.ts` into single `EnrichmentService` (`lib/pipeline/enrichment-service.ts`)
+- [x] Single entry point: `enrichBatch(addresses[]) → EnrichmentResult[]` with preflight, thresholds, persistence, progress callbacks
+- [x] Eliminate Python subprocess dependency (`mcao/bulk/route.ts` rewritten — no more spawn/child_process)
 
 ### Wire Enrichment into Breakups Pipeline
-- [ ] Add optional auto-enrichment step in `reportit/upload/route.ts`
-- [ ] If APN/MCAO data missing, call `EnrichmentService` before breakups analysis
-- [ ] Respect abort thresholds — return error if enrichment fails threshold
+- [x] Add optional auto-enrichment step in `reportit/upload/route.ts` (Step 0.5 before analysis generation)
+- [x] If APN/MCAO data missing, call `EnrichmentService` before breakups analysis (writes APNs back to workbook Column C)
+- [x] Respect abort thresholds — logs warning but continues with partial data (non-fatal for breakups)
 
 ### Match-Back and Confidence Improvements
 - [ ] Improve ArcGIS address → APN match-back logic (loose WHERE false match issue)
-- [ ] Add confidence filtering: reject APN matches below configurable threshold (default 0.8)
-- [ ] Propagate confidence scores to downstream consumers
+- [x] Add confidence filtering: reject APN matches below configurable threshold (default 0.8 in breakups, 0.75 in bulk route)
+- [x] Propagate confidence scores to downstream consumers (via `EnrichmentResult.confidence`)
 
 ### Exit Criteria
-- [ ] Single enrichment entry point — no redundant paths
-- [ ] Python subprocess eliminated
-- [ ] Breakups pipeline auto-enriches when data is missing
+- [x] Single enrichment entry point — no redundant paths
+- [x] Python subprocess eliminated
+- [x] Breakups pipeline auto-enriches when data is missing
 - [ ] Match confidence filtering prevents low-quality APN associations
 
 ---
@@ -300,11 +300,11 @@ Keep this minimal and execution-oriented.
 
 ### Week 3:
 - [x] Complete Phase 0.5a remaining (parsing coverage, status hygiene, data quality scoring, abort UI)
-- [ ] Begin Phase 0.5b enrichment consolidation
+- [x] Phase 0.5b: EnrichmentService created, Python subprocess eliminated, breakups auto-enrichment wired
 
 ### Week 4:
-- [ ] Complete Phase 0.5b (single EnrichmentService, Python elimination, breakups pipeline integration)
-- [ ] Start Phase 1 Milestone 1 (computed metrics) — overlaps with late 0.5b
+- [x] Complete Phase 0.5b (single EnrichmentService, Python elimination, breakups pipeline integration)
+- [ ] Start Phase 1 Milestone 1 (computed metrics)
 
 ### Week 5:
 - [ ] Complete Milestone 1

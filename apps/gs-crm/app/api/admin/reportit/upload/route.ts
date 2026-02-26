@@ -19,6 +19,7 @@ import { generateUnifiedPDFReport } from '@/lib/processing/breakups-pdf-unified'
 import { packageBreakupsReport } from '@/lib/processing/breakups-packager';
 import { rateLimiters } from '@/lib/rate-limit';
 import { requireAdmin } from '@/lib/api/admin-auth';
+import { createEnrichmentService } from '@/lib/pipeline/enrichment-service';
 
 export const maxDuration = 300; // 5 min — Vercel Pro plan
 
@@ -1019,8 +1020,66 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       await mkdir(chartsDir, { recursive: true });
       await mkdir(reportsDir, { recursive: true });
 
+      // STEP 0.5: Auto-enrich missing APNs (Phase 0.5b)
+      console.log(`${LOG_PREFIX} [0.5/6] Auto-enriching missing APNs...`);
+      try {
+        const analysisSheetForEnrich = uploadedWorkbook.getWorksheet('Analysis');
+        if (analysisSheetForEnrich && analysisSheetForEnrich.rowCount >= 2) {
+          const enrichInputs: Array<{ rowNumber: number; address: string; existingApn?: string }> = [];
+
+          analysisSheetForEnrich.eachRow((row, rowNumber) => {
+            if (rowNumber === 1) return; // Skip header
+            const address = row.getCell(2).value; // Column B = FULL_ADDRESS
+            const apn = row.getCell(3).value;     // Column C = APN
+            if (address) {
+              enrichInputs.push({
+                rowNumber,
+                address: String(address).trim(),
+                existingApn: apn ? String(apn).trim() : undefined,
+              });
+            }
+          });
+
+          const needsEnrichment = enrichInputs.filter(e => !e.existingApn);
+          if (needsEnrichment.length > 0) {
+            console.log(`${LOG_PREFIX} Enriching ${needsEnrichment.length}/${enrichInputs.length} properties missing APNs`);
+
+            const enrichService = createEnrichmentService({
+              minConfidence: 0.8,
+              persistResults: true,
+              preflight: true,
+            });
+
+            const { results: enrichResults, summary: enrichSummary } = await enrichService.enrichBatch(
+              enrichInputs.map(e => ({ address: e.address, existingApn: e.existingApn }))
+            );
+
+            // Write enriched APNs back to workbook
+            let enrichedCount = 0;
+            for (let i = 0; i < enrichInputs.length; i++) {
+              const result = enrichResults[i];
+              if (result && result.apn && !enrichInputs[i].existingApn) {
+                const row = analysisSheetForEnrich.getRow(enrichInputs[i].rowNumber);
+                row.getCell(3).value = result.apn; // Column C = APN
+                enrichedCount++;
+              }
+            }
+
+            console.log(`${LOG_PREFIX} Enrichment complete: ${enrichedCount} APNs added, ${enrichSummary.resolved} total resolved`);
+            if (enrichSummary.aborted) {
+              console.warn(`${LOG_PREFIX} Enrichment aborted (continuing with partial data): ${enrichSummary.abortReason}`);
+            }
+          } else {
+            console.log(`${LOG_PREFIX} All ${enrichInputs.length} properties already have APNs, skipping enrichment`);
+          }
+        }
+      } catch (enrichError) {
+        // Non-fatal — continue with whatever APNs exist
+        console.error(`${LOG_PREFIX} Auto-enrichment failed (continuing without):`, enrichError instanceof Error ? enrichError.message : 'Unknown');
+      }
+
       // STEP 1: Generate all 26 analyses (v2)
-      console.log(`${LOG_PREFIX} [1/4] Running 26 break-ups analyses (v2)...`);
+      console.log(`${LOG_PREFIX} [1/6] Running 26 break-ups analyses (v2)...`);
       const analysisResults = await generateAllBreakupsAnalyses(uploadedWorkbook, {});
       console.log(`${LOG_PREFIX} Analysis complete: 26 analyses generated (v2 with lease/sale differentiation)`);
 

@@ -1,36 +1,28 @@
+/**
+ * Bulk MCAO Lookup Route
+ *
+ * Phase 0.5b: Replaced Python subprocess with TypeScript EnrichmentService.
+ * Accepts CSV/Excel upload, resolves APNs via ArcGIS, fetches MCAO data,
+ * returns ZIP with APN_Grab + MCAO + Original files.
+ */
+
 import { NextRequest, NextResponse } from 'next/server'
-import { writeFile, unlink, mkdir, readFile, readdir, rmdir } from 'fs/promises'
-import { spawn } from 'child_process'
-import path from 'path'
-import { ZipGenerator } from '@/lib/mcao/zip-generator'
-import { MCAOClient } from '@/lib/mcao/client'
-import { ExcelGenerator } from '@/lib/mcao/excel-generator'
 import * as XLSX from 'xlsx'
+import Papa from 'papaparse'
+import { ZipGenerator } from '@/lib/mcao/zip-generator'
+import { ExcelGenerator } from '@/lib/mcao/excel-generator'
 import { requireAdmin } from '@/lib/api/admin-auth'
-import { isPathWithinBase } from '@/lib/security/path-validation'
+import { createEnrichmentService } from '@/lib/pipeline/enrichment-service'
 
 export const maxDuration = 300 // 5 minutes (Pro plan max is 800s)
 export const dynamic = 'force-dynamic'
 
-// Use system temp directory
-const TEMP_DIR = path.join(process.cwd(), 'tmp', 'mcao-bulk')
-const SCRIPTS_DIR = path.join(process.cwd(), 'scripts')
-const PYTHON_SCRIPT = path.join(SCRIPTS_DIR, 'bulk_apn_lookup.py')
-
-interface PythonMessage {
-  status: 'processing' | 'complete' | 'error'
-  message?: string
-  output_file?: string
-  error?: string
-}
+const LOG_PREFIX = '[MCAO Bulk]'
 
 export async function POST(request: NextRequest) {
   // Verify admin authentication
   const auth = await requireAdmin()
   if (!auth.success) return auth.response
-
-  let inputFilePath: string | null = null
-  let outputDir: string | null = null
 
   try {
     // Parse the form data
@@ -61,104 +53,65 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create temp directories
-    await mkdir(TEMP_DIR, { recursive: true })
-    const sessionId = Date.now().toString()
-    outputDir = path.join(TEMP_DIR, sessionId)
-    await mkdir(outputDir, { recursive: true })
-
-    // Save uploaded file to temp location
-    const fileExt = fileName.endsWith('.csv') ? '.csv' : '.xlsx'
-    inputFilePath = path.join(outputDir, `input${fileExt}`)
+    // Parse file to extract addresses
     const arrayBuffer = await file.arrayBuffer()
-    await writeFile(inputFilePath, Buffer.from(arrayBuffer))
+    const buffer = Buffer.from(arrayBuffer)
+    const addresses = extractAddresses(fileName, buffer)
 
-    console.log('Starting APN lookup processing, session:', sessionId)
-
-    // Execute Python script
-    const result = await runPythonScript(inputFilePath, outputDir, file.size)
-
-    if (!result.success || !result.outputFile) {
-      console.error('Python script failed:', result.error)
+    if (addresses.length === 0) {
       return NextResponse.json(
-        { error: result.error || 'Failed to process addresses' },
-        { status: 500 }
+        { error: 'No valid addresses found in the file.' },
+        { status: 400 }
       )
     }
 
-    console.log('APN lookup processing completed')
+    console.log(`${LOG_PREFIX} Starting enrichment for ${addresses.length} addresses`)
 
-    // Read the generated Excel file
-    const apnCompleteBuffer = await readFile(result.outputFile)
-
-    // Parse the APN Excel file to extract addresses and APNs
-    const workbook = XLSX.read(apnCompleteBuffer, { type: 'buffer' })
-    const worksheet = workbook.Sheets[workbook.SheetNames[0]]
-    const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][]
-
-    console.log('Parsed APN file, processing MCAO lookups...')
-
-    // Process MCAO lookups for each APN
-    const mcaoClient = new MCAOClient()
-    const addressRecords: any[] = []
-
-    // Skip header row if present
-    const startIdx = data[0] && typeof data[0][0] === 'string' &&
-                     (data[0][0].toLowerCase().includes('address') || data[0][0].toLowerCase().includes('full')) ? 1 : 0
-
-    for (let i = startIdx; i < data.length; i++) {
-      const row = data[i]
-      const address = row[0] || ''
-      const apn = row[1] || ''
-
-      const record: any = {
-        address: address,
-        apn: apn,
-        originalRow: row,
-        mcaoData: null
+    // Enrich via unified EnrichmentService (replaces Python subprocess)
+    const service = createEnrichmentService({ minConfidence: 0.75 })
+    const { results, summary } = await service.enrichBatch(
+      addresses.map(a => ({ address: a.address, existingApn: a.existingApn })),
+      (progress) => {
+        console.log(`${LOG_PREFIX} Progress: ${progress.percentage}% (${progress.successful} resolved)`)
       }
+    )
 
-      if (apn && apn.toString().trim()) {
-        try {
-          console.log('Looking up MCAO data for record')
-          const mcaoResult = await mcaoClient.lookupByAPN({ apn: apn.toString().trim() })
-
-          if (mcaoResult.success && mcaoResult.flattenedData) {
-            record.mcaoData = mcaoResult.flattenedData
-          } else {
-            record.error = mcaoResult.error?.message || 'MCAO lookup failed'
-          }
-        } catch (error) {
-          console.error('MCAO lookup failed for record:', error instanceof Error ? error.message : 'Unknown')
-          record.error = 'MCAO lookup failed'
-        }
-      } else {
-        record.error = 'No APN available'
-      }
-
-      addressRecords.push(record)
+    if (summary.aborted) {
+      console.error(`${LOG_PREFIX} Enrichment aborted: ${summary.abortReason}`)
+      return NextResponse.json(
+        { error: `Enrichment aborted: ${summary.abortReason}`, summary },
+        { status: 422 }
+      )
     }
 
-    console.log(`Completed MCAO lookups for ${addressRecords.length} records`)
+    console.log(`${LOG_PREFIX} Enrichment complete: ${summary.resolved} resolved, ${summary.apnFailed} failed`)
+
+    // Build address records for Excel generation (backward-compatible shape)
+    const addressRecords = results.map((r, i) => ({
+      address: r.address,
+      apn: r.apn || '',
+      originalRow: addresses[i].originalRow,
+      mcaoData: r.mcaoData || null,
+      error: r.error?.message,
+    }))
 
     // Create timestamp for file naming
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19)
 
-    // Generate MCAO Excel file
+    // Generate APN_Grab Excel (address + APN + method + confidence)
     const excelGenerator = new ExcelGenerator()
+    const apnGrabBuffer = await excelGenerator.generateAPNGrabFile(addressRecords, timestamp)
+
+    // Generate MCAO Excel file
     const mcaoBuffer = await excelGenerator.generateMCAOFile(addressRecords, timestamp)
 
     // Create ZIP with all three files
     const zipGenerator = new ZipGenerator()
-
     const zipBuffer = await zipGenerator.createZip({
-      [`APN_Grab_${timestamp}.xlsx`]: apnCompleteBuffer,
+      [`APN_Grab_${timestamp}.xlsx`]: apnGrabBuffer,
       [`MCAO_${timestamp}.xlsx`]: mcaoBuffer,
-      [`Original_${file.name}`]: Buffer.from(arrayBuffer),
+      [`Original_${file.name}`]: buffer,
     })
-
-    // Cleanup temp files
-    await cleanup(inputFilePath, outputDir)
 
     // Return the ZIP file
     return new NextResponse(new Uint8Array(zipBuffer), {
@@ -169,138 +122,109 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Bulk MCAO processing error:', error)
-
-    // Cleanup on error
-    if (inputFilePath || outputDir) {
-      await cleanup(inputFilePath, outputDir).catch(console.error)
-    }
-
+    console.error(`${LOG_PREFIX} Processing error:`, error instanceof Error ? error.message : 'Unknown')
     return NextResponse.json(
-      { error: 'Failed to process file. Please ensure Python dependencies are installed.' },
+      { error: 'Failed to process file.' },
       { status: 500 }
     )
   }
 }
 
-async function runPythonScript(
-  inputPath: string,
-  outputDir: string,
-  fileSize: number
-): Promise<{ success: boolean; outputFile?: string; error?: string }> {
-  return new Promise((resolve) => {
-    // Find Python executable
-    const pythonCmd = process.platform === 'win32' ? 'python' : 'python3'
+// ─── Address extraction from uploaded files ─────────────────
 
-    // Dynamic rate based on file size (larger files use higher rate)
-    const rate = fileSize > 1024 * 1024 ? '15.0' : '10.0'  // 15 req/s for files > 1MB
-
-    console.log('Executing Python script:', pythonCmd, PYTHON_SCRIPT, inputPath)
-    console.log(`File size: ${(fileSize / 1024).toFixed(2)}KB, Rate limit: ${rate} req/s`)
-
-    const pythonProcess = spawn(pythonCmd, [
-      PYTHON_SCRIPT,
-      inputPath,
-      '--output-dir',
-      outputDir,
-      '--rate',
-      rate,  // Dynamic rate based on file size
-    ], {
-      cwd: process.cwd()
-    })
-
-    let outputFile: string | undefined
-    let errorMessage = ''
-    let allOutput = ''
-
-    pythonProcess.stdout.on('data', (data) => {
-      const output = data.toString()
-      console.log('Python stdout:', output)
-      allOutput += output
-
-      // Try to parse JSON messages
-      const lines = output.split('\n').filter((l: string) => l.trim())
-      for (const line of lines) {
-        try {
-          const msg: PythonMessage = JSON.parse(line)
-          if (msg.status === 'complete' && msg.output_file) {
-            outputFile = msg.output_file
-            console.log('APN lookup complete, output file:', outputFile)
-          } else if (msg.status === 'error') {
-            errorMessage = msg.error || 'Unknown error'
-            console.error('Python script error:', errorMessage)
-          } else if (msg.status === 'processing') {
-            console.log('Processing:', msg.message)
-          }
-        } catch {
-          // Not JSON, could be progress updates from the Python script
-          console.log('Python output:', line)
-        }
-      }
-    })
-
-    pythonProcess.stderr.on('data', (data) => {
-      const error = data.toString()
-      console.error('Python stderr:', error)
-      errorMessage += error
-    })
-
-    pythonProcess.on('close', (code) => {
-      console.log(`Python process exited with code ${code}`)
-
-      if (code === 0 && outputFile) {
-        resolve({ success: true, outputFile })
-      } else {
-        // If we didn't get proper JSON output, include all output in error
-        const fullError = errorMessage || allOutput || `Python script exited with code ${code}`
-        resolve({
-          success: false,
-          error: fullError.substring(0, 1000), // Limit error message length
-        })
-      }
-    })
-
-    pythonProcess.on('error', (error) => {
-      console.error('Failed to start Python process:', error)
-      if (error.message.includes('ENOENT')) {
-        resolve({
-          success: false,
-          error: 'Python not found. Please ensure Python 3 is installed.',
-        })
-      } else {
-        resolve({
-          success: false,
-          error: 'Failed to start processing service',
-        })
-      }
-    })
-
-    // Set timeout (15 minutes for large files)
-    setTimeout(() => {
-      pythonProcess.kill()
-      resolve({
-        success: false,
-        error: 'Python script timeout after 15 minutes. File may be too large.',
-      })
-    }, 900000)  // 15 minutes
-  })
+interface ExtractedAddress {
+  address: string
+  existingApn?: string
+  originalRow: any
 }
 
-async function cleanup(inputFilePath: string | null, outputDir: string | null) {
-  try {
-    if (inputFilePath && isPathWithinBase(inputFilePath, TEMP_DIR)) {
-      await unlink(inputFilePath).catch(() => {})
+function extractAddresses(fileName: string, buffer: Buffer): ExtractedAddress[] {
+  if (fileName.endsWith('.csv')) {
+    return extractFromCSV(buffer)
+  }
+  return extractFromExcel(buffer)
+}
+
+function extractFromCSV(buffer: Buffer): ExtractedAddress[] {
+  const text = buffer.toString('utf-8')
+  const result = Papa.parse(text, { header: true, skipEmptyLines: true })
+  const addresses: ExtractedAddress[] = []
+
+  for (const row of result.data as Record<string, string>[]) {
+    const address = findAddressValue(row)
+    if (address) {
+      addresses.push({
+        address,
+        existingApn: findAPNValue(row) || undefined,
+        originalRow: row,
+      })
     }
-    if (outputDir && isPathWithinBase(outputDir, TEMP_DIR)) {
-      try {
-        const files = await readdir(outputDir)
-        await Promise.all(files.map(f => unlink(path.join(outputDir, f)).catch(() => {})))
-        await rmdir(outputDir).catch(() => {})
-      } catch {
-        // Directory might not exist or already be deleted
+  }
+
+  return addresses
+}
+
+function extractFromExcel(buffer: Buffer): ExtractedAddress[] {
+  const workbook = XLSX.read(buffer, { type: 'buffer', cellText: true })
+  const sheetName = workbook.SheetNames[0]
+  if (!sheetName) return []
+
+  const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { raw: false, defval: '' }) as Record<string, string>[]
+  const addresses: ExtractedAddress[] = []
+
+  for (const row of data) {
+    const address = findAddressValue(row)
+    if (address) {
+      addresses.push({
+        address,
+        existingApn: findAPNValue(row) || undefined,
+        originalRow: row,
+      })
+    }
+  }
+
+  return addresses
+}
+
+/** Find the address column value in a row */
+function findAddressValue(row: Record<string, string>): string | null {
+  const addressKeys = [
+    'Address', 'address', 'FULL_ADDRESS', 'full_address', 'FullAddress',
+    'Property Address', 'property_address', 'Street Address', 'street_address',
+    'Location', 'location', 'Addr', 'addr',
+  ]
+
+  for (const key of addressKeys) {
+    if (row[key] && typeof row[key] === 'string' && row[key].trim().length > 5) {
+      return row[key].trim()
+    }
+  }
+
+  // Fallback: find first column with address-like content
+  for (const key of Object.keys(row)) {
+    if (key.toLowerCase().includes('address') || key.toLowerCase().includes('addr')) {
+      const value = row[key]
+      if (value && typeof value === 'string' && value.trim().length > 5) {
+        return value.trim()
       }
     }
-  } catch (error) {
-    console.error('Cleanup error:', error instanceof Error ? error.message : 'Unknown')
   }
+
+  return null
+}
+
+/** Find the APN column value in a row */
+function findAPNValue(row: Record<string, string>): string | null {
+  const apnKeys = [
+    'APN', 'apn', 'Assessor Number', 'assessor_number', 'Parcel',
+    'parcel', 'Parcel Number', 'parcel_number',
+  ]
+
+  for (const key of apnKeys) {
+    if (row[key] && typeof row[key] === 'string' && row[key].trim()) {
+      return row[key].trim()
+    }
+  }
+
+  return null
 }
