@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "jest",
     "test:watch": "jest --watch",
+    "test:golden": "jest __tests__/golden/pipeline.test.ts --verbose",
     "test:integration": "jest --config jest.integration.config.js",
     "test:integration:watch": "jest --config jest.integration.config.js --watch",
     "test:e2e": "playwright test",

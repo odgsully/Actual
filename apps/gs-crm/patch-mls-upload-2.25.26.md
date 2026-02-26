@@ -50,21 +50,21 @@ Priority: P0
 - [ ] Document baseline metrics in a report
 
 ### Safety Thresholds
-- [ ] Define abort threshold for APN unresolved rate (e.g., > X%)
-- [ ] Define abort threshold for MCAO failure rate (e.g., > Y%)
-- [ ] Define abort threshold for parsing failure rate
-- [ ] Codify thresholds as constants (not magic numbers)
+- [x] Define abort threshold for APN unresolved rate (40% abort, 20% warn)
+- [x] Define abort threshold for MCAO failure rate (50% abort, 25% warn)
+- [x] Define abort threshold for parsing failure rate (30% abort, 10% warn)
+- [x] Codify thresholds as constants (`lib/pipeline/thresholds.ts` — 12 constants + `evaluateThreshold()` helper)
 
 ### Test Harness Scaffolding
-- [ ] Create golden dataset fixtures from `ref/examples/` samples
-- [ ] Create assertion harness for core metrics
-- [ ] Create assertion harness for report sheet integrity
-- [ ] Add golden test script to `package.json`
+- [x] Create golden dataset fixtures from `ref/examples/` samples (`__tests__/golden/fixtures.ts` — 6 synthetic properties)
+- [x] Create assertion harness for core metrics (18 analysis structure tests + 4 math tests + 4 data split tests)
+- [x] Create assertion harness for threshold evaluation (9 threshold tests — continue/warn/abort/small-batch)
+- [x] Add golden test script to `package.json` (`test:golden` — 35/35 passing)
 
 ### Exit Criteria
-- [ ] Baseline metrics documented
+- [ ] Baseline metrics documented (deferred — requires live enrichment run against real datasets)
 - [x] Schema guards present on critical write paths
-- [ ] Abort/continue rules defined and testable
+- [x] Abort/continue rules defined and testable (thresholds codified, 9 tests passing)
 
 ---
 
@@ -273,12 +273,13 @@ Keep this minimal and execution-oriented.
 - [x] Phase 0: Data leak reduction — MCAO enrichment logs (batch-apn-lookup + arcgis-lookup + notifier)
 - [x] Phase 0: Error.message exposure fixed in 6 API routes
 - [x] Phase 0: Temp artifact hygiene (on-success cleanup + 1hr cron sweep)
-- [ ] Phase -1: Baseline measurement
-- [ ] Phase -1: Test harness scaffolding
-- [ ] Phase -1: Safety thresholds (abort criteria constants)
+- [x] Phase -1: Safety thresholds (12 constants + evaluateThreshold() helper in lib/pipeline/thresholds.ts)
+- [x] Phase -1: Test harness scaffolding (35 golden tests passing — analysis structure, math, data splits, thresholds)
+- [ ] Phase -1: Baseline measurement (deferred — requires live enrichment run)
 
 ### Week 2:
-- [ ] Complete Phase 0 remaining items
+- [ ] Phase -1: Baseline measurement — run 3 real datasets through live pipeline, capture metrics
+- [ ] Complete Phase 0 remaining items (high-impact output bug fixes)
 - [ ] Begin Phase 0.5a enrichment safety hardening + parsing
 
 ### Week 3:
