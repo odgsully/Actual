@@ -1023,25 +1023,15 @@ describe('Reconciled Outputs: Full Reconciliation', () => {
 // ─── Template Validation ────────────────────────────────────
 
 describe('Template Validation: Constants', () => {
-  test('REQUIRED_SHEETS contains all expected sheets', () => {
-    expect(REQUIRED_SHEETS).toContain('comps')
+  test('REQUIRED_SHEETS contains Analysis (the breakups pipeline requirement)', () => {
     expect(REQUIRED_SHEETS).toContain('Analysis')
-    expect(REQUIRED_SHEETS).toContain('Full_API_call')
-    expect(REQUIRED_SHEETS).toContain('Maricopa')
-    expect(REQUIRED_SHEETS).toContain('.5mile')
-    expect(REQUIRED_SHEETS).toContain('Lot')
-    expect(REQUIRED_SHEETS).toHaveLength(6)
+    expect(REQUIRED_SHEETS).toHaveLength(1)
   })
 
-  test('REQUIRED_COLUMNS has entries for comps and Analysis sheets', () => {
-    expect(REQUIRED_COLUMNS['comps']).toBeDefined()
+  test('REQUIRED_COLUMNS has entry for Analysis sheet', () => {
     expect(REQUIRED_COLUMNS['Analysis']).toBeDefined()
-    // Comps sheet requires key columns
-    expect(REQUIRED_COLUMNS['comps']['B']).toBe('Address')
-    expect(REQUIRED_COLUMNS['comps']['G']).toBe('Sale Price')
-    expect(REQUIRED_COLUMNS['comps']['N']).toBe('Square Feet')
-    expect(REQUIRED_COLUMNS['comps']['X']).toBe('MLS Number')
-    expect(REQUIRED_COLUMNS['comps']['Y']).toBe('Status')
+    expect(REQUIRED_COLUMNS['Analysis']['A']).toBe('Item')
+    expect(REQUIRED_COLUMNS['Analysis']['B']).toBe('Full Address')
   })
 
   test('formatValidationErrors returns readable string for errors', () => {

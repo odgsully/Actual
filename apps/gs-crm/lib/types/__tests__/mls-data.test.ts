@@ -14,6 +14,7 @@ import {
   APN_REGEX,
   VALIDATION_RULES,
   TEMPLATE_SHEETS,
+  UPLOAD_TEMPLATE_SHEETS,
   COMPS_COLUMNS,
   type MLSStatus,
   type MLSBoolean,
@@ -270,6 +271,19 @@ describe('mls-data type guards and utilities', () => {
     it('should have 7 sheet names', () => {
       const sheetNames = Object.values(TEMPLATE_SHEETS)
       expect(sheetNames).toHaveLength(7)
+    })
+  })
+
+  describe('UPLOAD_TEMPLATE_SHEETS', () => {
+    it('should have the current upload template sheet names', () => {
+      expect(UPLOAD_TEMPLATE_SHEETS.RESI_COMPS).toBe('MLS-Resi-Comps')
+      expect(UPLOAD_TEMPLATE_SHEETS.LEASE_COMPS).toBe('MLS-Lease-Comps')
+      expect(UPLOAD_TEMPLATE_SHEETS.MCAO_API).toBe('Full-MCAO-API')
+      expect(UPLOAD_TEMPLATE_SHEETS.ANALYSIS).toBe('Analysis')
+    })
+
+    it('should share Analysis sheet name with TEMPLATE_SHEETS', () => {
+      expect(UPLOAD_TEMPLATE_SHEETS.ANALYSIS).toBe(TEMPLATE_SHEETS.ANALYSIS)
     })
   })
 

@@ -428,7 +428,8 @@ export interface UploadFileMetadata {
 // ============================================================================
 
 /**
- * Sheet names in template.xlsx
+ * Sheet names used by template-populator.ts (legacy normalized format).
+ * The template-populator creates sheets with these names from parsed MLS data.
  */
 export const TEMPLATE_SHEETS = {
   COMPS: 'comps',
@@ -438,6 +439,17 @@ export const TEMPLATE_SHEETS = {
   MARICOPA: 'Maricopa',
   HALF_MILE: '.5mile',
   LOT: 'Lot',
+} as const;
+
+/**
+ * Sheet names in gs-crm-template.xlsx (current MLS upload format).
+ * Uploaded files use this format — raw MLS column layout.
+ */
+export const UPLOAD_TEMPLATE_SHEETS = {
+  RESI_COMPS: 'MLS-Resi-Comps',
+  LEASE_COMPS: 'MLS-Lease-Comps',
+  MCAO_API: 'Full-MCAO-API',
+  ANALYSIS: 'Analysis',
 } as const;
 
 export type TemplateSheetName = typeof TEMPLATE_SHEETS[keyof typeof TEMPLATE_SHEETS];

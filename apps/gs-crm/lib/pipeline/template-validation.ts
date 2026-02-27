@@ -12,7 +12,7 @@
  */
 
 import type ExcelJS from 'exceljs'
-import { TEMPLATE_SHEETS, COMPS_COLUMNS } from '../types/mls-data'
+import { TEMPLATE_SHEETS, UPLOAD_TEMPLATE_SHEETS, COMPS_COLUMNS } from '../types/mls-data'
 
 // ─── Types ──────────────────────────────────────────────────
 
@@ -45,45 +45,55 @@ export type TemplateErrorCode =
 
 // ─── Required Sheets ────────────────────────────────────────
 
-/** Sheets that MUST exist for the pipeline to function */
+/**
+ * Sheets that MUST exist for the pipeline to function.
+ * The breakups pipeline only reads from Analysis. Comps/MCAO sheets
+ * exist in two formats (legacy template-populator vs current upload template).
+ * We require Analysis unconditionally, and at least one comps sheet in either format.
+ */
 export const REQUIRED_SHEETS: readonly string[] = [
+  UPLOAD_TEMPLATE_SHEETS.ANALYSIS,
+] as const
+
+/**
+ * Comps sheet alternatives — at least one must exist.
+ * Legacy: 'comps' (template-populator). Current: 'MLS-Resi-Comps' (upload template).
+ */
+export const COMPS_SHEET_ALTERNATIVES: readonly string[] = [
+  UPLOAD_TEMPLATE_SHEETS.RESI_COMPS,
   TEMPLATE_SHEETS.COMPS,
-  TEMPLATE_SHEETS.ANALYSIS,
-  TEMPLATE_SHEETS.FULL_API_CALL,
-  TEMPLATE_SHEETS.MARICOPA,
-  TEMPLATE_SHEETS.HALF_MILE,
-  TEMPLATE_SHEETS.LOT,
 ] as const
 
 // ─── Required Column Headers Per Sheet ──────────────────────
 
 /**
- * Minimum column headers required on each sheet for the pipeline to work.
- * Format: { sheetName: { columnLetter: expectedHeaderText } }
- *
- * Only includes columns that the pipeline actively reads. Optional/new
- * columns appended beyond these are allowed (append-only rule).
+ * Required columns per sheet. The Analysis sheet headers are the same in both
+ * template formats. Comps sheet columns are only checked for legacy format
+ * (upload template has raw MLS columns in a completely different layout).
  */
 export const REQUIRED_COLUMNS: Record<string, Record<string, string>> = {
-  [TEMPLATE_SHEETS.COMPS]: {
-    [COMPS_COLUMNS.ADDRESS]: 'Address',
-    [COMPS_COLUMNS.CITY]: 'City',
-    [COMPS_COLUMNS.ZIP]: 'Zip',
-    [COMPS_COLUMNS.APN]: 'APN',
-    [COMPS_COLUMNS.SALE_PRICE]: 'Sale Price',
-    [COMPS_COLUMNS.LIST_PRICE]: 'List Price',
-    [COMPS_COLUMNS.BEDROOMS]: 'Bedrooms',
-    [COMPS_COLUMNS.BATHROOMS]: 'Bathrooms',
-    [COMPS_COLUMNS.SQUARE_FEET]: 'Square Feet',
-    [COMPS_COLUMNS.YEAR_BUILT]: 'Year Built',
-    [COMPS_COLUMNS.MLS_NUMBER]: 'MLS Number',
-    [COMPS_COLUMNS.STATUS]: 'Status',
-  },
-  [TEMPLATE_SHEETS.ANALYSIS]: {
-    // Analysis sheet has custom headers; check column A = "Item"
+  [UPLOAD_TEMPLATE_SHEETS.ANALYSIS]: {
     'A': 'Item',
     'B': 'Full Address',
   },
+}
+
+/**
+ * Columns checked only when the legacy 'comps' sheet is present.
+ */
+export const LEGACY_COMPS_COLUMNS: Record<string, string> = {
+  [COMPS_COLUMNS.ADDRESS]: 'Address',
+  [COMPS_COLUMNS.CITY]: 'City',
+  [COMPS_COLUMNS.ZIP]: 'Zip',
+  [COMPS_COLUMNS.APN]: 'APN',
+  [COMPS_COLUMNS.SALE_PRICE]: 'Sale Price',
+  [COMPS_COLUMNS.LIST_PRICE]: 'List Price',
+  [COMPS_COLUMNS.BEDROOMS]: 'Bedrooms',
+  [COMPS_COLUMNS.BATHROOMS]: 'Bathrooms',
+  [COMPS_COLUMNS.SQUARE_FEET]: 'Square Feet',
+  [COMPS_COLUMNS.YEAR_BUILT]: 'Year Built',
+  [COMPS_COLUMNS.MLS_NUMBER]: 'MLS Number',
+  [COMPS_COLUMNS.STATUS]: 'Status',
 }
 
 /**
@@ -91,7 +101,7 @@ export const REQUIRED_COLUMNS: Record<string, Record<string, string>> = {
  * If this cell contains a version string (e.g., "v1.0"), it's checked.
  * Conventionally placed in a non-data area of the first sheet.
  */
-const VERSION_MARKER_SHEET = TEMPLATE_SHEETS.COMPS
+const VERSION_MARKER_SHEET = UPLOAD_TEMPLATE_SHEETS.RESI_COMPS
 const VERSION_MARKER_CELL = 'AL1' // beyond data columns, won't interfere
 
 /** Currently expected version (null = any version accepted) */
@@ -127,6 +137,14 @@ export function validateTemplateContract(
     }
   }
 
+  // ── 1b. Comps sheet (either format accepted) ──
+  const hasCompsSheet = COMPS_SHEET_ALTERNATIVES.some(name => workbook.getWorksheet(name))
+  if (!hasCompsSheet) {
+    warnings.push(
+      `No comps sheet found (expected one of: ${COMPS_SHEET_ALTERNATIVES.join(', ')})`
+    )
+  }
+
   // ── 2. Required column headers ──
   for (const [sheetName, columns] of Object.entries(REQUIRED_COLUMNS)) {
     const sheet = workbook.getWorksheet(sheetName)
@@ -159,6 +177,25 @@ export function validateTemplateContract(
         // Fuzzy match failed — this is a mismatch, not just missing
         warnings.push(
           `Sheet "${sheetName}" column ${col}: header "${actual}" differs from expected "${expectedHeader}" (may indicate column reorder)`
+        )
+      }
+    }
+  }
+
+  // ── 2b. Legacy comps columns (only if legacy 'comps' sheet exists) ──
+  const legacyComps = workbook.getWorksheet(TEMPLATE_SHEETS.COMPS)
+  if (legacyComps && legacyComps.rowCount > 0) {
+    const headerRow = legacyComps.getRow(1)
+    for (const [col, expectedHeader] of Object.entries(LEGACY_COMPS_COLUMNS)) {
+      const cellValue = headerRow.getCell(col).value
+      const actual = cellValue ? String(cellValue).trim() : ''
+      if (!actual) {
+        warnings.push(
+          `Sheet "comps" column ${col}: header missing (expected "${expectedHeader}")`
+        )
+      } else if (!headerMatch(actual, expectedHeader)) {
+        warnings.push(
+          `Sheet "comps" column ${col}: header "${actual}" differs from expected "${expectedHeader}"`
         )
       }
     }
