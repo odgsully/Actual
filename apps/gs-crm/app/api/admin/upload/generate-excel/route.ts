@@ -46,7 +46,10 @@ export async function PUT(req: NextRequest) {
     if (!auth.success) return auth.response
 
     const parseResult = await validateBody(req, generateExcelSchema)
-    if (!parseResult.success) return apiError(400, parseResult.error)
+    if (!parseResult.success) {
+      console.error(`${LOG_PREFIX} Schema validation failed:`, parseResult.error)
+      return apiError(400, parseResult.error)
+    }
     const {
       subjectProperty,
       residential15Mile,

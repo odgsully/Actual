@@ -18,7 +18,7 @@ const nonEmptyString = z.string().min(1, 'Must not be empty')
 // ─── generate-excel ───────────────────────────────────────
 
 export const subjectPropertySchema = z.object({
-  address: nonEmptyString,
+  address: z.string().optional(),
   apn: z.string().optional(),
 })
 
@@ -26,7 +26,11 @@ export const visionScoreSchema = z.object({
   address: nonEmptyString,
   score: z.number().min(1).max(10),
   renoYear: z.number().int().min(1900).max(2100).optional(),
-  confidence: z.number().min(0).max(1).optional(),
+  confidence: z.unknown().transform((v) => {
+    if (v == null || v === '') return undefined
+    const n = Number(v)
+    return Number.isFinite(n) ? n : undefined
+  }).pipe(z.number().min(0).max(1).optional()),
   dwellingType: z.string().optional(),
 })
 
